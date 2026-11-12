@@ -36,8 +36,8 @@ const DEVICE_TEMPLATES=Object.freeze({
 function catalogDevice(sku){return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
 // UI filters are temporary preferences, never electrical or catalogue data.
 let catalogMakerFilter='',catalogSeriesFilter='';
-function catalogChoices(selected){
- const items=typeof epCatalogFilter==='function'?epCatalogFilter(catalogMakerFilter,catalogSeriesFilter):[];
+function catalogChoices(selected,phase=''){
+ const items=typeof epCatalogFilter==='function'?epCatalogFilter(catalogMakerFilter,catalogSeriesFilter,phase):[];
  const current=catalogDevice(selected);
  if(current&&!items.some(([id])=>id===selected))items.unshift([selected,current]);
  return '<option value="">Без артикула · условный аппарат</option>'+
@@ -56,7 +56,7 @@ function catalogFilterControls(){
 function applyCatalogueSku(project,circuitId,sku){
  const dev=catalogDevice(sku),line=project.lines.find(l=>l.id===circuitId);
  if(!dev||!line)throw Error('Не найдена цепь или артикул');
- if(!['L1','L2','L3'].includes(line.phase))throw Error('В стартовом каталоге только 1P для однофазных линий');
+ if(typeof epCatalogCompatible!=='function'||!epCatalogCompatible(sku,line.phase))throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
  updateBranchApparatus(project,circuitId,{label:dev.label,modules:dev.modules,templateId:null});
  line.catalogSku=sku;
  return dev;
@@ -67,7 +67,7 @@ function catalogAudit(project){
   if(!l.catalogSku)continue;
   const dev=catalogDevice(l.catalogSku);
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
-  if(!['L1','L2','L3'].includes(l.phase)||l.modules!==dev.modules||l.device!==dev.label)
+  if(!epCatalogCompatible(l.catalogSku,l.phase)||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
  }
  return {issues,engineeringApproved:false};
@@ -849,7 +849,7 @@ function renderBoard(){
  const items=[['Все аппараты помещаются на рейках',layout.unplaced.length===0],['У всех линий указан аппарат',state.lines.every(l=>!!l.device)],['Геометрия корпуса и тепловой режим не подтверждены',false]];
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
- $('selectedDevice').innerHTML=l?`<div class="selected-info"><b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div><div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
+ $('selectedDevice').innerHTML=l?`<div class="selected-info"><b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div><div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
 }
 $('boardCanvas').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();});
 $('boardCanvas').addEventListener('dragstart',e=>{const b=e.target.closest('[data-line]');if(!b)return;dragLineId=b.dataset.line;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragLineId);});
