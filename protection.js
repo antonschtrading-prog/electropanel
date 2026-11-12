@@ -55,6 +55,16 @@ function epEngineeringPreflight(project, lookupArticle, overloadArithmetic) {
   else add('FAULT_CAPACITY','UNKNOWN',fault.message);
   if(line.faultInput?.ikKa&&!String(line.faultInput.source||'').trim())
    add('FAULT_SOURCE','UNKNOWN','Нет ссылки на расчёт или измерение тока КЗ');
+  if(line.overloadV30){
+   const advanced=epOverloadGuardV30(line.overloadV30);
+   if(advanced.numeric_status==='FAIL')
+    add('V30_OVERLOAD','BLOCKED','Расширенная проверка перегрузки v3.0 выявила нарушение');
+   else if(advanced.numeric_status==='PASS')
+    add('V30_OVERLOAD','PRELIMINARY','Коэффициенты и токи прошли арифметическую проверку v3.0');
+   else add('V30_OVERLOAD','UNKNOWN','Расширенная проверка: неполные или недопустимые исходные данные');
+   if(advanced.missing_evidence.length)
+    add('V30_EVIDENCE','UNKNOWN','Не заполнены '+advanced.missing_evidence.length+' полей происхождения данных');
+  }
   add('APPLICABILITY','UNKNOWN','Не проверены нормативная применимость, кабель, автоматическое отключение, PE/N, селективность и нагрев');
   const status=rules.some(x=>x.status==='BLOCKED')?'BLOCKED':
    rules.some(x=>x.status==='UNKNOWN')?'UNKNOWN':'PRELIMINARY';
