@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const code=fs.readFileSync(path.join(__dirname,'..','protection.js'),'utf8');
-const api=vm.runInNewContext(code+'\n({epParsePositiveCurrentKa,epBreakingCapacityCheck})');
+const api=vm.runInNewContext(code+'\n({epParsePositiveCurrentKa,epBreakingCapacityCheck,epCurrentInputCompleteness})');
 const device={kind:'MCB',icnKa:6};
 const check=value=>api.epBreakingCapacityCheck(device,value);
 test('declared prospective fault current parsing is restrictive',()=>{
@@ -29,4 +29,11 @@ test('unknown article and incompatible rating never become approved',()=>{
  assert.equal(api.epBreakingCapacityCheck(null,'4').status,'UNKNOWN');
  assert.equal(api.epBreakingCapacityCheck({kind:'RCD',icnKa:6},'4').status,'UNKNOWN');
  assert.equal(api.epBreakingCapacityCheck({kind:'MCB'},'4').status,'UNKNOWN');
+});
+
+test('overload input may be absent when fault current is declared independently',()=>{
+ const status=v=>api.epCurrentInputCompleteness(v);
+ assert.equal(status({ibA:'',inA:'',izA:'',i2A:''}),'EMPTY');
+ assert.equal(status({ibA:'11',inA:'',izA:'',i2A:''}),'PARTIAL');
+ assert.equal(status({ibA:'11',inA:'16',izA:'20',i2A:'23'}),'COMPLETE');
 });
