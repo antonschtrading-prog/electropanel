@@ -989,6 +989,29 @@ function exportSvg(){
  download(baseName()+'_layout.svg',parts.join(''),'image/svg+xml;charset=utf-8');
 }
 function escapeXml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
+function showLegacyImportReport(inspection,layout){
+ const dialog=document.createElement('dialog');dialog.className='ep-legacy-dialog';
+ const heading=document.createElement('h2');heading.textContent='Старый Electropanel · проверка совместимости';
+ const text=document.createElement('p');
+ text.textContent='Файл старой версии распознан, но не заменяет текущий проект. Реек: '+inspection.counts.rails+
+  ', аппаратов: '+inspection.counts.devices+', проводов: '+inspection.counts.wires+
+  '. Занято: '+layout.occupied_modules+' из '+layout.total_modules+' модулей.';
+ const warning=document.createElement('p');warning.className='ep-legacy-warning';
+ warning.textContent='Автоматическое преобразование заблокировано: физические аппараты и связи старого Studio нельзя без проверки выдавать за цепи нового проекта.';
+ const list=document.createElement('ul');
+ const all=[...inspection.issues,...layout.problems.map(x=>x.code+': '+x.device_id+
+  (x.other_device_id?' ↔ '+x.other_device_id:'')+(x.module?' · модуль '+x.module:''))];
+ if(!all.length)all.push('Структурных ошибок не выявлено. Инженерная пригодность НЕ подтверждена.');
+ for(const detail of all.slice(0,100)){const li=document.createElement('li');li.textContent=detail;list.append(li);}
+ const buttons=document.createElement('div');buttons.className='ep-legacy-actions';
+ const exportBtn=document.createElement('button');exportBtn.type='button';exportBtn.textContent='Сохранить отчёт JSON';
+ exportBtn.onclick=()=>download('electropanel_legacy_compatibility_report.json',
+  JSON.stringify({inspection,layout,engineeringApproved:false},null,2),'application/json;charset=utf-8');
+ const close=document.createElement('button');close.type='button';close.textContent='Закрыть';
+ close.onclick=()=>dialog.close();dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ buttons.append(exportBtn,close);dialog.append(heading,text,warning,list,buttons);
+ document.body.append(dialog);dialog.showModal();
+}
 function normalizeV30Import(value){
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Расширенная проверка должна быть JSON-объектом');
  const allowed=['ib_a','in_a','base_iz_a','i2_a','factors','evidence'];
@@ -1096,6 +1119,7 @@ $('exportIssuesBtn').onclick=()=>download(baseName()+'_issues.txt',[state.title,
 $('importProjectBtn').onclick=()=>$('projectFile').click();$('projectFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2_000_000)throw Error('Файл слишком большой');const raw=JSON.parse(await file.text());const legacy=epInspectLegacyPanel(raw);
  if(legacy.recognized){
   const oldLayout=epLegacyLayoutCapacity(raw);
+  showLegacyImportReport(legacy,oldLayout);
   throw Error('Обнаружен проект прежнего Studio: '+legacy.counts.devices+' аппаратов, '+legacy.counts.rails+' реек, '+legacy.counts.wires+' проводников. DIN занято '+oldLayout.occupied_modules+'/'+oldLayout.total_modules+', коллизий/выходов: '+oldLayout.problems.length+'. Автоперенос заблокирован, чтобы не потерять расчёты и связи. '+(legacy.issues.length?'Ошибки: '+legacy.issues.slice(0,2).join('; '):'Файл распознан для дальнейшего сопоставления.'));
  }
  const loaded=normalizeImport(raw);if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}checkpoint();state=loaded;selectedLine=null;changed();switchView('loads');notify('Проект открыт');}catch(err){notify('Ошибка файла: '+err.message,true);}e.target.value='';});
