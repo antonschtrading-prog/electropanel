@@ -24,6 +24,25 @@ function epInspectLegacyPanel(value) {
   if(typeof d.rail_id!=='string'||!rails.has(d.rail_id))issues.push('Неизвестная рейка у '+d.id);
   if(!Number.isInteger(d.start_module)||d.start_module<0)issues.push('Недопустимая позиция '+d.id);
  }
+ // Legacy Studio catalog has per-SKU module width. Reuse its declared
+ // dimensions to find visible DIN collisions; never infer widths from names.
+ const catalog=value.catalog&&typeof value.catalog==='object'?value.catalog:{};
+ const occupied=new Map();
+ for(const d of panel.devices){
+  if(!d||typeof d.rail_id!=='string'||!rails.has(d.rail_id)||!Number.isInteger(d.start_module)||d.start_module<0)continue;
+  const width=catalog[d.model_sku]?.modules;
+  if(!Number.isInteger(width)||width<1||width>256){
+   issues.push('Неизвестная ширина модели '+String(d.model_sku||'?')+' для '+String(d.id||'?'));
+   continue;
+  }
+  if(d.start_module+width>rails.get(d.rail_id))
+   issues.push('Аппарат выходит за границы DIN-рейки: '+d.id);
+  for(let i=d.start_module;i<Math.min(d.start_module+width,rails.get(d.rail_id));i++){
+   const pos=d.rail_id+':'+i;
+   if(occupied.has(pos))issues.push('Пересечение аппаратов '+occupied.get(pos)+' и '+d.id+' на '+pos);
+   else occupied.set(pos,d.id);
+  }
+ }
  const wireIds=new Set();
  if(panel.wires!==undefined&&!Array.isArray(panel.wires))issues.push('Неверная структура panel.wires');
  if(Array.isArray(panel.wires))for(const w of panel.wires){
