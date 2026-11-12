@@ -1,8 +1,9 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Math,JSON,Object});vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function normalizeImport(x){'),s.indexOf('function parseCSV(text){')),c);vm.runInContext(s.slice(s.indexOf('function draftEquipment(){'),s.indexOf('function exportSvg(){')),c);return c;}
+function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Math,JSON,Object});vm.runInContext(epBrowserDeps,c);vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function normalizeImport(x){'),s.indexOf('function parseCSV(text){')),c);vm.runInContext(s.slice(s.indexOf('function draftEquipment(){'),s.indexOf('function exportSvg(){')),c);return c;}
 const run=(c,code)=>vm.runInContext(code,c);
 test('legacy v0.5 migrates to separate circuits and consumer entities without losing totals',()=>{const c=env();const x=run(c,'normalizeImport(demo())');assert.equal(x.schema,'electropanel.web.preview.2');assert.equal(x.lines.length,6);assert.equal(x.loads.length,6);assert.equal(x.loads[0].circuitId,'L1');assert.equal(x.lines[0].power,1.2);assert.equal(x.loads[0].source,'demo');assert.equal(x.sharedDevices.length,0);});
 test('commercial legacy project migrates with phase and source references intact',()=>{const c=env();const x=run(c,'normalizeImport(demoCommercial())');assert.equal(x.lines[2].phase,'3Ф');assert.equal(x.loads[2].powerKw,4.5);assert.equal(x.loads[2].source,'demo');});
