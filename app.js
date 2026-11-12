@@ -40,7 +40,9 @@ function catalogChoices(selected,phase=''){
  const items=typeof epCatalogFilter==='function'?epCatalogFilter(catalogMakerFilter,catalogSeriesFilter,phase):[];
  const current=catalogDevice(selected);
  if(current&&!items.some(([id])=>id===selected))items.unshift([selected,current]);
+ const unknown=selected&&!current;
  return '<option value="">Без артикула · условный аппарат</option>'+
+  (unknown?'<option value="'+safeText(selected)+'" selected>⚠ Артикул отсутствует в текущем каталоге: '+safeText(selected)+'</option>':'')+
   items.map(([id,d])=>'<option value="'+safeText(id)+'" '+(selected===id?'selected':'')+'>'+safeText(d.maker+' / '+d.series+' / '+d.label+' / '+d.sku)+'</option>').join('');
 }
 function catalogFilterControls(){
@@ -748,7 +750,7 @@ function renderCurrentCheck(){
  $('inputikKa').value=line?.faultInput?.ikKa??'';
  $('inputikSource').value=line?.faultInput?.source??'';
  const fault=line?epBreakingCapacityCheck(catalogDevice(line.catalogSku),line.faultInput?.ikKa):null;
- result.textContent=line?`Арифметика Ib/In/Iz/I2: ${check.numericStatus}. Проверка Iкз/Icn: ${fault.status}. ${fault.message}. ИСТОЧНИКИ И ПРИМЕНИМОСТЬ НЕ ПОДТВЕРЖДЕНЫ.`:'Выберите цепь. Номинал B/C или установленная мощность не дают надёжных значений Ib, I2 и Iкз.';
+ result.textContent=line?`Арифметика Ib/In/Iz/I2: ${check.numericStatus}. Проверка Iкз/Icn: ${fault.status}. ${fault.message}. ${line.calculationReview?.required?'ТРЕБУЕТСЯ ПОВТОРНАЯ ПРОВЕРКА ПОСЛЕ ИЗМЕНЕНИЯ ПРОЕКТА. ':''}ИСТОЧНИКИ И ПРИМЕНИМОСТЬ НЕ ПОДТВЕРЖДЕНЫ.`:'Выберите цепь. Номинал B/C или установленная мощность не дают надёжных значений Ib, I2 и Iкз.';
 }
 function saveCurrentCheck(){
  const l=state.lines.find(x=>x.id===$('currentLine').value);if(!l){notify('Сначала выберите цепь',true);return;}
@@ -894,7 +896,11 @@ function renderBoard(){
   board.appendChild(holder);
  });
  if(layout.unplaced.length){const warn=document.createElement('div');warn.className='board-unplaced';warn.textContent='Не размещено: '+layout.unplaced.map(x=>x.id).join(', ');board.appendChild(warn);}
- const items=[['Все аппараты помещаются на рейках',layout.unplaced.length===0],['У всех линий указан аппарат',state.lines.every(l=>!!l.device)],['Геометрия корпуса и тепловой режим не подтверждены',false]];
+ const catalogueIssues=catalogAudit(state).issues;
+ const items=[['Все аппараты помещаются на рейках',layout.unplaced.length===0],
+  ['У всех линий указан аппарат',state.lines.every(l=>!!l.device)],
+  ['Нет конфликтов артикула и необработанных изменений',catalogueIssues.length===0],
+  ['Геометрия корпуса и тепловой режим не подтверждены',false]];
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
  $('selectedDevice').innerHTML=l?`<div class="selected-info">${devicePreviewHtml(l)}<b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div>${faultLineInfo(l)}${l.calculationReview?.required?'<div class="ep-fault-status ep-fault-fail"><strong>ПОВТОРНАЯ ПРОВЕРКА</strong><span>Параметры цепи или аппарат изменены. Сохранённые расчёты требуют перепроверки.</span></div>':''}<div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
