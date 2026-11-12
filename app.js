@@ -56,7 +56,7 @@ function catalogFilterControls(){
   '</select></label>';
 }
 function markCalculationReview(line,reason){
- if((line.overloadInput||line.faultInput)&&!line.calculationReview)
+ if((line.overloadInput||line.faultInput||line.overloadV30)&&!line.calculationReview)
   line.calculationReview={required:true,reason};
 }
 // Previously entered calculations are evidence, not disposable UI state.
@@ -790,6 +790,8 @@ function saveV30Check(){
  }
  checkpoint();
  if(normalized)l.overloadV30=normalized;else delete l.overloadV30;
+ // Keep stale state until all other declared checks are reviewed too.
+ if(!l.overloadInput&&!l.faultInput)clearCalculationReview(l);
  changed();$('currentLine').value=l.id;renderCurrentCheck();
 }
 function renderPhases(){
