@@ -28,3 +28,39 @@ function epCurrentInputCompleteness(values) {
  if(entries.some(Boolean))return 'PARTIAL';
  return 'EMPTY';
 }
+
+
+// Transport-neutral migration layer: pure JavaScript, no Python API or network.
+// All results are preliminary and intentionally distinct from engineer approval.
+function epEngineeringPreflight(project, lookupArticle, overloadArithmetic) {
+ if(!project||!Array.isArray(project.lines))throw Error('Некорректный проект');
+ if(typeof lookupArticle!=='function'||typeof overloadArithmetic!=='function')
+  throw Error('Требуются обработчики каталога и арифметики токов');
+ const lines=project.lines.map(line=>{
+  const article=line.catalogSku?lookupArticle(line.catalogSku):null;
+  const rules=[];
+  const add=(code,status,detail)=>rules.push({code,status,detail});
+  if(line.calculationReview?.required)add('STALE_CALCULATION','BLOCKED','Введённые ранее исходные данные требуют повторной проверки');
+  if(!line.catalogSku)add('ARTICLE','UNKNOWN','Конкретный артикул аппарата не выбран');
+  else if(!article)add('ARTICLE','BLOCKED','Артикул отсутствует в каталоге');
+  const overload=overloadArithmetic(line.overloadInput);
+  if(overload?.numericStatus==='FAIL')add('OVERLOAD_ARITHMETIC','BLOCKED','Нарушены неравенства для заявленных Ib, In, Iz, I2');
+  else if(overload?.numericStatus==='PASS')add('OVERLOAD_ARITHMETIC','PRELIMINARY','Арифметика токов сходится; данные и применимость не верифицированы');
+  else add('OVERLOAD_ARITHMETIC','UNKNOWN','Нельзя проверить перегрузку: недостаточно корректных токов');
+  const fault=epBreakingCapacityCheck(article,line.faultInput?.ikKa);
+  if(fault.status==='FAIL'||fault.status==='INVALID')
+   add('FAULT_CAPACITY','BLOCKED',fault.message);
+  else if(fault.status==='PRELIMINARY_PASS')
+   add('FAULT_CAPACITY','PRELIMINARY',fault.message);
+  else add('FAULT_CAPACITY','UNKNOWN',fault.message);
+  if(line.faultInput?.ikKa&&!String(line.faultInput.source||'').trim())
+   add('FAULT_SOURCE','UNKNOWN','Нет ссылки на расчёт или измерение тока КЗ');
+  add('APPLICABILITY','UNKNOWN','Не проверены нормативная применимость, кабель, автоматическое отключение, PE/N, селективность и нагрев');
+  const status=rules.some(x=>x.status==='BLOCKED')?'BLOCKED':
+   rules.some(x=>x.status==='UNKNOWN')?'UNKNOWN':'PRELIMINARY';
+  return {circuitId:line.id,status,rules,engineeringApproved:false};
+ });
+ const counts={BLOCKED:0,UNKNOWN:0,PRELIMINARY:0};
+ for(const l of lines)counts[l.status]++;
+ return {status:counts.BLOCKED?'BLOCKED':'UNKNOWN',counts,lines,engineeringApproved:false};
+}
