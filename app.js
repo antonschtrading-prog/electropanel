@@ -694,6 +694,9 @@ function documentReadiness(project=state){
   if(l.templateId&&DEVICE_TEMPLATES[l.templateId]&&l.modules!==DEVICE_TEMPLATES[l.templateId].modules)blockers.push(`${l.id}: условная ширина не совпадает с выбранным шаблоном`);
  }
  for(const issue of catalogAudit(project).issues)blockers.push(issue.circuitId+': '+issue.message);
+ const preflight=epEngineeringPreflight(project,catalogDevice,checkOverload);
+ for(const row of preflight.lines.filter(x=>x.status==='BLOCKED'))
+  blockers.push(row.circuitId+': '+row.rules.filter(x=>x.status==='BLOCKED').map(x=>x.detail).join('; '));
  const layout=layoutSlots(project);
  if(layout.unplaced.length)blockers.push(`Не размещены аппараты: ${layout.unplaced.map(x=>x.id).join(', ')}`);
  return {status:blockers.length?'INCOMPLETE':'DRAFT_ONLY',blockers,placed:equipmentEntries(project).length-layout.unplaced.length,unplaced:layout.unplaced.length,freeModules:project.railCount*project.railCapacity-layout.used,engineeringApproved:false};
@@ -901,9 +904,12 @@ function renderBoard(){
  });
  if(layout.unplaced.length){const warn=document.createElement('div');warn.className='board-unplaced';warn.textContent='Не размещено: '+layout.unplaced.map(x=>x.id).join(', ');board.appendChild(warn);}
  const catalogueIssues=catalogAudit(state).issues;
+ const preflight=epEngineeringPreflight(state,catalogDevice,checkOverload);
  const items=[['Все аппараты помещаются на рейках',layout.unplaced.length===0],
   ['У всех линий указан аппарат',state.lines.every(l=>!!l.device)],
   ['Нет конфликтов артикула и необработанных изменений',catalogueIssues.length===0],
+  ['Нет обнаруженных критических противоречий расчётов',preflight.counts.BLOCKED===0],
+  ['Расчётная применимость не подтверждена (нужна инженерная проверка)',false],
   ['Геометрия корпуса и тепловой режим не подтверждены',false]];
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
