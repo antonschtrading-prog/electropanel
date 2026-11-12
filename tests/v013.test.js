@@ -1,11 +1,12 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const catalog=fs.readFileSync(path.join(__dirname,'../catalog.js'),'utf8');
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'../styles.css'),'utf8');
 function env(){
- const c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});
+ const c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});vm.runInContext(epBrowserDeps,c);
  vm.runInContext(catalog,c);
  vm.runInContext(app.slice(0,app.indexOf("$('loadRows').addEventListener")),c);
  vm.runInContext(app.slice(app.indexOf('function escapeXml(s){'),app.indexOf('function parseCSV(text){')),c);
