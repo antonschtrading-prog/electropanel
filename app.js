@@ -649,6 +649,10 @@ function projectAudit(project=state){
   if(!SOURCES[l.source])add('source-'+l.id,'MISSING',`${l.id}: происхождение данных не указано`);
  }
  const catalogue=catalogAudit(project);if(catalogue.issues.length)add('catalogue','ERROR',catalogue.issues.map(x=>x.circuitId+': '+x.code).join('; '));else add('catalogue','NOT_VERIFIED','Артикулы выбранных изделий сопоставлены, применимость в электрической сети не подтверждена');
+ const preflight=epEngineeringPreflight(project,catalogDevice,checkOverload);
+ for(const row of preflight.lines)
+  add('engineering-line-'+row.circuitId,row.status==='BLOCKED'?'ERROR':'NOT_VERIFIED',
+   row.circuitId+': '+row.rules.map(x=>x.code+'='+x.status).join(', '));
  const layout=layoutSlots(project);
  if(layout.unplaced.length)add('layout','ERROR',`Не размещены: ${layout.unplaced.map(x=>x.id).join(', ')}`);
  else add('layout','OK',`Размещено ${project.lines.length} условных аппаратов`);
