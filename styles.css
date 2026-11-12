@@ -69,3 +69,16 @@
 .ep-fault-fail strong,.ep-fault-invalid strong{color:#a4241a}
 .ep-fault-preliminary_pass{background:#fff9e9;border-color:#ebd39a}
 .ep-fault-preliminary_pass strong{color:#895b00}
+
+/* Larger inspectable illustration; the drawing is intentionally not product photography. */
+.ep-preview-wrap{display:flex;align-items:center;gap:14px;margin:0 0 15px;padding:15px;background:linear-gradient(135deg,#e7edf1,#f9fbfc);border:1px solid #d4dde3;border-radius:13px}
+.ep-preview-article.ep-real-device{width:116px!important;min-width:116px;height:194px!important;min-height:194px!important;display:flex;flex-direction:column;flex-shrink:0;cursor:default}
+.ep-preview-article .ep-face{padding:10px 5px 5px}
+.ep-preview-article .ep-brand{font-size:12px;white-space:normal;text-align:center;line-height:1.1}
+.ep-preview-article .ep-series{font-size:9px;white-space:normal;text-align:center}
+.ep-preview-article .ep-rating{font-size:12px}
+.ep-preview-article .ep-sku{font-size:8px;white-space:normal;text-align:center;overflow-wrap:anywhere}
+.ep-preview-caption{min-width:0;display:grid;gap:7px;align-content:center}
+.ep-preview-caption b{font-size:13px;line-height:1.3}
+.ep-preview-caption span{font-size:11px;color:#64748b;line-height:1.5}
+@media(max-width:400px){.ep-preview-wrap{padding:9px;gap:9px}.ep-preview-article.ep-real-device{width:98px!important;min-width:98px}}
