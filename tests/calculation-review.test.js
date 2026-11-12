@@ -12,7 +12,7 @@ function slice(from,to) {
  assert.ok(a>=0&&b>a,'Cannot locate '+from);
  return app.slice(a,b);
 }
-const helpers=slice('function markCalculationReview(line,reason){','function faultLineInfo(line){');
+const helpers=slice('const REVIEW_FIELDS=','function faultLineInfo(line){');
 const update=slice('function updateBranchApparatus(project,circuitId,patch){','function circuitGraph(project=state){');
 const context=catalog+'\n'+protection+'\nconst DEVICE_TEMPLATES={};\n'+
  'function ensureV2(p){if(!p.branchDevices)p.branchDevices=p.lines.map(l=>({circuitId:l.id,label:l.device,modules:l.modules,templateId:null}));return p;}\n'+
