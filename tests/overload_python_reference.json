@@ -1,0 +1,137 @@
+{
+  "reference_source": "Electropanel Python core v4.14 overload_guard_v30, mathematical regression only; no normative validation",
+  "cases": [
+    {
+      "id": "normal",
+      "inputs": {
+        "ibA": "12",
+        "inA": "16",
+        "izA": "20",
+        "i2A": "23"
+      },
+      "expected": "PASS",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "boundary",
+      "inputs": {
+        "ibA": "20",
+        "inA": "20",
+        "izA": "20",
+        "i2A": "29"
+      },
+      "expected": "PASS",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "over_trip",
+      "inputs": {
+        "ibA": "12",
+        "inA": "16",
+        "izA": "20",
+        "i2A": "29.001"
+      },
+      "expected": "FAIL",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "overload",
+      "inputs": {
+        "ibA": "22",
+        "inA": "16",
+        "izA": "20",
+        "i2A": "25"
+      },
+      "expected": "FAIL",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "in_gt_iz",
+      "inputs": {
+        "ibA": "12",
+        "inA": "25",
+        "izA": "20",
+        "i2A": "23"
+      },
+      "expected": "FAIL",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "too_small",
+      "inputs": {
+        "ibA": "0.001",
+        "inA": "0.001",
+        "izA": "0.001",
+        "i2A": "0.001"
+      },
+      "expected": "PASS",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "fine_pass",
+      "inputs": {
+        "ibA": "12.123",
+        "inA": "16.001",
+        "izA": "20.010",
+        "i2A": "28.999"
+      },
+      "expected": "PASS",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "fine_fail",
+      "inputs": {
+        "ibA": "12.123",
+        "inA": "16.001",
+        "izA": "20.010",
+        "i2A": "29.015"
+      },
+      "expected": "FAIL",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "zero",
+      "inputs": {
+        "ibA": "0",
+        "inA": "16",
+        "izA": "20",
+        "i2A": "23"
+      },
+      "expected": "UNKNOWN",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "missing",
+      "inputs": {
+        "ibA": "",
+        "inA": "16",
+        "izA": "20",
+        "i2A": "23"
+      },
+      "expected": "UNKNOWN",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "bad",
+      "inputs": {
+        "ibA": "nan",
+        "inA": "16",
+        "izA": "20",
+        "i2A": "23"
+      },
+      "expected": "UNKNOWN",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    },
+    {
+      "id": "non_decimal",
+      "inputs": {
+        "ibA": "0x10",
+        "inA": "16",
+        "izA": "20",
+        "i2A": "23"
+      },
+      "expected": "UNKNOWN",
+      "reference": "electropanel.overload_guard_v30, factor=1"
+    }
+  ]
+}
