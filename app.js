@@ -756,6 +756,9 @@ function renderCurrentCheck(){
  const check=checkOverload(line?.overloadInput);
  $('inputikKa').value=line?.faultInput?.ikKa??'';
  $('inputikSource').value=line?.faultInput?.source??'';
+ $('v30Input').value=line?.overloadV30?JSON.stringify(line.overloadV30,null,2):'';
+ const adv=line?.overloadV30?epOverloadGuardV30(line.overloadV30):null;
+ $('v30Result').textContent=line?(adv?'Арифметика v3.0: '+adv.numeric_status+'. Источники: '+adv.evidence_status+', отсутствует '+adv.missing_evidence.length+' из 10. Инженерная проверка не завершена.':'Дополнительные коэффициенты и источники пока не заданы.'):'Выберите линию.';
  const fault=line?epBreakingCapacityCheck(catalogDevice(line.catalogSku),line.faultInput?.ikKa):null;
  result.textContent=line?`Арифметика Ib/In/Iz/I2: ${check.numericStatus}. Проверка Iкз/Icn: ${fault.status}. ${fault.message}. ${line.calculationReview?.required?'ТРЕБУЕТСЯ ПОВТОРНАЯ ПРОВЕРКА ПОСЛЕ ИЗМЕНЕНИЯ ПРОЕКТА. ':''}ИСТОЧНИКИ И ПРИМЕНИМОСТЬ НЕ ПОДТВЕРЖДЕНЫ.`:'Выберите цепь. Номинал B/C или установленная мощность не дают надёжных значений Ib, I2 и Iкз.';
 }
@@ -773,7 +776,20 @@ function saveCurrentCheck(){
  checkpoint();
  if(complete==='COMPLETE')l.overloadInput=inputs;else delete l.overloadInput;
  if(rawIk)l.faultInput={ikKa:rawIk,source:$('inputikSource').value.trim().slice(0,200)};else delete l.faultInput;
- clearCalculationReview(l);
+ if(!l.overloadV30)clearCalculationReview(l);
+ changed();$('currentLine').value=l.id;renderCurrentCheck();
+}
+function saveV30Check(){
+ const l=state.lines.find(x=>x.id===$('currentLine').value);
+ if(!l){notify('Выберите отходящую линию',true);return;}
+ const raw=$('v30Input').value.trim();
+ let normalized=null;
+ if(raw){
+  if(raw.length>20000){notify('Расширенная проверка слишком большая',true);return;}
+  try{normalized=normalizeV30Import(JSON.parse(raw));}catch(e){notify('Ошибка расширенной проверки: '+e.message,true);return;}
+ }
+ checkpoint();
+ if(normalized)l.overloadV30=normalized;else delete l.overloadV30;
  changed();$('currentLine').value=l.id;renderCurrentCheck();
 }
 function renderPhases(){
@@ -971,6 +987,36 @@ function exportSvg(){
  download(baseName()+'_layout.svg',parts.join(''),'image/svg+xml;charset=utf-8');
 }
 function escapeXml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
+function normalizeV30Import(value){
+ if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Расширенная проверка должна быть JSON-объектом');
+ const allowed=['ib_a','in_a','base_iz_a','i2_a','factors','evidence'];
+ if(Object.keys(value).some(k=>!allowed.includes(k)))throw Error('Неизвестное поле расширенной проверки');
+ const scalar=v=>(v===null||typeof v==='string'&&v.length<=80||typeof v==='number'&&Number.isFinite(v)||typeof v==='boolean');
+ const out={};
+ for(const key of ['ib_a','in_a','base_iz_a','i2_a']){
+  if(value[key]!==undefined){if(!scalar(value[key]))throw Error('Недопустимое значение '+key);out[key]=value[key];}
+ }
+ if(value.factors!==undefined){
+  if(!Array.isArray(value.factors)||value.factors.length>32)throw Error('Коэффициентов должно быть не более 32');
+  out.factors=value.factors.map(f=>{
+   if(!f||typeof f!=='object'||typeof f.name!=='string'||f.name.length>80||!scalar(f.value))
+    throw Error('Некорректная запись коэффициента');
+   return {name:f.name,value:f.value};
+  });
+ }
+ if(value.evidence!==undefined){
+  if(!value.evidence||typeof value.evidence!=='object'||Array.isArray(value.evidence)||
+    Object.keys(value.evidence).some(k=>!EP_V30_EVIDENCE.includes(k)))
+   throw Error('Неизвестные поля источников расширенной проверки');
+  out.evidence={};
+  for(const key of EP_V30_EVIDENCE)if(value.evidence[key]!==undefined){
+   if(typeof value.evidence[key]!=='string'||value.evidence[key].length>400)
+    throw Error('Недопустимое описание источника');
+   out.evidence[key]=value.evidence[key];
+  }
+ }
+ return out;
+}
 function normalizeFaultImport(value){
  if(!value||typeof value!=='object'||typeof value.ikKa!=='string'||epParsePositiveCurrentKa(value.ikKa)===null)
   throw Error('Некорректное значение ожидаемого тока КЗ в импортируемом проекте');
@@ -980,7 +1026,7 @@ function normalizeFaultImport(value){
   throw Error('Слишком длинное описание источника тока КЗ');
  return {ikKa:value.ikKa,source:value.source||''};
 }
-function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED'}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
+function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED'}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){
   const mime=String(x.plan.mime||'').slice(0,80);
   p.plan={name:x.plan.name.slice(0,120),mime};
@@ -1040,7 +1086,7 @@ $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
 $('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}checkpoint();state[key]=n;changed();});
-$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;
+$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;
 $('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();selectedLine=null;changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
 $('saveProjectBtn').onclick=$('saveProjectBtn2').onclick=saveProject;$('exportCsvBtn').onclick=()=>download(baseName()+'_loads.csv',csv(),'text/csv;charset=utf-8');$('exportSvgBtn').onclick=$('exportSvgBtn2').onclick=exportSvg;$('exportEquipmentBtn').onclick=()=>download(baseName()+'_equipment_draft.csv',equipmentCsv(),'text/csv;charset=utf-8');
 $('exportAuditBtn').onclick=()=>download(baseName()+'_audit.json',JSON.stringify({project:state.title,audit:projectAudit(),generatedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');
