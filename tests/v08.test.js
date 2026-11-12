@@ -1,8 +1,9 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function escapeXml(s){'),s.indexOf('function parseCSV(text){')),c);return c;}
+function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});vm.runInContext(epBrowserDeps,c);vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function escapeXml(s){'),s.indexOf('function parseCSV(text){')),c);return c;}
 const run=(c,v)=>vm.runInContext(v,c);
 function setup(){const c=env();run(c,'state=normalizeImport(demo());state.wiringVersion=1;changed=()=>{};notify=()=>{}');return c;}
 test('legacy 0.7 import does not invent physical wiring',()=>{const c=setup(),p=run(c,'normalizeImport(demo())');assert.equal(p.conductorRoutes.length,0);assert.equal(run(c,'conductorAudit(state).engineeringApproved'),false);assert.equal(run(c,'conductorAudit(state).issues.length'),6);});
