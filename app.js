@@ -69,6 +69,8 @@ function catalogAudit(project){
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
   if(!epCatalogCompatible(l.catalogSku,l.phase)||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
+  for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput))
+   issues.push({circuitId:l.id,...issue});
  }
  return {issues,engineeringApproved:false};
 }
