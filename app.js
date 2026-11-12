@@ -429,7 +429,7 @@ function validateGroupInputLinks(project){
 }
 function groupInputAudit(project){
  const issues=[],links=project.groupInputLinks||[];
- for(const group of project.sharedDevices){
+ for(const group of project.sharedDevices||[]){
   const phases=[...new Set(project.lines.filter(c=>group.circuitIds.includes(c.id)).flatMap(c=>expectedPhaseSet(c.phase)))];
   const kinds=[...phases,'N'];
   for(const kind of kinds){
