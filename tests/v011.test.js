@@ -9,7 +9,7 @@ function env(){ const c=vm.createContext({console,Date,Number,String,Array,Set,M
  return c;}
 const run=(c,s)=>vm.runInContext(s,c);
 const legacy=id=>({schema:'electropanel.web.preview.1',lines:[{id,name:'Свет',power:1.5,phase:'L1',device:'B10',modules:1}]});
-test('v0.11 UI advertises actual version',()=>{assert.match(html,/WEB \/ 0\.11/);assert.doesNotMatch(html,/WEB \/ 0\.8/);});
+test('UI advertises current version',()=>{assert.match(html,/WEB \/ 0\.11/);assert.doesNotMatch(html,/WEB \/ 0\.8/);});
 test('malformed line id with HTML/control is rejected',()=>{const c=env();for(const id of ['<svg>', 'foo\nbar', ' a', 'abc/def','a'.repeat(41)]){c.input=legacy(id);assert.throws(()=>run(c,'normalizeImport(input)'),/ID линии/,id);}});
 test('legitimate historical Cyrillic IDs with spaces remain valid',()=>{const c=env();c.input=legacy('Розетки кухня');assert.equal(run(c,'normalizeImport(input).lines[0].id'),'Розетки кухня');});
 test('ordinary legacy ASCII IDs remain unchanged',()=>{const c=env();c.input=legacy('QF_15-A');assert.equal(run(c,'normalizeImport(input).lines[0].id'),'QF_15-A');});
