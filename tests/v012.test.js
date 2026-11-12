@@ -8,7 +8,7 @@ function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Ma
  return c;}
 const run=(c,s)=>vm.runInContext(s,c);
 function setup(){const c=env();run(c,"state=normalizeImport(demo());addSharedRCDTo(state,'RCD_2P','QD1',['L1','L2']);");return c;}
-test('v0.12 interface displays correct version',()=>assert.match(html,/WEB \/ 0\.12/));
+test('v0.12 interface displays correct version',()=>assert.match(html,/WEB \/ 0\.13/));
 test('missing shared RCD input is visible to audit',()=>{const c=setup();assert.equal(run(c,"groupInputAudit(state).issues.filter(x=>x.code==='GROUP_INPUT_MISSING').length"),2);});
 test('declaring explicit shared RCD L/N input records two edges',()=>{const c=setup();assert.equal(run(c,"declareGroupInputs(state,'RCD1').length"),2);assert.equal(run(c,"groupInputAudit(state).issues.length"),0);assert.equal(run(c,"state.groupInputLinks[0].from"),'SOURCE:MAIN/L1');});
 test('duplicate or fabricated upstream input is rejected on import',()=>{const c=setup();run(c,"declareGroupInputs(state,'RCD1');");c.broken=JSON.parse(run(c,"JSON.stringify(state)"));c.broken.groupInputLinks.push({...c.broken.groupInputLinks[0]});assert.throws(()=>run(c,'normalizeImport(broken)'),/Повтор|неверный ID/);});
