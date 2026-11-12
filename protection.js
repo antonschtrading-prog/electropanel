@@ -20,3 +20,11 @@ function epBreakingCapacityCheck(catalogueArticle,declaredIkKa) {
   return {status:'FAIL',message:'Заявленный ток КЗ превышает Icn выбранного автомата',ikKa:ik,icnKa:catalogueArticle.icnKa,engineeringApproved:false};
  return {status:'PRELIMINARY_PASS',message:'Арифметически Iкз не превышает Icn, но применимость и условия испытаний не подтверждены',ikKa:ik,icnKa:catalogueArticle.icnKa,engineeringApproved:false};
 }
+
+function epCurrentInputCompleteness(values) {
+ if(!values||typeof values!=='object')return 'EMPTY';
+ const entries=['ibA','inA','izA','i2A'].map(key=>values[key]!==undefined&&values[key]!==null&&String(values[key]).trim()!=='');
+ if(entries.every(Boolean))return 'COMPLETE';
+ if(entries.some(Boolean))return 'PARTIAL';
+ return 'EMPTY';
+}
