@@ -1,0 +1,20 @@
+'use strict';
+const test=require('node:test'), assert=require('node:assert/strict'), fs=require('node:fs'), vm=require('node:vm'), path=require('node:path');
+const app=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const dir=path.join(__dirname,'..');
+function env(){ const c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});
+ vm.runInContext(app.slice(0,app.indexOf("$('loadRows').addEventListener")),c);
+ vm.runInContext(app.slice(app.indexOf('function escapeXml(s){'),app.indexOf('function parseCSV(text){')),c);
+ return c;}
+const run=(c,s)=>vm.runInContext(s,c);
+const legacy=id=>({schema:'electropanel.web.preview.1',lines:[{id,name:'Свет',power:1.5,phase:'L1',device:'B10',modules:1}]});
+test('v0.11 UI advertises actual version',()=>{assert.match(html,/WEB \/ 0\.11/);assert.doesNotMatch(html,/WEB \/ 0\.8/);});
+test('malformed line id with HTML/control is rejected',()=>{const c=env();for(const id of ['<svg>', 'foo\nbar', ' a', 'abc/def','a'.repeat(41)]){c.input=legacy(id);assert.throws(()=>run(c,'normalizeImport(input)'),/ID линии/,id);}});
+test('legitimate historical Cyrillic IDs with spaces remain valid',()=>{const c=env();c.input=legacy('Розетки кухня');assert.equal(run(c,'normalizeImport(input).lines[0].id'),'Розетки кухня');});
+test('ordinary legacy ASCII IDs remain unchanged',()=>{const c=env();c.input=legacy('QF_15-A');assert.equal(run(c,'normalizeImport(input).lines[0].id'),'QF_15-A');});
+test('import rejects duplicate valid Cyrillic IDs',()=>{const c=env();const p=legacy('Кухня');p.lines.push({...p.lines[0]});c.input=p;assert.throws(()=>run(c,'normalizeImport(input)'),/Повтор ID линии/);});
+test('invalid consumer power rejected without mutating original project via draft',()=>{const c=env();run(c,'state=normalizeImport(demo());');const before=run(c,'JSON.stringify(state)');assert.throws(()=>run(c,"editConsumerIn(structuredCloneCompat(state),state.loads[0].id,'A',100001)"),/мощность/);assert.equal(run(c,'JSON.stringify(state)'),before);});
+test('invalid new consumer does not mutate existing project copy',()=>{const c=env();run(c,'state=normalizeImport(demo());');const before=run(c,'JSON.stringify(state)');assert.throws(()=>run(c,"addConsumerTo(structuredCloneCompat(state),'L1','A',0)"),/мощность/);assert.equal(run(c,'JSON.stringify(state)'),before);});
+test('GitHub Pages entrypoint references same-origin static assets',()=>{assert.match(html,/<link rel="stylesheet" href="styles\.css">/);assert.match(html,/<script src="app\.js"><\/script>/);assert.equal(fs.existsSync(path.join(dir,'styles.css')),true);assert.equal(fs.existsSync(path.join(dir,'app.js')),true);});
+test('GitHub Actions checks syntax and every regression test',()=>{const wf=fs.readFileSync(path.join(dir,'.github/workflows/checks.yml'),'utf8');assert.match(wf,/node --check app\.js/);assert.match(wf,/node --test tests\/\*\.test\.js/);});
