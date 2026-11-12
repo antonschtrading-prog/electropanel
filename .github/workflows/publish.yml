@@ -1,0 +1,63 @@
+name: Publish Electropanel preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'electropanel_web_preview_v*.zip'
+      - '.github/workflows/publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unpack most recent release
+        shell: bash
+        run: |
+          set -euo pipefail
+          zipfile=$(find . -maxdepth 1 -name 'electropanel_web_preview_v*.zip' -printf '%f\n' | sort -V | tail -n 1)
+          if [ -z "$zipfile" ]; then
+            echo "::error::Upload an electropanel_web_preview_v*.zip archive first"
+            exit 1
+          fi
+          mkdir -p unpack dist
+          unzip -q "$zipfile" -d unpack
+          root=$(find unpack -name index.html -type f -print -quit)
+          if [ -z "$root" ]; then
+            echo "::error::Release archive does not contain index.html"
+            exit 1
+          fi
+          src=$(dirname "$root")
+          cp -a "$src"/. dist/
+          test -s dist/index.html
+          test -s dist/app.js
+          test -s dist/styles.css
+          echo "Release: $zipfile"
+          echo "Source: $src"
+      - name: Verify JavaScript syntax and tests
+        run: |
+          node --check dist/app.js
+          cd dist
+          node --test tests/*.test.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
