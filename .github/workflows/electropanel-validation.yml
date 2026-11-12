@@ -5,6 +5,9 @@ on:
       - 'app.js'
       - 'catalog.js'
       - 'protection.js'
+      - 'overload-v30.js'
+      - 'layout-v414.js'
+      - 'legacy-compat.js'
       - 'index.html'
       - 'styles.css'
       - 'tests/**'
@@ -26,5 +29,8 @@ jobs:
           node --check app.js
           node --check catalog.js
           node --check protection.js
+          node --check overload-v30.js
+          node --check layout-v414.js
+          node --check legacy-compat.js
       - name: Run regression tests
         run: node --test tests/*.test.js
