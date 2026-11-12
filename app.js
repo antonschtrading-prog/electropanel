@@ -47,6 +47,17 @@ function applyCatalogueSku(project,circuitId,sku){
  line.catalogSku=sku;
  return dev;
 }
+function catalogAudit(project){
+ const issues=[];
+ for(const l of project.lines){
+  if(!l.catalogSku)continue;
+  const dev=catalogDevice(l.catalogSku);
+  if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
+  if(!['L1','L2','L3'].includes(l.phase)||l.modules!==dev.modules||l.device!==dev.label)
+   issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
+ }
+ return {issues,engineeringApproved:false};
+}
 function deviceAppearance(line){
  const d=catalogDevice(line.catalogSku);
  return d?{type:d.appearance,maker:d.maker,series:d.series,sku:d.sku,mark:d.label}:
@@ -587,6 +598,7 @@ function projectAudit(project=state){
   if(!l.device.trim())add('apparatus-'+l.id,'MISSING',`${l.id}: не указан аппарат`);
   if(!SOURCES[l.source])add('source-'+l.id,'MISSING',`${l.id}: происхождение данных не указано`);
  }
+ const catalogue=catalogAudit(project);if(catalogue.issues.length)add('catalogue','ERROR',catalogue.issues.map(x=>x.circuitId+': '+x.code).join('; '));else add('catalogue','NOT_VERIFIED','Артикулы выбранных изделий сопоставлены, применимость в электрической сети не подтверждена');
  const layout=layoutSlots(project);
  if(layout.unplaced.length)add('layout','ERROR',`Не размещены: ${layout.unplaced.map(x=>x.id).join(', ')}`);
  else add('layout','OK',`Размещено ${project.lines.length} условных аппаратов`);
@@ -627,6 +639,7 @@ function documentReadiness(project=state){
   if(!l.device)blockers.push(`${l.id}: не задан тип аппарата`);
   if(l.templateId&&DEVICE_TEMPLATES[l.templateId]&&l.modules!==DEVICE_TEMPLATES[l.templateId].modules)blockers.push(`${l.id}: условная ширина не совпадает с выбранным шаблоном`);
  }
+ for(const issue of catalogAudit(project).issues)blockers.push(issue.circuitId+': '+issue.message);
  const layout=layoutSlots(project);
  if(layout.unplaced.length)blockers.push(`Не размещены аппараты: ${layout.unplaced.map(x=>x.id).join(', ')}`);
  return {status:blockers.length?'INCOMPLETE':'DRAFT_ONLY',blockers,placed:equipmentEntries(project).length-layout.unplaced.length,unplaced:layout.unplaced.length,freeModules:project.railCount*project.railCapacity-layout.used,engineeringApproved:false};
@@ -766,7 +779,7 @@ function renderFeedEditor(){
  host.innerHTML=`<div class="conductor-banner">Питающие связи УСЛОВНЫЕ · НЕ ДЛЯ МОНТАЖА</div><p class="muted">Декларация SOURCE → (общее УЗО) → отходящий аппарат. Нейтраль направляется на собственную N-шину группы, а PE здесь не проходит через аппарат. Ввод в УЗО теперь задаётся отдельной условной декларацией; паспортные клеммы не моделируются.</p>${groupRows}${rows||'<p class="muted">Цепи отсутствуют</p>'}<div class="mini-actions"><button class="btn" id="declareMissingGroupInputsBtn">Добавить отсутствующие вводы УЗО</button><button class="btn" id="declareMissingFeedBtn">Добавить отсутствующие</button><button class="btn" id="exportFeedCsvBtn">Ведомость питания CSV</button><button class="btn" id="exportFeedSvgBtn">Схема-обзор SVG</button></div><p class="mini-warning">${safeText(audit.issues.length?audit.issues.slice(0,16).map(x=>(x.groupId||x.circuitId)+'/'+x.kind+': '+x.message).join('; '):audit.warning)}</p>`;
 }
 function renderRows(){const tb=$('loadRows');tb.innerHTML='';state.lines.forEach((l,index)=>{const tr=document.createElement('tr');tr.dataset.id=l.id;tr.innerHTML=`<td><input aria-label="Название линии" data-key="name" maxlength="100" value="${safeText(l.name)}"></td><td><input aria-label="Мощность кВт" data-key="power" inputmode="decimal" value="${l.power??''}" ${state.loads?.filter(x=>x.circuitId===l.id).length>1?'disabled title="Редактируйте потребителей ниже"':''}></td><td><select aria-label="Фаза" data-key="phase">${['','L1','L2','L3','3Ф'].map(x=>`<option value="${x}" ${l.phase===x?'selected':''}>${x||'—'}</option>`).join('')}</select></td><td><input aria-label="Обозначение аппарата" data-key="device" maxlength="25" value="${safeText(l.device||'')}"></td><td><input aria-label="Количество модулей" data-key="modules" type="number" min="1" max="12" step="1" value="${l.modules||1}"></td><td><span class="origin-tag" title="${safeText(l.sourceRef||'Происхождение строки; не подтверждение технических данных')}">${safeText(SOURCES[l.source]||SOURCES.unknown)}</span></td><td><button class="delete-btn" aria-label="Удалить линию" data-delete="${safeText(l.id)}">✕</button></td>`;tb.appendChild(tr);});}
-$('loadRows').addEventListener('change',ev=>{const input=ev.target.closest('[data-key]');if(!input)return;const tr=ev.target.closest('tr'), l=state.lines.find(x=>x.id===tr.dataset.id);if(!l)return;const key=input.dataset.key;if(key==='power'){ensureV2(state);const consumers=state.loads.filter(x=>x.circuitId===l.id);if(consumers.length>1){notify('У линии несколько потребителей: редактируйте их в отдельном списке',true);render();return;}const value=numeric(input.value);if(value!==null&&(value<0||value>100000)){notify('Мощность должна быть числом от 0 до 100000 кВт',true);render();return;}checkpoint();if(consumers.length)consumers[0].powerKw=value;else if(value!==null)state.loads.push({id:'LOAD-'+l.id,circuitId:l.id,name:l.name,powerKw:value,source:l.source||'manual',sourceRef:l.sourceRef||''});l.power=value;delete l.overloadInput;}else if(key==='modules'){const v=Number(input.value);if(!Number.isInteger(v)||v<1||v>12){notify('Допустимая условная ширина — 1–12 модулей',true);render();return;}checkpoint();updateBranchApparatus(state,l.id,{modules:v,templateId:null});}else{if(key==='phase'){const candidate=JSON.parse(JSON.stringify(ensureV2(state)));candidate.lines.find(x=>x.id===l.id).phase=input.value;try{validateEntities(candidate);}catch(err){notify(err.message,true);render();return;}}checkpoint();if(key==='device'){updateBranchApparatus(state,l.id,{label:input.value,templateId:null});delete l.catalogSku;}else l[key]=input.value;if(key==='phase'){delete l.overloadInput;state.conductorRoutes=state.conductorRoutes.filter(r=>r.circuitId!==l.id);}}changed();});
+$('loadRows').addEventListener('change',ev=>{const input=ev.target.closest('[data-key]');if(!input)return;const tr=ev.target.closest('tr'), l=state.lines.find(x=>x.id===tr.dataset.id);if(!l)return;const key=input.dataset.key;if(key==='power'){ensureV2(state);const consumers=state.loads.filter(x=>x.circuitId===l.id);if(consumers.length>1){notify('У линии несколько потребителей: редактируйте их в отдельном списке',true);render();return;}const value=numeric(input.value);if(value!==null&&(value<0||value>100000)){notify('Мощность должна быть числом от 0 до 100000 кВт',true);render();return;}checkpoint();if(consumers.length)consumers[0].powerKw=value;else if(value!==null)state.loads.push({id:'LOAD-'+l.id,circuitId:l.id,name:l.name,powerKw:value,source:l.source||'manual',sourceRef:l.sourceRef||''});l.power=value;delete l.overloadInput;}else if(key==='modules'){const v=Number(input.value);if(!Number.isInteger(v)||v<1||v>12){notify('Допустимая условная ширина — 1–12 модулей',true);render();return;}checkpoint();updateBranchApparatus(state,l.id,{modules:v,templateId:null});delete l.catalogSku;}else{if(key==='phase'){const candidate=JSON.parse(JSON.stringify(ensureV2(state)));candidate.lines.find(x=>x.id===l.id).phase=input.value;try{validateEntities(candidate);}catch(err){notify(err.message,true);render();return;}}checkpoint();if(key==='device'){updateBranchApparatus(state,l.id,{label:input.value,templateId:null});delete l.catalogSku;}else l[key]=input.value;if(key==='phase'){delete l.overloadInput;state.conductorRoutes=state.conductorRoutes.filter(r=>r.circuitId!==l.id);}}changed();});
 $('loadRows').addEventListener('click',ev=>{const btn=ev.target.closest('[data-delete]');if(!btn)return;removeLine(btn.dataset.delete);});
 function newId(){let i=1;while(state.lines.some(l=>l.id==='L'+i))i++;return 'L'+i}
 function addLine(name='',power=null,extras={}){if(state.lines.length>=MAX_LINES)throw Error('Лимит в 400 линий');ensureV2(state);const id=newId(),source=SOURCES[extras.source]?extras.source:'manual',sourceRef=String(extras.sourceRef||'').slice(0,120);state.lines.push({id,name,power,phase:extras.phase||'',device:extras.device||'',modules:extras.modules||1,source,sourceRef});if(name||power!==null)state.loads.push({id:'LOAD-'+id,circuitId:id,name,powerKw:power,source,sourceRef});}
