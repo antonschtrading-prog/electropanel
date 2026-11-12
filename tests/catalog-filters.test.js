@@ -6,7 +6,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 
 const source=fs.readFileSync(path.join(__dirname,'..','catalog.js'),'utf8');
-const api=vm.runInNewContext(source+'\n({epCatalogMakers,epCatalogSeries,epCatalogFilter,epCatalogSku,epCatalogCompatible})');
+const api=vm.runInNewContext(source+'\n({epCatalogMakers,epCatalogSeries,epCatalogFilter,epCatalogSku,epCatalogCompatible,epCatalogDeclaredCurrentIssues})');
 
 test('catalog makers and series are deduplicated and scoped',()=>{
  const makers=Array.from(api.epCatalogMakers());
@@ -32,4 +32,19 @@ test('phase filtering rejects wrong pole counts, without electrical approval',()
  assert.equal(api.epCatalogCompatible('UNKNOWN','L1'),false);
  assert.equal(api.epCatalogFilter('','', '3Ф').length,0);
  assert.equal(api.epCatalogFilter('','', 'L1').length,3);
+});
+
+test('declared current is checked against the selected actual rating',()=>{
+ const sku='SE-A9F74116';
+ const codes=(input)=>Array.from(api.epCatalogDeclaredCurrentIssues(sku,input),x=>x.code);
+ assert.deepEqual(codes({ibA:'12',inA:'20',izA:'14'}),[
+  'CATALOG_IN_CONFLICT','CATALOG_IN_GT_IZ'
+ ]);
+ assert.deepEqual(codes({ibA:'17',inA:'16',izA:'20'}),['CATALOG_IB_GT_IN']);
+ assert.deepEqual(codes({ibA:'12',inA:'16',izA:'20'}),[]);
+});
+test('unknown and missing declared numbers never become invented ratings',()=>{
+ assert.deepEqual(Array.from(api.epCatalogDeclaredCurrentIssues('UNKNOWN',{inA:'20'})),[]);
+ assert.deepEqual(Array.from(api.epCatalogDeclaredCurrentIssues('SE-A9F74116',{ibA:'',izA:'not-known'})),[]);
+ assert.deepEqual(Array.from(api.epCatalogDeclaredCurrentIssues('SE-A9F74116',null)),[]);
 });
