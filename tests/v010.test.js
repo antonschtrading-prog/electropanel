@@ -1,7 +1,8 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
-function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function escapeXml(s){'),s.indexOf('function parseCSV(text){')),c);vm.runInContext('state=normalizeImport(demo());changed=()=>{};notify=()=>{}',c);return c;}
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
+function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});vm.runInContext(epBrowserDeps,c);vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function escapeXml(s){'),s.indexOf('function parseCSV(text){')),c);vm.runInContext('state=normalizeImport(demo());changed=()=>{};notify=()=>{}',c);return c;}
 const run=(c,x)=>vm.runInContext(x,c);
 function ready(){const c=env();run(c,'proposeAllConductorRoutes(state)');return c;}
 test('legacy v0.9 opens without inventing upstream feed',()=>{const c=env();assert.equal(run(c,'state.feedLinks.length'),0);assert.equal(run(c,'state.feedVersion'),1);});
