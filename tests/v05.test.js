@@ -1,8 +1,9 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Math,JSON,Object});vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function newId(){'),s.indexOf('function parseLines(text){')),c);for(const [a,b] of [['function normalizeImport(x){','function parseCSV(text){'],['function parseCSV(text){',"$('nav').addEventListener"]])vm.runInContext(s.slice(s.indexOf(a),s.indexOf(b)),c);return c;}
+function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Math,JSON,Object});vm.runInContext(epBrowserDeps,c);vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function newId(){'),s.indexOf('function parseLines(text){')),c);for(const [a,b] of [['function normalizeImport(x){','function parseCSV(text){'],['function parseCSV(text){',"$('nav').addEventListener"]])vm.runInContext(s.slice(s.indexOf(a),s.indexOf(b)),c);return c;}
 const run=(c,expr)=>vm.runInContext(expr,c);
 test('audit never asserts engineering approval even for complete model',()=>{const c=env();run(c,"state=demo()");const a=run(c,'projectAudit()');assert.equal(a.engineeringApproved,false);assert.equal(a.status,'DRAFT_ONLY');assert.ok(a.checks.some(x=>x.id==='engineering'&&x.status==='NOT_VERIFIED'));});
 test('audit flags missing phase and absent breaker',()=>{const c=env();run(c,"state.lines=[{id:'L1',name:'Розетки',power:2,phase:'',device:'',modules:1,source:'manual'}]");const a=run(c,'projectAudit()');assert.equal(a.status,'INCOMPLETE');assert.ok(a.checks.some(x=>x.id==='phase-L1'));assert.ok(a.checks.some(x=>x.id==='apparatus-L1'));});
