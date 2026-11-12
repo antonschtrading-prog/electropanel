@@ -6,7 +6,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 
 const source=fs.readFileSync(path.join(__dirname,'..','catalog.js'),'utf8');
-const api=vm.runInNewContext(source+'\n({epCatalogMakers,epCatalogSeries,epCatalogFilter,epCatalogSku})');
+const api=vm.runInNewContext(source+'\n({epCatalogMakers,epCatalogSeries,epCatalogFilter,epCatalogSku,epCatalogCompatible})');
 
 test('catalog makers and series are deduplicated and scoped',()=>{
  const makers=Array.from(api.epCatalogMakers());
@@ -23,4 +23,13 @@ test('manufacturer and series filter retains only matching SKUs',()=>{
 });
 test('unknown product is never filled with invented catalogue values',()=>{
  assert.equal(api.epCatalogSku('UNKNOWN'),null);
+});
+
+test('phase filtering rejects wrong pole counts, without electrical approval',()=>{
+ assert.equal(api.epCatalogCompatible('SE-A9F74116','L1'),true);
+ assert.equal(api.epCatalogCompatible('SE-A9F74116','3Ф'),false);
+ assert.equal(api.epCatalogCompatible('SE-A9F74116',''),false);
+ assert.equal(api.epCatalogCompatible('UNKNOWN','L1'),false);
+ assert.equal(api.epCatalogFilter('','', '3Ф').length,0);
+ assert.equal(api.epCatalogFilter('','', 'L1').length,3);
 });
