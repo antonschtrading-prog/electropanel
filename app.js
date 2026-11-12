@@ -481,7 +481,7 @@ function feedAudit(project){
   for(const f of feed.filter(x=>x.circuitId===c.id))if(!kinds.includes(f.kind))issues.push({code:'FEED_EXTRA',circuitId:c.id,kind:f.kind,message:'Лишний проводник после изменения фаз'});
  }
  for(const issue of groupInputAudit(project).issues)issues.push({code:issue.code,groupId:issue.groupId,kind:issue.kind,message:issue.message});
- return {status:issues.length?'INCOMPLETE':'DECLARED_ONLY',engineeringApproved:false,links:feed.length,issues,
+ return {status:issues.length?'INCOMPLETE':'DECLARED_ONLY',engineeringApproved:false,links:feed.length+(project.groupInputLinks?.length||0),issues,
   warning:'Декларации вводов УЗО и отходящих линий не подтверждают реальные номера клемм, защиту, коммутацию N или допустимость монтажа.'};
 }
 function declareFeedLinks(project,circuitId){
@@ -513,7 +513,8 @@ function clearFeedLinks(project,circuitId){
 function feedCsv(project){
  const audit=feedAudit(project);
  const safe=v=>{const raw=String(v??'');const guarded=/^\s*[=+@\-\t\r]/.test(raw)?"'"+raw:raw;return '"'+guarded.replaceAll('"','""')+'"';};
- const rows=[['Цепь','Проводник','Условный источник','Условный получатель','Замечания'],...project.lines.flatMap(c=>{
+ const groupRows=project.sharedDevices.flatMap(g=>{const kinds=new Set([...project.lines.filter(c=>g.circuitIds.includes(c.id)).flatMap(c=>expectedPhaseSet(c.phase)),'N',...project.groupInputLinks.filter(f=>f.groupId===g.id).map(f=>f.kind)]);return [...kinds].map(kind=>{const f=project.groupInputLinks.find(x=>x.groupId===g.id&&x.kind===kind);return [g.id+' (ввод УЗО)',kind,f?.from||'',f?.to||'',audit.issues.filter(i=>i.groupId===g.id&&i.kind===kind).map(i=>i.code).join(' | ')||'Только декларация'];});});
+ const rows=[['Цепь/УЗО','Проводник','Условный источник','Условный получатель','Замечания'],...groupRows,...project.lines.flatMap(c=>{
   const kinds=new Set([...expectedPhaseSet(c.phase),'N',...project.feedLinks.filter(f=>f.circuitId===c.id).map(f=>f.kind)]);
   return [...kinds].map(kind=>{const f=project.feedLinks.find(x=>x.circuitId===c.id&&x.kind===kind);
    return [c.id,kind,f?.from||'',f?.to||'',audit.issues.filter(i=>i.circuitId===c.id&&i.kind===kind).map(i=>i.code).join(' | ')||'Только декларация'];});
@@ -521,18 +522,18 @@ function feedCsv(project){
  return '\uFEFF'+rows.map(row=>row.map(safe).join(';')).join('\r\n');
 }
 function feedSvg(project){
- const esc=escapeXml,audit=feedAudit(project),rows=project.lines.flatMap(c=>{
+ const esc=escapeXml,audit=feedAudit(project),groupRows=project.sharedDevices.flatMap(g=>{const kinds=[...new Set(project.lines.filter(c=>g.circuitIds.includes(c.id)).flatMap(c=>expectedPhaseSet(c.phase)))].sort();return [...kinds,'N'].map(kind=>({c:{id:g.id+' / ВВОД УЗО'},groupId:g.id,kind,link:project.groupInputLinks.find(f=>f.groupId===g.id&&f.kind===kind)}));}),rows=groupRows.concat(project.lines.flatMap(c=>{
   const kinds=[...expectedPhaseSet(c.phase),'N'];
   return kinds.map(kind=>({c,kind,link:project.feedLinks.find(f=>f.circuitId===c.id&&f.kind===kind)}));
- });
+ }));
  const height=Math.max(190,145+rows.length*34);
  const out=[`<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="${height}" viewBox="0 0 1160 ${height}">`,
  '<rect width="100%" height="100%" fill="#f8fafc"/>',
  `<text x="32" y="40" fill="#132d3d" font-size="22" font-family="Arial" font-weight="bold">${esc(project.title)}</text>`,
  '<text x="32" y="67" fill="#ad4d28" font-size="14" font-family="Arial">УСЛОВНЫЕ ПИТАЮЩИЕ СВЯЗИ — НЕ МОНТАЖНАЯ СХЕМА</text>',
- '<text x="32" y="90" fill="#536b78" font-size="12" font-family="Arial">Без паспортных клемм, ввода в УЗО, проверки коммутации N и непрерывности PE</text>'];
+ '<text x="32" y="90" fill="#536b78" font-size="12" font-family="Arial">Без паспортных клемм, проверки коммутации N, аппаратов защиты и непрерывности PE</text>'];
  let y=116;
- for(const r of rows){const issue=audit.issues.find(i=>i.circuitId===r.c.id&&i.kind===r.kind);
+ for(const r of rows){const issue=audit.issues.find(i=>(r.groupId?i.groupId===r.groupId:i.circuitId===r.c.id)&&i.kind===r.kind);
   out.push(`<rect x="24" y="${y-17}" width="1110" height="30" rx="5" fill="${issue?'#fff0e7':'#e9f4ef'}"/>`);
   out.push(`<text x="38" y="${y+3}" fill="#253c4a" font-size="12" font-family="Arial">${esc(r.c.id+' · '+r.kind)}</text>`);
   out.push(`<text x="178" y="${y+3}" fill="#253c4a" font-size="12" font-family="Arial">${esc(r.link?.from||'НЕ ЗАДАНО')}</text>`);
