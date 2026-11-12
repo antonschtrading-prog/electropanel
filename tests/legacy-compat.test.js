@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'..','legacy-compat.js'),'utf8');
 const {epInspectLegacyPanel}=vm.runInNewContext(source+'\n({epInspectLegacyPanel})');
-const legacy=()=>({panel:{rails:[{id:'DIN-1',modules:12}],
+const legacy=()=>({catalog:{'MODEL-C16':{modules:1},'MODEL-C10':{modules:2}},panel:{rails:[{id:'DIN-1',modules:12}],
  devices:[{id:'QF1',model_sku:'MODEL-C16',rail_id:'DIN-1',start_module:0},
  {id:'QF2',model_sku:'MODEL-C10',rail_id:'DIN-1',start_module:2}],
  wires:[{wire_id:'W-L',source_device:'QF1',target_device:'QF2',
@@ -35,4 +35,17 @@ test('duplicate device IDs are flagged',()=>{
 });
 test('malformed legacy structures are not accepted',()=>{
  assert.equal(epInspectLegacyPanel({panel:{devices:[],rails:'not-array'}}).recognized,false);
+});
+
+test('old Studio geometrical collision is reported',()=>{
+ const project=legacy();project.panel.devices[1].start_module=0;
+ const report=epInspectLegacyPanel(project);
+ assert.equal(report.status,'REVIEW_REQUIRED');
+ assert.ok(Array.from(report.issues,x=>x).some(x=>x.includes('Пересечение аппаратов')));
+});
+test('old Studio model with unknown width cannot be automatically accepted',()=>{
+ const project=legacy();delete project.catalog['MODEL-C10'];
+ const report=epInspectLegacyPanel(project);
+ assert.equal(report.status,'REVIEW_REQUIRED');
+ assert.ok(Array.from(report.issues,x=>x).some(x=>x.includes('Неизвестная ширина')));
 });
