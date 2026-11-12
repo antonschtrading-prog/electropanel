@@ -89,3 +89,14 @@
 .ep-advanced-check p{font-size:12px;line-height:1.5;margin:10px 0}
 .ep-advanced-check textarea{width:100%;min-height:120px;resize:vertical;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;background:#fff;color:#172b3a;border:1px solid #cbd5e1;border-radius:8px;padding:10px}
 .ep-advanced-check .btn{margin-top:10px}
+
+/* Read-only legacy Studio report, never replaces the active Web project. */
+.ep-legacy-dialog{width:min(650px,calc(100vw - 28px));max-height:calc(100dvh - 36px);overflow:auto;border:1px solid #cfdae0;border-radius:16px;box-shadow:0 22px 75px #0b182655;padding:24px;color:#172b3a;background:#fff}
+.ep-legacy-dialog::backdrop{background:#101a2b99}
+.ep-legacy-dialog h2{margin:0 0 12px;font-size:20px}
+.ep-legacy-dialog p{line-height:1.55;font-size:13px}
+.ep-legacy-dialog .ep-legacy-warning{background:#fff8e9;border:1px solid #e8c98f;border-radius:10px;padding:10px}
+.ep-legacy-dialog ul{padding:0 0 0 20px;max-height:250px;overflow:auto;font:12px/1.6 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere}
+.ep-legacy-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.ep-legacy-actions button{border:1px solid #c8d4dd;background:#f5f9fb;border-radius:8px;padding:9px 12px;font-weight:650}
+.ep-legacy-actions button:first-child{background:#172b3a;color:#fff}
