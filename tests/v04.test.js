@@ -1,8 +1,9 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
 const pure=s.slice(0,s.indexOf("$('loadRows').addEventListener"));
-function ctx(){const c=vm.createContext({console,Date,Number,String,Array,Set,Math,JSON,Object});vm.runInContext(pure,c);vm.runInContext(s.slice(s.indexOf('function normalizeImport(x){'),s.indexOf('function parseCSV(text){')),c);return c;}
+function ctx(){const c=vm.createContext({console,Date,Number,String,Array,Set,Math,JSON,Object});vm.runInContext(epBrowserDeps,c);vm.runInContext(pure,c);vm.runInContext(s.slice(s.indexOf('function normalizeImport(x){'),s.indexOf('function parseCSV(text){')),c);return c;}
 function run(c,expr){return vm.runInContext(expr,c)}
 test('catalogue templates are dimension hints, not rated breaker data',()=>{const c=ctx();assert.equal(run(c,'DEVICE_TEMPLATES.MCB_3P.modules'),3);assert.equal(run(c,'DEVICE_TEMPLATES.RCBO_1PN.modules'),2);assert.equal(run(c,'Object.values(DEVICE_TEMPLATES).every(x=>!Object.hasOwn(x,"ratedCurrent")&&!Object.hasOwn(x,"breakingCapacity"))'),true)});
 test('template applied to chosen line and undo restores attributes',()=>{const c=ctx();run(c,"changed=()=>{};state.lines=[{id:'L1',name:'Свет',power:1,phase:'L1',device:'B10',modules:1}]");assert.equal(run(c,"applyDeviceTemplate('L1','RCBO_1PN')"),true);assert.equal(run(c,'state.lines[0].modules'),2);assert.equal(run(c,'state.lines[0].templateId'),'RCBO_1PN');run(c,'notify=()=>{};restoreHistory(historyUndo,historyRedo)');assert.equal(run(c,'state.lines[0].device'),'B10')});

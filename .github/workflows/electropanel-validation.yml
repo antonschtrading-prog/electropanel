@@ -1,0 +1,51 @@
+name: Electropanel validation
+on:
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'catalog.js'
+      - 'protection.js'
+      - 'overload-v30.js'
+      - 'layout-v414.js'
+      - 'legacy-compat.js'
+      - 'index.html'
+      - 'styles.css'
+      - 'tests/**'
+      - '.github/workflows/electropanel-validation.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JS syntax
+        run: |
+          node --check app.js
+          node --check catalog.js
+          node --check protection.js
+          node --check overload-v30.js
+          node --check layout-v414.js
+          node --check legacy-compat.js
+      - name: Run regression tests
+        run: node --test tests/*.test.js
+      - name: Package browser smoke-test fixture
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electropanel-web-preview
+          retention-days: 1
+          path: |
+            index.html
+            styles.css
+            app.js
+            catalog.js
+            protection.js
+            overload-v30.js
+            layout-v414.js
+            legacy-compat.js
