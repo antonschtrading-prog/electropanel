@@ -67,3 +67,5 @@ node --test tests/*.test.js
 ## Опубликованная тестовая версия
 
 GitHub Actions проверяет JavaScript и загружает статический сайт на GitHub Pages. Постоянный адрес после успешного первого развёртывания: https://antonschtrading-prog.github.io/electropanel/. Не используйте прототип как утверждённый электротехнический проект.
+
+<!-- Redeploy trigger: verify initial GitHub Pages activation -->
