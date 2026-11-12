@@ -1,0 +1,18 @@
+<!doctype html><html><meta charset="utf-8"><body><span id="result">RUNNING</span><iframe id="app" src="index.html" width="1200" height="800"></iframe><script>
+window.onload=()=>setTimeout(()=>{try{const frame=document.getElementById('app'),d=frame.contentDocument;
+d.getElementById('loadDemo').click();
+if(d.querySelectorAll('#loadRows tr').length!==6)throw Error('demo rows');
+if(!d.getElementById('phaseChart').textContent.includes('L1'))throw Error('phase chart');
+d.querySelector('[data-view="board"]').click();
+if(d.querySelectorAll('.din-apparatus').length!==6)throw Error('board apparatus');
+d.querySelector('.din-apparatus').click();d.getElementById('moveDown').click();
+if(d.querySelectorAll('.graph-row').length!==6)throw Error('logical graph');
+if(!d.querySelector('.graph-row .graph-apparatus').textContent.includes('BD-'))throw Error('stable apparatus ID');
+const target=d.querySelector('.graph-row [data-open-circuit]');const expected=target.dataset.openCircuit;target.click();
+if(d.getElementById('consumerCircuit').value!==expected)throw Error('graph navigation');
+d.getElementById('pasteTask').click();const textarea=d.getElementById('taskText');textarea.value='Балкон — 1 кВт\nНеизвестная мощность';textarea.dispatchEvent(new Event('input',{bubbles:true}));
+if(!d.getElementById('taskPreview').textContent.includes('пропущено: 1'))throw Error('task preview');
+d.getElementById('confirmParse').click();if(d.querySelectorAll('#loadRows tr').length!==7)throw Error('commit task');
+d.querySelector('[data-view="documents"]').click();if(!d.getElementById('documentIssues').textContent.includes('не подтверждены'))throw Error('warnings');
+document.getElementById('result').textContent='PASS';}catch(e){document.getElementById('result').textContent='FAIL: '+e.message;}},350);
+</script></body></html>
