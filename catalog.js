@@ -25,8 +25,17 @@ function epCatalogMakers() {
 function epCatalogSeries(maker='') {
  return [...new Set(Object.values(EP_CATALOG).filter(d=>!maker||d.maker===maker).map(d=>d.series))].sort((a,b)=>a.localeCompare(b));
 }
-function epCatalogFilter(maker='',series='') {
- return Object.entries(EP_CATALOG).filter(([,d])=>(!maker||d.maker===maker)&&(!series||d.series===series));
+// Catalogue geometry compatibility only: not a fault-current or protection calculation.
+function epCatalogCompatible(sku,phase) {
+ const d=epCatalogSku(sku);
+ if(!d)return false;
+ if(['L1','L2','L3'].includes(phase))return d.poles===1;
+ if(phase==='3Ф')return d.poles===3||d.poles===4;
+ return false;
+}
+function epCatalogFilter(maker='',series='',phase='') {
+ return Object.entries(EP_CATALOG).filter(([id,d])=>
+  (!maker||d.maker===maker)&&(!series||d.series===series)&&(!phase||epCatalogCompatible(id,phase)));
 }
 function epCatalogDeviceSummary(sku) {
  const d=epCatalogSku(sku);
