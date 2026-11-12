@@ -19,6 +19,15 @@ const EP_CATALOG = Object.freeze({
   })
 });
 function epCatalogSku(sku) { return Object.prototype.hasOwnProperty.call(EP_CATALOG,sku)?EP_CATALOG[sku]:null; }
+function epCatalogMakers() {
+ return [...new Set(Object.values(EP_CATALOG).map(d=>d.maker))].sort((a,b)=>a.localeCompare(b));
+}
+function epCatalogSeries(maker='') {
+ return [...new Set(Object.values(EP_CATALOG).filter(d=>!maker||d.maker===maker).map(d=>d.series))].sort((a,b)=>a.localeCompare(b));
+}
+function epCatalogFilter(maker='',series='') {
+ return Object.entries(EP_CATALOG).filter(([,d])=>(!maker||d.maker===maker)&&(!series||d.series===series));
+}
 function epCatalogDeviceSummary(sku) {
  const d=epCatalogSku(sku);
  return d?{sku:d.sku,maker:d.maker,series:d.series,modules:d.modules,widthMm:d.widthMm,inA:d.inA,curve:d.curve,icnKa:d.icnKa}:null;
