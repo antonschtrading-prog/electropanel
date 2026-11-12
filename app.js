@@ -34,10 +34,26 @@ const DEVICE_TEMPLATES=Object.freeze({
 
 
 function catalogDevice(sku){return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
+// UI filters are temporary preferences, never electrical or catalogue data.
+let catalogMakerFilter='',catalogSeriesFilter='';
 function catalogChoices(selected){
+ const items=typeof epCatalogFilter==='function'?epCatalogFilter(catalogMakerFilter,catalogSeriesFilter):[];
  return '<option value="">Без артикула · условный аппарат</option>'+
-  Object.entries(typeof EP_CATALOG==='undefined'?{}:EP_CATALOG).map(([id,d])=>
-    '<option value="'+safeText(id)+'" '+(selected===id?'selected':'')+'>'+safeText(d.maker+' / '+d.series+' / '+d.label+' / '+d.sku)+'</option>').join('');
+  items.map(([id,d])=>'<option value="'+safeText(id)+'" '+(selected===id?'selected':'')+'>'+safeText(d.label+' / '+d.sku)+'</option>').join('');
+}
+function catalogFilterControls(selectedSku){
+ const selected=catalogDevice(selectedSku);
+ const maker=catalogMakerFilter||selected?.maker||'';
+ const series=catalogSeriesFilter||(!catalogMakerFilter&&selected?selected.series:'');
+ const makers=typeof epCatalogMakers==='function'?epCatalogMakers():[];
+ const seriesList=typeof epCatalogSeries==='function'?epCatalogSeries(maker):[];
+ // Never silently hide the assigned article when viewing a different circuit.
+ catalogMakerFilter=maker;catalogSeriesFilter=seriesList.includes(series)?series:'';
+ return '<label class="device-preset-label">Производитель<select id="catalogMaker"><option value="">Все производители</option>'+
+  makers.map(m=>'<option value="'+safeText(m)+'" '+(m===maker?'selected':'')+'>'+safeText(m)+'</option>').join('')+
+  '</select></label><label class="device-preset-label">Серия<select id="catalogSeries"><option value="">Все серии</option>'+
+  seriesList.map(m=>'<option value="'+safeText(m)+'" '+(m===catalogSeriesFilter?'selected':'')+'>'+safeText(m)+'</option>').join('')+
+  '</select></label>';
 }
 function applyCatalogueSku(project,circuitId,sku){
  const dev=catalogDevice(sku),line=project.lines.find(l=>l.id===circuitId);
@@ -835,14 +851,17 @@ function renderBoard(){
  const items=[['Все аппараты помещаются на рейках',layout.unplaced.length===0],['У всех линий указан аппарат',state.lines.every(l=>!!l.device)],['Геометрия корпуса и тепловой режим не подтверждены',false]];
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
- $('selectedDevice').innerHTML=l?`<div class="selected-info"><b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label><label class="device-preset-label">Производитель / серия / артикул<select id="catalogSku">${catalogChoices(l.catalogSku)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div><div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
+ $('selectedDevice').innerHTML=l?`<div class="selected-info"><b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>\${catalogFilterControls(l.catalogSku)}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">\${catalogChoices(l.catalogSku)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div><div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
 }
 $('boardCanvas').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();});
 $('boardCanvas').addEventListener('dragstart',e=>{const b=e.target.closest('[data-line]');if(!b)return;dragLineId=b.dataset.line;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragLineId);});
 $('boardCanvas').addEventListener('dragover',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId||b.dataset.line===dragLineId)return;e.preventDefault();e.dataTransfer.dropEffect='move';});
 $('boardCanvas').addEventListener('drop',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId)return;e.preventDefault();const id=dragLineId;dragLineId=null;reorderLine(id,b.dataset.line);});
 $('boardCanvas').addEventListener('dragend',()=>{dragLineId=null;});
-$('selectedDevice').addEventListener('change',e=>{if(e.target.id==='devicePreset'&&selectedLine&&e.target.value){applyDeviceTemplate(selectedLine,e.target.value);notify('Шаблон применён. Характеристики не подтверждены.');}
+$('selectedDevice').addEventListener('change',e=>{
+ if(e.target.id==='catalogMaker'){catalogMakerFilter=e.target.value;catalogSeriesFilter='';renderBoard();return;}
+ if(e.target.id==='catalogSeries'){catalogSeriesFilter=e.target.value;renderBoard();return;}
+ if(e.target.id==='devicePreset'&&selectedLine&&e.target.value){applyDeviceTemplate(selectedLine,e.target.value);notify('Шаблон применён. Характеристики не подтверждены.');}
  if(e.target.id==='catalogSku'&&selectedLine&&e.target.value){
   try{const draft=structuredCloneCompat(ensureV2(state));const dev=applyCatalogueSku(draft,selectedLine,e.target.value);checkpoint();state=draft;changed();notify('Выбран '+dev.maker+' / '+dev.sku+'. Расчёт защиты не подтверждён.');}
   catch(err){notify(err.message,true);renderBoard();}
