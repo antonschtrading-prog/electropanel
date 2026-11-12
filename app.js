@@ -71,6 +71,9 @@ function catalogAudit(project){
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
   for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput))
    issues.push({circuitId:l.id,...issue});
+  const fault=epBreakingCapacityCheck(dev,l.faultInput?.ikKa);
+  if(fault.status==='FAIL'||fault.status==='INVALID')
+   issues.push({circuitId:l.id,code:'CATALOG_IK_'+fault.status,message:fault.message});
  }
  return {issues,engineeringApproved:false};
 }
@@ -713,13 +716,19 @@ function renderCurrentCheck(){
  const line=state.lines.find(l=>l.id===box.value);
  for(const k of ['ibA','inA','izA','i2A'])$('input'+k).value=line?.overloadInput?.[k]??'';
  const check=checkOverload(line?.overloadInput);
- result.textContent=line?`Арифметика: ${check.numericStatus}. Источники и применимость: НЕ ПОДТВЕРЖДЕНЫ. ${check.reason}`:'Выберите цепь. Номинал B/C или установленная мощность не дают надёжных значений Ib и I2.';
+ $('inputikKa').value=line?.faultInput?.ikKa??'';
+ const fault=line?epBreakingCapacityCheck(catalogDevice(line.catalogSku),line.faultInput?.ikKa):null;
+ result.textContent=line?`Арифметика Ib/In/Iz/I2: ${check.numericStatus}. Проверка Iкз/Icn: ${fault.status}. ${fault.message}. ИСТОЧНИКИ И ПРИМЕНИМОСТЬ НЕ ПОДТВЕРЖДЕНЫ.`:'Выберите цепь. Номинал B/C или установленная мощность не дают надёжных значений Ib, I2 и Iкз.';
 }
 function saveCurrentCheck(){
  const l=state.lines.find(x=>x.id===$('currentLine').value);if(!l){notify('Сначала выберите цепь',true);return;}
  const inputs=Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,$('input'+k).value]));
  const result=checkOverload(inputs);if(result.numericStatus==='UNKNOWN'){notify(result.reason,true);return;}
- checkpoint();l.overloadInput=inputs;changed();$('currentLine').value=l.id;renderCurrentCheck();
+ const rawIk=$('inputikKa').value.trim();
+ if(rawIk&&epParsePositiveCurrentKa(rawIk)===null){notify('Некорректный Iкз (кА)',true);return;}
+ checkpoint();l.overloadInput=inputs;
+ if(rawIk)l.faultInput={ikKa:rawIk};else delete l.faultInput;
+ changed();$('currentLine').value=l.id;renderCurrentCheck();
 }
 function renderPhases(){
  const holder=$('phaseChart');if(!holder)return;
@@ -909,7 +918,7 @@ function exportSvg(){
  download(baseName()+'_layout.svg',parts.join(''),'image/svg+xml;charset=utf-8');
 }
 function escapeXml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
-function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&catalogDevice(l.catalogSku)?{catalogSku:l.catalogSku}:{})};});p.plan=null;
+function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput&&typeof l.faultInput==='object'&&typeof l.faultInput.ikKa==='string'&&epParsePositiveCurrentKa(l.faultInput.ikKa)!==null?{faultInput:{ikKa:l.faultInput.ikKa}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&catalogDevice(l.catalogSku)?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){
   const mime=String(x.plan.mime||'').slice(0,80);
   p.plan={name:x.plan.name.slice(0,120),mime};
