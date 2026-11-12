@@ -54,6 +54,8 @@ test('catalogue audit surfaces declared Iкз above Icn without approving a desi
  assert.ok(Array.from(result.issues,x=>x.code).includes('CATALOG_IK_FAIL'));
  assert.equal(result.engineeringApproved,false);
  line.faultInput={ikKa:'5.9'};
+ assert.ok(Array.from(api.catalogAudit({lines:[line]}).issues,x=>x.code).includes('CATALOG_IK_SOURCE_MISSING'));
+ line.faultInput={ikKa:'5.9',source:'Расчёт КЗ — протокол 01'};
  assert.equal(api.catalogAudit({lines:[line]}).issues.length,0);
  line.faultInput=undefined;
  assert.equal(api.catalogAudit({lines:[line]}).issues.length,0);
