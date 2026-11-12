@@ -1,7 +1,8 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
-function context(){let c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function escapeXml(s){'),s.indexOf('function parseCSV(text){')),c);vm.runInContext(s.slice(s.indexOf('function draftEquipment(){'),s.indexOf('function download(')),c);return c;}
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
+function context(){let c=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt});vm.runInContext(epBrowserDeps,c);vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function escapeXml(s){'),s.indexOf('function parseCSV(text){')),c);vm.runInContext(s.slice(s.indexOf('function draftEquipment(){'),s.indexOf('function download(')),c);return c;}
 const run=(c,code)=>vm.runInContext(code,c);
 test('migration from 0.6 creates one stable branch apparatus for every circuit',()=>{const c=context();const p=run(c,'normalizeImport(demo())');assert.equal(p.branchDevices.length,p.lines.length);assert.equal(p.branchDevices[0].circuitId,'L1');assert.notEqual(p.branchDevices[0].id,'L1');assert.equal(p.branchDevices[0].label,p.lines[0].device);});
 test('all branch identifiers remain stable when project is reordered',()=>{const c=context();run(c,'state=normalizeImport(demo()); changed=()=>{};notify=()=>{}');const original=run(c,'state.branchDevices.map(b=>b.circuitId+":"+b.id).join(",")');run(c,"reorderLine('L3','L1')");assert.equal(run(c,'state.branchDevices.map(b=>b.circuitId+":"+b.id).join(",")'),original);});
