@@ -55,12 +55,25 @@ function catalogFilterControls(){
   seriesList.map(m=>'<option value="'+safeText(m)+'" '+(m===series?'selected':'')+'>'+safeText(m)+'</option>').join('')+
   '</select></label>';
 }
+const REVIEW_FIELDS=['overloadInput','faultInput','overloadV30'];
 function markCalculationReview(line,reason){
- if((line.overloadInput||line.faultInput||line.overloadV30)&&!line.calculationReview)
-  line.calculationReview={required:true,reason};
+ const existing=REVIEW_FIELDS.filter(key=>!!line[key]);
+ if(!existing.length&&!line.calculationReview?.required)return;
+ const pending=new Set(line.calculationReview?.pending||existing);
+ for(const key of existing)pending.add(key);
+ line.calculationReview={required:true,reason,pending:[...pending]};
 }
-// Previously entered calculations are evidence, not disposable UI state.
-// Design changes retain them, but forbid treating them as freshly checked.
+// Acknowledging one check must never clear an unrelated stale calculation.
+function acknowledgeCalculationReview(line,key){
+ if(!line.calculationReview?.required)return;
+ const pending=Array.isArray(line.calculationReview.pending)?
+  line.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)):
+  REVIEW_FIELDS.filter(k=>!!line[k]);
+ const remaining=pending.filter(k=>k!==key);
+ if(remaining.length)line.calculationReview={...line.calculationReview,pending:remaining};
+ else delete line.calculationReview;
+}
+// Retained for explicit internal reset/test only. UI uses acknowledge per field.
 function clearCalculationReview(line){delete line.calculationReview;}
 function applyCatalogueSku(project,circuitId,sku){
  const dev=catalogDevice(sku),line=project.lines.find(l=>l.id===circuitId);
@@ -776,7 +789,8 @@ function saveCurrentCheck(){
  checkpoint();
  if(complete==='COMPLETE')l.overloadInput=inputs;else delete l.overloadInput;
  if(rawIk)l.faultInput={ikKa:rawIk,source:$('inputikSource').value.trim().slice(0,200)};else delete l.faultInput;
- if(!l.overloadV30)clearCalculationReview(l);
+ acknowledgeCalculationReview(l,'overloadInput');
+ acknowledgeCalculationReview(l,'faultInput');
  changed();$('currentLine').value=l.id;renderCurrentCheck();
 }
 function saveV30Check(){
@@ -790,8 +804,7 @@ function saveV30Check(){
  }
  checkpoint();
  if(normalized)l.overloadV30=normalized;else delete l.overloadV30;
- // Keep stale state until all other declared checks are reviewed too.
- if(!l.overloadInput&&!l.faultInput)clearCalculationReview(l);
+ acknowledgeCalculationReview(l,'overloadV30');
  changed();$('currentLine').value=l.id;renderCurrentCheck();
 }
 function renderPhases(){
@@ -1051,7 +1064,7 @@ function normalizeFaultImport(value){
   throw Error('Слишком длинное описание источника тока КЗ');
  return {ikKa:value.ikKa,source:value.source||''};
 }
-function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED'}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
+function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){
   const mime=String(x.plan.mime||'').slice(0,80);
   p.plan={name:x.plan.name.slice(0,120),mime};
