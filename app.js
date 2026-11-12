@@ -74,6 +74,8 @@ function catalogAudit(project){
   const fault=epBreakingCapacityCheck(dev,l.faultInput?.ikKa);
   if(fault.status==='FAIL'||fault.status==='INVALID')
    issues.push({circuitId:l.id,code:'CATALOG_IK_'+fault.status,message:fault.message});
+  if(l.faultInput?.ikKa&&!String(l.faultInput.source||'').trim())
+   issues.push({circuitId:l.id,code:'CATALOG_IK_SOURCE_MISSING',message:'Не указан источник ожидаемого тока КЗ'});
  }
  return {issues,engineeringApproved:false};
 }
@@ -81,7 +83,7 @@ function faultLineInfo(line){
  if(!line)return '';
  const res=epBreakingCapacityCheck(catalogDevice(line.catalogSku),line.faultInput?.ikKa);
  const stateLabel={FAIL:'ПРЕВЫШЕНИЕ Icn',INVALID:'ОШИБКА ВВОДА',UNKNOWN:'НЕ ПРОВЕРЕНО',PRELIMINARY_PASS:'ТОЛЬКО ПРЕДВАРИТЕЛЬНО'}[res.status];
- return '<div class="ep-fault-status ep-fault-'+res.status.toLowerCase()+'"><strong>Iкз / Icn: '+safeText(stateLabel)+'</strong><span>'+safeText(res.message)+'</span></div>';
+ return '<div class="ep-fault-status ep-fault-'+res.status.toLowerCase()+'"><strong>Iкз / Icn: '+safeText(stateLabel)+'</strong><span>'+safeText(res.message)+'</span><span>Источник: '+safeText(line.faultInput?.source||'не указан')+' (заявлено пользователем, не проверено)</span></div>';
 }
 function devicePreviewHtml(line){
  if(!line)return '';
@@ -733,6 +735,7 @@ function renderCurrentCheck(){
  for(const k of ['ibA','inA','izA','i2A'])$('input'+k).value=line?.overloadInput?.[k]??'';
  const check=checkOverload(line?.overloadInput);
  $('inputikKa').value=line?.faultInput?.ikKa??'';
+ $('inputikSource').value=line?.faultInput?.source??'';
  const fault=line?epBreakingCapacityCheck(catalogDevice(line.catalogSku),line.faultInput?.ikKa):null;
  result.textContent=line?`Арифметика Ib/In/Iz/I2: ${check.numericStatus}. Проверка Iкз/Icn: ${fault.status}. ${fault.message}. ИСТОЧНИКИ И ПРИМЕНИМОСТЬ НЕ ПОДТВЕРЖДЕНЫ.`:'Выберите цепь. Номинал B/C или установленная мощность не дают надёжных значений Ib, I2 и Iкз.';
 }
@@ -749,7 +752,7 @@ function saveCurrentCheck(){
  if(rawIk&&epParsePositiveCurrentKa(rawIk)===null){notify('Некорректный Iкз (кА)',true);return;}
  checkpoint();
  if(complete==='COMPLETE')l.overloadInput=inputs;else delete l.overloadInput;
- if(rawIk)l.faultInput={ikKa:rawIk};else delete l.faultInput;
+ if(rawIk)l.faultInput={ikKa:rawIk,source:$('inputikSource').value.trim().slice(0,200)};else delete l.faultInput;
  changed();$('currentLine').value=l.id;renderCurrentCheck();
 }
 function renderPhases(){
@@ -943,7 +946,11 @@ function escapeXml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','
 function normalizeFaultImport(value){
  if(!value||typeof value!=='object'||typeof value.ikKa!=='string'||epParsePositiveCurrentKa(value.ikKa)===null)
   throw Error('Некорректное значение ожидаемого тока КЗ в импортируемом проекте');
- return {ikKa:value.ikKa};
+ if(value.source!==undefined&&typeof value.source!=='string')
+  throw Error('Некорректное происхождение тока КЗ в импортируемом проекте');
+ if(typeof value.source==='string'&&value.source.length>200)
+  throw Error('Слишком длинное описание источника тока КЗ');
+ return {ikKa:value.ikKa,source:value.source||''};
 }
 function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&catalogDevice(l.catalogSku)?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){
