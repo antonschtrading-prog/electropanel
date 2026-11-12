@@ -729,10 +729,16 @@ function renderCurrentCheck(){
 function saveCurrentCheck(){
  const l=state.lines.find(x=>x.id===$('currentLine').value);if(!l){notify('Сначала выберите цепь',true);return;}
  const inputs=Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,$('input'+k).value]));
- const result=checkOverload(inputs);if(result.numericStatus==='UNKNOWN'){notify(result.reason,true);return;}
+ const complete=epCurrentInputCompleteness(inputs);
+ if(complete==='PARTIAL'){notify('Для проверки перегрузки заполните все четыре тока или оставьте их пустыми',true);return;}
+ if(complete==='COMPLETE'){
+  const result=checkOverload(inputs);
+  if(result.numericStatus==='UNKNOWN'){notify(result.reason,true);return;}
+ }
  const rawIk=$('inputikKa').value.trim();
  if(rawIk&&epParsePositiveCurrentKa(rawIk)===null){notify('Некорректный Iкз (кА)',true);return;}
- checkpoint();l.overloadInput=inputs;
+ checkpoint();
+ if(complete==='COMPLETE')l.overloadInput=inputs;else delete l.overloadInput;
  if(rawIk)l.faultInput={ikKa:rawIk};else delete l.faultInput;
  changed();$('currentLine').value=l.id;renderCurrentCheck();
 }
