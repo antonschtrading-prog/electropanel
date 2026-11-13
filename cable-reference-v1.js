@@ -21,7 +21,7 @@ function epCableReferenceV1(input){
  if(input.material!=='Cu'||input.insulation!=='PVC'||input.loadedConductors!==2||
   input.ambientAirC!==30||input.ungrouped!==true||input.otherDeratingPresent!==false)
   return finish('UNKNOWN',['REFERENCE_CONTEXT_NOT_ESTABLISHED']);
- const candidates=Object.entries(EP_CABLE_REFERENCE_V1[method]).map(([sectionMm2,izA])=>({
+ const candidates=Object.entries(EP_CABLE_REFERENCE_V1[method]).sort((a,b)=>Number(a[0])-Number(b[0])).map(([sectionMm2,izA])=>({
   sectionMm2:Number(sectionMm2),izA,ibFits:ib<=izA,inFits:inA===null?null:inA<=izA,
   status:ib>izA||inA!==null&&inA>izA?'REJECTED':inA===null?'PARTIAL':'REFERENCE_POTENTIAL'
  }));
