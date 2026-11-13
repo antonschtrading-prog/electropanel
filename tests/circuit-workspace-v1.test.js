@@ -28,3 +28,16 @@ test('workspace counters cover all lines independently of search filter',()=>{
  assert.equal(a.counts.staleReview,1);
  assert.match(html(a),/без артикула: 2/);
 });
+
+test('selected circuit is highlighted and has navigation buttons',()=>{
+ const h=html(work(p(),lookup),'L1');
+ assert.match(h,/class="ep-circuit-active"/);
+ assert.match(h,/data-focus-circuit="L1"/);
+ assert.match(h,/data-open-load-circuit="L1"/);
+});
+test('selection controls escape malicious circuit IDs',()=>{
+ const x=p();x.lines[0].id='L1"><img src=x onerror=alert(1)>';
+ const h=html(work(x,lookup),x.lines[0].id);
+ assert.doesNotMatch(h,/<img/);
+ assert.match(h,/&quot;&gt;&lt;img/);
+});
