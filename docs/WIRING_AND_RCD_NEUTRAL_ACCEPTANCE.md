@@ -9,8 +9,8 @@ Status: experimental read-only DRAFT in PR #10. No main branch change.
 4. Never infer current flow through MCB, RCD, contactor, switch or load. A declared wire path is not physical verification.
 5. Inspect each circuit's expected N bus based on its assigned RCD group, declared N bus and PE bus.
 6. Detect neutral shared between independent RCD groups, a circuit assigned to multiple RCD groups, stale or duplicate group N input, orphan and duplicate routes.
-7. Export circuit wiring CSV, full engineering JSON, full issue CSV and standalone printable HTML with the same N/PE and terminal trace sections.
-8. All findings feed the unified issue register, with Russian actionable explanations.
+7. Both declared conductor trace and neutral segregation are included in the conservative engineering gate; BLOCKED findings cannot be silently downgraded by other sections.\n8. Export circuit wiring CSV, full engineering JSON, full issue CSV and standalone printable HTML with the same N/PE and terminal trace sections.
+9. All findings feed the unified issue register, with Russian actionable explanations.
 
 ## Fail-closed scenarios
 - Missing wiring model or endpoint bindings: UNKNOWN; never a fabricated path.
