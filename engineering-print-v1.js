@@ -1,0 +1,45 @@
+'use strict';
+// Offline, self-contained, print-friendly engineering DRAFT; never asserts normative approval.
+function epEngineeringPrintV1(bundle){
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const rows=(headers,data)=>{
+  const th=headers.map(x=>'<th>'+esc(x)+'</th>').join('');
+  const trs=data.map(row=>'<tr>'+row.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('');
+  return '<table><thead><tr>'+th+'</tr></thead><tbody>'+trs+'</tbody></table>';
+ };
+ const sections=bundle?.sections||{},dossier=sections.dossier?.rows||[],
+  bom=sections.bom?.items||[],protection=sections.protection?.rows||[],
+  board=sections.board?.placements||[],cross=sections.crossView?.issues||[];
+ const status=bundle?.overallStatus||'BLOCKED';
+ const circuitTable=rows(['Цепь','Название','Фаза','Артикул','DIN','Статус проверки'],
+  dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
+   x.placement?'DIN '+x.placement.rail+' · '+x.placement.from+'–'+x.placement.to:'Не размещено',
+   x.calculationReviewRequired?'Требуется перепроверка':'Не подтверждено']));
+ const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Артикул','In, A','Icn, кА','Статус','Причины'],
+  protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.selectedSku,x.selectedArticle?.inA,
+   x.selectedArticle?.icnKa,x.status,(x.reasons||[]).join(', ')]));
+ const bomTable=rows(['Артикул','Производитель','Серия','Количество','Модули','Источник'],
+  bom.map(x=>[x.sku,x.maker,x.series,x.quantity,x.modules,x.source||'Не указан']));
+ const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],
+  board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
+ const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
+ const style='body{font:13px/1.45 Arial,sans-serif;color:#20252b;margin:32px auto;max-width:1100px;padding:0 18px}'+
+ 'h1{font-size:26px}h2{margin-top:28px;border-bottom:2px solid #bbb;padding-bottom:5px}'+
+ 'table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:11px;table-layout:fixed}'+
+ 'th,td{border:1px solid #aeb7c1;padding:5px;vertical-align:top;overflow-wrap:anywhere}'+
+ 'th{background:#edf1f5}.warning{border:2px solid #bd6c27;padding:12px;font-weight:bold}'+
+ '@page{size:A4 landscape;margin:13mm}@media print{body{margin:0;padding:0}h2{break-after:avoid}tr{break-inside:avoid}}';
+ return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+  '<title>'+esc(bundle?.projectTitle||'Проект')+' · DRAFT</title><style>'+style+'</style></head><body>'+
+  '<h1>Инженерный отчёт · ЧЕРНОВИК</h1>'+
+  '<p>Проект: '+esc(bundle?.projectTitle||'Без названия')+' · Состояние: '+esc(status)+'</p>'+
+  '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
+  '<h2>Ведомость цепей</h2>'+circuitTable+
+  '<h2>Предварительный подбор защиты</h2>'+protectionTable+
+  '<h2>DIN-компоновка</h2>'+boardTable+
+  '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Расхождения между представлениями</h2>'+crossTable+
+  '<h2>Статусы инженерных разделов</h2>'+rows(['Раздел','Статус'],Object.entries(bundle?.statuses||{}))+
+  '<p>Источник: локальный проект Electropanel. Отчёт отражает только сохранённые и заявленные данные; требуется независимая инженерная проверка.</p></body></html>';
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epEngineeringPrintV1};
