@@ -30,7 +30,7 @@ test('draft DIN plan preview is loaded and refreshed',()=>{
  assert.ok(scripts.indexOf('draft-board-plan-v1.js')<scripts.indexOf('draft-board-preview-v1.js'));
  assert.ok(scripts.indexOf('draft-board-preview-v1.js')<scripts.indexOf('app.js'));
  assert.match(html,/id="draftBoardPreview"/);
- assert.match(app,/epDraftBoardPreviewV1\(state,catalogDevice\)/);
+ assert.match(app,/epDraftBoardPreviewV1\(state,catalogDevice,selectedLine\)/);
 });
 
 test('circuit dossier and CSV are integrated in live UI',()=>{
