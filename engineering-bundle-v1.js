@@ -23,7 +23,9 @@ function epEngineeringBundleV1(project,lookupSku){
   p=>epCircuitWiringTraceV1(p):null);
  const crossView=section('CROSS_VIEW',typeof epCrossViewAuditV1==='function'?
   ()=>epCrossViewAuditV1(project,protection,board,bom):null);
- const sections={dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const designEvidence=section('DESIGN_EVIDENCE',typeof assessDesignEvidence==='function'?
+  p=>{const a=assessDesignEvidence(p);return {...a,status:a.status==='failed'?'BLOCKED':'UNKNOWN',issues:a.items.filter(x=>x.status!=='verified').map(x=>({code:'DESIGN_EVIDENCE_'+x.status.toUpperCase(),level:x.status==='failed'?'BLOCKED':'UNKNOWN',area:x.area}))};}:null);
+ const sections={designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
