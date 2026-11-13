@@ -20,11 +20,24 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    if(d.startModule>cursor)blocks+='<div class="ep-din-empty" style="grid-column:span '+(d.startModule-cursor)+'" aria-label="Свободные модули '+(d.startModule-cursor)+'"></div>';
    const active=d.deviceId===selectedId||branchMap.get(d.deviceId)===selectedId;
    const label=safe(d.deviceId)+(d.article?' · '+safe(d.article):' · без артикула');
+   let catalog=null;
+   try{catalog=d.article&&typeof lookupSku==='function'?lookupSku(d.article):null;}catch(_){}
+   const maker=catalog?.maker||null,series=catalog?.series||null;
+   const rating=catalog&&Number.isFinite(catalog.inA)?
+    (safe(catalog.curve||'')+safe(catalog.inA)+' A'):'';
+   const breaking=catalog&&Number.isFinite(catalog.icnKa)?safe(catalog.icnKa)+' kA':'';
+   const facade=catalog?
+    '<span class="ep-din-brand">'+safe(maker||'Изготовитель не указан')+'</span>'+
+    '<span class="ep-din-series">'+safe(series||'Серия не указана')+'</span>'+
+    '<span class="ep-din-rating">'+rating+'</span>'+
+    '<span class="ep-din-breaking">'+breaking+'</span>':
+    '<span class="ep-din-brand">Нет каталожной записи</span>';
    const circuitId=branchMap.get(d.deviceId)||((project?.lines||[]).some(l=>l?.id===d.deviceId)?d.deviceId:null);
    blocks+='<button type="button" class="ep-din-block'+(active?' ep-circuit-active':'')+(d.article?'':' ep-din-unverified')+
     '" style="grid-column:span '+d.modules+'" title="'+label+'" aria-label="'+label+'"'+
     (circuitId?' data-din-focus="'+safe(circuitId)+'"':' disabled')+'>'+
     '<span class="ep-din-block-id">'+safe(d.deviceId)+'</span>'+
+    facade+
     '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+
     '<span class="ep-din-block-width">'+d.modules+'M</span></button>';
    cursor=d.startModule+d.modules;
