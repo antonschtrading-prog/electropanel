@@ -39,7 +39,7 @@ function epNormalizeEndpointBindingsV1(input){
   return {symbolicRef:entry.symbolicRef,terminalId:entry.terminalId};
  });
 }
-function epEndpointBridgeAuditV1(project){
+function epEndpointBridgeAuditV1(project, options={}){
  const wiring=project?.wiringModelV18;
  const entries=project?.endpointBindingsV1||[];
  const report=(status,issues,expected,matched)=>({schema_version:'1.0',
@@ -94,8 +94,21 @@ function epEndpointBridgeAuditV1(project){
   if(!a||!b)continue;
   if(a===b){add('WIRE_SELF_ENDPOINT','BLOCKED',{link:connection.id});continue;}
   if(!terminalMap.has(a)||!terminalMap.has(b))continue;
-  if(!wires.has(JSON.stringify([a,b].sort())))
-   add('DIRECT_WIRE_UNDECLARED','BLOCKED',{link:connection.id,from:a,to:b});
+  if(!wires.has(JSON.stringify([a,b].sort()))){
+   const roleA=epSymbolicEndpointRoleV1(connection.from);
+   const roleB=epSymbolicEndpointRoleV1(connection.to);
+   if(options.allowDeclaredMultiSegment===true&&
+      typeof epDeclaredWirePathV2==='function'&&roleA&&roleA===roleB){
+    const pathReport=epDeclaredWirePathV2(wiring,a,b,roleA);
+    if(pathReport.status==='DECLARED_PATH'){
+     add('MULTI_SEGMENT_DECLARED_ONLY','UNKNOWN',
+      {link:connection.id,from:a,to:b,path:pathReport.path});
+    }else if(pathReport.status==='UNKNOWN'){
+     add('WIRE_PATH_UNVERIFIED','UNKNOWN',
+      {link:connection.id,from:a,to:b,reason:pathReport.code});
+    }else add('DIRECT_WIRE_UNDECLARED','BLOCKED',{link:connection.id,from:a,to:b});
+   }else add('DIRECT_WIRE_UNDECLARED','BLOCKED',{link:connection.id,from:a,to:b});
+  }
  }
  const byTerminal=new Map();
  for(const b of bindings){
