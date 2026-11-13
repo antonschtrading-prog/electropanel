@@ -21,6 +21,18 @@ function epNeutralWireIsolationV1(project){
  if(typeof epDeclaredWirePathV2!=='function')
   return result('BLOCKED',[{code:'N_ISOLATION_TRACER_UNAVAILABLE',level:'BLOCKED'}],[]);
  const terminalMap=new Map(wiring.terminals.map(x=>[x?.id,x]));
+ // Build a conservative union-find of explicitly closed N wires once, rather than
+ // rebuilding the entire graph for every pair of downstream N buses.
+ const parents=new Map();
+ for(const t of wiring.terminals)if(t?.conductor==='N'&&typeof t.id==='string')parents.set(t.id,t.id);
+ const root=id=>{let p=id;while(parents.get(p)!==p)p=parents.get(p);
+  while(id!==p){const next=parents.get(id);parents.set(id,p);id=next;}return p;};
+ for(const wire of wiring.wires){
+  if(!wire||(wire.state!==undefined&&wire.state!=='closed')||
+   !parents.has(wire.from)||!parents.has(wire.to)||wire.from===wire.to)continue;
+  const a=root(wire.from),b=root(wire.to);if(a!==b)parents.set(a,b);
+ }
+
  for(let i=0;i<busEntries.length;i++)for(let j=i+1;j<busEntries.length;j++){
   const a=busEntries[i],b=busEntries[j],from=byRef.get(a.ref),to=byRef.get(b.ref);
   if(!from||!to){pairs.push({fromBus:a.name,toBus:b.name,status:'UNKNOWN',path:[]});
@@ -29,8 +41,16 @@ function epNeutralWireIsolationV1(project){
    pairs.push({fromBus:a.name,toBus:b.name,status:'BLOCKED',path:[]});
    issues.push({code:'N_ISOLATION_TERMINAL_MISSING',level:'BLOCKED',fromBus:a.name,toBus:b.name});continue;
   }
+  // Missing paths stay UNKNOWN, never a claim of proven isolation.
+  // Validate wrong-role terminals through the existing strict tracer.
+  if(from!==to&&parents.has(from)&&parents.has(to)&&root(from)!==root(to)){
+   pairs.push({fromBus:a.name,toBus:b.name,status:'UNKNOWN',path:[]});
+   issues.push({code:'N_ISOLATION_NO_DECLARED_CROSS_BUS_PATH',level:'UNKNOWN',
+    fromBus:a.name,toBus:b.name});continue;
+  }
   const path=epDeclaredWirePathV2(wiring,from,to,'N');
-  if(path.status==='DECLARED_PATH'||from===to){
+  if(path.status==='DECLARED_PATH'||from===to||
+   (parents.has(from)&&parents.has(to)&&root(from)===root(to))){
    pairs.push({fromBus:a.name,toBus:b.name,status:'BLOCKED',path:path.path||[]});
    issues.push({code:'N_ISOLATION_CROSS_BUS_DECLARED_PATH',level:'BLOCKED',
     fromBus:a.name,toBus:b.name,path:path.path||[]});
