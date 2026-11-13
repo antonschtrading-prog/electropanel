@@ -22,6 +22,14 @@ function epTTRound34(decimal) {
  if(first.toString().length>34){first/=10n;exponent++;}
  return {coefficient:first,exponent};
 }
+function epTTDisplayDecimal(value){
+ const digits=value.coefficient.toString(),exp=value.exponent;
+ if(exp>=0&&exp<=50)return digits+'0'.repeat(exp);
+ const cut=digits.length+exp;
+ if(exp<0&&cut>0)return digits.slice(0,cut)+'.'+digits.slice(cut);
+ if(exp<0&&cut>=-5)return '0.'+'0'.repeat(-cut)+digits;
+ return epV30Format(value);
+}
 function epTTScreenV45(data) {
  const answer=(status,issues,extra={})=>({
   status,issues,ready_for_design:false,ready_for_installation:false,...extra
@@ -61,10 +69,10 @@ function epTTScreenV45(data) {
  if(!touchOK)issues.push('RA_TIMES_IDN_EXCEEDS_UL');
  if(!timeOK)issues.push('RCD_DISCONNECTION_TIME_EXCEEDED');
  return answer(touchOK&&timeOK?'PASS':'FAIL',issues,{
-  calculated_ra_times_idn_v:epV30Format(touch),
-  permitted_touch_voltage_v:epV30Format(ul),
-  measured_rcd_disconnection_time_s:epV30Format(measured),
-  required_disconnection_time_s:epV30Format(required),
+  calculated_ra_times_idn_v:epTTDisplayDecimal(touch),
+  permitted_touch_voltage_v:epTTDisplayDecimal(ul),
+  measured_rcd_disconnection_time_s:epTTDisplayDecimal(measured),
+  required_disconnection_time_s:epTTDisplayDecimal(required),
   note:'Only RA × IΔn ≤ UL is screened; no automatic disconnection proof, actual test or normative certificate',
   evidence_state:'USER_ASSERTED_NOT_INDEPENDENTLY_AUTHENTICATED'
  });
