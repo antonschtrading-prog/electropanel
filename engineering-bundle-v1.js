@@ -8,7 +8,11 @@ function epEngineeringBundleV1(project,lookupSku){
  const bom=section('BOM',typeof epDraftBomV1==='function'?epDraftBomV1:null);
  const board=section('BOARD',typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1:null);
  const engineering=section('GATE',typeof epEngineeringGateV1==='function'?epEngineeringGateV1:null);
- const sections={dossier,bom,board,engineering};
+ const protection=section('PROTECTION',typeof epProtectionWorkbenchV1==='function'?
+  (p,lookup)=>epProtectionWorkbenchV1(p,lookup,
+   typeof EP_CATALOG==='object'&&EP_CATALOG?
+   Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[],null):null);
+ const sections={dossier,bom,board,protection,engineering};
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
  return {schema:'electropanel.engineering.bundle.draft.1',projectTitle:String(project?.title??''),
   statuses,sections,overallStatus:Object.values(statuses).includes('BLOCKED')?'BLOCKED':'UNKNOWN',
