@@ -68,3 +68,16 @@ test('does not mutate project',()=>{
 test('empty project produces helpful placeholder',()=>{
  assert.match(html(work({lines:[]},lookup,catalog)),/Добавьте отходящую цепь/);
 });
+
+test('CSV exports every circuit regardless of selected focus',()=>{
+ const {epProtectionWorkbenchCsvV1:csv}=require('../protection-workbench-v1.js');
+ const output=csv(work(project(),lookup,catalog,'L1'));
+ assert.match(output,/L1/);assert.match(output,/L2/);
+ assert.match(output,/Кухня/);
+});
+test('CSV formula-like user names are escaped',()=>{
+ const {epProtectionWorkbenchCsvV1:csv}=require('../protection-workbench-v1.js');
+ const x=project();x.lines[0].name=' =HYPERLINK(1)';
+ const output=csv(work(x,lookup,catalog,'L1'));
+ assert.match(output,/"' =HYPERLINK\(1\)"/);
+});
