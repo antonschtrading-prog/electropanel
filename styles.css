@@ -236,3 +236,17 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-din-face-iek{border-top:4px solid #f2b521}.ep-din-face-iek .ep-din-device-toggle{background:linear-gradient(90deg,#bdc1c6,#fff,#8d9298)}
 .ep-din-face-generic{border-top:4px solid #9aa6b3}
 .ep-din-block.ep-circuit-active .ep-din-device-face{outline:2px solid #2b82c9;outline-offset:2px}
+
+.ep-design-review{margin:14px 0;padding:14px;border:1px solid var(--border,#c9d3dd);border-radius:12px}
+.ep-design-review-head{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.ep-design-review-scroll{overflow-x:auto;max-width:100%;margin-top:12px}
+.ep-design-review table{border-collapse:collapse;font-size:12px;min-width:1120px;width:100%}
+.ep-design-review th,.ep-design-review td{border-bottom:1px solid #d5dce4;padding:7px;text-align:left;white-space:nowrap}
+.ep-design-review thead{background:rgba(125,140,155,.12)}
+.ep-drop-editor{margin-top:14px;padding:10px;border:1px solid #c5ced7;border-radius:8px}
+.ep-drop-editor summary{cursor:pointer;font-weight:700}
+.ep-drop-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
+.ep-drop-fields label{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.ep-drop-fields input{width:100%;min-width:0;padding:8px;border:1px solid #a6b4c3;border-radius:6px}
+.ep-drop-fields .ep-drop-check{flex-direction:row;align-items:center}
+.ep-drop-fields .ep-drop-check input{width:auto}
