@@ -32,3 +32,12 @@ test('draft DIN plan preview is loaded and refreshed',()=>{
  assert.match(html,/id="draftBoardPreview"/);
  assert.match(app,/epDraftBoardPreviewV1\(state,catalogDevice\)/);
 });
+
+test('circuit dossier and CSV are integrated in live UI',()=>{
+ assert.ok(scripts.indexOf('draft-board-plan-v1.js')<scripts.indexOf('circuit-dossier-v1.js'));
+ assert.ok(scripts.indexOf('circuit-dossier-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="circuitDossier"/);
+ assert.match(html,/id="exportCircuitDossierCsvBtn"/);
+ assert.match(app,/epCircuitDossierPanelV1\(state,catalogDevice\)/);
+ assert.match(app,/_circuit_dossier_DRAFT\.csv/);
+});
