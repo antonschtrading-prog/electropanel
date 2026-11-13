@@ -39,6 +39,13 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epDinPlacementAuditV1==='function')
   inspect('din_placement',()=>epDinPlacementAuditV1(project,lookupSku));
  else add('din_placement','DIN_PLACEMENT_AUDIT_UNAVAILABLE','UNKNOWN');
+ if(typeof epCableReferenceForCircuitV1==='function')
+  inspect('cable_reference',()=>({status:'UNKNOWN',
+   issues:(Array.isArray(project?.lines)?project.lines:[]).flatMap(line=>{
+    const report=epCableReferenceForCircuitV1(project,line,lookupSku);
+    return (report.issues||[]).map(code=>({code:'CABLE_'+code,level:report.status==='BLOCKED'?'BLOCKED':'UNKNOWN'}));
+   })}));
+ else add('cable_reference','CABLE_REFERENCE_UNAVAILABLE','UNKNOWN');
  if(typeof epProjectCalculationCoverageV1==='function')
   inspect('calculation_coverage',()=>epProjectCalculationCoverageV1(project,lookupSku));
  else add('calculation_coverage','CALCULATION_COVERAGE_UNAVAILABLE','UNKNOWN');
