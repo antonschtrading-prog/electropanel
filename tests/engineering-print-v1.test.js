@@ -31,3 +31,13 @@ test('missing bundle still yields explicitly blocked report',()=>{
 test('print does not mutate report data',()=>{
  const b=bundle(),before=JSON.stringify(b);print(b);assert.equal(JSON.stringify(b),before);
 });
+
+test('print report includes the complete engineering issue register',()=>{
+ const b=bundle();b.sections.issueRegister={entries:[
+  {section:'protection',level:'BLOCKED',code:'IN_GT_IZ',circuitId:'L1'},
+  {section:'board',level:'UNKNOWN',code:'THERMAL_NOT_VERIFIED',circuitId:null}]};
+ const h=print(b);
+ assert.match(h,/Все инженерные замечания/);
+ assert.match(h,/IN_GT_IZ/);
+ assert.match(h,/THERMAL_NOT_VERIFIED/);
+});
