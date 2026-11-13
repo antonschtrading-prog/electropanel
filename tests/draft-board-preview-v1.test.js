@@ -10,3 +10,10 @@ test('preview escapes untrusted IDs and article labels',()=>{const x=p();x.lines
 test('invalid dimensions display blocked warning',()=>{const x=p();x.railCount=0;assert.match(epDraftBoardPreviewV1(x),/заблокировано/);});
 test('over-capacity is displayed as blocking issue',()=>{const x=p();x.railCount=1;assert.match(epDraftBoardPreviewV1(x),/RAIL_CAPACITY_EXCEEDED/);});
 test('branch device stable ID is shown, not circuit ID',()=>{const x=p();x.branchDevices=[{id:'BR_L1',circuitId:'L1',modules:2}];assert.match(epDraftBoardPreviewV1(x),/BR_L1/);});
+
+test('selected circuit is highlighted in preliminary DIN plan',()=>{
+ const x=p();x.branchDevices=[{id:'BR_L1',circuitId:'L1',modules:2},{id:'BR_L2',circuitId:'L2',modules:3}];
+ const h=epDraftBoardPreviewV1(x,null,'L1');
+ assert.match(h,/class="ep-circuit-active"><strong>BR_L1/);
+ assert.doesNotMatch(h,/class="ep-circuit-active"><strong>BR_L2/);
+});
