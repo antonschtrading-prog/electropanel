@@ -250,3 +250,11 @@ test('selected circuit conductor SVG is wired to terminal trace and export',()=>
  assert.match(app,/epConductorTraceSvgV1\(epCircuitWiringTraceV1\(state\),selectedLine\)/);
  assert.match(app,/_conductors_DRAFT\.svg/);
 });
+
+test('new engineering panels and SVG export controls have unique static IDs',()=>{
+ const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
+ const expected=['singleLineDraftPanel','conductorTraceSvgPanel','circuitWiringTracePanel',
+  'neutralSegregationPanel','exportSingleLineSvgBtn','exportCircuitTraceSvgBtn'];
+ for(const id of expected)assert.equal(ids.filter(x=>x===id).length,1,id);
+ assert.equal(ids.filter(x=>x==='exportConductorSvgBtn').length,0);
+});
