@@ -19,7 +19,7 @@ test('app refreshes diagnostics in common render',()=>{
 });
 test('app exports diagnostics as DRAFT JSON',()=>{
  assert.match(app,/_engineering_diagnostics_DRAFT\.json/);
- assert.match(app,/if\(e\.target\.id==='exportEngineeringGateBtn'\)/);
+ assert.match(app,/\$\('exportEngineeringGateBtn'\)\.addEventListener\('click',exportEngineeringGateV1\)/);
 });
 test('diagnostic module never grants engineering approval',()=>{
  const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
@@ -40,4 +40,9 @@ test('circuit dossier and CSV are integrated in live UI',()=>{
  assert.match(html,/id="exportCircuitDossierCsvBtn"/);
  assert.match(app,/epCircuitDossierPanelV1\(state,catalogDevice\)/);
  assert.match(app,/_circuit_dossier_DRAFT\.csv/);
+});
+
+test('export handlers bind directly to visible panel buttons',()=>{
+ assert.match(app,/\$\('exportCircuitDossierCsvBtn'\)\.addEventListener\('click'/);
+ assert.doesNotMatch(app,/if\(e\.target\.id==='exportCircuitDossierCsvBtn'\)/);
 });
