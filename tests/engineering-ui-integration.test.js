@@ -6,7 +6,7 @@ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const scripts=[...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(x=>x[1]);
 test('all referenced local scripts exist',()=>{for(const s of scripts)assert.ok(fs.existsSync(path.join(root,s)),s);});
 test('diagnostic dependencies load before app',()=>{
- const names=['terminal-path-v2.js','endpoint-bridge-v1.js','topology-batch-audit-v1.js',
+ const names=['endpoint-bridge-v1.js','terminal-path-v2.js','topology-batch-audit-v1.js',
  'engineering-gate-v1.js','engineering-diagnostics-ui-v1.js','app.js'];
  for(let i=1;i<names.length;i++)assert.ok(scripts.indexOf(names[i-1])<scripts.indexOf(names[i]),names[i]);
 });
