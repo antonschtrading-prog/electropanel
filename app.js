@@ -844,6 +844,9 @@ function renderEngineeringDiagnosticsV1(){
   return;
  }
  holder.innerHTML=epEngineeringDiagnosticsPanelV1(state,catalogDevice);
+ const preview=$('draftBoardPreview');
+ if(preview)preview.innerHTML=typeof epDraftBoardPreviewV1==='function' ?
+  epDraftBoardPreviewV1(state,catalogDevice):'Предварительная компоновка недоступна.';
 }
 function exportEngineeringGateV1(){
  const report=typeof epEngineeringGateV1==='function'
