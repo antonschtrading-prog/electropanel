@@ -32,7 +32,9 @@ function epEngineeringBundleV1(project,lookupSku){
   })),issues:[],engineeringApproved:false}):null);
  const designReview=section('DESIGN_REVIEW',typeof epCircuitDesignReviewV1==='function'?
   (p,lookup)=>epCircuitDesignReviewV1(p,lookup):null);
- const sections={designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const designWorkQueue=section('DESIGN_WORK_QUEUE',typeof epDesignWorkQueueV1==='function'?
+  (p,lookup)=>({...epDesignWorkQueueV1(p,lookup),issues:[]}):null);
+ const sections={designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
