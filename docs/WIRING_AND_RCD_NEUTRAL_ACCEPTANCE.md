@@ -34,3 +34,8 @@ A path composed of several wires can be traced. Device internal links are delibe
 - Remove a segment; verify BLOCKED and that no continuity is inferred through an MCB.
 - Confirm circuit selection remains synchronized between DIN, N/PE matrix, wiring explorer and protection workbench.
 - Test exports in browser, mobile and spreadsheet; verify formula injection mitigation and HTML escaping.
+
+## Downstream N-bus cross-connection audit
+A separate read-only audit compares the explicit terminal endpoints for `BUS:N_MAIN/N` and every declared `BUS:N_<RCD-ID>/N`. It checks whether a continuous declared N-wire path exists between two distinct bus endpoints. A direct or multi-segment path between independently assigned downstream N buses is BLOCKED. A reused terminal for two buses is also BLOCKED. An absent binding or no declared cross-bus path remains UNKNOWN: absence of a drawn wire is **not** proof of physical separation. Internal RCD contacts are never assumed closed. The resulting bus-pair table, issues and ordered terminal paths are included in the UI, engineering bundle, issue register, engineering gate and printable HTML.
+
+Manual regression: map N_MAIN, N_RCD1 and N_RCD2 to three distinct terminals; add a two-segment declared wire between RCD1 and RCD2; verify BLOCKED. Remove the wire; verify UNKNOWN, not PASS. Map both buses to the same terminal; verify BLOCKED. Remove the model; verify UNKNOWN.
