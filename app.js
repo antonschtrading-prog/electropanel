@@ -793,6 +793,7 @@ function renderCurrentCheck(){
  $('inputikKa').value=line?.faultInput?.ikKa??'';
  $('inputikSource').value=line?.faultInput?.source??'';
  $('v30Input').value=line?.overloadV30?JSON.stringify(line.overloadV30,null,2):'';
+ $('lv43Input').value=line?.lv43Input?JSON.stringify(line.lv43Input,null,2):'';
  const adv=line?.overloadV30?epOverloadGuardV30(line.overloadV30):null;
  $('v30Result').textContent=line?(adv?'Арифметика v3.0: '+adv.numeric_status+'. Источники: '+adv.evidence_status+', отсутствует '+adv.missing_evidence.length+' из 10. Инженерная проверка не завершена.':'Дополнительные коэффициенты и источники пока не заданы.'):'Выберите линию.';
  const fault=line?epBreakingCapacityCheck(catalogDevice(line.catalogSku),line.faultInput?.ikKa):null;
