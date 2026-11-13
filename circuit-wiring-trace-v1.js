@@ -39,7 +39,8 @@ function epCircuitWiringTraceV1(project){
  const byLine=new Map();
  for(const link of links){
   const a=owners(link.from),c=owners(link.to);
-  const ids=[...new Set([a,c].filter(x=>x!==null&&x!==undefined))];
+  const explicit=typeof link.circuitId==='string'?link.circuitId:null;
+  const ids=[...new Set([a,c,explicit].filter(x=>x!==null&&x!==undefined))];
   if(ids.length>1){add('CROSS_CIRCUIT_SYMBOLIC_LINK','BLOCKED',ids[0],link.id);continue;}
   if(!ids.length)continue;
   const id=ids[0];
