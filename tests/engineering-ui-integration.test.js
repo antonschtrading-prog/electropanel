@@ -258,3 +258,14 @@ test('new engineering panels and SVG export controls have unique static IDs',()=
  for(const id of expected)assert.equal(ids.filter(x=>x===id).length,1,id);
  assert.equal(ids.filter(x=>x==='exportConductorSvgBtn').length,0);
 });
+
+test('downstream N bus isolation is visible in board and engineering bundle',()=>{
+ assert.ok(scripts.indexOf('neutral-wire-isolation-v1.js')>scripts.indexOf('terminal-path-v2.js'));
+ assert.ok(scripts.indexOf('neutral-wire-isolation-ui-v1.js')>scripts.indexOf('neutral-wire-isolation-v1.js'));
+ assert.ok(scripts.indexOf('neutral-wire-isolation-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
+ assert.match(html,/id="neutralWireIsolationPanel"/);
+ assert.match(app,/epNeutralWireIsolationHtmlV1\(epNeutralWireIsolationV1\(state\)\)/);
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
+ assert.match(bundle,/neutralWireIsolation/);assert.match(gate,/neutral_wire_isolation/);
+});
