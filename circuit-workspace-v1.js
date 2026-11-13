@@ -23,8 +23,12 @@ function epCircuitWorkspaceV1(project,lookupSku,query='',mode='all'){
   if(filter==='review')return row.calculationReviewRequired;
   return true;
  });
+ const counts={blocked:report.rows.filter(x=>report.issues.some(i=>i.lineId===x.circuitId&&i.level==='BLOCKED')).length,
+  missingArticle:report.rows.filter(x=>!x.sku).length,
+  unplaced:report.rows.filter(x=>!x.placement).length,
+  staleReview:report.rows.filter(x=>x.calculationReviewRequired).length};
  return {status:report.status,rows,visible:rows.length,total:report.rows.length,
-  issueCount:report.issues.length,filter,query:normalized,
+  issueCount:report.issues.length,counts,filter,query:normalized,
   engineeringApproved:false,ready_for_installation:false};
 }
 function epCircuitWorkspaceHtmlV1(result){
@@ -37,7 +41,9 @@ function epCircuitWorkspaceHtmlV1(result){
    '</td><td>'+safe(location)+'</td><td>'+safe(issues||'Замечаний по цепи нет')+'</td></tr>';
  }).join('');
  return '<p>Показано '+result.visible+' из '+result.total+' цепей · замечаний по проекту: '+
- result.issueCount+'. Только заявленные данные, не инженерный допуск.</p>'+
+ result.issueCount+'. Блокирующих цепей: '+result.counts.blocked+
+ '; без артикула: '+result.counts.missingArticle+'; не размещено: '+result.counts.unplaced+
+ '; перепроверка: '+result.counts.staleReview+'. Только заявленные данные, не инженерный допуск.</p>'+
  '<div style="overflow-x:auto"><table><thead><tr><th>Цепь</th><th>Назначение</th><th>Фаза</th>'+
  '<th>Производитель</th><th>Артикул</th><th>DIN</th><th>Замечания</th></tr></thead><tbody>'+
  (rows||'<tr><td colspan="7">Нет цепей по выбранному фильтру</td></tr>')+
