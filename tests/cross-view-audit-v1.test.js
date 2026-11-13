@@ -36,3 +36,30 @@ test('upstream blocker is not silently downgraded',()=>{
  assert(run(project,{...protection,status:'BLOCKED'}).issues.some(i=>i.code==='PROTECTION_HAS_BLOCKING_ISSUES'));
  assert(run(project,protection,{...board,status:'BLOCKED'}).issues.some(i=>i.code==='BOARD_HAS_BLOCKING_ISSUES'));
 });
+
+test('shared upstream device with matching article and geometry is consistent',()=>{
+ const p={...project,sharedDevices:[{id:'RCD',catalogSku:'RCD-2P',modules:2}]};
+ const b={...board,placements:[...board.placements,{deviceId:'RCD',kind:'shared',article:'RCD-2P',railIndex:0,startModule:2,modules:2}]};
+ const m={items:[...bom.items,{key:'RCD-2P',quantity:1,owners:['RCD']}]};
+ assert.equal(run(p,protection,b,m).issues.length,0);
+});
+test('missing shared upstream apparatus is blocked',()=>{
+ const p={...project,sharedDevices:[{id:'RCD',catalogSku:'RCD-2P',modules:2}]};
+ assert(run(p,protection,board,bom).issues.some(i=>i.code==='PLACEMENT_SHARED_MISSING'));
+});
+test('shared upstream article mismatch is blocked',()=>{
+ const p={...project,sharedDevices:[{id:'RCD',catalogSku:'RCD-2P',modules:2}]};
+ const b={...board,placements:[...board.placements,{deviceId:'RCD',kind:'shared',article:'OTHER',railIndex:0,startModule:2,modules:2}]};
+ const m={items:[...bom.items,{key:'RCD-2P',quantity:1,owners:['RCD']}]};
+ assert(run(p,protection,b,m).issues.some(i=>i.code==='PLACEMENT_SHARED_SKU_STALE'));
+});
+test('shared upstream width mismatch is blocked',()=>{
+ const p={...project,sharedDevices:[{id:'RCD',catalogSku:'RCD-2P',modules:2}]};
+ const b={...board,placements:[...board.placements,{deviceId:'RCD',kind:'shared',article:'RCD-2P',railIndex:0,startModule:2,modules:3}]};
+ const m={items:[...bom.items,{key:'RCD-2P',quantity:1,owners:['RCD']}]};
+ assert(run(p,protection,b,m).issues.some(i=>i.code==='PLACEMENT_SHARED_WIDTH_MISMATCH'));
+});
+test('unknown placement kind is rejected',()=>{
+ const b={...board,placements:[...board.placements,{deviceId:'X',kind:'magic',article:null,railIndex:0,startModule:3,modules:1}]};
+ assert(run(project,protection,b).issues.some(i=>i.code==='PLACEMENT_KIND_INVALID'));
+});
