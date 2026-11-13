@@ -42,3 +42,9 @@ test('CSV defangs spreadsheet formulas in user supplied names',()=>{
  const csv=epCircuitDossierCsvV1(epCircuitDossierV1(p,lookup));
  assert.match(csv,/"'=HYPERLINK\(""https:\/\/example.org""\)"/);
 });
+
+test('CSV defangs leading whitespace followed by spreadsheet formula',()=>{
+ const p=project();p.lines[0].name='  +SUM(1,2)';
+ const csv=epCircuitDossierCsvV1(epCircuitDossierV1(p,lookup));
+ assert.ok(csv.includes('"\'  +SUM(1,2)"'));
+});
