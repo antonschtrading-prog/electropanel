@@ -100,3 +100,14 @@
 .ep-legacy-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .ep-legacy-actions button{border:1px solid #c8d4dd;background:#f5f9fb;border-radius:8px;padding:9px 12px;font-weight:650}
 .ep-legacy-actions button:first-child{background:#172b3a;color:#fff}
+
+/* v4.14 declared topology linkage of real apparatus entities.
+   The blue dot means ONLY that a manual model link exists. */
+.din-apparatus[data-topology-link="declared"]{outline:2px solid #2d6fa4;outline-offset:-2px}
+.din-apparatus[data-topology-link="stale"]{outline:3px solid #bd4d21;outline-offset:-3px}
+.din-apparatus[data-topology-link="declared"]::after,
+.din-apparatus[data-topology-link="stale"]::after{
+ content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;
+ border-radius:50%;background:#2d6fa4;box-shadow:0 0 0 2px #fff9;
+}
+.din-apparatus[data-topology-link="stale"]::after{background:#bd4d21}
