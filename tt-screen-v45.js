@@ -10,6 +10,18 @@ function epTTPositive(v) {
  if(magnitude>8||magnitude< -8)return null;
  return d;
 }
+// Python decimal.localcontext(prec=34) uses ROUND_HALF_EVEN at each operation.
+function epTTRound34(decimal) {
+ const digits=decimal.coefficient.toString();
+ if(digits.length<=34)return decimal;
+ const discarded=digits.slice(34);
+ let first=BigInt(digits.slice(0,34));
+ if(discarded[0]>'5'||discarded[0]==='5'&&
+   (/[1-9]/.test(discarded.slice(1))||(first%2n===1n)))first++;
+ let exponent=decimal.exponent+digits.length-34;
+ if(first.toString().length>34){first/=10n;exponent++;}
+ return {coefficient:first,exponent};
+}
 function epTTScreenV45(data) {
  const answer=(status,issues,extra={})=>({
   status,issues,ready_for_design:false,ready_for_installation:false,...extra
@@ -40,7 +52,7 @@ function epTTScreenV45(data) {
   return answer('UNKNOWN',['TT_DISCONNECTION_TIME_VALUE_MISSING']);
  if(data.rcd_test_condition_verified!==true)
   return answer('UNKNOWN',['RCD_TEST_CONDITION_NOT_VERIFIED']);
- const touch=epV30Multiply(epV30Multiply(ra,idn),epV30Decimal('0.001'));
+ const touch=epTTRound34(epV30Multiply(epTTRound34(epV30Multiply(ra,idn)),epV30Decimal('0.001')));
  if(touch.coefficient.toString().length+touch.exponent-1>8)
   return answer('UNKNOWN',['TT_ARITHMETIC_OVERFLOW']);
  const touchOK=epV30Compare(touch,ul)<=0;
