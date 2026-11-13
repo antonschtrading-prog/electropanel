@@ -67,6 +67,8 @@ function epDraftBomHtmlV1(report){
  '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
  '<th>Шт.</th><th>Мод.</th><th>Цепи</th><th>Источник</th></tr></thead><tbody>'+
  (rows||'<tr><td colspan="7">Нет подтверждённых записей каталога</td></tr>')+
- '</tbody></table></div></section>';
+ '</tbody></table></div><details><summary>Замечания спецификации ('+report.issues.length+')</summary><ul>'+
+ report.issues.slice(0,100).map(i=>'<li>'+esc(i.level)+' · '+esc(i.code)+' · '+esc(i.owner||i.deviceId||i.sku||'проект')+'</li>').join('')+
+ '</ul></details></section>';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epDraftBomV1,epDraftBomCsvV1,epDraftBomHtmlV1};
