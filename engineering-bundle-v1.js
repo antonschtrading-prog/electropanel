@@ -13,7 +13,9 @@ function epEngineeringBundleV1(project,lookupSku){
    typeof EP_CATALOG==='object'&&EP_CATALOG?
    Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[],null):null);
  const layoutAlternatives=section('LAYOUT_ALTERNATIVES',typeof epDraftLayoutAlternativesV1==='function'?epDraftLayoutAlternativesV1:null);
- const sections={dossier,bom,board,layoutAlternatives,protection,engineering};
+ const crossView=section('CROSS_VIEW',typeof epCrossViewAuditV1==='function'?
+  ()=>epCrossViewAuditV1(project,protection,board,bom):null);
+ const sections={dossier,bom,board,layoutAlternatives,protection,crossView,engineering};
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
  return {schema:'electropanel.engineering.bundle.draft.1',projectTitle:String(project?.title??''),
   statuses,sections,overallStatus:Object.values(statuses).includes('BLOCKED')?'BLOCKED':'UNKNOWN',
