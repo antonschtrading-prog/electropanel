@@ -846,7 +846,7 @@ function renderEngineeringDiagnosticsV1(){
  holder.innerHTML=epEngineeringDiagnosticsPanelV1(state,catalogDevice);
  const preview=$('draftBoardPreview');
  if(preview)preview.innerHTML=typeof epDraftBoardPreviewV1==='function' ?
-  epDraftBoardPreviewV1(state,catalogDevice):'Предварительная компоновка недоступна.';
+  epDraftBoardPreviewV1(state,catalogDevice,selectedLine):'Предварительная компоновка недоступна.';
  const dossier=$('circuitDossier');
  if(dossier)renderCircuitWorkspaceV1();
 }
@@ -1765,7 +1765,7 @@ $('circuitDossier').addEventListener('click',e=>{
  if(focus.dataset.openLoadCircuit){switchView('loads');
   const row=[...$('loadRows').querySelectorAll('tr')].find(x=>x.dataset.id===id);
   if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.querySelector('[data-key="name"]')?.focus();}
- }else{renderBoard();renderCircuitGraph();renderCircuitWorkspaceV1();}
+ }else{renderBoard();renderCircuitGraph();renderCircuitWorkspaceV1();renderEngineeringDiagnosticsV1();}
 });
 $('circuitWorkspaceQuery').addEventListener('input',renderCircuitWorkspaceV1);
 $('circuitWorkspaceMode').addEventListener('change',renderCircuitWorkspaceV1);
