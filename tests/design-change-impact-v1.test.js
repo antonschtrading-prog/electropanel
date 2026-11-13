@@ -49,3 +49,20 @@ test('unchanged project preserves evidence object',()=>{
  const p=base();p.evidence={load:{status:'verified',source:'a',method:'b'}};
  assert.equal(invalidate(p,a(p,structuredClone(p))),p);
 });
+
+test('earthing system change invalidates network and downstream protection',()=>{
+ const p=base(),q=structuredClone(p);p.earthing='TN-S';q.earthing='TT';
+ assert.deepEqual(a(p,q).affected,['network','cable','device','topology']);
+});
+test('load consumer edit triggers load-to-enclosure impact',()=>{
+ const p=base(),q=structuredClone(p);q.loads=[{circuitId:'L1',power:4}];
+ assert.deepEqual(a(p,q).affected,['load','cable','device','topology','enclosure']);
+});
+test('declared conductor route change invalidates cable-related evidence',()=>{
+ const p=base(),q=structuredClone(p);q.conductorRoutes=[{circuitId:'L1',length:25}];
+ assert.deepEqual(a(p,q).affected,['cable','device','topology','enclosure']);
+});
+test('terminal link edit invalidates topology evidence',()=>{
+ const p=base(),q=structuredClone(p);q.terminalLinks=[{circuitId:'L1',from:'A',to:'B'}];
+ assert.deepEqual(a(p,q).affected,['topology','enclosure']);
+});
