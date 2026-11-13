@@ -269,3 +269,19 @@ test('downstream N bus isolation is visible in board and engineering bundle',()=
  const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
  assert.match(bundle,/neutralWireIsolation/);assert.match(gate,/neutral_wire_isolation/);
 });
+
+test('design evidence and change impact are wired into current engineering editor',()=>{
+ assert.ok(scripts.indexOf('design-change-impact-v1.js')>=0);
+ assert.ok(scripts.indexOf('design-evidence-gates-v1.js')>scripts.indexOf('design-change-impact-v1.js'));
+ assert.ok(scripts.indexOf('design-evidence-ui-v1.js')>scripts.indexOf('design-evidence-gates-v1.js'));
+ assert.ok(scripts.indexOf('design-evidence-gates-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
+ for(const id of ['designEvidencePanel','designChangeImpactPanel'])assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(app,/epDesignChangeImpactV1\(lastDesignSnapshot,state\)/);
+ assert.match(app,/epInvalidateDesignEvidenceV1\(state,lastDesignImpact\)/);
+ assert.match(app,/epDesignEvidenceHtmlV1\(assessDesignEvidence\(state\)\)/);
+ const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ const print=fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8');
+ assert.match(gate,/design_evidence/);assert.match(bundle,/designEvidence/);
+ assert.match(print,/Доказательная база проектных решений/);
+});
