@@ -29,3 +29,13 @@ test('shared apparatus participates in placement',()=>{
  const x=plan(p);assert.equal(x.placements[0].deviceId,'RCD1');
 });
 test('invalid board dimensions blocked',()=>assert.equal(plan({railCount:0,railCapacity:4,lines:[]}).status,'BLOCKED'));
+
+test('orphan and duplicate branch devices are blocked',()=>{
+ const p=base();p.branchDevices=[{id:'B1',circuitId:'L1',modules:2},{id:'B2',circuitId:'L1',modules:2},{id:'B3',circuitId:'GHOST',modules:1}];
+ const codes=plan(p).issues.map(x=>x.code);
+ for(const c of ['ORPHAN_BRANCH_DEVICE','DUPLICATE_BRANCH_FOR_CIRCUIT','MISSING_BRANCH_DEVICE'])assert.ok(codes.includes(c));
+});
+test('branch and line width disagreement is blocked',()=>{
+ const p=base();p.branchDevices=[{id:'B1',circuitId:'L1',modules:1},{id:'B2',circuitId:'L2',modules:3}];
+ assert.ok(plan(p).issues.some(x=>x.code==='BRANCH_LINE_WIDTH_CONFLICT'));
+});
