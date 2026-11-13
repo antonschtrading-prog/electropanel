@@ -872,6 +872,11 @@ function renderEngineeringDiagnosticsV1(){
   typeof epCircuitWiringTraceHtmlV1==='function'?
   epCircuitWiringTraceHtmlV1(epCircuitWiringTraceV1(state),selectedLine):
   'Прослеживаемость проводников недоступна.';
+ const isolationHolder=$('neutralWireIsolationPanel');
+ if(isolationHolder)isolationHolder.innerHTML=typeof epNeutralWireIsolationV1==='function'&&
+  typeof epNeutralWireIsolationHtmlV1==='function'?
+  epNeutralWireIsolationHtmlV1(epNeutralWireIsolationV1(state)):
+  'Проверка разделения N по проводам недоступна.';
  const neutralHolder=$('neutralSegregationPanel');
  if(neutralHolder)neutralHolder.innerHTML=typeof epNeutralSegregationV1==='function'&&
   typeof epNeutralSegregationHtmlV1==='function'?
