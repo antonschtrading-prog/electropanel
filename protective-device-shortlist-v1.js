@@ -46,4 +46,28 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   ready_for_installation:false,
   note:'Potential candidates satisfy only available arithmetic comparisons. Not an engineering selection.'};
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epProtectiveDeviceShortlistV1};
+
+function epProtectiveDeviceProjectAuditV1(project,lookup){
+ if(!project||!Array.isArray(project.lines))
+  return {status:'BLOCKED',issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],engineeringApproved:false};
+ const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG!==null?
+  Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[];
+ const issues=[],results=[];
+ for(const line of project.lines){
+  const r=epProtectiveDeviceShortlistV1(line,catalog);
+  results.push({lineId:line?.id??null,potential:r.candidates.filter(c=>c.status==='POTENTIAL').map(c=>c.sku)});
+  for(const issue of r.issues)issues.push({...issue,lineId:line?.id??null});
+  if(line?.catalogSku&&typeof lookup==='function'){
+   let selected=null;
+   try{selected=lookup(line.catalogSku);}catch(_){}
+   if(!selected)issues.push({code:'SELECTED_ARTICLE_UNKNOWN',level:'BLOCKED',lineId:line.id});
+   else{
+    const match=r.candidates.find(c=>c.sku===line.catalogSku||c.sku===selected.sku);
+    if(match?.status==='REJECTED')issues.push({code:'SELECTED_ARTICLE_REJECTED',level:'BLOCKED',lineId:line.id});
+   }
+  }
+ }
+ return {status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN',issues,results,
+  engineeringApproved:false,ready_for_installation:false};
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epProtectiveDeviceShortlistV1,epProtectiveDeviceProjectAuditV1};
