@@ -241,3 +241,12 @@ test('single-line draft SVG is interactive, exportable and included in gate',()=
  const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
  assert.match(gate,/single_line/);
 });
+
+test('selected circuit conductor SVG is wired to terminal trace and export',()=>{
+ assert.ok(scripts.indexOf('conductor-trace-svg-v1.js')>=0);
+ assert.ok(scripts.indexOf('conductor-trace-svg-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="conductorTraceSvgPanel"/);
+ assert.match(html,/id="exportConductorSvgBtn"/);
+ assert.match(app,/epConductorTraceSvgV1\(epCircuitWiringTraceV1\(state\),selectedLine\)/);
+ assert.match(app,/_conductors_DRAFT\.svg/);
+});
