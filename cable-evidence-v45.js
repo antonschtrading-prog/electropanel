@@ -6,7 +6,7 @@
 function epCableDecimal(value,positive=true) {
  if(typeof value==='boolean'||value===null||value===undefined||typeof value==='object')return null;
  const raw=String(value).trim();
- if(!positive&&/^[+]?0+(?:\.0*)?(?:[eE][+-]?\d{1,5})?$/.test(raw))
+ if(!positive&&/^[+-]?0+(?:\.0*)?(?:[eE][+-]?\d{1,5})?$/.test(raw))
   return {coefficient:0n,exponent:0};
  const d=epV30Decimal(value);
  if(!d)return null;
@@ -50,6 +50,24 @@ async function epVerifyDocumentBytesV34(payload) {
   authenticity_status:'UNVERIFIED',normative_status:'UNVERIFIED',
   ready_for_design:false,ready_for_installation:false,
   notice:'Hash comparison validates only submitted bytes against submitted digest.'};
+}
+// File picker path avoids copying a document into project JSON/localStorage.
+async function epVerifyDocumentFileV34(file,expectedSHA256){
+ if(!file||typeof file.arrayBuffer!=='function'||!Number.isSafeInteger(file.size)||
+   file.size<1||file.size>1000000)throw Error('Document must be 1..1000000 bytes');
+ if(typeof expectedSHA256!=='string'||!/^[a-fA-F0-9]{64}$/.test(expectedSHA256))
+  throw Error('expected_sha256 must be 64 hex characters');
+ const subtle=globalThis.crypto?.subtle;
+ if(!subtle)throw Error('WebCrypto unavailable');
+ const bytes=new Uint8Array(await file.arrayBuffer());
+ if(bytes.length!==file.size)throw Error('Document size changed during read');
+ const digest=new Uint8Array(await subtle.digest('SHA-256',bytes));
+ const actual=Array.from(digest,x=>x.toString(16).padStart(2,'0')).join('');
+ return {schema_version:'3.4',byte_count:bytes.length,actual_sha256:actual,
+  integrity_status:actual===expectedSHA256.toLowerCase()?'PASS':'FAIL',
+  authenticity_status:'UNVERIFIED',normative_status:'UNVERIFIED',
+  ready_for_design:false,ready_for_installation:false,
+  notice:'Hash comparison validates only local bytes against the supplied digest.'};
 }
 async function epCableProvenanceV45(data) {
  const answer=(status,issues,extra={})=>({
