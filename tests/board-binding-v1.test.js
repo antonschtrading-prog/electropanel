@@ -87,3 +87,16 @@ test('static HTML includes explicit binding controls and script before applicati
  assert.ok(app.includes('p.boardBindingsV1=epNormalizeBoardBindingsV1'));
  assert.ok(app.includes('epBoardBindingsAuditV1(project,catalogDevice)'));
 });
+
+test('changes to terminal identity, device kind or pole count invalidate the manual mapping',()=>{
+ for(const change of [
+  p=>{p.deviceModelV19.terminals[0].id='RENAMED-L1-IN';},
+  p=>{p.deviceModelV19.devices[0].kind='RCD';},
+  p=>{p.deviceModelV19.devices[0].poles=2;}
+ ]){
+  const p=project();p.boardBindingsV1=[api.epNewBoardBindingV1(p,'Q1','BD-1')];change(p);
+  const r=api.epBoardBindingsAuditV1(p,lookup);
+  assert.equal(r.status,'BLOCKED');
+  assert.ok(codes(r).includes('MODEL_TERMINALS_CHANGED'));
+ }
+});
