@@ -195,3 +195,11 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-neutral-wire-isolation summary{cursor:pointer;font-weight:700}
 .ep-neutral-wire-isolation table{width:100%;border-collapse:collapse}
 .ep-neutral-wire-isolation th,.ep-neutral-wire-isolation td{padding:7px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left}
+
+/* Design-stage traceability: review reminders are not installation approvals. */
+.ep-design-evidence{margin:12px 0;padding:12px 14px;border:1px solid var(--border,#d1d9e2);border-radius:10px;background:var(--surface,#f9fafb)}
+.ep-design-evidence summary{font-weight:700;cursor:pointer}
+.ep-design-evidence p{font-size:13px;line-height:1.5;max-width:75ch}
+.ep-design-evidence table{width:100%;border-collapse:collapse;font-size:12px}
+.ep-design-evidence th,.ep-design-evidence td{padding:8px;border-bottom:1px solid var(--border,#d1d9e2);text-align:left}
+#designChangeImpactPanel{padding:10px 14px;border-left:3px solid #c59a39;margin:10px 0;font-size:13px;background:rgba(197,154,57,.07)}
