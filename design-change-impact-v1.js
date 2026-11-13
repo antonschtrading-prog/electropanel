@@ -13,11 +13,11 @@ function epDesignChangeImpactV1(before,after){
  const stable=v=>JSON.stringify(v===undefined?null:v);
  if(!has(before)||!has(after))return {status:'BLOCKED',changed:['project'],affected:Object.keys(MAP),issues:[{code:'CHANGE_IMPACT_PROJECT_INVALID',level:'BLOCKED'}]};
  const areas={
-  load:[before.lines,after.lines],
-  network:[before.network,after.network],
-  cable:[before.cables,after.cables],
-  device:[before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices],
-  topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1],
+  load:[before.lines,after.lines,before.loads,after.loads],
+  network:[before.network,after.network,before.earthing,after.earthing,before.voltage,after.voltage],
+  cable:[before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],
+  device:[before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
+  topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1,before.terminalLinks,after.terminalLinks,before.feedLinks,after.feedLinks,before.groupInputLinks,after.groupInputLinks],
   enclosure:[before.railCount,after.railCount,before.railCapacity,after.railCapacity,before.enclosure,after.enclosure]
  };
  const changed=[];
