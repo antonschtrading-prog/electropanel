@@ -1,0 +1,71 @@
+'use strict';
+// Five-stage circuit dossier: identity, declared calculations, article, placement, export.
+// Pure projections. No electrical engineering approval.
+function epCircuitDossierV1(project,lookupSku){
+ const rows=[],issues=[],lines=Array.isArray(project?.lines)?project.lines:[];
+ const plan=typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1(project,lookupSku):null;
+ const positions=new Map((plan?.placements||[]).filter(x=>x.kind==='branch').map(x=>[x.deviceId,x]));
+ const branches=Array.isArray(project?.branchDevices)?project.branchDevices:[];
+ const used=new Set();
+ for(const line of lines){
+  if(!line||typeof line!=='object'||typeof line.id!=='string'||!line.id){
+   issues.push({code:'LINE_INVALID',level:'BLOCKED'});continue;
+  }
+  if(used.has(line.id))issues.push({code:'DUPLICATE_CIRCUIT_ID',level:'BLOCKED',lineId:line.id});
+  used.add(line.id);
+  const branch=branches.find(x=>x?.circuitId===line.id);
+  const apparatusId=branch?.id??line.id;
+  const location=positions.get(apparatusId)||null;
+  let article=null;
+  if(line.catalogSku){
+   try{article=typeof lookupSku==='function'?lookupSku(line.catalogSku):null;}catch(_){}
+   if(!article)issues.push({code:'ARTICLE_UNKNOWN',level:'BLOCKED',lineId:line.id});
+  }else issues.push({code:'ARTICLE_NOT_SELECTED',level:'UNKNOWN',lineId:line.id});
+  if(!location)issues.push({code:'CIRCUIT_NOT_PLACED',level:'BLOCKED',lineId:line.id});
+  const current=line.overloadInput||{};
+  const declared={ibA:current.ibA??null,izA:current.izA??null,ikKa:line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa??null};
+  for(const [key,value] of Object.entries(declared))if(value===null||value==='')issues.push({code:'MISSING_'+key.toUpperCase(),level:'UNKNOWN',lineId:line.id});
+  if(line.calculationReview?.required)issues.push({code:'CALCULATION_REVIEW_REQUIRED',level:'BLOCKED',lineId:line.id});
+  rows.push({circuitId:line.id,name:line.name??'',phase:line.phase??null,
+   powerKw:line.power??null,apparatusId,sku:line.catalogSku??null,
+   manufacturer:article?.maker??null,series:article?.series??null,
+   articleSource:article?.source??null,declared,
+   routeDeclared:!!line.route44Input,calculationReviewRequired:!!line.calculationReview?.required,
+   placement:location?{rail:location.railIndex+1,from:location.startModule+1,
+    to:location.startModule+location.modules}:null});
+ }
+ if(!plan)issues.push({code:'BOARD_PLAN_UNAVAILABLE',level:'BLOCKED'});
+ else for(const issue of plan.issues.filter(x=>x.level==='BLOCKED'))
+  issues.push({code:'PLAN_'+issue.code,level:'BLOCKED',lineId:issue.id??null});
+ return {schema:'electropanel.circuit.dossier.draft.1',
+  status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',rows,issues,
+  engineeringApproved:false,ready_for_installation:false};
+}
+function epCircuitDossierCsvV1(report){
+ const cells=['Цепь','Назначение','Фаза','Мощность кВт','ID аппарата','Артикул','Производитель',
+ 'Серия','Источник','Ib A','Iz A','Ik кА','Трасса заявлена','Перепроверка расчётов',
+ 'DIN','Позиция с','Позиция по'];
+ const quote=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+ const rows=[cells,...(report?.rows||[]).map(x=>[x.circuitId,x.name,x.phase,x.powerKw,x.apparatusId,
+ x.sku,x.manufacturer,x.series,x.articleSource,x.declared?.ibA,x.declared?.izA,x.declared?.ikKa,
+ x.routeDeclared?'ДА':'НЕТ',x.calculationReviewRequired?'ДА':'НЕТ',x.placement?.rail,
+ x.placement?.from,x.placement?.to])];
+ return '\uFEFF'+rows.map(row=>row.map(quote).join(';')).join('\r\n')+'\r\n';
+}
+function epCircuitDossierPanelV1(project,lookupSku){
+ const report=epCircuitDossierV1(project,lookupSku);
+ const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const rows=report.rows.map(x=>{
+  const notes=report.issues.filter(i=>i.lineId===x.circuitId);
+  const place=x.placement?'DIN '+x.placement.rail+' · '+x.placement.from+'–'+x.placement.to:'Не размещено';
+  return '<tr><td>'+safe(x.circuitId)+'</td><td>'+safe(x.name)+'</td><td>'+safe(x.phase)+
+  '</td><td>'+safe(x.sku||'Без артикула')+'</td><td>'+safe(place)+'</td><td>'+
+  safe(notes.length?notes.map(n=>n.code).join(', '):'Нет замечаний в этой ограниченной проверке')+'</td></tr>';
+ }).join('');
+ return '<section role="region" aria-label="Прослеживаемость цепей"><h3>Цепь → аппарат → DIN · черновик</h3>'+
+ '<p>Цепей: '+report.rows.length+'. Статус '+safe(report.status)+
+ '. Исходные токи только заявлены; расчёт и монтаж не подтверждены.</p>'+
+ '<div style="overflow-x:auto"><table><thead><tr><th>Цепь</th><th>Назначение</th><th>Фаза</th>'+
+ '<th>Артикул</th><th>Размещение</th><th>Замечания</th></tr></thead><tbody>'+rows+'</tbody></table></div></section>';
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epCircuitDossierV1,epCircuitDossierCsvV1,epCircuitDossierPanelV1};
