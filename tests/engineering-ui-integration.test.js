@@ -218,3 +218,15 @@ test('wiring trace is included in full engineering bundle and issue register',()
  assert.match(bundle,/wiringTrace/);assert.match(issues,/wiringTrace/);
  assert.match(printable,/sections.wiringTrace/);
 });
+
+test('neutral segregation panel is wired to current project and selected circuit',()=>{
+ assert.ok(scripts.indexOf('neutral-segregation-v1.js')>=0);
+ assert.ok(scripts.indexOf('neutral-segregation-ui-v1.js')>scripts.indexOf('neutral-segregation-v1.js'));
+ assert.ok(scripts.indexOf('neutral-segregation-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
+ assert.match(html,/id="neutralSegregationPanel"/);
+ assert.match(app,/epNeutralSegregationHtmlV1\(epNeutralSegregationV1\(state\),selectedLine\)/);
+ assert.match(app,/\$\('neutralSegregationPanel'\)\.addEventListener\('click'/);
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ const print=fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8');
+ assert.match(bundle,/neutralSegregation/);assert.match(print,/sections.neutralSegregation/);
+});
