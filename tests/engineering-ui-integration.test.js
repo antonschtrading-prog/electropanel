@@ -304,3 +304,14 @@ test('load-current calculation wizard integrates with protection and dossier',()
  assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/loadCurrent/);
  assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Расчёт тока нагрузки/);
 });
+
+test('cable reference editor and issue register are connected',()=>{
+ assert.ok(scripts.indexOf('cable-reference-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('cable-reference-ui-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="cableReferencePanel"/);
+ assert.match(app,/epCableReferenceHtmlV1\(state,selectedLine,catalogDevice\)/);
+ assert.match(app,/epApplyCableReferenceInputV1\(state,lineId/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8'),/cable_reference/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/cableReference/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Справочные сечения проводников/);
+});
