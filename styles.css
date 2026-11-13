@@ -208,3 +208,10 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-evidence-edit label{display:flex;flex-direction:column;gap:3px;font-size:11px}
 .ep-evidence-edit input,.ep-evidence-edit select{width:100%;min-width:0;font-size:12px;padding:6px;border:1px solid #a6b4c3;border-radius:5px}
 .ep-evidence-edit button{min-height:33px;white-space:normal}
+
+.ep-load-current{margin:12px 0;padding:14px;border:1px solid var(--border,#c9d3dd);border-radius:10px}
+.ep-load-current summary{font-weight:700;cursor:pointer}
+.ep-load-current-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;align-items:end}
+.ep-load-current-fields label{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.ep-load-current-fields input,.ep-load-current-fields select{padding:8px;border-radius:6px;border:1px solid #a6b4c3;width:100%;min-width:0}
+.ep-load-current-fields button{min-height:38px}
