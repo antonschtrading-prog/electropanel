@@ -163,3 +163,10 @@ test('cross-view issue navigation and exports use current project',()=>{
  const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
  assert.match(bundle,/epCrossViewAuditV1\(project,protection,board,bom\)/);
 });
+
+test('DIN apparatus buttons synchronize selected circuit',()=>{
+ const source=fs.readFileSync(path.join(root,'draft-board-preview-v1.js'),'utf8');
+ assert.match(source,/data-din-focus/);
+ assert.match(app,/\$\('draftBoardPreview'\)\.addEventListener\('click'/);
+ assert.match(app,/selectedLine=id;render\(\)/);
+});
