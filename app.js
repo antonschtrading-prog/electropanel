@@ -662,6 +662,19 @@ function projectAudit(project=state){
   if(!SOURCES[l.source])add('source-'+l.id,'MISSING',`${l.id}: происхождение данных не указано`);
  }
  const catalogue=catalogAudit(project);if(catalogue.issues.length)add('catalogue','ERROR',catalogue.issues.map(x=>x.circuitId+': '+x.code).join('; '));else add('catalogue','NOT_VERIFIED','Артикулы выбранных изделий сопоставлены, применимость в электрической сети не подтверждена');
+ if(project.deviceModelV19){
+  const result=epDeviceAuditCoreV19(project.deviceModelV19);
+  add('device-v19',result.counts.FAIL?'ERROR':'NOT_VERIFIED',
+   'Аппараты, PE, зоны N v1.9: '+result.counts.FAIL+' ошибок, '+result.counts.UNKNOWN+
+   ' неподтверждённых условий. Устройство и паспортные данные не верифицированы.');
+ }
+ if(project.wiringModelV18&&project.deviceModelV19){
+  const consistency=epWiringDeviceModelConsistencyV19(project.wiringModelV18,project.deviceModelV19);
+  add('wiring-device-consistency',
+   consistency.status==='BLOCKED'?'ERROR':'NOT_VERIFIED',
+   'Совпадение объявленных клемм/проводов двух моделей: '+consistency.status+
+   '. '+consistency.issues.join(', ')+'. Подтверждение реальной сборки: НЕТ.');
+ }
  if(project.wiringModelV18){
   const wiring=epWiringAuditCoreV18(project.wiringModelV18);
   add('wiring-v18',wiring.counts.FAIL?'ERROR':'NOT_VERIFIED',
@@ -736,6 +749,14 @@ function documentReadiness(project=state){
   if(l.templateId&&DEVICE_TEMPLATES[l.templateId]&&l.modules!==DEVICE_TEMPLATES[l.templateId].modules)blockers.push(`${l.id}: условная ширина не совпадает с выбранным шаблоном`);
  }
  for(const issue of catalogAudit(project).issues)blockers.push(issue.circuitId+': '+issue.message);
+ if(project.deviceModelV19){
+  const result=epDeviceAuditCoreV19(project.deviceModelV19);
+  if(result.counts.FAIL)blockers.push('Аппараты/PE/N: '+result.counts.FAIL+' ошибок');
+ }
+ if(project.wiringModelV18&&project.deviceModelV19){
+  const c=epWiringDeviceModelConsistencyV19(project.wiringModelV18,project.deviceModelV19);
+  if(c.status==='BLOCKED')blockers.push('Две терминальные модели описывают разные клеммы/соединения');
+ }
  if(project.wiringModelV18){
   const wiring=epWiringAuditCoreV18(project.wiringModelV18);
   if(wiring.counts.FAIL)blockers.push('Клеммная схема v1.8: '+wiring.counts.FAIL+' несоответствий');
@@ -787,7 +808,7 @@ function phaseSummary(){
 function getPhasePercentages(){const r=phaseSummary(),max=Math.max(r.L1,r.L2,r.L3,0.001);return [['L1',r.L1/max*100,r.L1],['L2',r.L2/max*100,r.L2],['L3',r.L3/max*100,r.L3]];}
 
 function issues(){const r=[];if(!state.title.trim())r.push('Не указано название проекта.');if(state.earthing==='UNKNOWN')r.push('Не выбрана система заземления.');if(state.lines.length===0)r.push('Нет отходящих линий.');for(const l of state.lines){if(!l.name.trim())r.push(`У линии ${l.id} не указано назначение.`);if(!(Number(l.power)>0))r.push(`Для «${l.name||l.id}» не задана положительная мощность.`);if(!l.device)r.push(`Для «${l.name||l.id}» не обозначен защитный аппарат.`);if(!l.phase)r.push(`Для «${l.name||l.id}» не указана фаза.`);}const placement=layoutSlots();if(placement.unplaced.length)r.push('Не размещены аппараты: '+placement.unplaced.map(x=>x.id).join(', ')+'.');r.push('Нет проверенных исходных данных для выбора кабелей, проверки КЗ, автоматического отключения и селективности.');r.push('Данные паспортов аппаратов и корпуса не сверены с изготовителями.');if(state.sharedDevices?.length)r.push('Групповые УЗО: требуется проверка схемы нейтралей, паспортов аппаратов и условий защиты.');for(const x of documentReadiness().blockers){if(!r.includes(x))r.push(x);}return r}
-function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
+function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
 
 function renderReadiness(){
  const target=$('readinessSummary');if(!target)return;
@@ -960,6 +981,35 @@ async function checkWiring18(save=false){
   '. Сопоставление с физическими аппаратами и проектом НЕ завершено. Монтажный допуск: НЕТ.'+
   (report.diagnostics.filter(x=>x.status==='FAIL').length?' Ошибки: '+
    report.diagnostics.filter(x=>x.status==='FAIL').slice(0,6).map(x=>x.code).join(', '):'');
+}
+function renderDevice19(){
+ const field=$('device19Input'),out=$('device19Result');
+ if(!field||!out)return;
+ field.value=state.deviceModelV19?JSON.stringify(state.deviceModelV19,null,2):'';
+ if(!state.deviceModelV19){out.textContent='Модель полюсов и зон N не задана.';return;}
+ const report=epDeviceAuditCoreV19(state.deviceModelV19);
+ const consistent=epWiringDeviceModelConsistencyV19(state.wiringModelV18,state.deviceModelV19);
+ out.textContent='Аппараты: '+report.counts.FAIL+' ошибок, '+report.counts.UNKNOWN+
+  ' неизвестных условий. Сопоставление с проводами: '+consistent.status+
+  '. Условия реальной сборки не подтверждены.';
+}
+async function checkDevice19(save=false){
+ const out=$('device19Result'),raw=$('device19Input').value.trim();
+ if(raw.length>100000){out.textContent='JSON слишком большой';return;}
+ let input,r;
+ try{
+  input=normalizeDevice19Import(JSON.parse(raw));
+  r=await epDeviceAuditV19(input);
+ }catch(error){out.textContent='Ошибка модели: '+error.message+'. Проект не изменён.';return;}
+ if(save){checkpoint();state.deviceModelV19=input;changed();}
+ const linked=epWiringDeviceModelConsistencyV19(state.wiringModelV18,input);
+ out.textContent='Аудит полюсов/PE/N: '+r.counts.FAIL+' ошибок, '+r.counts.UNKNOWN+
+  ' неизвестных условий. Связь с моделью проводов: '+linked.status+
+  (linked.issues.length?' ('+linked.issues.join(', ')+')':'')+
+  '. SHA-256: '+(r.input_sha256||'недоступен')+
+  '. Независимое подтверждение изготовителя, соединений и монтажа: НЕТ.'+
+  (r.counts.FAIL?' Ошибки: '+r.diagnostics.filter(x=>x.status==='FAIL').slice(0,8)
+   .map(x=>x.code).join(', '):'');
 }
 function runReference39(){
  const $v=id=>$(id).value;
@@ -1268,6 +1318,52 @@ function normalizeRoute44Import(value){
  }
  return copy;
 }
+function normalizeDevice19Import(value){
+ if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Ожидается JSON-объект аппаратов');
+ const fields={
+  devices:['id','kind','poles','evidence'],
+  terminals:['id','device_id','conductor'],
+  internal_links:['id','device_id','from','to','state','gang_id'],
+  wires:['id','from','to'],
+  neutral_zones:['id','terminals']
+ };
+ if(Object.keys(value).some(k=>!Object.hasOwn(fields,k)))throw Error('Неизвестная группа аппаратов');
+ const input={};
+ for(const [group,allowed] of Object.entries(fields)){
+  const rows=value[group]??[];
+  if(!Array.isArray(rows)||rows.length>1000)throw Error('Превышено число объектов '+group);
+  input[group]=rows.map(row=>{
+   if(!row||typeof row!=='object'||Array.isArray(row)||
+    Object.keys(row).some(k=>!allowed.includes(k)))throw Error('Неизвестные поля '+group);
+   const clean={};
+   for(const [key,v] of Object.entries(row)){
+    if(group==='devices'&&key==='evidence'){
+     if(!v||typeof v!=='object'||Array.isArray(v))throw Error('Некорректные сведения изготовителя');
+     const keys=['manufacturer','model','document_id','revision','source_url','sha256'];
+     if(Object.keys(v).some(k=>!keys.includes(k)))throw Error('Неизвестное поле паспорта');
+     clean.evidence={};
+     for(const [k,text] of Object.entries(v)){
+      if(typeof text!=='string'||text.length>400)throw Error('Повреждённый реквизит паспорта');
+      clean.evidence[k]=text;
+     }
+    }else if(group==='devices'&&key==='poles'){
+     if(!Number.isInteger(v)||v<0||v>10)throw Error('Число полюсов должно быть целым');
+     clean[key]=v;
+    }else if(group==='neutral_zones'&&key==='terminals'){
+     if(!Array.isArray(v)||v.length>1000||v.some(x=>typeof x!=='string'||x.length>128))
+      throw Error('Неверный список клемм нейтрали');
+     clean[key]=v.slice();
+    }else {
+     if(typeof v!=='string'||v.length>128)throw Error('Некорректное значение '+group+'.'+key);
+     clean[key]=v;
+    }
+   }
+   return clean;
+  });
+ }
+ if(JSON.stringify(input).length>100000)throw Error('Слишком большой набор аппаратов');
+ return input;
+}
 function normalizeWiring18Import(value){
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Wiring must be JSON object');
  const groups=['terminals','wires','internal_links','sources','loads'];
@@ -1359,7 +1455,7 @@ function normalizeFaultImport(value){
   throw Error('Слишком длинное описание источника тока КЗ');
  return {ikKa:value.ikKa,source:value.source||''};
 }
-function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;if(x.ttContext!==undefined)p.ttContext=epNormalizeTTContext(x.ttContext);if(x.wiringModelV18!==undefined)p.wiringModelV18=normalizeWiring18Import(x.wiringModelV18);const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.lv43Input!==undefined?{lv43Input:normalizeLV43Import(l.lv43Input)}:{}),...(l.route44Input!==undefined?{route44Input:normalizeRoute44Import(l.route44Input)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
+function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;if(x.ttContext!==undefined)p.ttContext=epNormalizeTTContext(x.ttContext);if(x.wiringModelV18!==undefined)p.wiringModelV18=normalizeWiring18Import(x.wiringModelV18);if(x.deviceModelV19!==undefined)p.deviceModelV19=normalizeDevice19Import(x.deviceModelV19);const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.lv43Input!==undefined?{lv43Input:normalizeLV43Import(l.lv43Input)}:{}),...(l.route44Input!==undefined?{route44Input:normalizeRoute44Import(l.route44Input)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){
   const mime=String(x.plan.mime||'').slice(0,80);
   p.plan={name:x.plan.name.slice(0,120),mime};
@@ -1419,7 +1515,7 @@ $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
 $('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}checkpoint();state[key]=n;changed();});
-$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;$('ref39Run').onclick=runReference39;$('lv43Run').onclick=runLV43;$('lv43SaveLine').onclick=saveLV43ToLine;$('route44Save').onclick=saveRoute44;$('wiring18Check').onclick=()=>checkWiring18(false);$('wiring18Save').onclick=()=>checkWiring18(true);
+$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;$('ref39Run').onclick=runReference39;$('lv43Run').onclick=runLV43;$('lv43SaveLine').onclick=saveLV43ToLine;$('route44Save').onclick=saveRoute44;$('wiring18Check').onclick=()=>checkWiring18(false);$('wiring18Save').onclick=()=>checkWiring18(true);$('device19Check').onclick=()=>checkDevice19(false);$('device19Save').onclick=()=>checkDevice19(true);
 $('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();selectedLine=null;changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
 $('saveProjectBtn').onclick=$('saveProjectBtn2').onclick=saveProject;$('exportCsvBtn').onclick=()=>download(baseName()+'_loads.csv',csv(),'text/csv;charset=utf-8');$('exportSvgBtn').onclick=$('exportSvgBtn2').onclick=exportSvg;$('exportEquipmentBtn').onclick=()=>download(baseName()+'_equipment_draft.csv',equipmentCsv(),'text/csv;charset=utf-8');
 $('exportAuditBtn').onclick=()=>download(baseName()+'_audit.json',JSON.stringify({project:state.title,audit:projectAudit(),generatedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');
