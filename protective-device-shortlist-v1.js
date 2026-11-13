@@ -47,11 +47,12 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   note:'Potential candidates satisfy only available arithmetic comparisons. Not an engineering selection.'};
 }
 
-function epProtectiveDeviceProjectAuditV1(project,lookup){
+function epProtectiveDeviceProjectAuditV1(project,lookup,catalogInput){
  if(!project||!Array.isArray(project.lines))
   return {status:'BLOCKED',issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],engineeringApproved:false};
- const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG!==null?
-  Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[];
+ const catalog=Array.isArray(catalogInput)?catalogInput:
+  (typeof EP_CATALOG==='object'&&EP_CATALOG!==null?
+  Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[]);
  const issues=[],results=[];
  for(const line of project.lines){
   const r=epProtectiveDeviceShortlistV1(line,catalog);
@@ -65,6 +66,7 @@ function epProtectiveDeviceProjectAuditV1(project,lookup){
     const match=r.candidates.find(c=>c.sku===line.catalogSku);
     if(!match)issues.push({code:'SELECTED_ARTICLE_NOT_IN_CATALOG',level:'BLOCKED',lineId:line.id});
     else if(match.status==='REJECTED')issues.push({code:'SELECTED_ARTICLE_REJECTED',level:'BLOCKED',lineId:line.id});
+    else if(match.status==='INCOMPLETE')issues.push({code:'SELECTED_ARTICLE_EVIDENCE_INCOMPLETE',level:'UNKNOWN',lineId:line.id});
    }
   }
  }
