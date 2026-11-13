@@ -923,6 +923,9 @@ function renderEngineeringDiagnosticsV1(){
  const cablePanel=$('cableReferencePanel');
  if(cablePanel)cablePanel.innerHTML=typeof epCableReferenceHtmlV1==='function'?
   epCableReferenceHtmlV1(state,selectedLine,catalogDevice):'Справочник кабелей недоступен.';
+ const designReviewHolder=$('circuitDesignReviewPanel');
+ if(designReviewHolder)designReviewHolder.innerHTML=typeof epCircuitDesignReviewHtmlV1==='function'?
+  epCircuitDesignReviewHtmlV1(state,catalogDevice,selectedLine):'Сводная матрица недоступна.';
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
   const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
@@ -1921,6 +1924,29 @@ $('exportCrossViewJsonBtn').addEventListener('click',()=>{
  if(typeof epEngineeringBundleV1!=='function')return notify('Проверка согласованности недоступна',true);
  const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
  download(baseName()+'_crossview_DRAFT.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
+});
+$('circuitDesignReviewPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-drop-form]');if(!form)return;
+ e.preventDefault();
+ const read=name=>form.elements.namedItem(name)?.value;
+ const yes=name=>form.elements.namedItem(name)?.checked===true;
+ const result=epApplyVoltageDropInputV1(state,form.getAttribute('data-drop-form'),{
+  lengthM:read('lengthM'),voltageV:read('voltageV'),rOhmKm:read('rOhmKm'),
+  xOhmKm:read('xOhmKm'),powerFactor:read('powerFactor'),
+  maxDropPercent:read('maxDropPercent'),conductorBasisDocumented:yes('conductorBasisDocumented'),
+  routeLengthDocumented:yes('routeLengthDocumented'),neutralEquivalent:yes('neutralEquivalent')
+ });
+ if(!result.project)return notify('Падение напряжения: '+result.code,true);
+ checkpoint();state=result.project;changed();
+ notify('Расчёт падения напряжения записан: '+result.calculation.dropPercent.toFixed(2)+'%');
+});
+$('circuitDesignReviewPanel').addEventListener('click',e=>{
+ const focus=e.target.closest('[data-design-focus]');
+ if(focus){selectedLine=focus.getAttribute('data-design-focus');render();return;}
+ if(e.target.closest('#exportDesignReviewCsvBtn')){
+  const report=epCircuitDesignReviewV1(state,catalogDevice);
+  download(baseName()+'_design_review.csv',epCircuitDesignReviewCsvV1(report),'text/csv;charset=utf-8');
+ }
 });
 $('cableReferencePanel').addEventListener('submit',e=>{
  const form=e.target.closest('[data-cable-reference-form]');if(!form)return;
