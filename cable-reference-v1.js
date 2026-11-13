@@ -63,5 +63,19 @@ function epApplyCableReferenceInputV1(project,lineId,input){
  line.calculationReview={required:true,reason:'CABLE_REFERENCE_CONTEXT_UPDATED'};
  return {status:'REVIEW_REQUIRED',code:'REFERENCE_CONTEXT_RECORDED',project:copy};
 }
+function epApplyCableSectionV1(project,lineId,section){
+ if(!project||!Array.isArray(project.lines))return {status:'BLOCKED',code:'PROJECT_INVALID',project:null};
+ const lines=project.lines.filter(x=>x?.id===lineId);
+ if(lines.length!==1)return {status:'BLOCKED',code:'LINE_NOT_UNIQUE',project:null};
+ const value=String(section??'').trim().replace(',','.');
+ const supported=Object.keys(EP_CABLE_REFERENCE_V1.B1);
+ if(!supported.includes(value))return {status:'BLOCKED',code:'SECTION_NOT_IN_REFERENCE',project:null};
+ if(!['B1','C'].includes(lines[0].cableReferenceInput?.installationMethod))
+  return {status:'BLOCKED',code:'REFERENCE_CONTEXT_REQUIRED',project:null};
+ const copy=JSON.parse(JSON.stringify(project)),line=copy.lines.find(x=>x.id===lineId);
+ line.cableDesignInput={sectionMm2:Number(value),source:'manual_design_selection'};
+ line.calculationReview={required:true,reason:'CABLE_SECTION_UPDATED'};
+ return {status:'REVIEW_REQUIRED',code:'SECTION_DECLARED',project:copy};
+}
 if(typeof module!=='undefined'&&module.exports)module.exports={
- epCableReferenceV1,epCableReferenceForCircuitV1,epApplyCableReferenceInputV1,EP_CABLE_REFERENCE_V1};
+ epCableReferenceV1,epCableReferenceForCircuitV1,epApplyCableReferenceInputV1,epApplyCableSectionV1,EP_CABLE_REFERENCE_V1};
