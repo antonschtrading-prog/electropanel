@@ -25,14 +25,19 @@ function epEngineeringIssueRegisterV1(bundle){
 function epEngineeringIssueRegisterHtmlV1(report,selectedId=null){
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  if(!report?.entries)return '<p>Реестр замечаний недоступен. Проверка не завершена.</p>';
- const items=report.entries.slice(0,250).map(x=>'<tr'+(x.circuitId===selectedId?' class="ep-circuit-active"':'')+'>'+
-  '<td>'+esc(x.level)+'</td><td>'+esc(x.section)+'</td><td>'+esc(x.code)+'</td>'+
-  '<td>'+(x.circuitId?'<button class="btn tiny" type="button" data-issue-focus="'+esc(x.circuitId)+'">'+esc(x.circuitId)+'</button>':'Проект')+'</td></tr>').join('');
+ const items=report.entries.slice(0,250).map(x=>{
+  const guide=typeof epIssueGuidanceV1==='function'?epIssueGuidanceV1(x.code):
+   {title:'Требуется разбор замечания',action:'Проверьте исходные данные'};
+  return '<tr'+(x.circuitId===selectedId?' class="ep-circuit-active"':'')+'>'+
+   '<td>'+esc(x.level)+'</td><td>'+esc(x.section)+'</td><td>'+esc(guide.title)+' <small>('+esc(x.code)+')</small></td>'+
+   '<td>'+esc(guide.action)+'</td>'+
+   '<td>'+(x.circuitId?'<button class="btn tiny" type="button" data-issue-focus="'+esc(x.circuitId)+'">'+esc(x.circuitId)+'</button>':'Проект')+'</td></tr>';
+ }).join('');
  return '<details class="ep-issue-register"><summary>Сводный реестр замечаний · блокирующих '+
   report.counts.BLOCKED+', неопределённостей '+report.counts.UNKNOWN+'</summary>'+
   '<p>Замечания могут повторяться в разных инженерных разделах. Это журнал проверки, не допуск.</p>'+
-  '<div style="overflow-x:auto"><table><thead><tr><th>Уровень</th><th>Раздел</th><th>Код</th><th>Цепь</th></tr></thead><tbody>'+
-  (items||'<tr><td colspan="4">Замечания не перечислены; подтверждение монтажа отсутствует.</td></tr>')+
+  '<div style="overflow-x:auto"><table><thead><tr><th>Уровень</th><th>Раздел</th><th>Проблема</th><th>Что проверить</th><th>Цепь</th></tr></thead><tbody>'+
+  (items||'<tr><td colspan="5">Замечания не перечислены; подтверждение монтажа отсутствует.</td></tr>')+
   '</tbody></table></div></details>';
 }
 function epEngineeringIssueRegisterCsvV1(report){
