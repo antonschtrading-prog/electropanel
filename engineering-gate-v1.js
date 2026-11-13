@@ -39,6 +39,9 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epDinPlacementAuditV1==='function')
   inspect('din_placement',()=>epDinPlacementAuditV1(project,lookupSku));
  else add('din_placement','DIN_PLACEMENT_AUDIT_UNAVAILABLE','UNKNOWN');
+ if(typeof epProjectCalculationCoverageV1==='function')
+  inspect('calculation_coverage',()=>epProjectCalculationCoverageV1(project,lookupSku));
+ else add('calculation_coverage','CALCULATION_COVERAGE_UNAVAILABLE','UNKNOWN');
  const status=issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
  return {schema_version:'1.0',status,components,issues,
   engineeringApproved:false,ready_for_installation:false,
