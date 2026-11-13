@@ -31,7 +31,7 @@ function epProjectIntegrityV1(project,lookup){
    add('calculations','IB_OR_IZ_NOT_DECLARED','UNKNOWN',l.id);
   else declared++;
   if(!l.route44Input)add('calculations','ROUTE_NOT_DECLARED','UNKNOWN',l.id);
-  if(!l.ikKa&&!l.breakingCapacityInput?.ikKa)add('calculations','FAULT_CURRENT_NOT_DECLARED','UNKNOWN',l.id);
+  if(!l.faultInput?.ikKa&&!l.ikKa&&!l.breakingCapacityInput?.ikKa)add('calculations','FAULT_CURRENT_NOT_DECLARED','UNKNOWN',l.id);
  }
  blocks.calculations={withCurrentInputs:declared};
  const branch=Array.isArray(project.branchDevices)?project.branchDevices:[];
@@ -41,6 +41,7 @@ function epProjectIntegrityV1(project,lookup){
   else byCircuit.set(d.circuitId,(byCircuit.get(d.circuitId)||0)+1);
  }
  for(const [id,n] of byCircuit)if(n>1)add('binding','DUPLICATE_BRANCH_DEVICE','BLOCKED',id);
+ if(Array.isArray(project.branchDevices))for(const id of ids)if(!byCircuit.has(id))add('binding','MISSING_BRANCH_DEVICE','BLOCKED',id);
  blocks.binding={branchDevices:branch.length};
  if(Number.isInteger(project.railCount)&&Number.isInteger(project.railCapacity)){
   const capacity=project.railCount*project.railCapacity;
