@@ -870,6 +870,40 @@ function assessCable31FromUI(){
    '. Нормативное подтверждение и монтажный допуск: НЕТ.';
  }catch(error){output.textContent='Ошибка проверки таблицы: '+error.message+'. Данные не изменены.';}
 }
+function runReference39(){
+ const $v=id=>$(id).value;
+ const payload={conductor_material:'Cu',insulation:'PVC',cores_loaded:2,
+  installation_method:$v('ref39Method'),cross_section_mm2:$v('ref39Section'),
+  ambient_air_c:$v('ref39Temp'),circuits_grouped:$v('ref39Groups'),
+  grouping_layout:'bunched_air_surface_embedded_enclosed',
+  other_derating_factors_present:$('ref39OtherFactors').checked,
+  installation_method_verified:$('ref39VerifiedMethod').checked,
+  all_circuits_simultaneously_loaded:$('ref39AllLoaded').checked,
+  ib_a:$v('ref39Ib'),in_a:$v('ref39In'),i2_a:$v('ref39I2')};
+ const result=epReferenceCableV39(payload);
+ $('ref39Result').textContent='Справочная арифметика: '+result.numeric_status+
+  '. База: '+(result.base_reference_a??'нет')+' А; поправка температуры: '+
+  (result.temperature_factor??'нет')+'; группировка: '+(result.grouping_factor??'нет')+
+  '; скорректированное значение: '+(result.adjusted_reference_iz_a??'нет')+
+  ' А. Замечания: '+(result.issues.join(', ')||'не выявлены в пределах узкого справочного набора')+
+  '. Проверка официального нормативного источника: НЕТ. Допуск к монтажу: НЕТ.';
+}
+function runLV43(){
+ const raw=$('lv43Input').value.trim();
+ if(raw.length>12000){$('lv43Result').textContent='Слишком большой JSON';return;}
+ try{
+  const obj=JSON.parse(raw);
+  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw Error('Требуется JSON-объект');
+  const scope=epScopeV43(obj.scope),tn=epTNDisconnectionV43(obj.tn_disconnection);
+  const drop=epVoltageDropV43(obj.voltage_drop,obj.design_current_a);
+  const earthingOK=['TN-S','TN-C-S'].includes(state.earthing);
+  const status=earthingOK&&scope.status==='IN_SCOPE_PRELIMINARY'
+   ?'Проверка в пределах предварительной модели':'OUT_OF_SCOPE — несогласованность с проектом/областью применения';
+  $('lv43Result').textContent=status+'. TN: '+(earthingOK?tn.status:'OUT_OF_SCOPE')+
+   ' ('+tn.issues.join(', ')+'). Падение напряжения: '+(earthingOK?drop.status:'OUT_OF_SCOPE')+
+   ' ('+drop.issues.join(', ')+'). Инженерный допуск: НЕТ. Исходные данные и кривые отключения должны быть независимо подтверждены.';
+ }catch(error){$('lv43Result').textContent='Не удалось выполнить расчёт: '+error.message;}
+}
 function renderPhases(){
  const holder=$('phaseChart');if(!holder)return;
  const data=getPhasePercentages(); const total=phaseSummary();
@@ -1187,7 +1221,7 @@ $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
 $('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}checkpoint();state[key]=n;changed();});
-$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;
+$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;$('ref39Run').onclick=runReference39;$('lv43Run').onclick=runLV43;
 $('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();selectedLine=null;changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
 $('saveProjectBtn').onclick=$('saveProjectBtn2').onclick=saveProject;$('exportCsvBtn').onclick=()=>download(baseName()+'_loads.csv',csv(),'text/csv;charset=utf-8');$('exportSvgBtn').onclick=$('exportSvgBtn2').onclick=exportSvg;$('exportEquipmentBtn').onclick=()=>download(baseName()+'_equipment_draft.csv',equipmentCsv(),'text/csv;charset=utf-8');
 $('exportAuditBtn').onclick=()=>download(baseName()+'_audit.json',JSON.stringify({project:state.title,audit:projectAudit(),generatedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');
