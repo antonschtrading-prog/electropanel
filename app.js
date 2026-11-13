@@ -1771,6 +1771,18 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
 });
+$('protectionWorkbench').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-protection-input-form]');if(!form)return;
+ e.preventDefault();
+ const id=form.dataset.protectionInputForm;
+ const inputs={ibA:form.elements.namedItem('ibA')?.value,
+  izA:form.elements.namedItem('izA')?.value,ikKa:form.elements.namedItem('ikKa')?.value};
+ if(typeof epProtectionInputsV1!=='function')return notify('Модуль исходных токов недоступен',true);
+ const result=epProtectionInputsV1(state,id,inputs);
+ if(!result.project)return notify('Исходные токи не записаны: '+result.code,true);
+ checkpoint();state=result.project;selectedLine=id;changed();
+ notify('Токи записаны как исходные данные. Требуется инженерная проверка.');
+});
 $('protectionWorkbench').addEventListener('click',e=>{
  const btn=e.target.closest('[data-protection-sku][data-protection-line]');if(!btn||btn.disabled)return;
  const id=btn.dataset.protectionLine,sku=btn.dataset.protectionSku;
