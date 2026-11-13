@@ -15,13 +15,15 @@ function epEngineeringBundleV1(project,lookupSku){
  const layoutAlternatives=section('LAYOUT_ALTERNATIVES',typeof epDraftLayoutAlternativesV1==='function'?epDraftLayoutAlternativesV1:null);
  const singleLine=section('SINGLE_LINE',typeof epSingleLineDraftV1==='function'?
   (p,lookup)=>epSingleLineDraftV1(p,lookup):null);
+ const neutralWireIsolation=section('NEUTRAL_WIRE_ISOLATION',typeof epNeutralWireIsolationV1==='function'?
+  p=>epNeutralWireIsolationV1(p):null);
  const neutralSegregation=section('NEUTRAL_SEGREGATION',typeof epNeutralSegregationV1==='function'?
   p=>epNeutralSegregationV1(p):null);
  const wiringTrace=section('WIRING_TRACE',typeof epCircuitWiringTraceV1==='function'?
   p=>epCircuitWiringTraceV1(p):null);
  const crossView=section('CROSS_VIEW',typeof epCrossViewAuditV1==='function'?
   ()=>epCrossViewAuditV1(project,protection,board,bom):null);
- const sections={dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,singleLine,engineering};
+ const sections={dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
