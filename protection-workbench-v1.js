@@ -94,4 +94,18 @@ function epProtectionWorkbenchHtmlV1(report){
   (rows||'<tr><td colspan="8">Нет аппаратов в доступном каталоге</td></tr>')+
   '</tbody></table></div><p>Назначение кандидата не подтверждает пригодность к монтажу. Изменение артикула помечает расчёт на перепроверку.</p></section>';
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epProtectionWorkbenchV1,epProtectionWorkbenchHtmlV1};
+function epProtectionWorkbenchCsvV1(report){
+ const quote=x=>{
+  let s=String(x??'');
+  if(/^[\s\u0000-\u001f]*[=+@-]/.test(s))s="'"+s;
+  return '"'+s.replace(/"/g,'""')+'"';
+ };
+ const head=['Цепь','Назначение','Фаза','Ib А','Iz А','Ik кА','Выбранный артикул',
+  'Производитель','Серия','In А','Icn кА','Статус','Замечания','Кандидаты POTENTIAL'];
+ const rows=(report?.rows||[]).map(x=>[x.lineId,x.name,x.phase,x.ibA,x.izA,x.ikKa,
+  x.selectedSku,x.selectedArticle?.maker,x.selectedArticle?.series,x.selectedArticle?.inA,
+  x.selectedArticle?.icnKa,x.status,x.reasons.join('; '),
+  x.candidates.filter(c=>c.status==='POTENTIAL').map(c=>c.sku).join(', ')]);
+ return '\uFEFF'+[head,...rows].map(row=>row.map(quote).join(';')).join('\r\n')+'\r\n';
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epProtectionWorkbenchV1,epProtectionWorkbenchHtmlV1,epProtectionWorkbenchCsvV1};
