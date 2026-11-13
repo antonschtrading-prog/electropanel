@@ -49,3 +49,19 @@ test('invalid and extreme numbers do not get arithmetic PASS',()=>{
 test('input is not mutated',()=>{
  const before=JSON.stringify(input);check({});assert.equal(JSON.stringify(input),before);
 });
+
+test('Python 34-digit rounding at touch-voltage boundary stays PASS',()=>{
+ for(const ra of ['1666.6666666666666666666666666666666666',
+  '1666.6666666666666666666666666666666667',
+  '1666.6666666666666666666666666666666668']){
+  const r=check({ra_ohm:ra});
+  assert.equal(r.status,'PASS');
+ }
+});
+test('unknown fields and invalid imported structures are rejected',()=>{
+ const api=vm.runInNewContext(src+'\n({epNormalizeTTContext})');
+ assert.throws(()=>api.epNormalizeTTContext({fake_approval:true}),/Unknown TT field/);
+ assert.throws(()=>api.epNormalizeTTContext({ra_ohm:[]}),/Invalid TT field/);
+ assert.throws(()=>api.epNormalizeTTContext({ra_ohm:'1'.repeat(200)}),/Invalid TT field/);
+ assert.equal(api.epNormalizeTTContext({earthing_system:'TT'}).earthing_system,'TT');
+});
