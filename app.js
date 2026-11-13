@@ -862,6 +862,11 @@ function renderEngineeringDiagnosticsV1(){
   typeof epCircuitWiringTraceHtmlV1==='function'?
   epCircuitWiringTraceHtmlV1(epCircuitWiringTraceV1(state),selectedLine):
   'Прослеживаемость проводников недоступна.';
+ const neutralHolder=$('neutralSegregationPanel');
+ if(neutralHolder)neutralHolder.innerHTML=typeof epNeutralSegregationV1==='function'&&
+  typeof epNeutralSegregationHtmlV1==='function'?
+  epNeutralSegregationHtmlV1(epNeutralSegregationV1(state),selectedLine):
+  'Проверка разделения нейтралей недоступна.';
  const crossView=$('crossViewAuditPanel'),issueHolder=$('engineeringIssueRegister');
  if(typeof epEngineeringBundleV1==='function'&&(crossView||issueHolder)){
   const bundle=epEngineeringBundleV1(state,catalogDevice);
@@ -1790,6 +1795,12 @@ $('exportProtectionCsvBtn').addEventListener('click',()=>{
  const catalog=Object.entries(EP_CATALOG).map(([id,device])=>({id,device}));
  const report=epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine);
  download(baseName()+'_protection_DRAFT.csv',epProtectionWorkbenchCsvV1(report),'text/csv;charset=utf-8');
+});
+$('neutralSegregationPanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-neutral-focus]');if(!btn)return;
+ const id=btn.dataset.neutralFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь не найдена',true);
+ selectedLine=id;render();
 });
 $('engineeringIssueRegister').addEventListener('click',e=>{
  const btn=e.target.closest('[data-issue-focus]');if(!btn)return;
