@@ -55,3 +55,9 @@ test('UI shows calculation provenance when available',()=>{
  const p=apply({lines:[{id:'L1',name:'Насос'}]},'L1',single).project;
  const h=html(p,'L1');assert.match(h,/10 А/);assert.match(h,/Uln/);
 });
+
+test('three phase circuit rejects single phase formula and vice versa',()=>{
+ assert.equal(apply({lines:[{id:'L1',phase:'3Ф'}]},'L1',single).code,'PHASE_MODE_CONFLICT');
+ assert.equal(apply({lines:[{id:'L1',phase:'L1'}]},'L1',three).code,'PHASE_MODE_CONFLICT');
+ assert.equal(apply({lines:[{id:'L1',phase:'3Ф'}]},'L1',three).status,'REVIEW_REQUIRED');
+});
