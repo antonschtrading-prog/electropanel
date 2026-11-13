@@ -91,3 +91,28 @@ function epTNDisconnectionV43(data){
   {calculated_min_fault_current_a:current,required_operation_current_a:ia,declared_loop_impedance_ohm:zs,
    note:'Trip current and limit are user supplied. PE and protection NOT established'});
 }
+function epLV43BoundLine(project,line){
+ if(!line||!line.lv43Input)return null;
+ const input=line.lv43Input;
+ const scope=epScopeV43(input.scope);
+ const systemOK=['TN-S','TN-C-S'].includes(project?.earthing);
+ const three=line.phase==='3Ф';
+ const expected=three?'three_phase_balanced':'single_phase_L_N';
+ const phaseOK=['L1','L2','L3','3Ф'].includes(line.phase)&&input.voltage_drop?.phase_configuration===expected;
+ const loadCurrent=line.overloadInput?.ibA;
+ const drop=epVoltageDropV43(input.voltage_drop,loadCurrent);
+ const tn=epTNDisconnectionV43(input.tn_disconnection);
+ const reasons=[];
+ if(!systemOK)reasons.push('PROJECT_NOT_TN');
+ if(!phaseOK)reasons.push('LINE_PHASE_CONFIGURATION_MISMATCH');
+ if(scope.status!=='IN_SCOPE_PRELIMINARY')reasons.push('SCOPE_NOT_PRELIMINARY');
+ if(line.calculationReview?.pending?.includes('lv43Input'))reasons.push('STALE_LINE_REVIEW');
+ for(const part of [drop,tn])if(part.status==='FAIL')reasons.push('NUMERIC_FAILURE');
+ const status=reasons.some(x=>['PROJECT_NOT_TN','LINE_PHASE_CONFIGURATION_MISMATCH','NUMERIC_FAILURE'].includes(x))?'BLOCKED':
+  reasons.includes('STALE_LINE_REVIEW')?'BLOCKED':'UNKNOWN';
+ return {status,scope,tn,voltage_drop:drop,issues:reasons,
+  design_current_origin:'line.overloadInput.ibA',
+  declared_ib_a:loadCurrent??null,
+  normative_status:'UNVERIFIED',engineeringApproved:false,ready_for_design:false,
+  ready_for_installation:false};
+}
