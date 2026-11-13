@@ -4,7 +4,7 @@ const vm=require('node:vm'),path=require('node:path');
 const crypto=require('node:crypto').webcrypto;
 const source=fs.readFileSync(path.join(__dirname,'..','overload-v30.js'),'utf8')+'\n'+
  fs.readFileSync(path.join(__dirname,'..','cable-evidence-v45.js'),'utf8');
-const api=vm.runInNewContext(source+'\n({epVerifyDocumentBytesV34,epCableProvenanceV45})',
+const api=vm.runInNewContext(source+'\n({epVerifyDocumentBytesV34,epVerifyDocumentFileV34,epCableProvenanceV45})',
  {crypto,atob,Uint8Array,BigInt});
 const sha='0c8a4ac5054c4c08f79acd107cf38ebb19b33dcdb3a8d9c2ede4779b6b95dc4e';
 const doc='ZXhhbXBsZSBvbmx5'; // Python v4.14 test_v45.py uses b'example only'
@@ -58,4 +58,16 @@ test('invalid engineering characteristics never yield approval',async()=>{
   const x=cable();x[key]=value;
   assert.equal((await api.epCableProvenanceV45(x)).status,'UNKNOWN',key);
  }
+});
+
+test('browser local File path uses only arrayBuffer and never uploads bytes',async()=>{
+ const bytes=Buffer.from('example only');
+ const mock={size:bytes.length,arrayBuffer:async()=>Uint8Array.from(bytes).buffer};
+ const r=await api.epVerifyDocumentFileV34(mock,sha);
+ assert.equal(r.integrity_status,'PASS');
+ assert.equal(r.actual_sha256,sha);
+ assert.equal(r.ready_for_installation,false);
+ const wrong=await api.epVerifyDocumentFileV34(mock,'a'.repeat(64));
+ assert.equal(wrong.integrity_status,'FAIL');
+ await assert.rejects(()=>api.epVerifyDocumentFileV34({...mock,size:1000001},sha));
 });
