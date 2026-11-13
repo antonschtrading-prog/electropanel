@@ -1247,7 +1247,8 @@ function renderBoard(){
    const modelLink=(state.boardBindingsV1||[]).find(x=>x.boardDeviceId===boardId);
    const mapped=modelLink?epBoardBindingsAuditV1(state,catalogDevice):null;
    d.dataset.apparatusId=boardId||'';
-   d.dataset.topologyLink=modelLink?(mapped?.issues.some(x=>x.level==='BLOCKED')?'stale':'declared'):'unbound';
+   d.dataset.topologyLink=modelLink?(mapped?.issues.some(x=>x.level==='BLOCKED'&&
+    (x.id===boardId||x.boardDeviceId===boardId))?'stale':'declared'):'unbound';
    d.title+=' · Терминальная схема: '+(modelLink?'связана декларативно':'не связана');
 
    d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span></span><span class="ep-terminal ep-terminal-bottom"></span>';
