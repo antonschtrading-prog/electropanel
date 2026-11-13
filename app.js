@@ -22,6 +22,19 @@ function notify(message,error=false){const t=document.createElement('div');t.cla
 function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
  if(lastDesignSnapshot&&typeof epDesignChangeImpactV1==='function'){
   lastDesignImpact=epDesignChangeImpactV1(lastDesignSnapshot,state);
+  if(lastDesignImpact.changed.includes('load')){
+   for(const line of state.lines){
+    const previous=lastDesignSnapshot.lines?.find(x=>x?.id===line?.id);
+    if(!previous||!line?.loadCurrentCalculation)continue;
+    const keys=['power','powerKw','phase'];
+    if(keys.some(k=>JSON.stringify(previous[k]??null)!==JSON.stringify(line[k]??null))||
+       JSON.stringify(lastDesignSnapshot.loads?.filter(x=>x?.circuitId===line.id)||[])!==
+       JSON.stringify(state.loads?.filter(x=>x?.circuitId===line.id)||[])){
+      line.calculationReview={required:true,reason:'LOAD_CHANGED_RECALCULATE_IB'};
+      line.loadCurrentCalculation.stale=true;
+    }
+   }
+  }
   if(typeof epInvalidateDesignEvidenceV1==='function')
    state=epInvalidateDesignEvidenceV1(state,lastDesignImpact);
  }
