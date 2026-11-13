@@ -1,0 +1,13 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {epCrossViewAuditV1:a}=require('../cross-view-audit-v1');
+const project={lines:[{id:'L1',catalogSku:'SKU-1'}]};
+const protection={rows:[{lineId:'L1',selectedSku:'SKU-1',status:'UNKNOWN'}]};
+const board={placements:[{deviceId:'L1',kind:'branch',article:'SKU-1',railIndex:0,startModule:0,modules:2}],rails:1,capacityPerRail:12};
+const run=(p=project,r=protection,b=board)=>a(p,r,b,[]);
+test('consistent draft remains unapproved',()=>{const x=run();assert.equal(x.status,'UNKNOWN');assert.equal(x.issues.length,0);assert.equal(x.ready_for_installation,false)});
+test('stale protection and placement are blocked',()=>{const x=run({...project,lines:[{id:'L1',catalogSku:'SKU-2'}]});assert(x.issues.some(i=>i.code==='PROTECTION_SKU_STALE'));assert(x.issues.some(i=>i.code==='PLACEMENT_SKU_STALE'))});
+test('missing placement blocked',()=>assert(run(project,protection,{...board,placements:[]}).issues.some(i=>i.code==='PLACEMENT_BRANCH_MISSING')));
+test('out of bounds and overlap blocked',()=>{const x=run(project,protection,{...board,placements:[board.placements[0],{...board.placements[0],kind:'shared',deviceId:'S1',startModule:1,modules:12}]});assert(x.issues.some(i=>i.code==='PLACEMENT_OVERLAP'));assert(x.issues.some(i=>i.code==='PLACEMENT_OUT_OF_BOUNDS'))});
+test('duplicate line ids blocked',()=>assert(run({lines:[...project.lines,...project.lines]}).issues.some(i=>i.code==='LINE_ID_INVALID_OR_DUPLICATE')));
+test('missing protection blocked',()=>assert(run(project,null).issues.some(i=>i.code==='PROTECTION_VIEW_MISSING')));
