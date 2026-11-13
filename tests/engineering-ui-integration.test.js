@@ -145,3 +145,21 @@ test('protection CSV export uses current full project and is wired',()=>{
  assert.match(app,/_protection_DRAFT\.csv/);
  assert.match(app,/epProtectionWorkbenchCsvV1\(report\)/);
 });
+
+test('cross-view audit is loaded before bundle and app',()=>{
+ assert.ok(scripts.indexOf('cross-view-audit-v1.js')>=0);
+ assert.ok(scripts.indexOf('cross-view-audit-ui-v1.js')>scripts.indexOf('cross-view-audit-v1.js'));
+ assert.ok(scripts.indexOf('cross-view-audit-ui-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="crossViewAuditPanel"/);
+ assert.match(app,/epCrossViewAuditHtmlV1\(bundle.sections.crossView,selectedLine\)/);
+});
+test('cross-view issue navigation and exports use current project',()=>{
+ assert.match(app,/\$\('crossViewAuditPanel'\)\.addEventListener\('click'/);
+ assert.match(app,/data-crossview-focus/);
+ assert.match(app,/selectedLine=id;render\(\)/);
+ for(const kind of ['Csv','Json'])assert.ok(html.includes('id="exportCrossView'+kind+'Btn"'));
+ assert.match(app,/_crossview_DRAFT\.csv/);
+ assert.match(app,/_crossview_DRAFT\.json/);
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ assert.match(bundle,/epCrossViewAuditV1\(project,protection,board,bom\)/);
+});
