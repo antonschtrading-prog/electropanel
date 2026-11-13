@@ -57,6 +57,7 @@ jobs:
           node --check voltage-drop-design-v1.js
           node --check circuit-design-review-v1.js
           node --check circuit-design-review-ui-v1.js
+          node --check design-work-queue-v1.js
           node --check project-integrity-v1.js
           node --check catalog-evidence-audit-v1.js
           node --check engineering-gate-v1.js
