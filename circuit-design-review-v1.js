@@ -46,7 +46,7 @@ function epCircuitDesignReviewV1(project,lookupSku){
   for(const reason of reasons)issues.push({...reason,lineId:line.id});
   const status=reasons.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId:line.id,name:line.name||'',phase:line.phase||null,sku:line.catalogSku||null,
-   ibA:ib,inA,izA,ikKa,icnKa,sectionMm2:section,current,cable,breaking,referenceStatus,
+   ibA:ib,inA,izA:iz,ikKa,icnKa,sectionMm2:section,current,cable,breaking,referenceStatus,
    referenceIzA:candidate?.izA??null,voltageDrop:drop,status,reasons});
  }
  return {schema:'electropanel.design.review.1',
