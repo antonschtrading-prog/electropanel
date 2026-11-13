@@ -1,7 +1,13 @@
 'use strict';
 // Deterministic per-circuit protection workbench. No automatic electrical selection.
 function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
- const issues=[],rows=[],safePositive=typeof epProtectionPositiveV1==='function'?epProtectionPositiveV1:()=>null;
+ const issues=[],rows=[];
+ const safePositive=v=>{
+  if(v===null||v===undefined||typeof v==='boolean'||typeof v==='object')return null;
+  const s=String(v).trim().replace(',','.');
+  if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(s))return null;
+  const n=Number(s);return Number.isFinite(n)&&n>0?n:null;
+ };
  if(!project||!Array.isArray(project.lines)||project.lines.length>1000)
   return {status:'BLOCKED',issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],rows:[],selected:null,
    engineeringApproved:false,ready_for_installation:false};
