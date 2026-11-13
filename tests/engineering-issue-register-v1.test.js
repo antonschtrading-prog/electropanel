@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {epEngineeringIssueRegisterV1:reg,epEngineeringIssueRegisterHtmlV1:html,epEngineeringIssueRegisterCsvV1:csv}
  =require('../engineering-issue-register-v1');
-const bundle=()=>({sections:Object.fromEntries(['designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering']
+const bundle=()=>({sections:Object.fromEntries(['designWorkQueue','designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering']
  .map(name=>[name,{issues:[]}]))});
 test('complete empty sections remain unknown not approved',()=>{
  const r=reg(bundle());assert.equal(r.status,'UNKNOWN');assert.equal(r.entries.length,0);
