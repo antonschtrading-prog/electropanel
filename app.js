@@ -1963,6 +1963,22 @@ $('exportDraftBomJsonBtn').addEventListener('click',()=>{
  if(typeof epDraftBomV1!=='function')return notify('Спецификация недоступна',true);
  download(baseName()+'_equipment_BOM_DRAFT.json',JSON.stringify(epDraftBomV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
 });
+$('designEvidencePanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-save-evidence]');if(!btn)return;
+ const area=btn.getAttribute('data-save-evidence');
+ if(!['load','network','cable','device','topology','enclosure'].includes(area))return;
+ const row=btn.closest('[data-evidence-row]');if(!row)return;
+ const value=key=>row.querySelector('[data-evidence-field="'+key+'"]')?.value?.trim()||'';
+ const source=value('source'),method=value('method'),status=value('status');
+ if(!['verified','failed','unknown'].includes(status))return notify('Некорректный статус',true);
+ if(source.length>500||method.length>500)return notify('Слишком длинное основание',true);
+ if(status==='verified'&&(!source||!method))
+  return notify('Для документирования укажите источник и метод',true);
+ checkpoint();
+ state.evidence={...(state.evidence&&typeof state.evidence==='object'?state.evidence:{})};
+ state.evidence[area]={status,source,method,stale:false};
+ changed();notify('Основание проектного решения сохранено');
+});
 $('exportEngineeringGateBtn').addEventListener('click',exportEngineeringGateV1);
 $('exportCircuitDossierJsonBtn').addEventListener('click',()=>{
  if(typeof epCircuitDossierV1!=='function'){notify('Модуль ведомости не загружен',true);return;}
