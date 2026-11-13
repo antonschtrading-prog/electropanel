@@ -145,3 +145,7 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-protection-inputs fieldset{display:flex;flex-wrap:wrap;gap:12px;align-items:end;padding:12px;border:1px solid var(--border,#d8d8d8);border-radius:6px}
 .ep-protection-inputs label{display:flex;flex-direction:column;gap:4px;min-width:100px;flex:1}
 .ep-protection-inputs input{width:100%;max-width:200px}
+
+.ep-crossview-panel{margin:16px 0;padding:12px;border:1px solid var(--border,#d8d8d8);border-radius:8px}
+.ep-crossview-panel table{width:100%;border-collapse:collapse}
+.ep-crossview-panel td,.ep-crossview-panel th{padding:7px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left}
