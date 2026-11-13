@@ -77,3 +77,17 @@ test('DIN jump navigates to selected apparatus without changing project',()=>{
  assert.match(app,/switchView\('board'\)/);
  assert.match(app,/device\.scrollIntoView/);
 });
+
+test('manufacturer BOM loads before app and refreshes in engineering panel',()=>{
+ assert.ok(scripts.indexOf('draft-bom-v1.js')>scripts.indexOf('circuit-workspace-v1.js'));
+ assert.ok(scripts.indexOf('draft-bom-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="draftBomPanel"/);
+ assert.match(app,/epDraftBomHtmlV1\(epDraftBomV1\(state,catalogDevice\)\)/);
+});
+test('BOM exports are connected to their visible controls',()=>{
+ for(const kind of ['Csv','Json'])assert.ok(html.includes('id="exportDraftBom'+kind+'Btn"'));
+ assert.match(app,/\$\('exportDraftBomCsvBtn'\)\.addEventListener\('click'/);
+ assert.match(app,/\$\('exportDraftBomJsonBtn'\)\.addEventListener\('click'/);
+ assert.match(app,/_equipment_BOM_DRAFT\.csv/);
+ assert.match(app,/_equipment_BOM_DRAFT\.json/);
+});
