@@ -13,6 +13,8 @@ function epEngineeringPrintV1(bundle){
   allIssues=sections.issueRegister?.entries||[],wiring=sections.wiringTrace?.rows||[],
   neutral=sections.neutralSegregation?.rows||[],neutralPairs=sections.neutralWireIsolation?.pairs||[],
   singleLine=sections.singleLine?.nodes||[];
+ const workQueue=sections.designWorkQueue?.items||[];
+ const workQueueTable=rows(['Приоритет','Цепь','Задача','Раздел'],workQueue.map(x=>[x.priority,x.lineId,x.action,x.section]));
  const designReview=sections.designReview?.rows||[];
  const designReviewTable=rows(['Цепь','Ib A','In A','Iz A','Icn kA','Ik kA','Сечение мм²','ΔU %','Статус'],designReview.map(x=>[x.lineId,x.ibA,x.inA,x.izA,x.icnKa,x.ikKa,x.sectionMm2,x.voltageDrop?.dropPercent,x.status]));
  const cableReference=sections.cableReference?.rows||[];
@@ -62,6 +64,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Очередь инженерных задач</h2>'+workQueueTable+
   '<h2>Матрица проектных расчётов</h2>'+designReviewTable+
   '<h2>Справочные сечения проводников</h2>'+cableReferenceTable+
   '<h2>Расчёт тока нагрузки</h2>'+loadCurrentTable+
