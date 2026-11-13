@@ -32,11 +32,14 @@ function epEngineeringPrintV1(bundle){
   neutral.map(x=>[x.lineId,x.groupId||'Без УЗО',x.expectedBus,x.declaredBus,x.protectiveBus,x.status]));
  const wiringTable=rows(['Цепь','Роль','От','До','Статус','Клеммы по модели'],
   wiring.flatMap(x=>(x.connections||[]).map(c=>[x.lineId,c.role,c.from,c.to,c.status,(c.path||[]).join(' → ')])));
+ const oneLineSvg=typeof epSingleLineSvgV1==='function'&&sections.singleLine?
+  epSingleLineSvgV1(sections.singleLine):'';
  const style='body{font:13px/1.45 Arial,sans-serif;color:#20252b;margin:32px auto;max-width:1100px;padding:0 18px}'+
  'h1{font-size:26px}h2{margin-top:28px;border-bottom:2px solid #bbb;padding-bottom:5px}'+
  'table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:11px;table-layout:fixed}'+
  'th,td{border:1px solid #aeb7c1;padding:5px;vertical-align:top;overflow-wrap:anywhere}'+
  'th{background:#edf1f5}.warning{border:2px solid #bd6c27;padding:12px;font-weight:bold}'+
+ '.ep-single-line-scroll{overflow:hidden}.ep-single-line-scroll svg{max-width:100%;height:auto}'+
  '@page{size:A4 landscape;margin:13mm}@media print{body{margin:0;padding:0}h2{break-after:avoid}tr{break-inside:avoid}}';
  return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
   '<title>'+esc(bundle?.projectTitle||'Проект')+' · DRAFT</title><style>'+style+'</style></head><body>'+
@@ -47,7 +50,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
-  '<h2>Однолинейная структура проекта (декларация)</h2>'+singleLineTable+
+  '<h2>Однолинейная структура проекта (декларация)</h2>'+oneLineSvg+singleLineTable+
   '<h2>Разделение нейтралей УЗО и PE</h2>'+neutralTable+
   '<h2>Заявленные проводники и клеммы</h2>'+wiringTable+
   '<h2>Расхождения между представлениями</h2>'+crossTable+
