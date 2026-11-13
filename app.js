@@ -926,6 +926,9 @@ function renderEngineeringDiagnosticsV1(){
  const designReviewHolder=$('circuitDesignReviewPanel');
  if(designReviewHolder)designReviewHolder.innerHTML=typeof epCircuitDesignReviewHtmlV1==='function'?
   epCircuitDesignReviewHtmlV1(state,catalogDevice,selectedLine):'Сводная матрица недоступна.';
+ const workQueueHolder=$('designWorkQueuePanel');
+ if(workQueueHolder)workQueueHolder.innerHTML=typeof epDesignWorkQueueV1==='function'?
+  epDesignWorkQueueHtmlV1(epDesignWorkQueueV1(state,catalogDevice),selectedLine):'Очередь задач недоступна.';
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
   const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
@@ -1939,6 +1942,10 @@ $('circuitDesignReviewPanel').addEventListener('submit',e=>{
  if(!result.project)return notify('Падение напряжения: '+result.code,true);
  checkpoint();state=result.project;changed();
  notify('Расчёт падения напряжения записан: '+result.calculation.dropPercent.toFixed(2)+'%');
+});
+$('designWorkQueuePanel').addEventListener('click',e=>{
+ const focus=e.target.closest('[data-design-focus]');
+ if(focus){selectedLine=focus.getAttribute('data-design-focus');render();}
 });
 $('circuitDesignReviewPanel').addEventListener('click',e=>{
  const focus=e.target.closest('[data-design-focus]');
