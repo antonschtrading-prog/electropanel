@@ -164,3 +164,7 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-wire-circuit summary{cursor:pointer;font-weight:600}
 .ep-wire-circuit table{width:100%;border-collapse:collapse;min-width:650px}
 .ep-wire-circuit td,.ep-wire-circuit th{padding:6px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left}
+
+.ep-neutral-panel{margin:14px 0;padding:12px;border:1px solid var(--border,#d8d8d8);border-radius:8px}
+.ep-neutral-panel table{width:100%;border-collapse:collapse;min-width:540px}
+.ep-neutral-panel td,.ep-neutral-panel th{padding:7px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left}
