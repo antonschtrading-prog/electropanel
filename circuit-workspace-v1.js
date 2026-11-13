@@ -31,22 +31,22 @@ function epCircuitWorkspaceV1(project,lookupSku,query='',mode='all'){
   issueCount:report.issues.length,counts,filter,query:normalized,
   engineeringApproved:false,ready_for_installation:false};
 }
-function epCircuitWorkspaceHtmlV1(result){
+function epCircuitWorkspaceHtmlV1(result,selectedId=null){
  const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const rows=result.rows.map(x=>{
   const location=x.placement?'DIN '+x.placement.rail+' / '+x.placement.from+'–'+x.placement.to:'Не размещено';
   const issues=x.issues.map(i=>i.code).join(', ');
-  return '<tr><td>'+safe(x.circuitId)+'</td><td>'+safe(x.name)+'</td><td>'+safe(x.phase)+
+  return '<tr'+(x.circuitId===selectedId?' class="ep-circuit-active"':'')+'><td><button type="button" class="btn tiny" data-focus-circuit="'+safe(x.circuitId)+'" aria-label="Выбрать цепь '+safe(x.circuitId)+'">'+safe(x.circuitId)+'</button></td><td>'+safe(x.name)+'</td><td>'+safe(x.phase)+
    '</td><td>'+safe(x.manufacturer||'—')+'</td><td>'+safe(x.sku||'Без артикула')+
-   '</td><td>'+safe(location)+'</td><td>'+safe(issues||'Замечаний по цепи нет')+'</td></tr>';
+   '</td><td>'+safe(location)+'</td><td>'+safe(issues||'Замечаний по цепи нет')+'</td><td><button type="button" class="btn tiny" data-open-load-circuit="'+safe(x.circuitId)+'">Редактировать</button></td></tr>';
  }).join('');
  return '<p>Показано '+result.visible+' из '+result.total+' цепей · замечаний по проекту: '+
  result.issueCount+'. Блокирующих цепей: '+result.counts.blocked+
  '; без артикула: '+result.counts.missingArticle+'; не размещено: '+result.counts.unplaced+
  '; перепроверка: '+result.counts.staleReview+'. Только заявленные данные, не инженерный допуск.</p>'+
  '<div style="overflow-x:auto"><table><thead><tr><th>Цепь</th><th>Назначение</th><th>Фаза</th>'+
- '<th>Производитель</th><th>Артикул</th><th>DIN</th><th>Замечания</th></tr></thead><tbody>'+
- (rows||'<tr><td colspan="7">Нет цепей по выбранному фильтру</td></tr>')+
+ '<th>Производитель</th><th>Артикул</th><th>DIN</th><th>Замечания</th><th>Действие</th></tr></thead><tbody>'+
+ (rows||'<tr><td colspan="8">Нет цепей по выбранному фильтру</td></tr>')+
  '</tbody></table></div>';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epCircuitWorkspaceV1,epCircuitWorkspaceHtmlV1};
