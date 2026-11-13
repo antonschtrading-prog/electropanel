@@ -78,3 +78,15 @@ test('no hidden source table lookup',()=>{
  const f=fixture();delete f.table.rows[0].iz_a;
  assert.equal(epCable31Assess(f).numeric_status,'UNKNOWN');
 });
+
+test('GitHub Pages ships the browser checker and UI wiring is present',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+ const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+ const publish=fs.readFileSync(path.join(__dirname,'..','.github','workflows','publish.yml'),'utf8');
+ assert.ok(html.includes('src="cable-tables-v31.js"'));
+ assert.ok(html.includes('id="cable31Input"'));
+ assert.ok(html.includes('id="assessCable31"'));
+ assert.ok(app.includes("$('assessCable31').onclick=assessCable31FromUI;"));
+ assert.ok(publish.includes('cp index.html styles.css app.js'));
+ assert.ok(publish.includes('cable-tables-v31.js'));
+});
