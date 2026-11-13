@@ -13,6 +13,8 @@ function epEngineeringPrintV1(bundle){
   allIssues=sections.issueRegister?.entries||[],wiring=sections.wiringTrace?.rows||[],
   neutral=sections.neutralSegregation?.rows||[],neutralPairs=sections.neutralWireIsolation?.pairs||[],
   singleLine=sections.singleLine?.nodes||[];
+ const loadCurrent=sections.loadCurrent?.rows||[];
+ const loadCurrentTable=rows(['Цепь','Ib, A','Режим','Формула','Исходные данные'],loadCurrent.map(x=>[x.lineId,x.ibA,x.calculation?.mode||'Не рассчитан',x.calculation?.formula||'',x.calculation?.inputs?JSON.stringify(x.calculation.inputs):'']));
  const evidence=sections.designEvidence?.items||[];
  const evidenceTable=rows(['Раздел','Статус','Обоснование'],
   evidence.map(x=>[x.area,x.status,x.reason]));
@@ -56,6 +58,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Расчёт тока нагрузки</h2>'+loadCurrentTable+
   '<h2>Доказательная база проектных решений</h2>'+evidenceTable+
   '<h2>Однолинейная структура проекта (декларация)</h2>'+oneLineSvg+singleLineTable+
   '<h2>Разделение нейтралей УЗО и PE</h2>'+neutralTable+
