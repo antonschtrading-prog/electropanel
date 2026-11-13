@@ -1748,6 +1748,11 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
 });
 $('exportEngineeringGateBtn').addEventListener('click',exportEngineeringGateV1);
+$('exportCircuitDossierJsonBtn').addEventListener('click',()=>{
+ if(typeof epCircuitDossierV1!=='function'){notify('Модуль ведомости не загружен',true);return;}
+ download(baseName()+'_circuit_dossier_DRAFT.json',
+  JSON.stringify(epCircuitDossierV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
+});
 $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  if(typeof epCircuitDossierV1!=='function'||typeof epCircuitDossierCsvV1!=='function'){
   notify('Модуль ведомости не загружен',true);return;
