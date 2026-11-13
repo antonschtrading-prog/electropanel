@@ -54,3 +54,9 @@ test('UI escapes circuit names and exposes method confirmation',()=>{
  assert.doesNotMatch(h,/<img/);assert.match(h,/&lt;img/);
  assert.match(h,/data-cable-reference-form="L1"/);assert.match(h,/name="confirmContext"/);
 });
+
+test('mixed decimal and integer cable sizes are ordered numerically',()=>{
+ const r=check({...context,ibA:10,inA:10});
+ assert.deepEqual(r.candidates.map(x=>x.sectionMm2),[1.5,2.5,4,6,10,16]);
+ assert.equal(r.smallestReferenceCandidate.sectionMm2,1.5);
+});
