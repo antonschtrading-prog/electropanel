@@ -51,6 +51,9 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epProjectIntegrityV1==='function')
   inspect('project_integrity',()=>epProjectIntegrityV1(project,lookupSku));
  else add('project_integrity','PROJECT_INTEGRITY_UNAVAILABLE','UNKNOWN');
+ if(typeof epSingleLineDraftV1==='function')
+  inspect('single_line',()=>epSingleLineDraftV1(project,lookupSku));
+ else add('single_line','SINGLE_LINE_UNAVAILABLE','UNKNOWN');
  if(typeof epCircuitWiringTraceV1==='function')
   inspect('circuit_wiring_trace',()=>epCircuitWiringTraceV1(project));
  else add('circuit_wiring_trace','CIRCUIT_WIRING_TRACE_UNAVAILABLE','UNKNOWN');
