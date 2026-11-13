@@ -66,3 +66,17 @@ test('terminal link edit invalidates topology evidence',()=>{
  const p=base(),q=structuredClone(p);q.terminalLinks=[{circuitId:'L1',from:'A',to:'B'}];
  assert.deepEqual(a(p,q).affected,['topology','enclosure']);
 });
+
+test('circuit rename does not invalidate electrical calculations',()=>{
+ const p=base(),q=structuredClone(p);q.lines[0].name='Кухня';
+ assert.equal(a(p,q).status,'UNCHANGED');
+});
+test('circuit reorder does not invalidate calculations',()=>{
+ const p=base();p.lines.push({id:'L2',powerKw:1});
+ const q=structuredClone(p);q.lines.reverse();
+ assert.equal(a(p,q).status,'UNCHANGED');
+});
+test('circuit article edit only invalidates device and dependent topology',()=>{
+ const p=base(),q=structuredClone(p);q.lines[0].catalogSku='ABB-S201';
+ assert.deepEqual(a(p,q).affected,['device','topology','enclosure']);
+});
