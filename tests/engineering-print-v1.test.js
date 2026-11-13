@@ -41,3 +41,16 @@ test('print report includes the complete engineering issue register',()=>{
  assert.match(h,/IN_GT_IZ/);
  assert.match(h,/THERMAL_NOT_VERIFIED/);
 });
+
+test('print embeds vector one-line diagram when renderer is loaded',()=>{
+ const b=bundle();b.sections.singleLine={status:'UNKNOWN',nodes:[
+  {id:'SOURCE:MAIN',type:'source',name:'Ввод'},
+  {id:'CIRCUIT:L1',type:'circuit',lineId:'L1',name:'Розетки',phase:'L1',
+   article:{maker:'ABB',series:'S200',label:'S201-C16',inA:16,icnKa:6,poles:1}}],
+ edges:[{from:'SOURCE:MAIN',to:'CIRCUIT:L1'}]};
+ global.epSingleLineSvgV1=require('../single-line-svg-v1').epSingleLineSvgV1;
+ try{
+  const h=print(b);assert.match(h,/<svg/);assert.match(h,/data-single-line-focus="L1"/);
+  assert.match(h,/НЕ ДЛЯ МОНТАЖА/);
+ }finally{delete global.epSingleLineSvgV1;}
+});
