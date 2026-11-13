@@ -29,6 +29,8 @@ jobs:
           node --check circuit-dossier-v1.js
           node --check circuit-workspace-v1.js
           node --check draft-bom-v1.js
+          node --check cross-view-audit-v1.js
+          node --check cross-view-audit-ui-v1.js
           node --check engineering-bundle-v1.js
           node --check protective-device-shortlist-v1.js
           node --check protection-workbench-v1.js
