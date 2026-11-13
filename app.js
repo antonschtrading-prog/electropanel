@@ -920,6 +920,9 @@ function renderEngineeringDiagnosticsV1(){
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
+ const cablePanel=$('cableReferencePanel');
+ if(cablePanel)cablePanel.innerHTML=typeof epCableReferenceHtmlV1==='function'?
+  epCableReferenceHtmlV1(state,selectedLine,catalogDevice):'Справочник кабелей недоступен.';
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
   const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
@@ -1918,6 +1921,19 @@ $('exportCrossViewJsonBtn').addEventListener('click',()=>{
  if(typeof epEngineeringBundleV1!=='function')return notify('Проверка согласованности недоступна',true);
  const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
  download(baseName()+'_crossview_DRAFT.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
+});
+$('cableReferencePanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-cable-reference-form]');if(!form)return;
+ e.preventDefault();
+ const lineId=form.getAttribute('data-cable-reference-form');
+ if(typeof epApplyCableReferenceInputV1!=='function')return notify('Справочник кабелей недоступен',true);
+ const result=epApplyCableReferenceInputV1(state,lineId,{
+  installationMethod:form.elements.namedItem('installationMethod')?.value,
+  confirmContext:form.elements.namedItem('confirmContext')?.checked===true
+ });
+ if(!result.project)return notify('Условия не записаны: '+result.code,true);
+ checkpoint();state=result.project;selectedLine=lineId;changed();
+ notify('Условия справочной таблицы записаны. Проверьте расчёт и ограничения.');
 });
 $('loadCurrentPanel').addEventListener('submit',e=>{
  const form=e.target.closest('[data-load-current-form]');if(!form)return;
