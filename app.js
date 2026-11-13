@@ -847,6 +847,9 @@ function renderEngineeringDiagnosticsV1(){
  const preview=$('draftBoardPreview');
  if(preview)preview.innerHTML=typeof epDraftBoardPreviewV1==='function' ?
   epDraftBoardPreviewV1(state,catalogDevice):'Предварительная компоновка недоступна.';
+ const dossier=$('circuitDossier');
+ if(dossier)dossier.innerHTML=typeof epCircuitDossierPanelV1==='function'?
+  epCircuitDossierPanelV1(state,catalogDevice):'Ведомость цепей недоступна.';
 }
 function exportEngineeringGateV1(){
  const report=typeof epEngineeringGateV1==='function'
@@ -1742,6 +1745,13 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='declareMissingGroupInputsBtn'){try{const draft=structuredCloneCompat(ensureV2(state));declareMissingGroupInputs(draft);if(draft.groupInputLinks.length===state.groupInputLinks.length){notify('Новых вводов нет');return;}checkpoint();state.groupInputLinks=draft.groupInputLinks;changed();}catch(err){notify(err.message,true);}return;}
  if(e.target.id==='declareMissingFeedBtn'){try{const draft=structuredCloneCompat(ensureV2(state));const before=state.feedLinks.length;declareMissingFeedLinks(draft);if(draft.feedLinks.length===before){notify('Новых деклараций нет');return;}checkpoint();state.feedLinks=draft.feedLinks;changed();notify('Отсутствующие декларации добавлены без замены существующих.');}catch(err){notify(err.message,true);}return;}
  if(e.target.id==='exportEngineeringGateBtn'){exportEngineeringGateV1();return;}
+ if(e.target.id==='exportCircuitDossierCsvBtn'){
+  if(typeof epCircuitDossierV1!=='function'||typeof epCircuitDossierCsvV1!=='function'){
+   notify('Модуль ведомости не загружен',true);return;
+  }
+  download(baseName()+'_circuit_dossier_DRAFT.csv',
+   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');return;
+ }
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
 });
