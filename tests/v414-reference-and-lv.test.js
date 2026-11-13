@@ -82,3 +82,12 @@ test('floating-point borderline results become UNKNOWN rather than false PASS',(
  zs_ohm:1,ia_a_at_required_disconnection_time:230,minimum_voltage_factor:1};
  assert.equal(api.epTNDisconnectionV43(tn).status,'UNKNOWN');
 });
+
+test('non-decimal JavaScript syntaxes cannot pass engineering current checks',()=>{
+ const d={earthing_system:'TN',source_impedance_included:true,temperature_basis_checked:true,
+  disconnection_time_limit_verified:true,trip_curve_source_verified:true,
+  u0_v:230,zs_ohm:1,ia_a_at_required_disconnection_time:160,minimum_voltage_factor:0.95};
+ for(const bad of ['0x10','0b10000','1_000','Infinity','', '  ', 'NaN']){
+  assert.equal(api.epTNDisconnectionV43({...d,ia_a_at_required_disconnection_time:bad}).status,'UNKNOWN',bad);
+ }
+});
