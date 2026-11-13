@@ -23,6 +23,14 @@ function epBoardBindingSnapshotV1(boardDevice){
   modules:boardDevice.modules,phase:boardDevice.phase??null,
   templateId:boardDevice.templateId??null};
 }
+function epBoardModelSnapshotV1(project,id){
+ const model=project?.deviceModelV19;
+ const device=model?.devices?.find(x=>x.id===id);
+ if(!device)throw Error('Device model missing');
+ const terminals=(model.terminals||[]).filter(x=>x.device_id===id)
+  .map(x=>({id:x.id,conductor:x.conductor})).sort((a,b)=>a.id.localeCompare(b.id));
+ return {kind:device.kind??null,poles:device.poles,terminals};
+}
 function epBoardBindingsAuditV1(project,lookupSku){
  const entries=project?.boardBindingsV1??[];
  if(!Array.isArray(entries)||entries.length>500)
@@ -50,6 +58,9 @@ function epBoardBindingsAuditV1(project,lookupSku){
   const b=boardById.get(entry.boardDeviceId),d=modelById.get(entry.modelDeviceId);
   if(!b){push('BOARD_DEVICE_MISSING','BLOCKED',{id:entry.boardDeviceId});continue;}
   if(!d){push('MODEL_DEVICE_MISSING','BLOCKED',{id:entry.modelDeviceId});continue;}
+  const modelSignature=epBoardModelSnapshotV1(project,d.id);
+  if(JSON.stringify(entry.modelSnapshot)!==JSON.stringify(modelSignature))
+   push('MODEL_TERMINALS_CHANGED','BLOCKED',{id:b.id});
   const current=epBoardBindingSnapshotV1(b);
   if(JSON.stringify(entry.snapshot)!==JSON.stringify(current))
    push('BOARD_DEVICE_CHANGED','BLOCKED',{id:b.id});
@@ -96,14 +107,15 @@ function epNewBoardBindingV1(project,modelId,boardId){
  const board=epBoardDevicesV1(project).find(d=>d.id===boardId);
  if(!board)throw Error('No board apparatus');
  return {modelDeviceId:modelId,boardDeviceId:boardId,
-  snapshot:epBoardBindingSnapshotV1(board)};
+  snapshot:epBoardBindingSnapshotV1(board),
+  modelSnapshot:epBoardModelSnapshotV1(project,modelId)};
 }
 function epNormalizeBoardBindingsV1(input){
  if(!Array.isArray(input)||input.length>500)throw Error('Invalid bindings array');
  const seenModel=new Set(),seenBoard=new Set();
  return input.map(x=>{
   if(!x||typeof x!=='object'||Array.isArray(x)||
-    Object.keys(x).some(k=>!['modelDeviceId','boardDeviceId','snapshot'].includes(k))||
+    Object.keys(x).some(k=>!['modelDeviceId','boardDeviceId','snapshot','modelSnapshot'].includes(k))||
     typeof x.modelDeviceId!=='string'||x.modelDeviceId.length>128||
     typeof x.boardDeviceId!=='string'||x.boardDeviceId.length>128||
     !x.snapshot||typeof x.snapshot!=='object'||Array.isArray(x.snapshot))
@@ -120,9 +132,22 @@ function epNormalizeBoardBindingsV1(input){
    if(x.snapshot[k]!==null&&x.snapshot[k]!==undefined&&
       (typeof x.snapshot[k]!=='string'||x.snapshot[k].length>128))
     throw Error('Invalid snapshot '+k);
+  const sig=x.modelSnapshot;
+  if(!sig||typeof sig!=='object'||Array.isArray(sig)||
+    Object.keys(sig).some(k=>!['kind','poles','terminals'].includes(k))||
+    sig.kind!==null&&(typeof sig.kind!=='string'||sig.kind.length>128)||
+    !Number.isInteger(sig.poles)||sig.poles<0||sig.poles>10||
+    !Array.isArray(sig.terminals)||sig.terminals.length>1000||
+    sig.terminals.some(t=>!t||typeof t!=='object'||Array.isArray(t)||
+      Object.keys(t).some(k=>!['id','conductor'].includes(k))||
+      typeof t.id!=='string'||t.id.length>128||
+      typeof t.conductor!=='string'||t.conductor.length>16))
+   throw Error('Invalid model terminal snapshot');
   return {modelDeviceId:x.modelDeviceId,boardDeviceId:x.boardDeviceId,
    snapshot:{sku:x.snapshot.sku??null,label:x.snapshot.label,
     modules:x.snapshot.modules,phase:x.snapshot.phase??null,
-    templateId:x.snapshot.templateId??null}};
+    templateId:x.snapshot.templateId??null},
+   modelSnapshot:{kind:sig.kind,poles:sig.poles,
+    terminals:sig.terminals.map(t=>({id:t.id,conductor:t.conductor}))}};
  });
 }
