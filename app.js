@@ -847,6 +847,11 @@ function renderEngineeringDiagnosticsV1(){
  const preview=$('draftBoardPreview');
  if(preview)preview.innerHTML=typeof epDraftBoardPreviewV1==='function' ?
   epDraftBoardPreviewV1(state,catalogDevice,selectedLine):'Предварительная компоновка недоступна.';
+ const alternatives=$('draftLayoutAlternatives');
+ if(alternatives)alternatives.innerHTML=typeof epDraftLayoutAlternativesV1==='function'&&
+  typeof epDraftLayoutAlternativesHtmlV1==='function'?
+  epDraftLayoutAlternativesHtmlV1(epDraftLayoutAlternativesV1(state,catalogDevice)):
+  'Альтернативное размещение недоступно.';
  const dossier=$('circuitDossier');
  if(dossier)renderCircuitWorkspaceV1();
  const bom=$('draftBomPanel');
