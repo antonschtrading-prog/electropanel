@@ -33,3 +33,12 @@ test('unknown device type is not treated as breaker',()=>{
  assert.equal(r.candidates.length,0);
 });
 test('invalid line blocks',()=>assert.equal(select(null,catalog).status,'BLOCKED'));
+
+test('missing fault current leaves candidates incomplete, not potential',()=>{
+ const l=line();delete l.ikKa;
+ assert.ok(select(l,catalog).candidates.every(c=>c.status!=='POTENTIAL'));
+});
+test('missing cable ampacity leaves candidates incomplete',()=>{
+ const l=line();delete l.overloadInput.izA;
+ assert.ok(select(l,catalog).candidates.every(c=>c.status!=='POTENTIAL'));
+});
