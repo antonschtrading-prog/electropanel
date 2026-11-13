@@ -852,6 +852,12 @@ function renderEngineeringDiagnosticsV1(){
  const bom=$('draftBomPanel');
  if(bom)bom.innerHTML=typeof epDraftBomV1==='function'&&typeof epDraftBomHtmlV1==='function'?
   epDraftBomHtmlV1(epDraftBomV1(state,catalogDevice)):'Модуль спецификации недоступен.';
+ const protection=$('protectionWorkbench');
+ if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
+  const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
+   Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[];
+  protection.innerHTML=epProtectionWorkbenchHtmlV1(epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine));
+ }
 }
 function renderCircuitWorkspaceV1(){
  const holder=$('circuitDossier');if(!holder)return;
@@ -1759,6 +1765,19 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='declareMissingFeedBtn'){try{const draft=structuredCloneCompat(ensureV2(state));const before=state.feedLinks.length;declareMissingFeedLinks(draft);if(draft.feedLinks.length===before){notify('Новых деклараций нет');return;}checkpoint();state.feedLinks=draft.feedLinks;changed();notify('Отсутствующие декларации добавлены без замены существующих.');}catch(err){notify(err.message,true);}return;}
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
+});
+$('protectionWorkbench').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-protection-sku][data-protection-line]');if(!btn||btn.disabled)return;
+ const id=btn.dataset.protectionLine,sku=btn.dataset.protectionSku;
+ const line=state.lines.find(x=>x.id===id);
+ if(!line||!catalogDevice(sku))return notify('Цепь или артикул не найдены',true);
+ const catalog=Object.entries(EP_CATALOG).map(([key,device])=>({id:key,device}));
+ const check=epProtectionWorkbenchV1(state,catalogDevice,catalog,id);
+ if(check.selected?.lineId!==id||!check.selected.candidates.some(x=>x.sku===sku&&x.status!=='REJECTED'))
+  return notify('Аппарат не проходит предварительную проверку',true);
+ try{transact(()=>{applyCatalogueSku(state,id,sku);});selectedLine=id;render();
+  notify('Артикул назначен. Расчёты требуют перепроверки.');
+ }catch(err){notify(err.message||'Не удалось назначить артикул',true);}
 });
 $('circuitDossier').addEventListener('click',e=>{
  const focus=e.target.closest('[data-focus-circuit],[data-open-load-circuit],[data-open-board-circuit]');if(!focus)return;
