@@ -119,3 +119,25 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 #circuitDossier th,#circuitDossier td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border,#d8d8d8);vertical-align:top}
 #circuitDossier .btn.tiny{white-space:nowrap}
 #circuitFocusLabel{font-weight:600}
+
+/* Proportional, explicitly draft-only DIN module occupancy. No manufacturer front claims. */
+.ep-din-rail-section{margin:14px 0 22px}
+.ep-din-module-grid{display:grid;grid-template-columns:repeat(var(--ep-din-columns),minmax(0,1fr));gap:2px;
+ background:linear-gradient(to bottom,#8a929a 0 12%,#e4e8eb 12% 20%,#7d858d 20% 26%,#cad0d6 26% 80%,#89939b 80% 100%);
+ padding:9px 4px;min-height:96px;overflow:hidden;border:1px solid #6d7881;border-radius:5px}
+.ep-din-block{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:5px;
+ min-width:0;min-height:94px;padding:8px 4px;background:linear-gradient(115deg,#fff,#e5e8ec);
+ border:1px solid #a0aab3;border-bottom:4px solid #6f7b86;border-radius:3px;
+ box-shadow:inset 2px 0 #fff9,0 1px 2px #2222;color:#26323d}
+.ep-din-block-id,.ep-din-block-article{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ font-size:10px;font-weight:700}
+.ep-din-block-article{font-weight:400;font-size:9px}
+.ep-din-block-width{font-size:10px;align-self:flex-end}
+.ep-din-block.ep-circuit-active{outline:3px solid #dc7c29;outline-offset:-2px}
+.ep-din-block.ep-din-unverified{border-top:4px dashed #b66a29}
+.ep-din-empty{min-width:0;border:1px dashed #ffffff55;background:#f5f8fb33}
+.ep-din-rail-section details{margin-top:7px}
+.ep-protection-workbench{margin:18px 0;padding:12px;border:1px solid var(--border,#d8d8d8);border-radius:8px}
+.ep-protection-workbench table{width:100%;border-collapse:collapse}
+.ep-protection-workbench th,.ep-protection-workbench td{padding:8px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left;vertical-align:top}
+.ep-protection-workbench button[disabled]{opacity:.45;cursor:not-allowed}
