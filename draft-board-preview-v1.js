@@ -26,6 +26,7 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    const rating=catalog&&Number.isFinite(catalog.inA)?
     (safe(catalog.curve||'')+safe(catalog.inA)+' A'):'';
    const breaking=catalog&&Number.isFinite(catalog.icnKa)?safe(catalog.icnKa)+' kA':'';
+   const faceStyle=['abb','schneider','iek'].includes(catalog?.appearance)?catalog.appearance:'generic';
    const facade=catalog?
     '<span class="ep-din-brand">'+safe(maker||'Изготовитель не указан')+'</span>'+
     '<span class="ep-din-series">'+safe(series||'Серия не указана')+'</span>'+
@@ -38,6 +39,7 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
     (circuitId?' data-din-focus="'+safe(circuitId)+'"':' disabled')+'>'+
     '<span class="ep-din-block-id">'+safe(d.deviceId)+'</span>'+
     facade+
+    '<span class="ep-din-device-face ep-din-face-'+faceStyle+'" aria-hidden="true"><span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span></span>'+ 
     '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+
     '<span class="ep-din-block-width">'+d.modules+'M</span></button>';
    cursor=d.startModule+d.modules;
