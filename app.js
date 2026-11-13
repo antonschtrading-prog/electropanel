@@ -9,7 +9,7 @@ const demoCommercial = () => ({schema:'electropanel.web.preview.1',title:'Ком
  {id:'L2',name:'Розеточная группа',power:3.8,phase:'L2',device:'C16',modules:1,source:'demo'},
  {id:'L3',name:'Кондиционирование',power:4.5,phase:'3Ф',device:'C16',modules:3,source:'demo'},
  {id:'L4',name:'Вентиляция',power:1.5,phase:'L3',device:'C16',modules:1,source:'demo'}],plan:null,changedAt:new Date().toISOString()});
-let state = initial(); let selectedLine = null; let currentView = 'overview'; let pendingRows = []; let planPreviewUrl = null; const MAX_LINES=400;
+let state = initial(); let lastDesignSnapshot=null; let lastDesignImpact=null; let selectedLine = null; let currentView = 'overview'; let pendingRows = []; let planPreviewUrl = null; const MAX_LINES=400;
 const historyUndo=[], historyRedo=[]; let dragLineId=null; const MAX_HISTORY=30;
 const SOURCES=Object.freeze({manual:'Ручной ввод',tz:'Техническое задание',csv:'Импорт CSV',demo:'Учебный пример',unknown:'Источник неизвестен'});
 function snapshot(){ensureV2(state);return JSON.stringify(state);}
@@ -19,7 +19,14 @@ function reorderLine(sourceId,targetId){const from=state.lines.findIndex(l=>l.id
 function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));state.lines=state.lines.filter(x=>x.id!==id);if(selectedLine===id)selectedLine=null;changed();return true;}
 function safeText(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,error=false){const t=document.createElement('div');t.className='toast'+(error?' error':'');t.textContent=message;document.body.appendChild(t);setTimeout(()=>t.remove(),3800);}
-function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);state.changedAt=new Date().toISOString();try{localStorage.setItem('electropanel_web_preview',JSON.stringify(state));}catch(e){notify('Не удалось сохранить автокопию в браузере',true);}render();}
+function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
+ if(lastDesignSnapshot&&typeof epDesignChangeImpactV1==='function'){
+  lastDesignImpact=epDesignChangeImpactV1(lastDesignSnapshot,state);
+  if(typeof epInvalidateDesignEvidenceV1==='function')
+   state=epInvalidateDesignEvidenceV1(state,lastDesignImpact);
+ }
+ lastDesignSnapshot=structuredCloneCompat(state);
+ state.changedAt=new Date().toISOString();try{localStorage.setItem('electropanel_web_preview',JSON.stringify(state));}catch(e){notify('Не удалось сохранить автокопию в браузере',true);}render();}
 function switchView(view){currentView=view;document.querySelectorAll('.view').forEach(n=>n.classList.toggle('active',n.id==='view-'+view));document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===view));$('breadcrumbTitle').textContent=state.title||'Новый проект';$('menuToggle').closest('.main').previousElementSibling.classList.remove('open');render();}
 // UI templates are generic layout hints, NOT verified manufacturer catalogue records.
 const DEVICE_TEMPLATES=Object.freeze({
@@ -837,6 +844,10 @@ function issues(){const r=[];if(!state.title.trim())r.push('Не указано 
 function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderEngineeringDiagnosticsV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
 
 function renderEngineeringDiagnosticsV1(){
+ const impactHolder=$('designChangeImpactPanel');
+ if(impactHolder)impactHolder.textContent=lastDesignImpact?.affected?.length?
+  'После изменений перепроверить: '+lastDesignImpact.affected.join(', ')+'.':
+  'Изменения, требующие перепроверки, пока не выявлены.';
  const evidenceHolder=$('designEvidencePanel');
  if(evidenceHolder)evidenceHolder.innerHTML=typeof assessDesignEvidence==='function'&&typeof epDesignEvidenceHtmlV1==='function'?
   epDesignEvidenceHtmlV1(assessDesignEvidence(state)):'Проверка доказательной базы недоступна.';
@@ -1965,4 +1976,4 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
 });
-try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}render();
+try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}lastDesignSnapshot=structuredCloneCompat(state);render();
