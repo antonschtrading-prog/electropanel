@@ -138,3 +138,10 @@ test('manual Ib Iz Ik declarations use validation and history instead of silent 
  assert.match(app,/epProtectionInputsV1\(state,id,inputs\)/);
  assert.match(app,/checkpoint\(\);state=result.project;selectedLine=id;changed\(\)/);
 });
+
+test('protection CSV export uses current full project and is wired',()=>{
+ assert.match(html,/id="exportProtectionCsvBtn"/);
+ assert.match(app,/\$\('exportProtectionCsvBtn'\)\.addEventListener\('click'/);
+ assert.match(app,/_protection_DRAFT\.csv/);
+ assert.match(app,/epProtectionWorkbenchCsvV1\(report\)/);
+});
