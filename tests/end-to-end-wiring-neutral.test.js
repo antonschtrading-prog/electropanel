@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.join(__dirname,'..');
 const source=['catalog.js','draft-board-plan-v1.js','draft-bom-v1.js',
  'circuit-dossier-v1.js','terminal-path-v2.js','endpoint-bridge-v1.js',
- 'circuit-wiring-trace-v1.js','neutral-segregation-v1.js','single-line-draft-v1.js','single-line-svg-v1.js','cross-view-audit-v1.js',
+ 'circuit-wiring-trace-v1.js','neutral-segregation-v1.js','neutral-wire-isolation-v1.js','single-line-draft-v1.js','single-line-svg-v1.js','cross-view-audit-v1.js',
  'engineering-issue-register-v1.js','engineering-gate-v1.js','engineering-bundle-v1.js']
  .map(x=>fs.readFileSync(path.join(root,x),'utf8')).join('\n');
 const ctx=vm.createContext({});vm.runInContext(source,ctx);
@@ -83,5 +83,19 @@ test('invalid RCD ownership blocks engineering gate and issue register',()=>{
  const r=ctx.epEngineeringBundleV1(p,ctx.epCatalogSku);
  assert.equal(r.sections.singleLine.status,'BLOCKED');
  assert(r.sections.issueRegister.entries.some(x=>x.code==='SINGLE_LINE_MULTIPLE_RCD'));
+ assert.equal(r.overallStatus,'BLOCKED');
+});
+
+test('full bundle reports explicit downstream N cross-bus connection as BLOCKED',()=>{
+ const p=fixture();p.sharedDevices=[{id:'RCD1',circuitIds:['L1']}];
+ p.endpointBindingsV1.push(
+  {symbolicRef:'BUS:N_MAIN/N',terminalId:'nmain'},
+  {symbolicRef:'BUS:N_RCD1/N',terminalId:'nrcd'});
+ p.wiringModelV18.terminals.push({id:'nmain',conductor:'N'},{id:'nrcd',conductor:'N'});
+ p.wiringModelV18.wires.push({from:'nmain',to:'nrcd',state:'closed'});
+ const r=ctx.epEngineeringBundleV1(p,ctx.epCatalogSku);
+ assert.equal(r.sections.neutralWireIsolation.status,'BLOCKED');
+ assert(r.sections.issueRegister.entries.some(x=>x.code==='N_ISOLATION_CROSS_BUS_DECLARED_PATH'));
+ assert(r.sections.engineering.issues.some(x=>x.origin==='neutral_wire_isolation'&&x.level==='BLOCKED'));
  assert.equal(r.overallStatus,'BLOCKED');
 });
