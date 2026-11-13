@@ -28,12 +28,14 @@ function epProjectCalculationCoverageV1(project,lookupSku){
    if(!sku)add('CATALOG_ARTICLE_UNKNOWN',id,'BLOCKED');
   }else missing.push('PROTECTIVE_DEVICE_NOT_SELECTED');
   if(sku&&positive(ib)&&positive(iz)){
-   if(Number(ib)>sku.inA)add('IB_EXCEEDS_SELECTED_IN',id,'BLOCKED');
-   if(sku.inA>Number(iz))add('SELECTED_IN_EXCEEDS_DECLARED_IZ',id,'BLOCKED');
+   if(Number(String(ib).replace(',','.'))>sku.inA)add('IB_EXCEEDS_SELECTED_IN',id,'BLOCKED');
+   if(sku.inA>Number(String(iz).replace(',','.')))add('SELECTED_IN_EXCEEDS_DECLARED_IZ',id,'BLOCKED');
   }
   if(!line.route44Input)missing.push('ROUTE_IMPEDANCE_NOT_DECLARED');
-  if(!line.breakingCapacityInput&&!line.ikKa)missing.push('SHORT_CIRCUIT_INPUT_NOT_DECLARED');
-  if(!line.calculationReview)missing.push('CALCULATION_REVIEW_NOT_DECLARED');
+  if(!positive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa))missing.push('SHORT_CIRCUIT_INPUT_NOT_DECLARED');
+  if(line.calculationReview?.required)add('CALCULATION_REVIEW_STALE',id,'BLOCKED');
+  // Absence of a review flag is not evidence that an engineer reviewed a calculation.
+  missing.push('ENGINEERING_REVIEW_EVIDENCE_NOT_ESTABLISHED');
   for(const code of missing)add(code,id);
   lines.push({id,missing,status:missing.length?'UNKNOWN':'REVIEW_REQUIRED',
    engineeringApproved:false});
