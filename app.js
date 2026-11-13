@@ -841,6 +841,20 @@ function saveTTContext(){
  if(data)state.ttContext=data;else delete state.ttContext;
  changed();renderTTContext();renderReadiness();renderAudit();
 }
+async function verifyCableSourceFile(){
+ const field=$('cableSourceFile'),hashField=$('cableSourceHash'),output=$('cableSourceResult');
+ const file=field.files?.[0],expected=hashField.value.trim();
+ if(!file){output.textContent='Сначала выберите локальный файл';return;}
+ try{
+  const report=await epVerifyDocumentFileV34(file,expected);
+  output.textContent='Целостность байтов: '+report.integrity_status+
+   '. SHA-256 файла: '+report.actual_sha256+'. Размер: '+report.byte_count+
+   ' байт. Подлинность источника и нормативная пригодность: НЕ ПОДТВЕРЖДЕНЫ.';
+ }catch(error){
+  output.textContent='Проверка НЕ выполнена: '+error.message+
+   '. Происхождение документа остаётся непроверенным.';
+ }
+}
 function renderPhases(){
  const holder=$('phaseChart');if(!holder)return;
  const data=getPhasePercentages(); const total=phaseSummary();
@@ -1158,7 +1172,7 @@ $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
 $('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}checkpoint();state[key]=n;changed();});
-$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;
+$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;
 $('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();selectedLine=null;changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
 $('saveProjectBtn').onclick=$('saveProjectBtn2').onclick=saveProject;$('exportCsvBtn').onclick=()=>download(baseName()+'_loads.csv',csv(),'text/csv;charset=utf-8');$('exportSvgBtn').onclick=$('exportSvgBtn2').onclick=exportSvg;$('exportEquipmentBtn').onclick=()=>download(baseName()+'_equipment_draft.csv',equipmentCsv(),'text/csv;charset=utf-8');
 $('exportAuditBtn').onclick=()=>download(baseName()+'_audit.json',JSON.stringify({project:state.title,audit:projectAudit(),generatedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');
