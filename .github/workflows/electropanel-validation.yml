@@ -12,6 +12,7 @@ on:
       - 'reference-ampacity-v38.js'
       - 'reference-cable-v39.js'
       - 'typical-lv-v43.js'
+      - 'route-impedance-v44.js'
       - 'layout-v414.js'
       - 'legacy-compat.js'
       - 'index.html'
@@ -42,6 +43,7 @@ jobs:
           node --check reference-ampacity-v38.js
           node --check reference-cable-v39.js
           node --check typical-lv-v43.js
+          node --check route-impedance-v44.js
           node --check layout-v414.js
           node --check legacy-compat.js
       - name: Run regression tests
@@ -65,5 +67,6 @@ jobs:
             reference-ampacity-v38.js
             reference-cable-v39.js
             typical-lv-v43.js
+            route-impedance-v44.js
             layout-v414.js
             legacy-compat.js
