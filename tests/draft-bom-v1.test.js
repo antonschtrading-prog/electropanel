@@ -19,3 +19,13 @@ test('HTML escapes supplier and SKU text',()=>{const r=bom(p(),k=>({...lookup(k)
 test('no project blocked',()=>assert.equal(bom(null).status,'BLOCKED'));
 test('no implicit engineering approval',()=>{const r=bom(p(),lookup);assert.equal(r.engineeringApproved,false);assert.equal(r.ready_for_installation,false);});
 test('BOM leaves project unchanged',()=>{const x=p(),before=JSON.stringify(x);bom(x,lookup);assert.equal(JSON.stringify(x),before);});
+
+test('BOM shows number of devices with missing catalogue evidence',()=>{
+ const x=p();delete x.lines[0].catalogSku;
+ const r=bom(x,lookup);assert.equal(r.expectedDevices,3);assert.equal(r.totalCataloguedDevices,2);
+ assert.equal(r.missingDevices,1);assert.match(html(r),/без подтверждённого артикула: 1/);
+});
+test('BOM issue details are escaped in HTML',()=>{
+ const x=p();x.lines[0].id='<img src=x onerror=alert(1)>';delete x.lines[0].catalogSku;
+ const h=html(bom(x,lookup));assert.doesNotMatch(h,/<img/);assert.match(h,/&lt;img/);
+});
