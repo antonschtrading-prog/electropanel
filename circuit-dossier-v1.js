@@ -62,7 +62,12 @@ function epCircuitDossierCsvV1(report){
  const cells=['Цепь','Назначение','Фаза','Мощность кВт','ID аппарата','Артикул','Производитель',
  'Серия','Источник','Ib A','Iz A','Ik кА','Трасса заявлена','Перепроверка расчётов',
  'DIN','Позиция с','Позиция по'];
- const quote=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+ const quote=x=>{
+  let value=String(x??'');
+  // Defang formula-like cells on spreadsheet import, including whitespace prefixes.
+  if(/^[\\s\\u0000-\\u001f]*[=+@-]/.test(value))value="'"+value;
+  return '"'+value.replace(/"/g,'""')+'"';
+ };
  const rows=[cells,...(report?.rows||[]).map(x=>[x.circuitId,x.name,x.phase,x.powerKw,x.apparatusId,
  x.sku,x.manufacturer,x.series,x.articleSource,x.declared?.ibA,x.declared?.izA,x.declared?.ikKa,
  x.routeDeclared?'ДА':'НЕТ',x.calculationReviewRequired?'ДА':'НЕТ',x.placement?.rail,
