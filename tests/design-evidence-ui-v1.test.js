@@ -21,3 +21,16 @@ test('all evidence sections remain present in documented project',()=>{
  assert.match(epDesignEvidenceHtmlV1(report),/документировано 6\/6/);
  assert.equal(report.installationApproved,false);
 });
+
+test('evidence editor renders six save actions and source/method fields',()=>{
+ const html=epDesignEvidenceHtmlV1(assessDesignEvidence({}));
+ assert.equal((html.match(/data-save-evidence=/g)||[]).length,6);
+ assert.equal((html.match(/data-evidence-field="source"/g)||[]).length,6);
+ assert.equal((html.match(/data-evidence-field="method"/g)||[]).length,6);
+});
+test('evidence editor escapes hostile source and method values',()=>{
+ const report=assessDesignEvidence({evidence:{load:{status:'unknown',source:'"><img src=x>',method:'"><svg onload=alert(1)>'}}});
+ const html=epDesignEvidenceHtmlV1(report);
+ assert.doesNotMatch(html,/<img|<svg/);
+ assert.match(html,/&quot;&gt;&lt;img/);
+});
