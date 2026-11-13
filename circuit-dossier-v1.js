@@ -65,7 +65,7 @@ function epCircuitDossierCsvV1(report){
  const quote=x=>{
   let value=String(x??'');
   // Defang formula-like cells on spreadsheet import, including whitespace prefixes.
-  if(/^[\\s\\u0000-\\u001f]*[=+@-]/.test(value))value="'"+value;
+  if(/^[\s\u0000-\u001f]*[=+@-]/.test(value))value="'"+value;
   return '"'+value.replace(/"/g,'""')+'"';
  };
  const rows=[cells,...(report?.rows||[]).map(x=>[x.circuitId,x.name,x.phase,x.powerKw,x.apparatusId,
