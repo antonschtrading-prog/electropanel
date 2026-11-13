@@ -3,6 +3,9 @@
 // Pure projections. No electrical engineering approval.
 function epCircuitDossierV1(project,lookupSku){
  const rows=[],issues=[],lines=Array.isArray(project?.lines)?project.lines:[];
+ if(!project||!Array.isArray(project.lines)||lines.length>400)
+  return {schema:'electropanel.circuit.dossier.draft.1',status:'BLOCKED',rows:[],
+   issues:[{code:'PROJECT_INPUT_INVALID',level:'BLOCKED'}],engineeringApproved:false,ready_for_installation:false};
  const plan=typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1(project,lookupSku):null;
  const positions=new Map((plan?.placements||[]).filter(x=>x.kind==='branch').map(x=>[x.deviceId,x]));
  const branches=Array.isArray(project?.branchDevices)?project.branchDevices:[];
@@ -13,7 +16,11 @@ function epCircuitDossierV1(project,lookupSku){
   }
   if(used.has(line.id))issues.push({code:'DUPLICATE_CIRCUIT_ID',level:'BLOCKED',lineId:line.id});
   used.add(line.id);
-  const branch=branches.find(x=>x?.circuitId===line.id);
+  const matches=branches.filter(x=>x?.circuitId===line.id);
+  if(matches.length>1)issues.push({code:'DUPLICATE_BRANCH_BINDING',level:'BLOCKED',lineId:line.id});
+  if(Array.isArray(project.branchDevices)&&!matches.length)
+   issues.push({code:'BRANCH_BINDING_MISSING',level:'BLOCKED',lineId:line.id});
+  const branch=matches[0];
   const apparatusId=branch?.id??line.id;
   const location=positions.get(apparatusId)||null;
   let article=null;
@@ -22,9 +29,19 @@ function epCircuitDossierV1(project,lookupSku){
    if(!article)issues.push({code:'ARTICLE_UNKNOWN',level:'BLOCKED',lineId:line.id});
   }else issues.push({code:'ARTICLE_NOT_SELECTED',level:'UNKNOWN',lineId:line.id});
   if(!location)issues.push({code:'CIRCUIT_NOT_PLACED',level:'BLOCKED',lineId:line.id});
+  if(branch&&branch.modules!==line.modules)issues.push({code:'BRANCH_WIDTH_CONFLICT',level:'BLOCKED',lineId:line.id});
+  if(article&&Number.isInteger(article.modules)&&article.modules!==line.modules)
+   issues.push({code:'ARTICLE_WIDTH_CONFLICT',level:'BLOCKED',lineId:line.id});
+  if(article&&!article.source)issues.push({code:'ARTICLE_SOURCE_MISSING',level:'UNKNOWN',lineId:line.id});
+  if(!line.route44Input)issues.push({code:'ROUTE_NOT_DECLARED',level:'UNKNOWN',lineId:line.id});
+  if(!['L1','L2','L3','3Ф'].includes(line.phase))issues.push({code:'PHASE_UNKNOWN',level:'UNKNOWN',lineId:line.id});
   const current=line.overloadInput||{};
   const declared={ibA:current.ibA??null,izA:current.izA??null,ikKa:line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa??null};
-  for(const [key,value] of Object.entries(declared))if(value===null||value==='')issues.push({code:'MISSING_'+key.toUpperCase(),level:'UNKNOWN',lineId:line.id});
+  for(const [key,value] of Object.entries(declared)){
+   const n=typeof value==='boolean'||typeof value==='object'?NaN:Number(String(value??'').trim().replace(',','.'));
+   if(value===null||value===''||!Number.isFinite(n)||n<=0)
+    issues.push({code:'INVALID_OR_MISSING_'+key.toUpperCase(),level:'UNKNOWN',lineId:line.id});
+  }
   if(line.calculationReview?.required)issues.push({code:'CALCULATION_REVIEW_REQUIRED',level:'BLOCKED',lineId:line.id});
   rows.push({circuitId:line.id,name:line.name??'',phase:line.phase??null,
    powerKw:line.power??null,apparatusId,sku:line.catalogSku??null,
