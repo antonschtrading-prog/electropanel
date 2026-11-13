@@ -71,3 +71,9 @@ test('selection connects circuit workspace, board and load editor',()=>{
  assert.match(app,/renderBoard\(\);renderCircuitGraph\(\);renderCircuitWorkspaceV1\(\)/);
  assert.match(app,/row\.scrollIntoView/);
 });
+
+test('DIN jump navigates to selected apparatus without changing project',()=>{
+ assert.match(app,/data-open-board-circuit/);
+ assert.match(app,/switchView\('board'\)/);
+ assert.match(app,/device\.scrollIntoView/);
+});
