@@ -31,12 +31,13 @@ jobs:
           test -s styles.css
           test -s app.js
           test -s catalog.js
-          for file in protection.js overload-v30.js tt-screen-v45.js layout-v414.js legacy-compat.js; do test -s "$file"; done
+          for file in protection.js overload-v30.js tt-screen-v45.js cable-evidence-v45.js layout-v414.js legacy-compat.js; do test -s "$file"; done
           node --check catalog.js
           node --check app.js
           node --check protection.js
           node --check overload-v30.js
           node --check tt-screen-v45.js
+          node --check cable-evidence-v45.js
           node --check layout-v414.js
           node --check legacy-compat.js
           node --test tests/*.test.js
