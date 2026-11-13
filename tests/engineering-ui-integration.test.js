@@ -327,3 +327,12 @@ test('integrated design review, voltage drop and export are wired to editor and 
  assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/designReview/);
  assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Матрица проектных расчётов/);
 });
+
+test('prioritized work queue is integrated with circuit selection and printable dossier',()=>{
+ assert.ok(scripts.indexOf('design-work-queue-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="designWorkQueuePanel"/);
+ assert.match(app,/epDesignWorkQueueV1\(state,catalogDevice\)/);
+ assert.match(app,/\$\('designWorkQueuePanel'\)\.addEventListener\('click'/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/designWorkQueue/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Очередь инженерных задач/);
+});
