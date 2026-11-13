@@ -13,6 +13,8 @@ function epEngineeringPrintV1(bundle){
   allIssues=sections.issueRegister?.entries||[],wiring=sections.wiringTrace?.rows||[],
   neutral=sections.neutralSegregation?.rows||[],neutralPairs=sections.neutralWireIsolation?.pairs||[],
   singleLine=sections.singleLine?.nodes||[];
+ const cableReference=sections.cableReference?.rows||[];
+ const cableReferenceTable=rows(['Цепь','Ib, A','In, A','Способ','Справочное сечение, мм²','Статус'],cableReference.map(x=>[x.lineId,x.report?.ibA,x.report?.inA,x.report?.installationMethod,x.report?.smallestReferenceCandidate?.sectionMm2,x.report?.status]));
  const loadCurrent=sections.loadCurrent?.rows||[];
  const loadCurrentTable=rows(['Цепь','Ib, A','Режим','Формула','Исходные данные'],loadCurrent.map(x=>[x.lineId,x.ibA,x.calculation?.mode||'Не рассчитан',x.calculation?.formula||'',x.calculation?.inputs?JSON.stringify(x.calculation.inputs):'']));
  const evidence=sections.designEvidence?.items||[];
@@ -58,6 +60,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Справочные сечения проводников</h2>'+cableReferenceTable+
   '<h2>Расчёт тока нагрузки</h2>'+loadCurrentTable+
   '<h2>Доказательная база проектных решений</h2>'+evidenceTable+
   '<h2>Однолинейная структура проекта (декларация)</h2>'+oneLineSvg+singleLineTable+
