@@ -45,26 +45,10 @@ jobs:
           node --check route-impedance-v44.js
           node --check layout-v414.js
           node --check legacy-compat.js
+          node --check scripts/build-site.js
           node --test tests/*.test.js
-      - name: Prepare static site
-        run: |
-          mkdir -p dist
-          cp index.html styles.css app.js catalog.js browser_check.html dist/
-          # Every local JS file actually referenced by index.html must ship to Pages.
-          # The source-file syntax is deliberately restricted to root-relative safe names.
-          node - <<'NODE'
-          const fs=require('node:fs');
-          const html=fs.readFileSync('index.html','utf8');
-          const refs=[...html.matchAll(/<script\\s+src="([^"]+)"/g)].map(m=>m[1]);
-          if(refs.length<2)throw Error('Expected local script references');
-          for(const name of refs){
-            if(!/^[A-Za-z0-9_.-]+\\.js$/.test(name))throw Error('Unsafe/non-local script path: '+name);
-            if(!fs.existsSync(name)||!fs.statSync(name).size)throw Error('Missing script: '+name);
-            fs.copyFileSync(name,'dist/'+name);
-          }
-          console.log('Packaged',refs.length,'local JavaScript assets.');
-          NODE
-          printf '' > dist/.nojekyll
+      - name: Prepare verified static site
+        run: node scripts/build-site.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
