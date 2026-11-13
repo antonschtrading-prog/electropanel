@@ -194,3 +194,10 @@ test('engineering bundle is computed once for the two read-only audit panels',()
  const fragment=app.slice(start,end);
  assert.equal((fragment.match(/epEngineeringBundleV1\(state,catalogDevice\)/g)||[]).length,1);
 });
+
+test('Russian issue guidance is loaded before register and app',()=>{
+ assert.ok(scripts.indexOf('engineering-issue-guidance-v1.js')>=0);
+ assert.ok(scripts.indexOf('engineering-issue-guidance-v1.js')<scripts.indexOf('engineering-issue-register-v1.js'));
+ const source=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
+ assert.match(source,/epIssueGuidanceV1\(x.code\)/);
+});
