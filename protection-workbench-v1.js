@@ -83,6 +83,12 @@ function epProtectionWorkbenchHtmlV1(report){
    ' · In '+fmt(article.inA)+' А · Icn '+fmt(article.icnKa)+' кА · '+fmt(article.poles)+' пол.':
    'Артикул не выбран или отсутствует в каталоге')+'</p>'+
   '<p>Замечания: '+(x.reasons.length?x.reasons.map(esc).join('; '):'Нет по проверяемым входным данным')+'</p>'+
+  '<form data-protection-input-form="'+esc(x.lineId)+'" class="ep-protection-inputs">'+
+  '<fieldset><legend>Исходные токи (ввод инженером, без автоматического расчёта)</legend>'+
+  '<label>Ib, А <input name="ibA" type="text" inputmode="decimal" required value="'+(x.ibA===null?'':esc(x.ibA))+'"></label>'+
+  '<label>Iz, А <input name="izA" type="text" inputmode="decimal" required value="'+(x.izA===null?'':esc(x.izA))+'"></label>'+
+  '<label>Ik, кА <input name="ikKa" type="text" inputmode="decimal" required value="'+(x.ikKa===null?'':esc(x.ikKa))+'"></label>'+
+  '<button type="submit" class="btn">Записать исходные токи</button></fieldset></form>'+
   '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
   '<th>In, А</th><th>Icn, кА</th><th>Оценка</th><th>Причины</th><th>Действие</th></tr></thead><tbody>'+
   (rows||'<tr><td colspan="8">Нет аппаратов в доступном каталоге</td></tr>')+
