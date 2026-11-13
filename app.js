@@ -904,6 +904,9 @@ function renderEngineeringDiagnosticsV1(){
   if(issueHolder)issueHolder.innerHTML=typeof epEngineeringIssueRegisterHtmlV1==='function'?
    epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
  }
+ const loadPanel=$('loadCurrentPanel');
+ if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
+  epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
   const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
@@ -1902,6 +1905,20 @@ $('exportCrossViewJsonBtn').addEventListener('click',()=>{
  if(typeof epEngineeringBundleV1!=='function')return notify('Проверка согласованности недоступна',true);
  const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
  download(baseName()+'_crossview_DRAFT.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
+});
+$('loadCurrentPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-load-current-form]');if(!form)return;
+ e.preventDefault();
+ const lineId=form.getAttribute('data-load-current-form');
+ const read=name=>form.elements.namedItem(name)?.value;
+ if(typeof epApplyLoadCurrentV1!=='function')return notify('Расчёт тока недоступен',true);
+ const result=epApplyLoadCurrentV1(state,lineId,{
+  mode:read('mode'),powerKw:read('powerKw'),voltageV:read('voltageV'),
+  powerFactor:read('powerFactor'),efficiency:read('efficiency'),demandFactor:read('demandFactor')
+ });
+ if(!result.project)return notify('Ток не рассчитан: '+result.code,true);
+ checkpoint();state=result.project;selectedLine=lineId;changed();
+ notify('Ib рассчитан. Проверьте исходные данные и подбор защиты.');
 });
 $('protectionWorkbench').addEventListener('submit',e=>{
  const form=e.target.closest('[data-protection-input-form]');if(!form)return;
