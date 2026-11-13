@@ -23,3 +23,11 @@ test('bundle does not mutate original project',()=>{
 test('invalid project fails closed',()=>{
  const r=bundle(null,lookup);assert.equal(r.overallStatus,'BLOCKED');
 });
+
+test('bundle includes explicit protection and alternate DIN sections',()=>{
+ const r=bundle(p(),lookup);
+ assert.ok(r.sections.protection);
+ assert.ok(r.sections.layoutAlternatives);
+ assert.equal(r.statuses.protection,'BLOCKED');
+ assert.equal(r.statuses.layoutAlternatives,'BLOCKED');
+});
