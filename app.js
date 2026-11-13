@@ -837,6 +837,9 @@ function issues(){const r=[];if(!state.title.trim())r.push('Не указано 
 function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderEngineeringDiagnosticsV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
 
 function renderEngineeringDiagnosticsV1(){
+ const evidenceHolder=$('designEvidencePanel');
+ if(evidenceHolder)evidenceHolder.innerHTML=typeof assessDesignEvidence==='function'&&typeof epDesignEvidenceHtmlV1==='function'?
+  epDesignEvidenceHtmlV1(assessDesignEvidence(state)):'Проверка доказательной базы недоступна.';
  const holder=$('engineeringDiagnostics');
  if(!holder)return;
  if(typeof epEngineeringDiagnosticsPanelV1!=='function'){
