@@ -12,7 +12,9 @@ function epSymbolicConnectionsV1(project){
    if(!link||typeof link.from!=='string'||typeof link.to!=='string'||
       link.from.length>150||link.to.length>150)
     throw Error('Invalid symbolic link');
-   records.push({id:link.id??null,group,from:link.from,to:link.to});
+   records.push({id:link.id??null,group,from:link.from,to:link.to,
+    circuitId:typeof link.circuitId==='string'?link.circuitId:null,
+    groupId:typeof link.groupId==='string'?link.groupId:null});
   }
  }
  return records;
