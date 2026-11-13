@@ -24,10 +24,26 @@ function epCrossViewAuditV1(project, protection, board, bom) {
  }
  for(const id of ids)if(!pIds.has(id))add('PROTECTION_ROW_MISSING','BLOCKED',id);
  const branches=Array.isArray(project.branchDevices)?project.branchDevices:null;
+ const sharedDevices=Array.isArray(project.sharedDevices)?project.sharedDevices:[];
+ const sharedIds=new Set(),placedShared=new Set();
+ for(const d of sharedDevices){
+  if(!d||typeof d.id!=='string'||!d.id||sharedIds.has(d.id))
+   add('SHARED_DEVICE_ID_INVALID_OR_DUPLICATE','BLOCKED',d?.id??null);
+  else sharedIds.add(d.id);
+ }
  for(const item of placements){
   if(!item||typeof item.deviceId!=='string'||!Number.isInteger(item.railIndex)||!Number.isInteger(item.startModule)||!Number.isInteger(item.modules)||item.railIndex<0||item.startModule<0||item.modules<1){add('PLACEMENT_INVALID');continue;}
   if(deviceIds.has(item.deviceId))add('PLACEMENT_DEVICE_DUPLICATE','BLOCKED',item.deviceId);
   deviceIds.add(item.deviceId);
+  if(item.kind==='shared'){
+   const matches=sharedDevices.filter(d=>d?.id===item.deviceId);
+   if(matches.length!==1)add('PLACEMENT_SHARED_UNMATCHED','BLOCKED',item.deviceId);
+   else{
+    placedShared.add(item.deviceId);
+    if(item.article!==(matches[0].catalogSku||null))add('PLACEMENT_SHARED_SKU_STALE','BLOCKED',item.deviceId);
+    if(item.modules!==matches[0].modules)add('PLACEMENT_SHARED_WIDTH_MISMATCH','BLOCKED',item.deviceId);
+   }
+  }else if(item.kind!=='branch')add('PLACEMENT_KIND_INVALID','BLOCKED',item.deviceId);
   if(item.kind==='branch'){
    const matching=branches?branches.filter(b=>b?.id===item.deviceId):lines.filter(l=>l?.id===item.deviceId);
    if(matching.length!==1){add('PLACEMENT_BRANCH_UNMATCHED','BLOCKED',item.deviceId);continue;}
@@ -39,6 +55,7 @@ function epCrossViewAuditV1(project, protection, board, bom) {
   }
  }
  for(const id of ids)if(!placed.has(id))add('PLACEMENT_BRANCH_MISSING','BLOCKED',id);
+ for(const id of sharedIds)if(!placedShared.has(id))add('PLACEMENT_SHARED_MISSING','BLOCKED',id);
  if(board&&Number.isInteger(board.capacityPerRail)&&Number.isInteger(board.rails)&&board.rails>0&&board.rails<=100&&board.capacityPerRail>0&&board.capacityPerRail<=200){
   const occupied=new Set();
   for(const p of placements){
