@@ -25,6 +25,7 @@ jobs:
           node --check project-calculation-coverage-v1.js
           node --check draft-board-plan-v1.js
           node --check draft-board-preview-v1.js
+          node --check circuit-dossier-v1.js
           node --check protective-device-shortlist-v1.js
           node --check project-integrity-v1.js
           node --check catalog-evidence-audit-v1.js
