@@ -33,6 +33,9 @@ function epApplyLoadCurrentV1(project,lineId,input){
   return {status:'BLOCKED',code:'PROJECT_INVALID',project:null};
  const matches=project.lines.filter(x=>x&&x.id===lineId);
  if(matches.length!==1)return {status:'BLOCKED',code:'LINE_NOT_UNIQUE',project:null};
+ const phase=matches[0].phase;
+ if(phase==='3Ф'&&input?.mode!=='three_phase'||['L1','L2','L3'].includes(phase)&&input?.mode!=='single_phase')
+  return {status:'BLOCKED',code:'PHASE_MODE_CONFLICT',project:null};
  const calculation=epLoadCurrentV1(input);
  if(calculation.status!=='CALCULATED')return {...calculation,project:null};
  const copy=JSON.parse(JSON.stringify(project)),line=copy.lines.find(x=>x.id===lineId);
