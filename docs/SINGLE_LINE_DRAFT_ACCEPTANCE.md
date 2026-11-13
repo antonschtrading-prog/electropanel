@@ -26,3 +26,10 @@ The lines connecting source, RCD groups and circuits are **dashed logical associ
 
 ## Deliberately not implemented yet
 A normative single-line electrical schematic with verified protective coordination, exact manufacturer terminal numbers, true L/N/PE conductors and switch contacts; validated thermal enclosure calculation; CAD/DXF output; a verified manufacturer front-image library. These remain distinct engineering deliverables.
+
+## Conductor-path SVG companion
+The selected circuit now also has a separate read-only vector diagram generated from `epCircuitWiringTraceV1`. Each declared L1/L2/L3/N/PE connection is shown as a labelled edge. A solid edge means that a path exists **only in the declared terminal/wire model**; a dashed edge means no declared path has been established. The ordered terminal IDs and unresolved reason are displayed. The selected-circuit SVG can be exported separately.
+
+This view must not be confused with a physical wiring drawing. In particular, it does not connect through an MCB/RCD/contact, invent a wire, assign manufacturer terminal numbers or claim electrical safety. It complements the group/branch one-line SVG and the N/PE segregation audit.
+
+The offline printable engineering report embeds the one-line SVG and tables of the conductor paths and RCD N/PE declarations. Both SVG exports include draft-only disclaimers.
