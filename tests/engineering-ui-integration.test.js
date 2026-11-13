@@ -120,3 +120,13 @@ test('visual DIN module grid is present and not labelled as manufacturer verifie
  assert.match(source,/grid-column:span/);
  assert.match(source,/монтаж не подтверждён/);
 });
+
+test('non-destructive DIN layout alternative is rendered and exported',()=>{
+ assert.ok(scripts.indexOf('draft-layout-alternatives-v1.js')>scripts.indexOf('draft-board-preview-v1.js'));
+ assert.ok(scripts.indexOf('draft-layout-alternatives-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="draftLayoutAlternatives"/);
+ assert.match(app,/epDraftLayoutAlternativesHtmlV1\(epDraftLayoutAlternativesV1\(state,catalogDevice\)\)/);
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ assert.match(bundle,/layoutAlternatives/);
+ assert.match(bundle,/protection/);
+});
