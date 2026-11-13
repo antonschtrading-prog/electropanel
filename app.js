@@ -862,6 +862,11 @@ function renderEngineeringDiagnosticsV1(){
   const bundle=epEngineeringBundleV1(state,catalogDevice);
   crossView.innerHTML=epCrossViewAuditHtmlV1(bundle.sections.crossView,selectedLine);
  }
+ const issueHolder=$('engineeringIssueRegister');
+ if(issueHolder&&typeof epEngineeringBundleV1==='function'&&typeof epEngineeringIssueRegisterHtmlV1==='function'){
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  issueHolder.innerHTML=epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine);
+ }
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
   const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
@@ -1782,6 +1787,18 @@ $('exportProtectionCsvBtn').addEventListener('click',()=>{
  const catalog=Object.entries(EP_CATALOG).map(([id,device])=>({id,device}));
  const report=epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine);
  download(baseName()+'_protection_DRAFT.csv',epProtectionWorkbenchCsvV1(report),'text/csv;charset=utf-8');
+});
+$('engineeringIssueRegister').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-issue-focus]');if(!btn)return;
+ const id=btn.dataset.issueFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь замечания не найдена',true);
+ selectedLine=id;render();
+});
+$('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function'||typeof epEngineeringIssueRegisterCsvV1!=='function')
+  return notify('Реестр замечаний недоступен',true);
+ const report=epEngineeringBundleV1(state,catalogDevice).sections.issueRegister;
+ download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
 });
 $('draftBoardPreview').addEventListener('click',e=>{
  const button=e.target.closest('[data-din-focus]');if(!button||button.disabled)return;
