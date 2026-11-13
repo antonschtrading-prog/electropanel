@@ -857,6 +857,11 @@ function renderEngineeringDiagnosticsV1(){
  const bom=$('draftBomPanel');
  if(bom)bom.innerHTML=typeof epDraftBomV1==='function'&&typeof epDraftBomHtmlV1==='function'?
   epDraftBomHtmlV1(epDraftBomV1(state,catalogDevice)):'Модуль спецификации недоступен.';
+ const wireHolder=$('circuitWiringTracePanel');
+ if(wireHolder)wireHolder.innerHTML=typeof epCircuitWiringTraceV1==='function'&&
+  typeof epCircuitWiringTraceHtmlV1==='function'?
+  epCircuitWiringTraceHtmlV1(epCircuitWiringTraceV1(state),selectedLine):
+  'Прослеживаемость проводников недоступна.';
  const crossView=$('crossViewAuditPanel'),issueHolder=$('engineeringIssueRegister');
  if(typeof epEngineeringBundleV1==='function'&&(crossView||issueHolder)){
   const bundle=epEngineeringBundleV1(state,catalogDevice);
@@ -1809,6 +1814,12 @@ $('crossViewAuditPanel').addEventListener('click',e=>{
  const id=btn.dataset.crossviewFocus;
  if(!state.lines.some(line=>line.id===id))return notify('Цепь не найдена',true);
  selectedLine=id;render();
+});
+$('exportWiringTraceCsvBtn').addEventListener('click',()=>{
+ if(typeof epCircuitWiringTraceV1!=='function'||typeof epCircuitWiringTraceCsvV1!=='function')
+  return notify('Прослеживаемость проводников недоступна',true);
+ const report=epCircuitWiringTraceV1(state);
+ download(baseName()+'_wiring_trace_DRAFT.csv',epCircuitWiringTraceCsvV1(report),'text/csv;charset=utf-8');
 });
 $('exportCrossViewCsvBtn').addEventListener('click',()=>{
  if(typeof epEngineeringBundleV1!=='function'||typeof epCrossViewAuditCsvV1!=='function')
