@@ -1775,7 +1775,8 @@ $('protectionWorkbench').addEventListener('click',e=>{
  const check=epProtectionWorkbenchV1(state,catalogDevice,catalog,id);
  if(check.selected?.lineId!==id||!check.selected.candidates.some(x=>x.sku===sku&&x.status!=='REJECTED'))
   return notify('Аппарат не проходит предварительную проверку',true);
- try{transact(()=>{applyCatalogueSku(state,id,sku);});selectedLine=id;render();
+ try{const draft=structuredCloneCompat(ensureV2(state));applyCatalogueSku(draft,id,sku);
+  checkpoint();state=draft;selectedLine=id;changed();
   notify('Артикул назначен. Расчёты требуют перепроверки.');
  }catch(err){notify(err.message||'Не удалось назначить артикул',true);}
 });
