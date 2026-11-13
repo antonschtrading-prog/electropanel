@@ -336,3 +336,9 @@ test('prioritized work queue is integrated with circuit selection and printable 
  assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/designWorkQueue/);
  assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Очередь инженерных задач/);
 });
+
+test('manual cable section and current-provenance invalidation are connected',()=>{
+ assert.match(app,/epApplyCableSectionV1\(state,lineId,section\)/);
+ assert.match(app,/IB_DIFFERS_FROM_CALCULATED_CURRENT/);
+ assert.match(fs.readFileSync(path.join(root,'cable-reference-ui-v1.js'),'utf8'),/data-cable-section-form/);
+});
