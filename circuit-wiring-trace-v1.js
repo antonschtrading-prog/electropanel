@@ -42,11 +42,14 @@ function epCircuitWiringTraceV1(project){
   const explicit=typeof link.circuitId==='string'?link.circuitId:null;
   const ids=[...new Set([a,c,explicit].filter(x=>x!==null&&x!==undefined))];
   if(ids.length>1){add('CROSS_CIRCUIT_SYMBOLIC_LINK','BLOCKED',ids[0],link.id);continue;}
-  if(!ids.length)continue;
-  const id=ids[0];
-  if(!lineIds.has(id)){add('SYMBOLIC_LINK_ORPHAN_CIRCUIT','BLOCKED',id,link.id);continue;}
-  if(!byLine.has(id))byLine.set(id,[]);
-  byLine.get(id).push(link);
+  const group=typeof link.groupId==='string'?
+   (Array.isArray(project.sharedDevices)?project.sharedDevices:[]).find(g=>g?.id===link.groupId):null;
+  const targets=ids.length?ids:(group&&Array.isArray(group.circuitIds)?group.circuitIds:[]);
+  for(const id of new Set(targets)){
+   if(!lineIds.has(id)){add('SYMBOLIC_LINK_ORPHAN_CIRCUIT','BLOCKED',id,link.id);continue;}
+   if(!byLine.has(id))byLine.set(id,[]);
+   byLine.get(id).push(link);
+  }
  }
  for(const line of lines){
   const id=typeof line?.id==='string'?line.id:null;
