@@ -21,5 +21,6 @@ jobs:
           node --check terminal-path-v2.js
           node --check topology-batch-audit-v1.js
           node --check engineering-gate-v1.js
+          node --check engineering-diagnostics-ui-v1.js
       - name: Run complete Node test suite
         run: node --test tests/*.test.js
