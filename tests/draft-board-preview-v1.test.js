@@ -60,3 +60,21 @@ test('DIN circuit IDs in button attributes are HTML escaped',()=>{
  assert.doesNotMatch(h,/<svg/);
  assert.match(h,/data-din-focus="&quot;&gt;&lt;svg/);
 });
+
+test('curated manufacturer ratings appear on nominal DIN facade',()=>{
+ const {EP_CATALOG,epCatalogSku}=require('../catalog.js');
+ const x=p();x.lines[0].catalogSku='ABB-2CDS251001R0164';
+ x.lines[0].modules=1;
+ const h=epDraftBoardPreviewV1(x,epCatalogSku);
+ assert.match(h,/ep-din-brand/);
+ assert.match(h,/ABB/);
+ assert.match(h,/System pro M S200/);
+ assert.match(h,/16 A/);
+ assert.match(h,/6 kA/);
+});
+test('unknown article does not invent manufacturer facade',()=>{
+ const x=p();x.lines[0].catalogSku='NONEXISTENT';
+ const h=epDraftBoardPreviewV1(x,()=>null);
+ assert.doesNotMatch(h,/ep-din-brand">ABB/);
+ assert.match(h,/ARTICLE_UNKNOWN|Не выбран|Артикул/);
+});
