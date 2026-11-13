@@ -42,3 +42,13 @@ test('missing cable ampacity leaves candidates incomplete',()=>{
  const l=line();delete l.overloadInput.izA;
  assert.ok(select(l,catalog).candidates.every(c=>c.status!=='POTENTIAL'));
 });
+
+test('project-level audit rejects unknown selected article',()=>{
+ const {epProtectiveDeviceProjectAuditV1:audit}=require('../protective-device-shortlist-v1.js');
+ const r=audit({lines:[{...line(),id:'L1',catalogSku:'missing'}]},()=>null);
+ assert.ok(r.issues.some(i=>i.code==='SELECTED_ARTICLE_UNKNOWN'));
+});
+test('project-level audit cannot approve installation',()=>{
+ const {epProtectiveDeviceProjectAuditV1:audit}=require('../protective-device-shortlist-v1.js');
+ assert.equal(audit({lines:[line()]}).ready_for_installation,false);
+});
