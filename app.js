@@ -1758,13 +1758,16 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
 });
 $('circuitDossier').addEventListener('click',e=>{
- const focus=e.target.closest('[data-focus-circuit],[data-open-load-circuit]');if(!focus)return;
- const id=focus.dataset.focusCircuit||focus.dataset.openLoadCircuit;
+ const focus=e.target.closest('[data-focus-circuit],[data-open-load-circuit],[data-open-board-circuit]');if(!focus)return;
+ const id=focus.dataset.focusCircuit||focus.dataset.openLoadCircuit||focus.dataset.openBoardCircuit;
  if(!state.lines.some(x=>x.id===id))return;
  selectedLine=id;
  if(focus.dataset.openLoadCircuit){switchView('loads');
   const row=[...$('loadRows').querySelectorAll('tr')].find(x=>x.dataset.id===id);
   if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.querySelector('[data-key="name"]')?.focus();}
+ }else if(focus.dataset.openBoardCircuit){switchView('board');
+  const device=[...$('boardCanvas').querySelectorAll('[data-line]')].find(x=>x.dataset.line===id);
+  if(device){device.scrollIntoView({block:'center',behavior:'smooth'});device.focus();}
  }else{renderBoard();renderCircuitGraph();renderCircuitWorkspaceV1();renderEngineeringDiagnosticsV1();}
 });
 $('circuitWorkspaceQuery').addEventListener('input',renderCircuitWorkspaceV1);
