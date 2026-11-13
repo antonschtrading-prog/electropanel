@@ -9,12 +9,18 @@ on:
       - 'tt-screen-v45.js'
       - 'cable-evidence-v45.js'
       - 'cable-tables-v31.js'
+      - 'reference-ampacity-v38.js'
+      - 'reference-cable-v39.js'
+      - 'typical-lv-v43.js'
+      - 'route-impedance-v44.js'
       - 'layout-v414.js'
       - 'legacy-compat.js'
       - 'index.html'
       - 'styles.css'
       - 'tests/**'
       - '.github/workflows/electropanel-validation.yml'
+      - 'scripts/build-site.js'
+      - '.github/workflows/publish.yml'
   workflow_dispatch:
 jobs:
   test:
@@ -36,25 +42,24 @@ jobs:
           node --check tt-screen-v45.js
           node --check cable-evidence-v45.js
           node --check cable-tables-v31.js
+          node --check reference-ampacity-v38.js
+          node --check reference-cable-v39.js
+          node --check typical-lv-v43.js
+          node --check route-impedance-v44.js
           node --check layout-v414.js
           node --check legacy-compat.js
+          node --check scripts/build-site.js
       - name: Run regression tests
         run: node --test tests/*.test.js
+      - name: Verify exact GitHub Pages package
+        run: |
+          node scripts/build-site.js
+          test -s dist/index.html
+          test -s dist/app.js
       - name: Package browser smoke-test fixture
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: electropanel-web-preview
           retention-days: 1
-          path: |
-            index.html
-            styles.css
-            app.js
-            catalog.js
-            protection.js
-            overload-v30.js
-            tt-screen-v45.js
-            cable-evidence-v45.js
-            cable-tables-v31.js
-            layout-v414.js
-            legacy-compat.js
+          path: dist/
