@@ -78,3 +78,13 @@ test('unknown article does not invent manufacturer facade',()=>{
  assert.doesNotMatch(h,/ep-din-brand">ABB/);
  assert.match(h,/ARTICLE_UNKNOWN|Не выбран|Артикул/);
 });
+
+test('preview shows illustrated apparatus faceplate without claiming manufacturer photography',()=>{
+ const {epDraftBoardPreviewV1}=require('../draft-board-preview-v1');
+ const project={railCount:1,railCapacity:12,lines:[{id:'L1',modules:1,catalogSku:'ABB'}],
+  branchDevices:[{id:'BR1',circuitId:'L1',modules:1}],sharedDevices:[]};
+ const h=epDraftBoardPreviewV1(project,sku=>sku==='ABB'?{
+  maker:'ABB',series:'S200',appearance:'abb',modules:1,inA:16,icnKa:6}:null,'L1');
+ assert.match(h,/ep-din-device-face/);assert.match(h,/ep-din-face-abb/);
+ assert.match(h,/ep-din-device-toggle/);
+});
