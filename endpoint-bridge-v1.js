@@ -97,7 +97,7 @@ function epEndpointBridgeAuditV1(project, options={}){
   if(!wires.has(JSON.stringify([a,b].sort()))){
    const roleA=epSymbolicEndpointRoleV1(connection.from);
    const roleB=epSymbolicEndpointRoleV1(connection.to);
-   if(options.allowDeclaredMultiSegment===true&&
+   if(options?.allowDeclaredMultiSegment===true&&
       typeof epDeclaredWirePathV2==='function'&&roleA&&roleA===roleB){
     const pathReport=epDeclaredWirePathV2(wiring,a,b,roleA);
     if(pathReport.status==='DECLARED_PATH'){
