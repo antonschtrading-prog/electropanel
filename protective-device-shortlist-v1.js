@@ -33,10 +33,10 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   if(ik!==null&&d.icnKa<ik)reasons.push('ICN_LT_DECLARED_IK');
   candidates.push({sku,maker:d.maker??null,series:d.series??null,
    inA:d.inA,icnKa:d.icnKa,poles:d.poles,
-   status:reasons.length?'REJECTED':'POTENTIAL',
+   status:reasons.length?'REJECTED':(ib===null||iz===null||ik===null?'INCOMPLETE':'POTENTIAL'),
    reasons,engineeringApproved:false});
  }
- candidates.sort((a,b)=>Number(a.status==='REJECTED')-Number(b.status==='REJECTED')||
+ candidates.sort((a,b)=>({POTENTIAL:0,INCOMPLETE:1,REJECTED:2}[a.status]-{POTENTIAL:0,INCOMPLETE:1,REJECTED:2}[b.status])||
   (Number.isFinite(a.inA)?a.inA:Infinity)-(Number.isFinite(b.inA)?b.inA:Infinity)||
   String(a.sku).localeCompare(String(b.sku)));
  if(!candidates.some(c=>c.status==='POTENTIAL'))add('NO_POTENTIAL_ARTICLES');
