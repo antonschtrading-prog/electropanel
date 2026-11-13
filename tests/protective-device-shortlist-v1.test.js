@@ -65,3 +65,15 @@ test('nonfinite and nonpositive declared inputs remain incomplete',()=>{
   assert.ok(select(l,catalog).issues.some(i=>i.code==='DESIGN_CURRENT_MISSING'));
  }
 });
+
+test('selected article with insufficient input remains explicitly incomplete',()=>{
+ const {epProtectiveDeviceProjectAuditV1:audit}=require('../protective-device-shortlist-v1.js');
+ const l=line();delete l.ikKa;l.id='L1';l.catalogSku='a';
+ const r=audit({lines:[l]},()=>catalog[0].device,catalog);
+ assert.ok(r.issues.some(i=>i.code==='SELECTED_ARTICLE_EVIDENCE_INCOMPLETE'));
+});
+test('valid injected catalogue matches internal article ID',()=>{
+ const {epProtectiveDeviceProjectAuditV1:audit}=require('../protective-device-shortlist-v1.js');
+ const r=audit({lines:[{...line(),id:'L1',catalogSku:'a'}]},()=>catalog[0].device,catalog);
+ assert.ok(!r.issues.some(i=>i.code==='SELECTED_ARTICLE_NOT_IN_CATALOG'));
+});
