@@ -1,0 +1,18 @@
+'use strict';
+// Reproducible draft bundle of existing independent projections, without approval claims.
+function epEngineeringBundleV1(project,lookupSku){
+ const section=(name,fn)=>{try{return typeof fn==='function'?fn(project,lookupSku):{
+  status:'BLOCKED',issues:[{code:name+'_UNAVAILABLE',level:'BLOCKED'}]};}
+ catch(e){return {status:'BLOCKED',issues:[{code:name+'_FAILED',level:'BLOCKED'}]};}};
+ const dossier=section('DOSSIER',typeof epCircuitDossierV1==='function'?epCircuitDossierV1:null);
+ const bom=section('BOM',typeof epDraftBomV1==='function'?epDraftBomV1:null);
+ const board=section('BOARD',typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1:null);
+ const engineering=section('GATE',typeof epEngineeringGateV1==='function'?epEngineeringGateV1:null);
+ const sections={dossier,bom,board,engineering};
+ const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
+ return {schema:'electropanel.engineering.bundle.draft.1',projectTitle:String(project?.title??''),
+  statuses,sections,overallStatus:Object.values(statuses).includes('BLOCKED')?'BLOCKED':'UNKNOWN',
+  engineeringApproved:false,ready_for_installation:false,
+  disclaimer:'DRAFT ONLY. Catalogue data, declared calculations, wiring and DIN placement require independent verification.'};
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epEngineeringBundleV1};
