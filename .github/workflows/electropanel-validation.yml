@@ -8,6 +8,7 @@ on:
       - 'overload-v30.js'
       - 'tt-screen-v45.js'
       - 'cable-evidence-v45.js'
+      - 'cable-tables-v31.js'
       - 'layout-v414.js'
       - 'legacy-compat.js'
       - 'index.html'
@@ -34,6 +35,7 @@ jobs:
           node --check overload-v30.js
           node --check tt-screen-v45.js
           node --check cable-evidence-v45.js
+          node --check cable-tables-v31.js
           node --check layout-v414.js
           node --check legacy-compat.js
       - name: Run regression tests
@@ -53,5 +55,6 @@ jobs:
             overload-v30.js
             tt-screen-v45.js
             cable-evidence-v45.js
+            cable-tables-v31.js
             layout-v414.js
             legacy-compat.js
