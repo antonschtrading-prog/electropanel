@@ -849,6 +849,9 @@ function renderEngineeringDiagnosticsV1(){
   epDraftBoardPreviewV1(state,catalogDevice,selectedLine):'Предварительная компоновка недоступна.';
  const dossier=$('circuitDossier');
  if(dossier)renderCircuitWorkspaceV1();
+ const bom=$('draftBomPanel');
+ if(bom)bom.innerHTML=typeof epDraftBomV1==='function'&&typeof epDraftBomHtmlV1==='function'?
+  epDraftBomHtmlV1(epDraftBomV1(state,catalogDevice)):'Модуль спецификации недоступен.';
 }
 function renderCircuitWorkspaceV1(){
  const holder=$('circuitDossier');if(!holder)return;
@@ -1772,6 +1775,14 @@ $('circuitDossier').addEventListener('click',e=>{
 });
 $('circuitWorkspaceQuery').addEventListener('input',renderCircuitWorkspaceV1);
 $('circuitWorkspaceMode').addEventListener('change',renderCircuitWorkspaceV1);
+$('exportDraftBomCsvBtn').addEventListener('click',()=>{
+ if(typeof epDraftBomV1!=='function'||typeof epDraftBomCsvV1!=='function')return notify('Спецификация недоступна',true);
+ download(baseName()+'_equipment_BOM_DRAFT.csv',epDraftBomCsvV1(epDraftBomV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('exportDraftBomJsonBtn').addEventListener('click',()=>{
+ if(typeof epDraftBomV1!=='function')return notify('Спецификация недоступна',true);
+ download(baseName()+'_equipment_BOM_DRAFT.json',JSON.stringify(epDraftBomV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
+});
 $('exportEngineeringGateBtn').addEventListener('click',exportEngineeringGateV1);
 $('exportCircuitDossierJsonBtn').addEventListener('click',()=>{
  if(typeof epCircuitDossierV1!=='function'){notify('Модуль ведомости не загружен',true);return;}
