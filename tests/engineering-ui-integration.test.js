@@ -25,3 +25,10 @@ test('diagnostic module never grants engineering approval',()=>{
  const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
  assert.match(gate,/engineeringApproved:false,ready_for_installation:false/);
 });
+
+test('draft DIN plan preview is loaded and refreshed',()=>{
+ assert.ok(scripts.indexOf('draft-board-plan-v1.js')<scripts.indexOf('draft-board-preview-v1.js'));
+ assert.ok(scripts.indexOf('draft-board-preview-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="draftBoardPreview"/);
+ assert.match(app,/epDraftBoardPreviewV1\(state,catalogDevice\)/);
+});
