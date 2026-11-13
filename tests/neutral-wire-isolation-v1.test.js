@@ -66,3 +66,23 @@ test('missing tracer dependency fails closed',()=>{
 test('isolation audit never mutates project',()=>{
  const p=project(),before=JSON.stringify(p);a(p);assert.equal(JSON.stringify(p),before);
 });
+
+test('large set of independent N groups is evaluated without false continuity',()=>{
+ const p=project();p.sharedDevices=[];p.endpointBindingsV1=[
+  {symbolicRef:'BUS:N_MAIN/N',terminalId:'main'}];
+ p.wiringModelV18.terminals=[{id:'main',conductor:'N'}];
+ for(let i=1;i<=60;i++){
+  p.sharedDevices.push({id:'RCD'+i});
+  p.endpointBindingsV1.push({symbolicRef:'BUS:N_RCD'+i+'/N',terminalId:'n'+i});
+  p.wiringModelV18.terminals.push({id:'n'+i,conductor:'N'});
+ }
+ const r=a(p);assert.equal(r.status,'UNKNOWN');
+ assert.equal(r.pairs.length,60*61/2);
+ assert.equal(r.issues.filter(x=>x.code==='N_ISOLATION_CROSS_BUS_DECLARED_PATH').length,0);
+});
+test('declared closed N path still blocks despite unrelated invalid wire',()=>{
+ const p=project();p.wiringModelV18.wires=[
+  {from:'rcd1',to:'rcd2',state:'closed'},
+  {from:'MISSING',to:'main',state:'unknown'}];
+ assert(a(p).issues.some(x=>x.code==='N_ISOLATION_CROSS_BUS_DECLARED_PATH'));
+});
