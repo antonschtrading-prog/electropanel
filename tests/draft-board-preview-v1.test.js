@@ -41,3 +41,22 @@ test('catalogue article is escaped in visual DIN tooltip',()=>{
  assert.doesNotMatch(h,/<img/);
  assert.match(h,/&lt;img/);
 });
+
+test('branch DIN block can focus its circuit without editing project',()=>{
+ const x=p();x.branchDevices=[{id:'BR_L1',circuitId:'L1',modules:2},{id:'BR_L2',circuitId:'L2',modules:3}];
+ const before=JSON.stringify(x),h=epDraftBoardPreviewV1(x,null,'L1');
+ assert.match(h,/data-din-focus="L1"/);
+ assert.match(h,/data-din-focus="L2"/);
+ assert.equal(JSON.stringify(x),before);
+});
+test('shared DIN apparatus does not invent a circuit navigation target',()=>{
+ const x=p();x.sharedDevices=[{id:'MAIN',modules:1}];
+ const h=epDraftBoardPreviewV1(x);
+ assert.match(h,/disabled><span class="ep-din-block-id">MAIN/);
+});
+test('DIN circuit IDs in button attributes are HTML escaped',()=>{
+ const x=p();x.lines[0].id='"><svg onload=alert(1)>';
+ const h=epDraftBoardPreviewV1(x);
+ assert.doesNotMatch(h,/<svg/);
+ assert.match(h,/data-din-focus="&quot;&gt;&lt;svg/);
+});
