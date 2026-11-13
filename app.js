@@ -1744,15 +1744,15 @@ $('feedEditor').addEventListener('click',e=>{
  if(groupClear){if(!state.groupInputLinks.some(x=>x.groupId===groupClear.dataset.clearGroupInput))return;checkpoint();clearGroupInputs(state,groupClear.dataset.clearGroupInput);changed();return;}
  if(e.target.id==='declareMissingGroupInputsBtn'){try{const draft=structuredCloneCompat(ensureV2(state));declareMissingGroupInputs(draft);if(draft.groupInputLinks.length===state.groupInputLinks.length){notify('Новых вводов нет');return;}checkpoint();state.groupInputLinks=draft.groupInputLinks;changed();}catch(err){notify(err.message,true);}return;}
  if(e.target.id==='declareMissingFeedBtn'){try{const draft=structuredCloneCompat(ensureV2(state));const before=state.feedLinks.length;declareMissingFeedLinks(draft);if(draft.feedLinks.length===before){notify('Новых деклараций нет');return;}checkpoint();state.feedLinks=draft.feedLinks;changed();notify('Отсутствующие декларации добавлены без замены существующих.');}catch(err){notify(err.message,true);}return;}
- if(e.target.id==='exportEngineeringGateBtn'){exportEngineeringGateV1();return;}
- if(e.target.id==='exportCircuitDossierCsvBtn'){
-  if(typeof epCircuitDossierV1!=='function'||typeof epCircuitDossierCsvV1!=='function'){
-   notify('Модуль ведомости не загружен',true);return;
-  }
-  download(baseName()+'_circuit_dossier_DRAFT.csv',
-   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');return;
- }
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
+});
+$('exportEngineeringGateBtn').addEventListener('click',exportEngineeringGateV1);
+$('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
+ if(typeof epCircuitDossierV1!=='function'||typeof epCircuitDossierCsvV1!=='function'){
+  notify('Модуль ведомости не загружен',true);return;
+ }
+ download(baseName()+'_circuit_dossier_DRAFT.csv',
+  epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
 });
 try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}render();
