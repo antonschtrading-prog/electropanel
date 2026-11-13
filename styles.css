@@ -190,3 +190,8 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-single-line-scroll svg{display:block;width:100%;min-width:760px;height:auto}
 .ep-single-line-circuit{cursor:pointer;outline:none}
 .ep-single-line-circuit:hover rect,.ep-single-line-circuit:focus rect{stroke:#2478cb;stroke-width:3}
+
+.ep-neutral-wire-isolation{margin:12px 0;padding:10px;border:1px solid var(--border,#d8d8d8);border-radius:8px}
+.ep-neutral-wire-isolation summary{cursor:pointer;font-weight:700}
+.ep-neutral-wire-isolation table{width:100%;border-collapse:collapse}
+.ep-neutral-wire-isolation th,.ep-neutral-wire-isolation td{padding:7px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left}
