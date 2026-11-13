@@ -71,3 +71,12 @@ test('browser local File path uses only arrayBuffer and never uploads bytes',asy
  assert.equal(wrong.integrity_status,'FAIL');
  await assert.rejects(()=>api.epVerifyDocumentFileV34({...mock,size:1000001},sha));
 });
+
+test('missing browser WebCrypto blocks integrity claims',async()=>{
+ const isolated=vm.runInNewContext(source+'\n({epVerifyDocumentFileV34,epCableProvenanceV45})',
+  {atob,Uint8Array,BigInt});
+ const bytes=Buffer.from('example only');
+ const file={size:bytes.length,arrayBuffer:async()=>Uint8Array.from(bytes).buffer};
+ await assert.rejects(()=>isolated.epVerifyDocumentFileV34(file,sha),/WebCrypto unavailable/);
+ assert.equal((await isolated.epCableProvenanceV45(cable())).status,'UNKNOWN');
+});
