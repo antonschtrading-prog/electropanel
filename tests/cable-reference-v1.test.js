@@ -60,3 +60,20 @@ test('mixed decimal and integer cable sizes are ordered numerically',()=>{
  assert.deepEqual(r.candidates.map(x=>x.sectionMm2),[1.5,2.5,4,6,10,16]);
  assert.equal(r.smallestReferenceCandidate.sectionMm2,1.5);
 });
+
+test('manual cable section selection is separate from the reference candidate',()=>{
+ const {epApplyCableSectionV1}=require('../cable-reference-v1');
+ const p={lines:[{id:'L1',cableReferenceInput:{installationMethod:'B1'}}]};
+ const before=JSON.stringify(p);
+ assert.equal(epApplyCableSectionV1(p,'L1','2.5').project.lines[0].cableDesignInput.sectionMm2,2.5);
+ assert.equal(JSON.stringify(p),before);
+ assert.equal(epApplyCableSectionV1(p,'L1','999').status,'BLOCKED');
+ assert.equal(epApplyCableSectionV1({lines:[{id:'L1'}]},'L1','2.5').status,'BLOCKED');
+});
+test('cable section editor presents manual selection without silent auto-selection',()=>{
+ const p={lines:[{id:'L1',cableReferenceInput:{installationMethod:'B1'}}]};
+ const h=html(p,'L1',()=>null);
+ assert.match(h,/data-cable-section-form="L1"/);
+ assert.match(h,/name="sectionMm2"/);
+ assert.doesNotMatch(h,/value="2.5" selected/);
+});
