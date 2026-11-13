@@ -6,6 +6,7 @@ on:
       - 'catalog.js'
       - 'protection.js'
       - 'overload-v30.js'
+      - 'tt-screen-v45.js'
       - 'layout-v414.js'
       - 'legacy-compat.js'
       - 'index.html'
@@ -30,6 +31,7 @@ jobs:
           node --check catalog.js
           node --check protection.js
           node --check overload-v30.js
+          node --check tt-screen-v45.js
           node --check layout-v414.js
           node --check legacy-compat.js
       - name: Run regression tests
@@ -47,5 +49,6 @@ jobs:
             catalog.js
             protection.js
             overload-v30.js
+            tt-screen-v45.js
             layout-v414.js
             legacy-compat.js
