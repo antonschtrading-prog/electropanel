@@ -99,3 +99,24 @@ test('consolidated engineering bundle loads after BOM and before app',()=>{
  assert.match(app,/\$\('exportEngineeringBundleBtn'\)\.addEventListener\('click'/);
  assert.match(app,/_engineering_bundle_DRAFT\.json/);
 });
+
+test('protection workbench loads after shortlist and before app',()=>{
+ assert.ok(scripts.indexOf('protection-workbench-v1.js')>scripts.indexOf('protective-device-shortlist-v1.js'));
+ assert.ok(scripts.indexOf('protection-workbench-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="protectionWorkbench"/);
+ assert.match(app,/epProtectionWorkbenchHtmlV1\(epProtectionWorkbenchV1\(state,catalogDevice,catalog,selectedLine\)\)/);
+});
+test('protection selection is validated, undoable and autosaved',()=>{
+ assert.match(app,/\$\('protectionWorkbench'\)\.addEventListener\('click'/);
+ assert.match(app,/data-protection-sku/);
+ assert.match(app,/x\.status!=='REJECTED'/);
+ assert.match(app,/applyCatalogueSku\(draft,id,sku\)/);
+ assert.match(app,/checkpoint\(\);state=draft;selectedLine=id;changed\(\)/);
+ assert.doesNotMatch(app,/transact\(\(\)=>/);
+});
+test('visual DIN module grid is present and not labelled as manufacturer verified',()=>{
+ const source=fs.readFileSync(path.join(root,'draft-board-preview-v1.js'),'utf8');
+ assert.match(source,/ep-din-module-grid/);
+ assert.match(source,/grid-column:span/);
+ assert.match(source,/монтаж не подтверждён/);
+});
