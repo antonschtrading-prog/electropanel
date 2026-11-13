@@ -32,6 +32,8 @@ jobs:
           node --check conductor-trace-svg-v1.js
           node --check single-line-draft-v1.js
           node --check single-line-svg-v1.js
+          node --check neutral-wire-isolation-v1.js
+          node --check neutral-wire-isolation-ui-v1.js
           node --check neutral-segregation-v1.js
           node --check neutral-segregation-ui-v1.js
           node --check circuit-wiring-trace-v1.js
