@@ -1783,6 +1783,12 @@ $('exportProtectionCsvBtn').addEventListener('click',()=>{
  const report=epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine);
  download(baseName()+'_protection_DRAFT.csv',epProtectionWorkbenchCsvV1(report),'text/csv;charset=utf-8');
 });
+$('draftBoardPreview').addEventListener('click',e=>{
+ const button=e.target.closest('[data-din-focus]');if(!button||button.disabled)return;
+ const id=button.dataset.dinFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь DIN не найдена',true);
+ selectedLine=id;render();
+});
 $('crossViewAuditPanel').addEventListener('click',e=>{
  const btn=e.target.closest('[data-crossview-focus]');if(!btn)return;
  const id=btn.dataset.crossviewFocus;
