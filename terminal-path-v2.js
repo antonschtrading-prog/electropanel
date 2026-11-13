@@ -12,7 +12,7 @@ function epDeclaredWirePathV2(wiring, from, to, role) {
  const terminals=new Map();
  for(const t of wiring.terminals){
   if(!t||typeof t.id!=='string'||!t.id||terminals.has(t.id)||
-     typeof t.conductor!=='string')return result('UNKNOWN','TERMINALS_INVALID');
+     typeof t.conductor!=='string'||!['L1','L2','L3','N','PE','CONTROL'].includes(t.conductor))return result('UNKNOWN','TERMINALS_INVALID');
   terminals.set(t.id,t);
  }
  if(!terminals.has(from)||!terminals.has(to))
@@ -24,8 +24,9 @@ function epDeclaredWirePathV2(wiring, from, to, role) {
  for(const id of terminals.keys())edges.set(id,[]);
  for(const w of wiring.wires){
   if(!w||typeof w.from!=='string'||typeof w.to!=='string'||
-     !terminals.has(w.from)||!terminals.has(w.to)||w.from===w.to)
-   return result('UNKNOWN','WIRE_SCHEMA_INVALID');
+     !terminals.has(w.from)||!terminals.has(w.to)||w.from===w.to||
+     (w.state!==undefined&&w.state!=='closed'))
+   return result('UNKNOWN','WIRE_SCHEMA_INVALID_OR_UNVERIFIED_STATE');
   const a=terminals.get(w.from),b=terminals.get(w.to);
   if(a.conductor!==b.conductor)return result('BLOCKED','CROSS_ROLE_WIRE');
   edges.get(w.from).push(w.to);edges.get(w.to).push(w.from);
