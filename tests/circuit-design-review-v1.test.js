@@ -2,6 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {epVoltageDropDesignV1:calc,epApplyVoltageDropInputV1:apply}=require('../voltage-drop-design-v1');
 const {epCircuitDesignReviewV1:review}=require('../circuit-design-review-v1');
+global.epCircuitDesignReviewV1=review;
 const {epCircuitDesignReviewHtmlV1:html,epCircuitDesignReviewCsvV1:csv}=require('../circuit-design-review-ui-v1');
 const base={phase:'L1',ibA:10,lengthM:100,voltageV:230,rOhmKm:2,xOhmKm:0,
  powerFactor:1,maxDropPercent:3,conductorBasisDocumented:true,
