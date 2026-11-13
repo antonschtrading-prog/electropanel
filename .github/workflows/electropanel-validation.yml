@@ -18,6 +18,7 @@ on:
       - 'wiring-audit-v18.js'
       - 'device-audit-v19.js'
       - 'board-binding-v1.js'
+      - 'endpoint-bridge-v1.js'
       - 'index.html'
       - 'styles.css'
       - 'tests/**'
@@ -54,6 +55,7 @@ jobs:
           node --check wiring-audit-v18.js
           node --check device-audit-v19.js
           node --check board-binding-v1.js
+          node --check endpoint-bridge-v1.js
           node --check scripts/build-site.js
       - name: Run regression tests
         run: node --test tests/*.test.js
