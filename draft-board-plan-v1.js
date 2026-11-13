@@ -7,11 +7,23 @@ function epDraftBoardPlanV1(project,lookupSku){
  project.railCount>100||project.railCapacity>200)
  return {status:'BLOCKED',issues:[{code:'BOARD_INPUT_INVALID',level:'BLOCKED'}],
  placements:[],engineeringApproved:false,ready_for_installation:false};
+ const branches=Array.isArray(project.branchDevices)?project.branchDevices:null;
  const devices=Array.isArray(project.sharedDevices)?project.sharedDevices.map(d=>({
   id:d?.id,modules:d?.modules,article:d?.catalogSku??null,kind:'shared'
  })):[];
+ const lineIds=new Set(project.lines.map(l=>l?.id));
+ if(branches){
+  const branchRefs=new Set();
+  for(const b of branches){
+   if(!b||!lineIds.has(b.circuitId)){add('ORPHAN_BRANCH_DEVICE',b?.id??null,'BLOCKED');continue;}
+   if(branchRefs.has(b.circuitId))add('DUPLICATE_BRANCH_FOR_CIRCUIT',b.circuitId,'BLOCKED');
+   branchRefs.add(b.circuitId);
+  }
+ }
  for(const line of project.lines){
-  const branch=Array.isArray(project.branchDevices)?project.branchDevices.find(b=>b?.circuitId===line?.id):null;
+  const branch=branches?.find(b=>b?.circuitId===line?.id);
+  if(branches&&!branch)add('MISSING_BRANCH_DEVICE',line?.id??null,'BLOCKED');
+  if(branch&&branch.modules!==line?.modules)add('BRANCH_LINE_WIDTH_CONFLICT',line?.id??null,'BLOCKED');
   devices.push({id:branch?.id??line?.id,modules:branch?.modules??line?.modules,
    article:line?.catalogSku??null,kind:'branch'});
  }
