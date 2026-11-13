@@ -52,3 +52,16 @@ test('project-level audit cannot approve installation',()=>{
  const {epProtectiveDeviceProjectAuditV1:audit}=require('../protective-device-shortlist-v1.js');
  assert.equal(audit({lines:[line()]}).ready_for_installation,false);
 });
+
+test('catalogue identity must be internal article ID, not manufacturer SKU',()=>{
+ const {epProtectiveDeviceProjectAuditV1:audit}=require('../protective-device-shortlist-v1.js');
+ const r=audit({lines:[{...line(),id:'L1',catalogSku:'unknown-internal-id'}]},
+  ()=>({sku:'a',kind:'MCB',inA:16,icnKa:6,poles:1}));
+ assert.ok(r.issues.some(i=>i.code==='SELECTED_ARTICLE_NOT_IN_CATALOG'));
+});
+test('nonfinite and nonpositive declared inputs remain incomplete',()=>{
+ for(const v of [0,-1,'Infinity','1e309',true,{},'']){
+  const l=line();l.overloadInput.ibA=v;
+  assert.ok(select(l,catalog).issues.some(i=>i.code==='DESIGN_CURRENT_MISSING'));
+ }
+});
