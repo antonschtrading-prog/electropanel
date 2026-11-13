@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.join(__dirname,'..');
 const source=['catalog.js','draft-board-plan-v1.js','draft-bom-v1.js',
  'circuit-dossier-v1.js','terminal-path-v2.js','endpoint-bridge-v1.js',
- 'circuit-wiring-trace-v1.js','neutral-segregation-v1.js','cross-view-audit-v1.js',
+ 'circuit-wiring-trace-v1.js','neutral-segregation-v1.js','single-line-draft-v1.js','single-line-svg-v1.js','cross-view-audit-v1.js',
  'engineering-issue-register-v1.js','engineering-gate-v1.js','engineering-bundle-v1.js']
  .map(x=>fs.readFileSync(path.join(root,x),'utf8')).join('\n');
 const ctx=vm.createContext({});vm.runInContext(source,ctx);
@@ -62,4 +62,26 @@ test('engineering gate propagates missing declared conductor path',()=>{
  const r=ctx.epEngineeringGateV1(p,ctx.epCatalogSku);
  assert.equal(r.status,'BLOCKED');
  assert(r.issues.some(x=>x.origin==='circuit_wiring_trace'&&x.code==='DECLARED_WIRE_PATH_MISSING'));
+});
+
+test('full bundle includes one-line source, circuit and article traceability',()=>{
+ const p=fixture(),r=ctx.epEngineeringBundleV1(p,ctx.epCatalogSku);
+ assert.equal(r.sections.singleLine.nodes.filter(x=>x.type==='source').length,1);
+ assert.equal(r.sections.singleLine.nodes.filter(x=>x.type==='circuit').length,1);
+ assert.equal(r.sections.singleLine.nodes.find(x=>x.type==='circuit').article.maker,'ABB');
+ assert.equal(r.sections.singleLine.engineeringApproved,false);
+});
+test('single-line structure reflects RCD grouping without inventing wiring',()=>{
+ const p=fixture();p.sharedDevices=[{id:'RCD1',label:'УЗО',templateId:'RCD_2P',circuitIds:['L1']}];
+ const r=ctx.epEngineeringBundleV1(p,ctx.epCatalogSku);
+ assert.equal(r.sections.singleLine.edges.find(x=>x.to==='CIRCUIT:L1').from,'RCD:RCD1');
+ assert.match(ctx.epSingleLineSvgV1(r.sections.singleLine),/НЕ электрический провод/);
+});
+test('invalid RCD ownership blocks engineering gate and issue register',()=>{
+ const p=fixture();p.sharedDevices=[
+ {id:'RCD1',circuitIds:['L1']},{id:'RCD2',circuitIds:['L1']}];
+ const r=ctx.epEngineeringBundleV1(p,ctx.epCatalogSku);
+ assert.equal(r.sections.singleLine.status,'BLOCKED');
+ assert(r.sections.issueRegister.entries.some(x=>x.code==='SINGLE_LINE_MULTIPLE_RCD'));
+ assert.equal(r.overallStatus,'BLOCKED');
 });
