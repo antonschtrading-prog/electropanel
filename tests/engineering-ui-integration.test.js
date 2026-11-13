@@ -285,3 +285,11 @@ test('design evidence and change impact are wired into current engineering edito
  assert.match(gate,/design_evidence/);assert.match(bundle,/designEvidence/);
  assert.match(print,/Доказательная база проектных решений/);
 });
+
+test('design evidence editor saves source and method with undo and autosave',()=>{
+ assert.match(app,/\$\('designEvidencePanel'\)\.addEventListener\('click'/);
+ assert.match(app,/data-save-evidence/);
+ assert.match(app,/status==='verified'&&\(!source\|\|!method\)/);
+ assert.match(app,/state\.evidence\[area\]=\{status,source,method,stale:false\}/);
+ assert.match(app,/checkpoint\(\);[\s\S]*?state\.evidence\[area\]/);
+});
