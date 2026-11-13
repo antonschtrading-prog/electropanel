@@ -1819,6 +1819,15 @@ $('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
  const report=epEngineeringBundleV1(state,catalogDevice).sections.issueRegister;
  download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
 });
+$('exportSingleLineSvgBtn').addEventListener('click',()=>{
+ if(typeof epSingleLineDraftV1!=='function'||typeof epSingleLineSvgV1!=='function')
+  return notify('Однолинейная схема недоступна',true);
+ const report=epSingleLineDraftV1(state,catalogDevice);
+ const markup=epSingleLineSvgV1(report,selectedLine);
+ const svg=markup.match(/<svg\\b[\\s\\S]*?<\\/svg>/)?.[0];
+ if(!svg)return notify('Не удалось сформировать SVG',true);
+ download(baseName()+'_single_line_DRAFT.svg',svg,'image/svg+xml;charset=utf-8');
+});
 $('singleLineDraftPanel').addEventListener('click',e=>{
  const target=e.target.closest('[data-single-line-focus]');if(!target)return;
  const id=target.getAttribute('data-single-line-focus');
