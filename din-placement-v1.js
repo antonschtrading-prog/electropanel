@@ -49,4 +49,24 @@ function epDinPlacementAuditV1(project,lookup){
  return {status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
   issues,count:entries.length,engineeringApproved:false,ready_for_installation:false};
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epDinPlacementFromArticleV1,epDinPlacementAuditV1};
+
+// Atomic proposal only: caller must explicitly apply and persist after review.
+function epDinArticleReplacementV1(project,deviceId,nextArticle,lookup){
+ const entry=Array.isArray(project?.dinPlacementsV1)?
+  project.dinPlacementsV1.find(x=>x?.deviceId===deviceId):null;
+ if(!entry)return {status:'BLOCKED',code:'PLACEMENT_NOT_FOUND',proposal:null};
+ let product=null;
+ try{product=typeof lookup==='function'?lookup(nextArticle):null;}
+ catch(_){return {status:'BLOCKED',code:'LOOKUP_FAILED',proposal:null};}
+ if(!product||product.article!==nextArticle)
+  return {status:'BLOCKED',code:'ARTICLE_IDENTITY_MISMATCH',proposal:null};
+ const projection=epDinPlacementFromArticleV1(product,deviceId);
+ if(projection.status==='BLOCKED'||projection.modules===null)
+  return {status:'BLOCKED',code:'ARTICLE_GEOMETRY_UNAVAILABLE',proposal:null,issues:projection.issues};
+ return {status:'REVIEW_REQUIRED',code:'ARTICLE_CHANGE_REQUIRES_BOARD_RELAYOUT',
+  proposal:{deviceId,article:nextArticle,modules:projection.modules,
+   manufacturer:projection.manufacturer,series:projection.series,
+   geometry:projection.geometry,visual:projection.visual},
+  issues:projection.issues,engineeringApproved:false,ready_for_installation:false};
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epDinPlacementFromArticleV1,epDinPlacementAuditV1,epDinArticleReplacementV1};
