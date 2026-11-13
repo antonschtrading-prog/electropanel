@@ -662,6 +662,12 @@ function projectAudit(project=state){
   if(!SOURCES[l.source])add('source-'+l.id,'MISSING',`${l.id}: происхождение данных не указано`);
  }
  const catalogue=catalogAudit(project);if(catalogue.issues.length)add('catalogue','ERROR',catalogue.issues.map(x=>x.circuitId+': '+x.code).join('; '));else add('catalogue','NOT_VERIFIED','Артикулы выбранных изделий сопоставлены, применимость в электрической сети не подтверждена');
+ if(project.wiringModelV18){
+  const wiring=epWiringAuditCoreV18(project.wiringModelV18);
+  add('wiring-v18',wiring.counts.FAIL?'ERROR':'NOT_VERIFIED',
+   'Клеммная топология v1.8: '+wiring.counts.FAIL+' ошибок, '+
+   wiring.counts.UNKNOWN+' непроверенных условий. Схема не сопоставлена с физическим щитом и паспортами изготовителя.');
+ }
  const preflight=epEngineeringPreflight(project,catalogDevice,checkOverload);
  if(project.ttContext){
   const tt=epTTScreenV45(project.ttContext);
@@ -730,6 +736,10 @@ function documentReadiness(project=state){
   if(l.templateId&&DEVICE_TEMPLATES[l.templateId]&&l.modules!==DEVICE_TEMPLATES[l.templateId].modules)blockers.push(`${l.id}: условная ширина не совпадает с выбранным шаблоном`);
  }
  for(const issue of catalogAudit(project).issues)blockers.push(issue.circuitId+': '+issue.message);
+ if(project.wiringModelV18){
+  const wiring=epWiringAuditCoreV18(project.wiringModelV18);
+  if(wiring.counts.FAIL)blockers.push('Клеммная схема v1.8: '+wiring.counts.FAIL+' несоответствий');
+ }
  const preflight=epEngineeringPreflight(project,catalogDevice,checkOverload);
  if(project.ttContext){
   const tt=epTTScreenV45(project.ttContext);
@@ -777,7 +787,7 @@ function phaseSummary(){
 function getPhasePercentages(){const r=phaseSummary(),max=Math.max(r.L1,r.L2,r.L3,0.001);return [['L1',r.L1/max*100,r.L1],['L2',r.L2/max*100,r.L2],['L3',r.L3/max*100,r.L3]];}
 
 function issues(){const r=[];if(!state.title.trim())r.push('Не указано название проекта.');if(state.earthing==='UNKNOWN')r.push('Не выбрана система заземления.');if(state.lines.length===0)r.push('Нет отходящих линий.');for(const l of state.lines){if(!l.name.trim())r.push(`У линии ${l.id} не указано назначение.`);if(!(Number(l.power)>0))r.push(`Для «${l.name||l.id}» не задана положительная мощность.`);if(!l.device)r.push(`Для «${l.name||l.id}» не обозначен защитный аппарат.`);if(!l.phase)r.push(`Для «${l.name||l.id}» не указана фаза.`);}const placement=layoutSlots();if(placement.unplaced.length)r.push('Не размещены аппараты: '+placement.unplaced.map(x=>x.id).join(', ')+'.');r.push('Нет проверенных исходных данных для выбора кабелей, проверки КЗ, автоматического отключения и селективности.');r.push('Данные паспортов аппаратов и корпуса не сверены с изготовителями.');if(state.sharedDevices?.length)r.push('Групповые УЗО: требуется проверка схемы нейтралей, паспортов аппаратов и условий защиты.');for(const x of documentReadiness().blockers){if(!r.includes(x))r.push(x);}return r}
-function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
+function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
 
 function renderReadiness(){
  const target=$('readinessSummary');if(!target)return;
@@ -917,6 +927,39 @@ function saveRoute44(){
   ' А, Zs '+(r.result.calculated_zs_ohm??'НЕИЗВЕСТЕН')+
   ' Ом. Проверка проекта: '+r.status+'. Монтажный допуск: НЕТ.';
  renderAudit();renderReadiness();
+}
+function renderWiring18(){
+ const input=$('wiring18Input'),result=$('wiring18Result');
+ if(!input||!result)return;
+ input.value=state.wiringModelV18?JSON.stringify(state.wiringModelV18,null,2):'';
+ if(!state.wiringModelV18){
+  result.textContent='Нет сохранённой терминальной схемы; соединения не проверены.';
+  return;
+ }
+ const check=epWiringAuditCoreV18(state.wiringModelV18);
+ result.textContent='Сохранённая схема: '+check.counts.FAIL+' ошибок; '+
+  check.counts.UNKNOWN+' неизвестных условий. Это описание проводов, не подтверждение монтажа.';
+}
+async function checkWiring18(save=false){
+ const out=$('wiring18Result'),raw=$('wiring18Input').value.trim();
+ if(raw.length>100000){out.textContent='JSON превышает 100 000 символов';return;}
+ let model,report;
+ try{
+  model=normalizeWiring18Import(JSON.parse(raw));
+  report=await epWiringAuditV18(model);
+ }catch(e){out.textContent='Ошибка схемы: '+e.message+'. Данные проекта не изменены.';return;}
+ if(save){
+  checkpoint();
+  state.wiringModelV18=model;
+  changed();
+ }
+ out.textContent='Проверка клемм: '+report.counts.FAIL+' ошибок, '+
+  report.counts.UNKNOWN+' неизвестных условий, '+
+  report.counts.PASS+' подтверждений непрерывности ТОЛЬКО в заявленной схеме. SHA-256: '+
+  (report.input_sha256||'недоступен')+
+  '. Сопоставление с физическими аппаратами и проектом НЕ завершено. Монтажный допуск: НЕТ.'+
+  (report.diagnostics.filter(x=>x.status==='FAIL').length?' Ошибки: '+
+   report.diagnostics.filter(x=>x.status==='FAIL').slice(0,6).map(x=>x.code).join(', '):'');
 }
 function runReference39(){
  const $v=id=>$(id).value;
@@ -1225,6 +1268,33 @@ function normalizeRoute44Import(value){
  }
  return copy;
 }
+function normalizeWiring18Import(value){
+ if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Wiring must be JSON object');
+ const groups=['terminals','wires','internal_links','sources','loads'];
+ const allowed={
+  terminals:['id','device_id','conductor'],
+  wires:['id','from','to'],internal_links:['id','device_id','from','to','state'],
+  sources:['terminal','conductor'],loads:['id','terminal','conductor']
+ };
+ if(Object.keys(value).some(k=>!groups.includes(k)))throw Error('Неподдерживаемое поле терминальной модели');
+ const out={};
+ for(const group of groups){
+  const list=value[group]??[];
+  if(!Array.isArray(list)||list.length>1000)throw Error('Превышен лимит элементов '+group);
+  out[group]=list.map((row)=>{
+   if(!row||typeof row!=='object'||Array.isArray(row)||
+    Object.keys(row).some(k=>!allowed[group].includes(k)))throw Error('Неизвестные поля '+group);
+   const entry={};
+   for(const [key,v] of Object.entries(row)){
+    if(typeof v!=='string'||v.length>128)throw Error('Некорректные данные '+group+'.'+key);
+    entry[key]=v;
+   }
+   return entry;
+  });
+ }
+ if(JSON.stringify(out).length>100000)throw Error('Терминальная схема слишком большая');
+ return out;
+}
 function normalizeLV43Import(value){
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Расчёт TN должен быть JSON-объектом');
  const fields={scope:['installation_category','voltage_system','supply_architecture','special_installation'],
@@ -1289,7 +1359,7 @@ function normalizeFaultImport(value){
   throw Error('Слишком длинное описание источника тока КЗ');
  return {ikKa:value.ikKa,source:value.source||''};
 }
-function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;if(x.ttContext!==undefined)p.ttContext=epNormalizeTTContext(x.ttContext);const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.lv43Input!==undefined?{lv43Input:normalizeLV43Import(l.lv43Input)}:{}),...(l.route44Input!==undefined?{route44Input:normalizeRoute44Import(l.route44Input)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
+function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;if(x.ttContext!==undefined)p.ttContext=epNormalizeTTContext(x.ttContext);if(x.wiringModelV18!==undefined)p.wiringModelV18=normalizeWiring18Import(x.wiringModelV18);const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.lv43Input!==undefined?{lv43Input:normalizeLV43Import(l.lv43Input)}:{}),...(l.route44Input!==undefined?{route44Input:normalizeRoute44Import(l.route44Input)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){
   const mime=String(x.plan.mime||'').slice(0,80);
   p.plan={name:x.plan.name.slice(0,120),mime};
@@ -1349,7 +1419,7 @@ $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
 $('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}checkpoint();state[key]=n;changed();});
-$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;$('ref39Run').onclick=runReference39;$('lv43Run').onclick=runLV43;$('lv43SaveLine').onclick=saveLV43ToLine;$('route44Save').onclick=saveRoute44;
+$('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;$('ref39Run').onclick=runReference39;$('lv43Run').onclick=runLV43;$('lv43SaveLine').onclick=saveLV43ToLine;$('route44Save').onclick=saveRoute44;$('wiring18Check').onclick=()=>checkWiring18(false);$('wiring18Save').onclick=()=>checkWiring18(true);
 $('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();selectedLine=null;changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
 $('saveProjectBtn').onclick=$('saveProjectBtn2').onclick=saveProject;$('exportCsvBtn').onclick=()=>download(baseName()+'_loads.csv',csv(),'text/csv;charset=utf-8');$('exportSvgBtn').onclick=$('exportSvgBtn2').onclick=exportSvg;$('exportEquipmentBtn').onclick=()=>download(baseName()+'_equipment_draft.csv',equipmentCsv(),'text/csv;charset=utf-8');
 $('exportAuditBtn').onclick=()=>download(baseName()+'_audit.json',JSON.stringify({project:state.title,audit:projectAudit(),generatedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');
