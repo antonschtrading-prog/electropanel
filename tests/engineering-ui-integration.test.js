@@ -130,3 +130,11 @@ test('non-destructive DIN layout alternative is rendered and exported',()=>{
  assert.match(bundle,/layoutAlternatives/);
  assert.match(bundle,/protection/);
 });
+
+test('manual Ib Iz Ik declarations use validation and history instead of silent calculation',()=>{
+ assert.ok(scripts.indexOf('protection-inputs-v1.js')>scripts.indexOf('protection-workbench-v1.js'));
+ assert.ok(scripts.indexOf('protection-inputs-v1.js')<scripts.indexOf('app.js'));
+ assert.match(app,/\$\('protectionWorkbench'\)\.addEventListener\('submit'/);
+ assert.match(app,/epProtectionInputsV1\(state,id,inputs\)/);
+ assert.match(app,/checkpoint\(\);state=result.project;selectedLine=id;changed\(\)/);
+});
