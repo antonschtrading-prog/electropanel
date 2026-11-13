@@ -1,6 +1,6 @@
 'use strict';
 // Read-only preview of a draft DIN plan. Never mutates project data.
-function epDraftBoardPreviewV1(project,lookupSku){
+function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
  const safe=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  if(typeof epDraftBoardPlanV1!=='function')return '<p>Предварительная компоновка недоступна.</p>';
  const p=epDraftBoardPlanV1(project,lookupSku);
@@ -8,9 +8,10 @@ function epDraftBoardPreviewV1(project,lookupSku){
   return '<p>Параметры щита некорректны. Размещение заблокировано.</p>';
  const byRail=Array.from({length:p.rails},()=>[]);
  for(const d of p.placements)if(byRail[d.railIndex])byRail[d.railIndex].push(d);
+ const branchMap=new Map((project?.branchDevices||[]).map(x=>[x.id,x.circuitId]));
  const railRows=byRail.map((items,index)=>{
   const used=items.reduce((n,x)=>n+x.modules,0);
-  const entries=items.map(x=>'<li><strong>'+safe(x.deviceId)+'</strong> · '+safe(x.modules)+
+  const entries=items.map(x=>'<li'+((x.deviceId===selectedId||branchMap.get(x.deviceId)===selectedId)?' class="ep-circuit-active"':'')+'><strong>'+safe(x.deviceId)+'</strong> · '+safe(x.modules)+
    ' мод. · позиции '+safe(x.startModule+1)+'–'+safe(x.startModule+x.modules)+
    (x.article?' · '+safe(x.article):' · без артикула')+'</li>').join('');
   return '<section><h4>DIN '+(index+1)+' · '+used+'/'+p.capacityPerRail+
