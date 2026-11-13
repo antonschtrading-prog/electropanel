@@ -315,3 +315,15 @@ test('cable reference editor and issue register are connected',()=>{
  assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/cableReference/);
  assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Справочные сечения проводников/);
 });
+
+test('integrated design review, voltage drop and export are wired to editor and reports',()=>{
+ assert.ok(scripts.indexOf('voltage-drop-design-v1.js')<scripts.indexOf('circuit-design-review-v1.js'));
+ assert.ok(scripts.indexOf('circuit-design-review-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('circuit-design-review-ui-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="circuitDesignReviewPanel"/);
+ assert.match(app,/epCircuitDesignReviewHtmlV1\(state,catalogDevice,selectedLine\)/);
+ assert.match(app,/epApplyVoltageDropInputV1\(state,/);
+ assert.match(app,/epCircuitDesignReviewCsvV1\(report\)/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/designReview/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Матрица проектных расчётов/);
+});
