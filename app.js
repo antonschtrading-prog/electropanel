@@ -834,8 +834,88 @@ function phaseSummary(){
 function getPhasePercentages(){const r=phaseSummary(),max=Math.max(r.L1,r.L2,r.L3,0.001);return [['L1',r.L1/max*100,r.L1],['L2',r.L2/max*100,r.L2],['L3',r.L3/max*100,r.L3]];}
 
 function issues(){const r=[];if(!state.title.trim())r.push('Не указано название проекта.');if(state.earthing==='UNKNOWN')r.push('Не выбрана система заземления.');if(state.lines.length===0)r.push('Нет отходящих линий.');for(const l of state.lines){if(!l.name.trim())r.push(`У линии ${l.id} не указано назначение.`);if(!(Number(l.power)>0))r.push(`Для «${l.name||l.id}» не задана положительная мощность.`);if(!l.device)r.push(`Для «${l.name||l.id}» не обозначен защитный аппарат.`);if(!l.phase)r.push(`Для «${l.name||l.id}» не указана фаза.`);}const placement=layoutSlots();if(placement.unplaced.length)r.push('Не размещены аппараты: '+placement.unplaced.map(x=>x.id).join(', ')+'.');r.push('Нет проверенных исходных данных для выбора кабелей, проверки КЗ, автоматического отключения и селективности.');r.push('Данные паспортов аппаратов и корпуса не сверены с изготовителями.');if(state.sharedDevices?.length)r.push('Групповые УЗО: требуется проверка схемы нейтралей, паспортов аппаратов и условий защиты.');for(const x of documentReadiness().blockers){if(!r.includes(x))r.push(x);}return r}
-function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
+function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderEngineeringDiagnosticsV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
 
+function renderEngineeringDiagnosticsV1(){
+ const holder=$('engineeringDiagnostics');
+ if(!holder)return;
+ if(typeof epEngineeringDiagnosticsPanelV1!=='function'){
+  holder.textContent='Модуль диагностики не загружен. Монтаж не подтверждён.';
+  return;
+ }
+ holder.innerHTML=epEngineeringDiagnosticsPanelV1(state,catalogDevice);
+ const preview=$('draftBoardPreview');
+ if(preview)preview.innerHTML=typeof epDraftBoardPreviewV1==='function' ?
+  epDraftBoardPreviewV1(state,catalogDevice,selectedLine):'Предварительная компоновка недоступна.';
+ const alternatives=$('draftLayoutAlternatives');
+ if(alternatives)alternatives.innerHTML=typeof epDraftLayoutAlternativesV1==='function'&&
+  typeof epDraftLayoutAlternativesHtmlV1==='function'?
+  epDraftLayoutAlternativesHtmlV1(epDraftLayoutAlternativesV1(state,catalogDevice)):
+  'Альтернативное размещение недоступно.';
+ const dossier=$('circuitDossier');
+ if(dossier)renderCircuitWorkspaceV1();
+ const bom=$('draftBomPanel');
+ if(bom)bom.innerHTML=typeof epDraftBomV1==='function'&&typeof epDraftBomHtmlV1==='function'?
+  epDraftBomHtmlV1(epDraftBomV1(state,catalogDevice)):'Модуль спецификации недоступен.';
+ const singleHolder=$('singleLineDraftPanel');
+ if(singleHolder)singleHolder.innerHTML=typeof epSingleLineDraftV1==='function'&&
+  typeof epSingleLineSvgV1==='function'?
+  epSingleLineSvgV1(epSingleLineDraftV1(state,catalogDevice),selectedLine):
+  'Однолинейная схема недоступна.';
+ const conductorSvgHolder=$('conductorTraceSvgPanel');
+ if(conductorSvgHolder)conductorSvgHolder.innerHTML=
+  typeof epCircuitWiringTraceV1==='function'&&typeof epConductorTraceSvgV1==='function'?
+  epConductorTraceSvgV1(epCircuitWiringTraceV1(state),selectedLine):
+  'Схема проводников недоступна.';
+ const wireHolder=$('circuitWiringTracePanel');
+ if(wireHolder)wireHolder.innerHTML=typeof epCircuitWiringTraceV1==='function'&&
+  typeof epCircuitWiringTraceHtmlV1==='function'?
+  epCircuitWiringTraceHtmlV1(epCircuitWiringTraceV1(state),selectedLine):
+  'Прослеживаемость проводников недоступна.';
+ const isolationHolder=$('neutralWireIsolationPanel');
+ if(isolationHolder)isolationHolder.innerHTML=typeof epNeutralWireIsolationV1==='function'&&
+  typeof epNeutralWireIsolationHtmlV1==='function'?
+  epNeutralWireIsolationHtmlV1(epNeutralWireIsolationV1(state)):
+  'Проверка разделения N по проводам недоступна.';
+ const neutralHolder=$('neutralSegregationPanel');
+ if(neutralHolder)neutralHolder.innerHTML=typeof epNeutralSegregationV1==='function'&&
+  typeof epNeutralSegregationHtmlV1==='function'?
+  epNeutralSegregationHtmlV1(epNeutralSegregationV1(state),selectedLine):
+  'Проверка разделения нейтралей недоступна.';
+ const crossView=$('crossViewAuditPanel'),issueHolder=$('engineeringIssueRegister');
+ if(typeof epEngineeringBundleV1==='function'&&(crossView||issueHolder)){
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  if(crossView)crossView.innerHTML=typeof epCrossViewAuditHtmlV1==='function'?
+   epCrossViewAuditHtmlV1(bundle.sections.crossView,selectedLine):'Сквозная проверка недоступна.';
+  if(issueHolder)issueHolder.innerHTML=typeof epEngineeringIssueRegisterHtmlV1==='function'?
+   epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
+ }
+ const protection=$('protectionWorkbench');
+ if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
+  const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
+   Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[];
+  protection.innerHTML=epProtectionWorkbenchHtmlV1(epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine));
+ }
+}
+function renderCircuitWorkspaceV1(){
+ const holder=$('circuitDossier');if(!holder)return;
+ if(typeof epCircuitWorkspaceV1!=='function'||typeof epCircuitWorkspaceHtmlV1!=='function'){
+  holder.textContent='Модуль поиска цепей не загружен.';return;
+ }
+ const result=epCircuitWorkspaceV1(state,catalogDevice,
+  $('circuitWorkspaceQuery')?.value||'',$('circuitWorkspaceMode')?.value||'all');
+ holder.innerHTML=epCircuitWorkspaceHtmlV1(result,selectedLine);
+ const label=$('circuitFocusLabel');
+ if(label){const line=state.lines.find(x=>x.id===selectedLine);label.textContent=line?'Выбрана цепь '+line.id+' · '+line.name:'Цепь не выбрана';}
+}
+function exportEngineeringGateV1(){
+ const report=typeof epEngineeringGateV1==='function'
+  ?epEngineeringGateV1(state,catalogDevice)
+  :{status:'UNKNOWN',engineeringApproved:false,ready_for_installation:false,
+     issues:[{code:'GATE_UNAVAILABLE',level:'UNKNOWN'}]};
+ download(baseName()+'_engineering_diagnostics_DRAFT.json',
+  JSON.stringify(report,null,2),'application/json;charset=utf-8');
+}
 function renderReadiness(){
  const target=$('readinessSummary');if(!target)return;
  const r=documentReadiness();target.replaceChildren();
@@ -1213,7 +1293,7 @@ function renderCircuitGraph(){
  const audit=graphAudit(state);
  host.innerHTML='<div class="graph-banner">Логические связи (черновик) · не подтверждённая электрическая схема</div>';
  for(const g of audit.graph){
-  const row=document.createElement('div');row.className='graph-row';
+  const row=document.createElement('div');row.className='graph-row';if(g.circuitId===selectedLine)row.classList.add('ep-circuit-active');
   const upstream=document.createElement('span');upstream.className='graph-upstream';upstream.textContent=g.upstreamLabel||'Без общего УЗО';
   const apparatus=document.createElement('span');apparatus.className='graph-apparatus';apparatus.textContent=(g.apparatusLabel||'Аппарат не задан')+' · '+g.apparatusId;
   const circuit=document.createElement('span');circuit.className='graph-circuit';circuit.textContent=g.circuitId+' · '+g.circuitName+' · '+(g.phase||'нет фазы');
@@ -1252,7 +1332,7 @@ function renderFeedEditor(){
  return `<div class="conductor-row"><b>${safeText(c.name||c.id)} · ${safeText(c.id)}</b><span>${feed.length} питающих деклараций · ${errors.length} замечаний</span><button class="btn tiny" data-declare-feed="${safeText(c.id)}" ${state.conductorRoutes.some(r=>r.circuitId===c.id)?'':'disabled'}>Заявить питание</button><button class="btn tiny" data-clear-feed="${safeText(c.id)}">Сбросить</button></div>`;}).join('');
  host.innerHTML=`<div class="conductor-banner">Питающие связи УСЛОВНЫЕ · НЕ ДЛЯ МОНТАЖА</div><p class="muted">Декларация SOURCE → (общее УЗО) → отходящий аппарат. Нейтраль направляется на собственную N-шину группы, а PE здесь не проходит через аппарат. Ввод в УЗО теперь задаётся отдельной условной декларацией; паспортные клеммы не моделируются.</p>${groupRows}${rows||'<p class="muted">Цепи отсутствуют</p>'}<div class="mini-actions"><button class="btn" id="declareMissingGroupInputsBtn">Добавить отсутствующие вводы УЗО</button><button class="btn" id="declareMissingFeedBtn">Добавить отсутствующие</button><button class="btn" id="exportFeedCsvBtn">Ведомость питания CSV</button><button class="btn" id="exportFeedSvgBtn">Схема-обзор SVG</button></div><p class="mini-warning">${safeText(audit.issues.length?audit.issues.slice(0,16).map(x=>(x.groupId||x.circuitId)+'/'+x.kind+': '+x.message).join('; '):audit.warning)}</p>`;
 }
-function renderRows(){const tb=$('loadRows');tb.innerHTML='';state.lines.forEach((l,index)=>{const tr=document.createElement('tr');tr.dataset.id=l.id;tr.innerHTML=`<td><input aria-label="Название линии" data-key="name" maxlength="100" value="${safeText(l.name)}"></td><td><input aria-label="Мощность кВт" data-key="power" inputmode="decimal" value="${l.power??''}" ${state.loads?.filter(x=>x.circuitId===l.id).length>1?'disabled title="Редактируйте потребителей ниже"':''}></td><td><select aria-label="Фаза" data-key="phase">${['','L1','L2','L3','3Ф'].map(x=>`<option value="${x}" ${l.phase===x?'selected':''}>${x||'—'}</option>`).join('')}</select></td><td><input aria-label="Обозначение аппарата" data-key="device" maxlength="25" value="${safeText(l.device||'')}"></td><td><input aria-label="Количество модулей" data-key="modules" type="number" min="1" max="12" step="1" value="${l.modules||1}"></td><td><span class="origin-tag" title="${safeText(l.sourceRef||'Происхождение строки; не подтверждение технических данных')}">${safeText(SOURCES[l.source]||SOURCES.unknown)}</span></td><td><button class="delete-btn" aria-label="Удалить линию" data-delete="${safeText(l.id)}">✕</button></td>`;tb.appendChild(tr);});}
+function renderRows(){const tb=$('loadRows');tb.innerHTML='';state.lines.forEach((l,index)=>{const tr=document.createElement('tr');tr.dataset.id=l.id;if(l.id===selectedLine)tr.classList.add('ep-circuit-active');tr.innerHTML=`<td><input aria-label="Название линии" data-key="name" maxlength="100" value="${safeText(l.name)}"></td><td><input aria-label="Мощность кВт" data-key="power" inputmode="decimal" value="${l.power??''}" ${state.loads?.filter(x=>x.circuitId===l.id).length>1?'disabled title="Редактируйте потребителей ниже"':''}></td><td><select aria-label="Фаза" data-key="phase">${['','L1','L2','L3','3Ф'].map(x=>`<option value="${x}" ${l.phase===x?'selected':''}>${x||'—'}</option>`).join('')}</select></td><td><input aria-label="Обозначение аппарата" data-key="device" maxlength="25" value="${safeText(l.device||'')}"></td><td><input aria-label="Количество модулей" data-key="modules" type="number" min="1" max="12" step="1" value="${l.modules||1}"></td><td><span class="origin-tag" title="${safeText(l.sourceRef||'Происхождение строки; не подтверждение технических данных')}">${safeText(SOURCES[l.source]||SOURCES.unknown)}</span></td><td><button class="delete-btn" aria-label="Удалить линию" data-delete="${safeText(l.id)}">✕</button></td>`;tb.appendChild(tr);});}
 $('loadRows').addEventListener('change',ev=>{const input=ev.target.closest('[data-key]');if(!input)return;const tr=ev.target.closest('tr'), l=state.lines.find(x=>x.id===tr.dataset.id);if(!l)return;const key=input.dataset.key;if(key==='power'){ensureV2(state);const consumers=state.loads.filter(x=>x.circuitId===l.id);if(consumers.length>1){notify('У линии несколько потребителей: редактируйте их в отдельном списке',true);render();return;}const value=numeric(input.value);if(value!==null&&(value<0||value>100000)){notify('Мощность должна быть числом от 0 до 100000 кВт',true);render();return;}checkpoint();if(consumers.length)consumers[0].powerKw=value;else if(value!==null)state.loads.push({id:'LOAD-'+l.id,circuitId:l.id,name:l.name,powerKw:value,source:l.source||'manual',sourceRef:l.sourceRef||''});if(l.power!==value)markCalculationReview(l,'LOAD_CHANGED');l.power=value;}else if(key==='modules'){const v=Number(input.value);if(!Number.isInteger(v)||v<1||v>12){notify('Допустимая условная ширина — 1–12 модулей',true);render();return;}checkpoint();updateBranchApparatus(state,l.id,{modules:v,templateId:null});delete l.catalogSku;}else{if(key==='phase'){const candidate=JSON.parse(JSON.stringify(ensureV2(state)));candidate.lines.find(x=>x.id===l.id).phase=input.value;try{validateEntities(candidate);}catch(err){notify(err.message,true);render();return;}}checkpoint();if(key==='device'){updateBranchApparatus(state,l.id,{label:input.value,templateId:null});delete l.catalogSku;}else {if(key==='phase'&&l.phase!==input.value)markCalculationReview(l,'PHASE_CHANGED');l[key]=input.value;}if(key==='phase'){state.conductorRoutes=state.conductorRoutes.filter(r=>r.circuitId!==l.id);}}changed();});
 $('loadRows').addEventListener('click',ev=>{const btn=ev.target.closest('[data-delete]');if(!btn)return;removeLine(btn.dataset.delete);});
 function newId(){let i=1;while(state.lines.some(l=>l.id==='L'+i))i++;return 'L'+i}
@@ -1326,7 +1406,7 @@ function renderBoard(){
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
  $('selectedDevice').innerHTML=l?`<div class="selected-info">${devicePreviewHtml(l)}<b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div>${faultLineInfo(l)}${l.calculationReview?.required?'<div class="ep-fault-status ep-fault-fail"><strong>ПОВТОРНАЯ ПРОВЕРКА</strong><span>Параметры цепи или аппарат изменены. Сохранённые расчёты требуют перепроверки.</span></div>':''}<div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
 }
-$('boardCanvas').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();});
+$('boardCanvas').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();renderCircuitGraph();renderEngineeringDiagnosticsV1();});
 $('boardCanvas').addEventListener('dragstart',e=>{const b=e.target.closest('[data-line]');if(!b)return;dragLineId=b.dataset.line;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragLineId);});
 $('boardCanvas').addEventListener('dragover',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId||b.dataset.line===dragLineId)return;e.preventDefault();e.dataTransfer.dropEffect='move';});
 $('boardCanvas').addEventListener('drop',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId)return;e.preventDefault();const id=dragLineId;dragLineId=null;reorderLine(id,b.dataset.line);});
@@ -1723,5 +1803,163 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='declareMissingFeedBtn'){try{const draft=structuredCloneCompat(ensureV2(state));const before=state.feedLinks.length;declareMissingFeedLinks(draft);if(draft.feedLinks.length===before){notify('Новых деклараций нет');return;}checkpoint();state.feedLinks=draft.feedLinks;changed();notify('Отсутствующие декларации добавлены без замены существующих.');}catch(err){notify(err.message,true);}return;}
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
+});
+$('exportProtectionCsvBtn').addEventListener('click',()=>{
+ if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
+  return notify('Ведомость защиты недоступна',true);
+ const catalog=Object.entries(EP_CATALOG).map(([id,device])=>({id,device}));
+ const report=epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine);
+ download(baseName()+'_protection_DRAFT.csv',epProtectionWorkbenchCsvV1(report),'text/csv;charset=utf-8');
+});
+$('neutralSegregationPanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-neutral-focus]');if(!btn)return;
+ const id=btn.dataset.neutralFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь не найдена',true);
+ selectedLine=id;render();
+});
+$('engineeringIssueRegister').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-issue-focus]');if(!btn)return;
+ const id=btn.dataset.issueFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь замечания не найдена',true);
+ selectedLine=id;render();
+});
+$('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function'||typeof epEngineeringIssueRegisterCsvV1!=='function')
+  return notify('Реестр замечаний недоступен',true);
+ const report=epEngineeringBundleV1(state,catalogDevice).sections.issueRegister;
+ download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
+});
+$('exportCircuitTraceSvgBtn').addEventListener('click',()=>{
+ if(typeof epCircuitWiringTraceV1!=='function'||typeof epConductorTraceSvgV1!=='function')
+  return notify('Схема проводников недоступна',true);
+ if(!selectedLine)return notify('Сначала выберите отходящую цепь',true);
+ const markup=epConductorTraceSvgV1(epCircuitWiringTraceV1(state),selectedLine);
+ const svg=markup.match(/<svg\b[\s\S]*?<\/svg>/)?.[0];
+ if(!svg)return notify('Не удалось сформировать SVG проводников',true);
+ download(baseName()+'_'+selectedLine+'_conductors_DRAFT.svg',svg,'image/svg+xml;charset=utf-8');
+});
+$('exportSingleLineSvgBtn').addEventListener('click',()=>{
+ if(typeof epSingleLineDraftV1!=='function'||typeof epSingleLineSvgV1!=='function')
+  return notify('Однолинейная схема недоступна',true);
+ const report=epSingleLineDraftV1(state,catalogDevice);
+ const markup=epSingleLineSvgV1(report,selectedLine);
+ const svg=markup.match(/<svg\b[\s\S]*?<\/svg>/)?.[0];
+ if(!svg)return notify('Не удалось сформировать SVG',true);
+ download(baseName()+'_single_line_DRAFT.svg',svg,'image/svg+xml;charset=utf-8');
+});
+$('singleLineDraftPanel').addEventListener('click',e=>{
+ const target=e.target.closest('[data-single-line-focus]');if(!target)return;
+ const id=target.getAttribute('data-single-line-focus');
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь не найдена',true);
+ selectedLine=id;render();
+});
+$('singleLineDraftPanel').addEventListener('keydown',e=>{
+ if(e.key!=='Enter'&&e.key!==' ')return;
+ const target=e.target.closest('[data-single-line-focus]');if(!target)return;
+ e.preventDefault();const id=target.getAttribute('data-single-line-focus');
+ if(!state.lines.some(line=>line.id===id))return;
+ selectedLine=id;render();
+});
+$('draftBoardPreview').addEventListener('click',e=>{
+ const button=e.target.closest('[data-din-focus]');if(!button||button.disabled)return;
+ const id=button.dataset.dinFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь DIN не найдена',true);
+ selectedLine=id;render();
+});
+$('crossViewAuditPanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-crossview-focus]');if(!btn)return;
+ const id=btn.dataset.crossviewFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь не найдена',true);
+ selectedLine=id;render();
+});
+$('exportWiringTraceCsvBtn').addEventListener('click',()=>{
+ if(typeof epCircuitWiringTraceV1!=='function'||typeof epCircuitWiringTraceCsvV1!=='function')
+  return notify('Прослеживаемость проводников недоступна',true);
+ const report=epCircuitWiringTraceV1(state);
+ download(baseName()+'_wiring_trace_DRAFT.csv',epCircuitWiringTraceCsvV1(report),'text/csv;charset=utf-8');
+});
+$('exportCrossViewCsvBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function'||typeof epCrossViewAuditCsvV1!=='function')
+  return notify('Проверка согласованности недоступна',true);
+ const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
+ download(baseName()+'_crossview_DRAFT.csv',epCrossViewAuditCsvV1(report),'text/csv;charset=utf-8');
+});
+$('exportCrossViewJsonBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function')return notify('Проверка согласованности недоступна',true);
+ const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
+ download(baseName()+'_crossview_DRAFT.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
+});
+$('protectionWorkbench').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-protection-input-form]');if(!form)return;
+ e.preventDefault();
+ const id=form.dataset.protectionInputForm;
+ const inputs={ibA:form.elements.namedItem('ibA')?.value,
+  izA:form.elements.namedItem('izA')?.value,ikKa:form.elements.namedItem('ikKa')?.value};
+ if(typeof epProtectionInputsV1!=='function')return notify('Модуль исходных токов недоступен',true);
+ const result=epProtectionInputsV1(state,id,inputs);
+ if(!result.project)return notify('Исходные токи не записаны: '+result.code,true);
+ checkpoint();state=result.project;selectedLine=id;changed();
+ notify('Токи записаны как исходные данные. Требуется инженерная проверка.');
+});
+$('protectionWorkbench').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-protection-sku][data-protection-line]');if(!btn||btn.disabled)return;
+ const id=btn.dataset.protectionLine,sku=btn.dataset.protectionSku;
+ const line=state.lines.find(x=>x.id===id);
+ if(!line||!catalogDevice(sku))return notify('Цепь или артикул не найдены',true);
+ const catalog=Object.entries(EP_CATALOG).map(([key,device])=>({id:key,device}));
+ const check=epProtectionWorkbenchV1(state,catalogDevice,catalog,id);
+ if(check.selected?.lineId!==id||!check.selected.candidates.some(x=>x.sku===sku&&x.status!=='REJECTED'))
+  return notify('Аппарат не проходит предварительную проверку',true);
+ try{const draft=structuredCloneCompat(ensureV2(state));applyCatalogueSku(draft,id,sku);
+  checkpoint();state=draft;selectedLine=id;changed();
+  notify('Артикул назначен. Расчёты требуют перепроверки.');
+ }catch(err){notify(err.message||'Не удалось назначить артикул',true);}
+});
+$('circuitDossier').addEventListener('click',e=>{
+ const focus=e.target.closest('[data-focus-circuit],[data-open-load-circuit],[data-open-board-circuit]');if(!focus)return;
+ const id=focus.dataset.focusCircuit||focus.dataset.openLoadCircuit||focus.dataset.openBoardCircuit;
+ if(!state.lines.some(x=>x.id===id))return;
+ selectedLine=id;
+ if(focus.dataset.openLoadCircuit){switchView('loads');
+  const row=[...$('loadRows').querySelectorAll('tr')].find(x=>x.dataset.id===id);
+  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.querySelector('[data-key="name"]')?.focus();}
+ }else if(focus.dataset.openBoardCircuit){switchView('board');
+  const device=[...$('boardCanvas').querySelectorAll('[data-line]')].find(x=>x.dataset.line===id);
+  if(device){device.scrollIntoView({block:'center',behavior:'smooth'});device.focus();}
+ }else{renderBoard();renderCircuitGraph();renderCircuitWorkspaceV1();renderEngineeringDiagnosticsV1();}
+});
+$('circuitWorkspaceQuery').addEventListener('input',renderCircuitWorkspaceV1);
+$('circuitWorkspaceMode').addEventListener('change',renderCircuitWorkspaceV1);
+$('exportEngineeringPrintBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function'||typeof epEngineeringPrintV1!=='function')
+  return notify('Печатный отчёт недоступен',true);
+ const report=epEngineeringBundleV1(state,catalogDevice);
+ download(baseName()+'_engineering_DRAFT.html',epEngineeringPrintV1(report),'text/html;charset=utf-8');
+});
+$('exportEngineeringBundleBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function')return notify('Сводный отчёт недоступен',true);
+ download(baseName()+'_engineering_bundle_DRAFT.json',
+  JSON.stringify(epEngineeringBundleV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
+});
+$('exportDraftBomCsvBtn').addEventListener('click',()=>{
+ if(typeof epDraftBomV1!=='function'||typeof epDraftBomCsvV1!=='function')return notify('Спецификация недоступна',true);
+ download(baseName()+'_equipment_BOM_DRAFT.csv',epDraftBomCsvV1(epDraftBomV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('exportDraftBomJsonBtn').addEventListener('click',()=>{
+ if(typeof epDraftBomV1!=='function')return notify('Спецификация недоступна',true);
+ download(baseName()+'_equipment_BOM_DRAFT.json',JSON.stringify(epDraftBomV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
+});
+$('exportEngineeringGateBtn').addEventListener('click',exportEngineeringGateV1);
+$('exportCircuitDossierJsonBtn').addEventListener('click',()=>{
+ if(typeof epCircuitDossierV1!=='function'){notify('Модуль ведомости не загружен',true);return;}
+ download(baseName()+'_circuit_dossier_DRAFT.json',
+  JSON.stringify(epCircuitDossierV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
+});
+$('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
+ if(typeof epCircuitDossierV1!=='function'||typeof epCircuitDossierCsvV1!=='function'){
+  notify('Модуль ведомости не загружен',true);return;
+ }
+ download(baseName()+'_circuit_dossier_DRAFT.csv',
+  epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
 });
 try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}render();

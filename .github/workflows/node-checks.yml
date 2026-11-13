@@ -1,0 +1,55 @@
+name: Electropanel JS checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check app.js
+          node --check endpoint-bridge-v1.js
+          node --check terminal-path-v2.js
+          node --check topology-batch-audit-v1.js
+          node --check din-catalog-schema-v1.js
+          node --check din-placement-v1.js
+          node --check project-calculation-coverage-v1.js
+          node --check draft-board-plan-v1.js
+          node --check draft-board-preview-v1.js
+          node --check draft-layout-alternatives-v1.js
+          node --check circuit-dossier-v1.js
+          node --check circuit-workspace-v1.js
+          node --check draft-bom-v1.js
+          node --check conductor-trace-svg-v1.js
+          node --check single-line-draft-v1.js
+          node --check single-line-svg-v1.js
+          node --check neutral-wire-isolation-v1.js
+          node --check neutral-wire-isolation-ui-v1.js
+          node --check neutral-segregation-v1.js
+          node --check neutral-segregation-ui-v1.js
+          node --check circuit-wiring-trace-v1.js
+          node --check circuit-wiring-trace-ui-v1.js
+          node --check cross-view-audit-v1.js
+          node --check cross-view-audit-ui-v1.js
+          node --check engineering-bundle-v1.js
+          node --check engineering-print-v1.js
+          node --check engineering-issue-guidance-v1.js
+          node --check engineering-issue-register-v1.js
+          node --check protective-device-shortlist-v1.js
+          node --check protection-workbench-v1.js
+          node --check protection-inputs-v1.js
+          node --check project-integrity-v1.js
+          node --check catalog-evidence-audit-v1.js
+          node --check engineering-gate-v1.js
+          node --check engineering-diagnostics-ui-v1.js
+      - name: Run complete Node test suite
+        run: node --test tests/*.test.js

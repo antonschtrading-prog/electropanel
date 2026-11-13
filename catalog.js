@@ -65,3 +65,5 @@ function epCatalogDeviceSummary(sku) {
  const d=epCatalogSku(sku);
  return d?{sku:d.sku,maker:d.maker,series:d.series,modules:d.modules,widthMm:d.widthMm,inA:d.inA,curve:d.curve,icnKa:d.icnKa}:null;
 }
+
+if(typeof module!=='undefined'&&module.exports)module.exports={EP_CATALOG,epCatalogSku,epCatalogMakers,epCatalogSeries,epCatalogCompatible,epCatalogFilter,epCatalogDeclaredCurrentIssues,epCatalogDeviceSummary};
