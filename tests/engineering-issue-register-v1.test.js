@@ -35,3 +35,11 @@ test('CSV neutralizes formula-like issues and IDs',()=>{
 test('issue register does not mutate input',()=>{
  const b=bundle(),before=JSON.stringify(b);reg(b);assert.equal(JSON.stringify(b),before);
 });
+
+test('issue register displays actionable Russian explanation when guidance loaded',()=>{
+ global.epIssueGuidanceV1=require('../engineering-issue-guidance-v1').epIssueGuidanceV1;
+ const b=bundle();b.sections.protection.issues=[{code:'IN_GT_IZ',level:'BLOCKED',lineId:'L1'}];
+ const h=html(reg(b));assert.match(h,/Номинальный ток выше допустимого/);
+ assert.match(h,/Пересмотрите кабель/);
+ delete global.epIssueGuidanceV1;
+});
