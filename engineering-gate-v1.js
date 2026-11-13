@@ -39,6 +39,9 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epDinPlacementAuditV1==='function')
   inspect('din_placement',()=>epDinPlacementAuditV1(project,lookupSku));
  else add('din_placement','DIN_PLACEMENT_AUDIT_UNAVAILABLE','UNKNOWN');
+ if(typeof epCircuitDesignReviewV1==='function')
+  inspect('design_review',()=>epCircuitDesignReviewV1(project,lookupSku));
+ else add('design_review','DESIGN_REVIEW_UNAVAILABLE','UNKNOWN');
  if(typeof epCableReferenceForCircuitV1==='function')
   inspect('cable_reference',()=>({status:'UNKNOWN',
    issues:(Array.isArray(project?.lines)?project.lines:[]).flatMap(line=>{
