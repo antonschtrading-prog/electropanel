@@ -38,7 +38,7 @@ function epCircuitWorkspaceHtmlV1(result,selectedId=null){
   const issues=x.issues.map(i=>i.code).join(', ');
   return '<tr'+(x.circuitId===selectedId?' class="ep-circuit-active"':'')+'><td><button type="button" class="btn tiny" data-focus-circuit="'+safe(x.circuitId)+'" aria-label="Выбрать цепь '+safe(x.circuitId)+'">'+safe(x.circuitId)+'</button></td><td>'+safe(x.name)+'</td><td>'+safe(x.phase)+
    '</td><td>'+safe(x.manufacturer||'—')+'</td><td>'+safe(x.sku||'Без артикула')+
-   '</td><td>'+safe(location)+'</td><td>'+safe(issues||'Замечаний по цепи нет')+'</td><td><button type="button" class="btn tiny" data-open-load-circuit="'+safe(x.circuitId)+'">Редактировать</button></td></tr>';
+   '</td><td>'+safe(location)+'</td><td>'+safe(issues||'Замечаний по цепи нет')+'</td><td><button type="button" class="btn tiny" data-open-load-circuit="'+safe(x.circuitId)+'">Редактировать</button> <button type="button" class="btn tiny" data-open-board-circuit="'+safe(x.circuitId)+'">На DIN</button></td></tr>';
  }).join('');
  return '<p>Показано '+result.visible+' из '+result.total+' цепей · замечаний по проекту: '+
  result.issueCount+'. Блокирующих цепей: '+result.counts.blocked+
