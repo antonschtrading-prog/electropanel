@@ -1,0 +1,35 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {epProtectiveDeviceShortlistV1:select}=require('../protective-device-shortlist-v1.js');
+const catalog=[{id:'a',device:{kind:'MCB',inA:16,icnKa:6,poles:1,maker:'X',series:'A'}},
+{id:'b',device:{kind:'MCB',inA:25,icnKa:4.5,poles:1,maker:'Y',series:'B'}}];
+const line=()=>({phase:'L1',overloadInput:{ibA:12,izA:20},ikKa:5});
+test('selects arithmetically plausible article only',()=>{
+ const r=select(line(),catalog);assert.equal(r.candidates[0].sku,'a');
+ assert.equal(r.candidates[0].status,'POTENTIAL');assert.equal(r.engineeringApproved,false);
+});
+test('rejects nominal above cable capacity',()=>assert.ok(select(line(),catalog).candidates.find(c=>c.sku==='b').reasons.includes('IN_GT_IZ')));
+test('rejects inadequate breaking rating',()=>{
+ const l=line();l.ikKa=7;assert.ok(select(l,catalog).candidates.every(c=>c.reasons.includes('ICN_LT_DECLARED_IK')));
+});
+test('does not infer fault current',()=>{
+ const l=line();delete l.ikKa;assert.ok(select(l,catalog).issues.some(x=>x.code==='FAULT_CURRENT_MISSING'));
+});
+test('does not infer load current',()=>{
+ const l=line();delete l.overloadInput;assert.ok(select(l,catalog).issues.some(x=>x.code==='DESIGN_CURRENT_MISSING'));
+});
+test('three phase rejects single pole',()=>{
+ const l=line();l.phase='3Ф';assert.ok(select(l,catalog).candidates.every(c=>c.reasons.includes('POLES_INCOMPATIBLE')));
+});
+test('missing phase cannot approve',()=>{
+ const l=line();delete l.phase;assert.ok(select(l,catalog).issues.some(x=>x.code==='PHASE_UNDECLARED'));
+});
+test('invalid catalogue specs reject article',()=>{
+ const r=select(line(),[{id:'bad',device:{kind:'MCB',inA:0,icnKa:0,poles:1}}]);
+ assert.equal(r.candidates[0].status,'REJECTED');
+});
+test('unknown device type is not treated as breaker',()=>{
+ const r=select(line(),[{id:'psu',device:{kind:'DIN_PSU',inA:16,icnKa:6,poles:1}}]);
+ assert.equal(r.candidates.length,0);
+});
+test('invalid line blocks',()=>assert.equal(select(null,catalog).status,'BLOCKED'));
