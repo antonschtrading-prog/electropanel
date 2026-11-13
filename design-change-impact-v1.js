@@ -29,4 +29,18 @@ function epDesignChangeImpactV1(before,after){
   issues:affected.map(x=>({code:'CHANGE_IMPACT_REVIEW_'+x.toUpperCase(),level:'UNKNOWN'})),
   engineeringApproved:false};
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epDesignChangeImpactV1,MAP};
+function epInvalidateDesignEvidenceV1(project,impact){
+ if(!project||typeof project!=='object'||Array.isArray(project))return project;
+ if(!impact||!Array.isArray(impact.affected)||!impact.affected.length)return project;
+ const evidence=project.evidence;
+ if(!evidence||typeof evidence!=='object'||Array.isArray(evidence))return project;
+ const next={...project,evidence:{...evidence}};
+ for(const area of impact.affected){
+  if(!Object.prototype.hasOwnProperty.call(evidence,area))continue;
+  const item=evidence[area];
+  if(!item||typeof item!=='object'||Array.isArray(item))continue;
+  next.evidence[area]={...item,status:'unknown',stale:true};
+ }
+ return next;
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epDesignChangeImpactV1,epInvalidateDesignEvidenceV1,MAP};
