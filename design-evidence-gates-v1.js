@@ -18,7 +18,7 @@ function assessDesignEvidence(project) {
       } else if (claimed === 'verified') reason = 'Не указан источник или метод проверки';
       else if (VALID.has(claimed)) reason = 'Проверка не подтверждена';
     }
-    items.push({area,status,reason});
+    items.push({area,status,reason,source:typeof entry?.source==='string'?entry.source:'',method:typeof entry?.method==='string'?entry.method:'',stale:entry?.stale===true});
   }
   const failed = items.filter(x=>x.status==='failed').length;
   const unknown = items.filter(x=>x.status==='unknown').length;
