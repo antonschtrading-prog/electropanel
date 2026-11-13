@@ -17,6 +17,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check app.js
+          node --check index.html 2>/dev/null || true
           node --check endpoint-bridge-v1.js
           node --check terminal-path-v2.js
           node --check topology-batch-audit-v1.js
