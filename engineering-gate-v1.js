@@ -51,6 +51,12 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epProjectIntegrityV1==='function')
   inspect('project_integrity',()=>epProjectIntegrityV1(project,lookupSku));
  else add('project_integrity','PROJECT_INTEGRITY_UNAVAILABLE','UNKNOWN');
+ if(typeof epCircuitWiringTraceV1==='function')
+  inspect('circuit_wiring_trace',()=>epCircuitWiringTraceV1(project));
+ else add('circuit_wiring_trace','CIRCUIT_WIRING_TRACE_UNAVAILABLE','UNKNOWN');
+ if(typeof epNeutralSegregationV1==='function')
+  inspect('neutral_segregation',()=>epNeutralSegregationV1(project));
+ else add('neutral_segregation','NEUTRAL_SEGREGATION_UNAVAILABLE','UNKNOWN');
  const status=issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
  return {schema_version:'1.0',status,components,issues,
   engineeringApproved:false,ready_for_installation:false,
