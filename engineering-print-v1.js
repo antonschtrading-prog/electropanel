@@ -11,7 +11,7 @@ function epEngineeringPrintV1(bundle){
   bom=sections.bom?.items||[],protection=sections.protection?.rows||[],
   board=sections.board?.placements||[],cross=sections.crossView?.issues||[],
   allIssues=sections.issueRegister?.entries||[],wiring=sections.wiringTrace?.rows||[],
-  neutral=sections.neutralSegregation?.rows||[];
+  neutral=sections.neutralSegregation?.rows||[],singleLine=sections.singleLine?.nodes||[];
  const status=bundle?.overallStatus||'BLOCKED';
  const circuitTable=rows(['Цепь','Название','Фаза','Артикул','DIN','Статус проверки'],
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
@@ -26,6 +26,8 @@ function epEngineeringPrintV1(bundle){
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
  const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
  const issueTable=rows(['Раздел','Уровень','Код','Цепь'],allIssues.map(x=>[x.section,x.level,x.code,x.circuitId||'Проект']));
+ const singleLineTable=rows(['Элемент','ID','Назначение','Фаза','Артикул','Группа/аппарат'],
+  singleLine.map(x=>[x.type,x.lineId||x.id,x.name,x.phase,x.sku,x.branchId||x.templateId]));
  const neutralTable=rows(['Цепь','Группа УЗО','Ожидаемая N','Заявленная N','PE','Статус'],
   neutral.map(x=>[x.lineId,x.groupId||'Без УЗО',x.expectedBus,x.declaredBus,x.protectiveBus,x.status]));
  const wiringTable=rows(['Цепь','Роль','От','До','Статус','Клеммы по модели'],
@@ -45,6 +47,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Однолинейная структура проекта (декларация)</h2>'+singleLineTable+
   '<h2>Разделение нейтралей УЗО и PE</h2>'+neutralTable+
   '<h2>Заявленные проводники и клеммы</h2>'+wiringTable+
   '<h2>Расхождения между представлениями</h2>'+crossTable+
