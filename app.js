@@ -1824,7 +1824,7 @@ $('exportSingleLineSvgBtn').addEventListener('click',()=>{
   return notify('Однолинейная схема недоступна',true);
  const report=epSingleLineDraftV1(state,catalogDevice);
  const markup=epSingleLineSvgV1(report,selectedLine);
- const svg=markup.match(/<svg\\b[\\s\\S]*?<\\/svg>/)?.[0];
+ const svg=markup.match(/<svg\b[\s\S]*?<\/svg>/)?.[0];
  if(!svg)return notify('Не удалось сформировать SVG',true);
  download(baseName()+'_single_line_DRAFT.svg',svg,'image/svg+xml;charset=utf-8');
 });
