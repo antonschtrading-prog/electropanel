@@ -862,6 +862,11 @@ function renderEngineeringDiagnosticsV1(){
   typeof epSingleLineSvgV1==='function'?
   epSingleLineSvgV1(epSingleLineDraftV1(state,catalogDevice),selectedLine):
   'Однолинейная схема недоступна.';
+ const conductorSvgHolder=$('conductorTraceSvgPanel');
+ if(conductorSvgHolder)conductorSvgHolder.innerHTML=
+  typeof epCircuitWiringTraceV1==='function'&&typeof epConductorTraceSvgV1==='function'?
+  epConductorTraceSvgV1(epCircuitWiringTraceV1(state),selectedLine):
+  'Схема проводников недоступна.';
  const wireHolder=$('circuitWiringTracePanel');
  if(wireHolder)wireHolder.innerHTML=typeof epCircuitWiringTraceV1==='function'&&
   typeof epCircuitWiringTraceHtmlV1==='function'?
@@ -1818,6 +1823,15 @@ $('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
   return notify('Реестр замечаний недоступен',true);
  const report=epEngineeringBundleV1(state,catalogDevice).sections.issueRegister;
  download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
+});
+$('exportConductorSvgBtn').addEventListener('click',()=>{
+ if(typeof epCircuitWiringTraceV1!=='function'||typeof epConductorTraceSvgV1!=='function')
+  return notify('Схема проводников недоступна',true);
+ if(!selectedLine)return notify('Сначала выберите отходящую цепь',true);
+ const markup=epConductorTraceSvgV1(epCircuitWiringTraceV1(state),selectedLine);
+ const svg=markup.match(/<svg\b[\s\S]*?<\/svg>/)?.[0];
+ if(!svg)return notify('Не удалось сформировать SVG проводников',true);
+ download(baseName()+'_'+selectedLine+'_conductors_DRAFT.svg',svg,'image/svg+xml;charset=utf-8');
 });
 $('exportSingleLineSvgBtn').addEventListener('click',()=>{
  if(typeof epSingleLineDraftV1!=='function'||typeof epSingleLineSvgV1!=='function')
