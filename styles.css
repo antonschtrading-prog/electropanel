@@ -224,3 +224,15 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-cable-reference select{padding:8px;border:1px solid #a6b4c3;border-radius:6px}
 .ep-cable-reference table{width:100%;border-collapse:collapse;font-size:12px}
 .ep-cable-reference th,.ep-cable-reference td{padding:7px;border-bottom:1px solid #ccd4dc;text-align:left}
+
+/* Original illustrated faceplates; visual distinctions are not manufacturer CAD assets. */
+.ep-din-device-face{display:flex;position:relative;justify-content:center;align-items:center;min-height:45px;margin:5px 3px 7px;border-radius:3px;background:linear-gradient(110deg,#e5e7e9,#fff 32%,#d9dde2 72%,#f3f4f6);box-shadow:inset 0 1px 2px #fff,inset 1px 0 3px #aeb6bf,0 1px 2px #9da7b3}
+.ep-din-device-face:before,.ep-din-device-face:after{content:"";position:absolute;left:9%;right:9%;height:2px;background:#c7cbd1}
+.ep-din-device-face:before{top:6px}.ep-din-device-face:after{bottom:6px}
+.ep-din-device-toggle{width:36%;min-width:9px;max-width:24px;height:23px;border-radius:3px;background:linear-gradient(90deg,#a6adb4,#eceef0 48%,#8e98a3);box-shadow:1px 3px 3px #6c768180, inset 0 2px 1px #fff;transform:perspective(50px) rotateX(-12deg)}
+.ep-din-device-indicator{position:absolute;top:9px;right:9px;width:5px;height:5px;border-radius:50%;background:#929da8;box-shadow:0 0 0 1px #c9ced4}
+.ep-din-face-schneider{border-top:4px solid #28a85e}.ep-din-face-schneider .ep-din-device-toggle{background:linear-gradient(90deg,#c1c7c9,#f6f7f7,#8d999d)}
+.ep-din-face-abb{border-top:4px solid #d8272e}.ep-din-face-abb .ep-din-device-toggle{background:linear-gradient(90deg,#737c85,#d3d7d9,#5e6770)}
+.ep-din-face-iek{border-top:4px solid #f2b521}.ep-din-face-iek .ep-din-device-toggle{background:linear-gradient(90deg,#bdc1c6,#fff,#8d9298)}
+.ep-din-face-generic{border-top:4px solid #9aa6b3}
+.ep-din-block.ep-circuit-active .ep-din-device-face{outline:2px solid #2b82c9;outline-offset:2px}
