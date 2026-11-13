@@ -91,3 +91,11 @@ test('BOM exports are connected to their visible controls',()=>{
  assert.match(app,/_equipment_BOM_DRAFT\.csv/);
  assert.match(app,/_equipment_BOM_DRAFT\.json/);
 });
+
+test('consolidated engineering bundle loads after BOM and before app',()=>{
+ assert.ok(scripts.indexOf('engineering-bundle-v1.js')>scripts.indexOf('draft-bom-v1.js'));
+ assert.ok(scripts.indexOf('engineering-bundle-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="exportEngineeringBundleBtn"/);
+ assert.match(app,/\$\('exportEngineeringBundleBtn'\)\.addEventListener\('click'/);
+ assert.match(app,/_engineering_bundle_DRAFT\.json/);
+});
