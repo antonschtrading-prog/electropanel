@@ -16,3 +16,29 @@ test('CSV escapes semicolons, quotes and newlines',()=>{const p=project();p.line
 test('HTML escapes line and article input',()=>{const p=project();p.lines[0].name='<img src=x onerror=alert(1)>';const html=epCircuitDossierPanelV1(p,lookup);assert.doesNotMatch(html,/<img/);assert.match(html,/&lt;img/);});
 test('pure projection leaves project unchanged',()=>{const p=project(),before=JSON.stringify(p);epCircuitDossierV1(p,lookup);assert.equal(JSON.stringify(p),before);});
 test('never claims installation approval',()=>{const x=epCircuitDossierV1(project(),lookup);assert.equal(x.engineeringApproved,false);assert.equal(x.ready_for_installation,false);});
+
+test('invalid project is blocked, not treated as empty',()=>{
+ assert.equal(epCircuitDossierV1(null).status,'BLOCKED');
+ assert.equal(epCircuitDossierV1({lines:[]}).status,'BLOCKED');
+});
+test('declared numeric inputs must be positive finite numbers',()=>{
+ const p=project();p.lines[0].overloadInput.ibA='-10';
+ assert.ok(epCircuitDossierV1(p,lookup).issues.some(x=>x.code==='INVALID_OR_MISSING_IBA'));
+});
+test('missing route and unknown phase are visible',()=>{
+ const p=project();delete p.lines[0].route44Input;p.lines[0].phase='X';
+ const codes=epCircuitDossierV1(p,lookup).issues.map(x=>x.code);
+ assert.ok(codes.includes('ROUTE_NOT_DECLARED'));assert.ok(codes.includes('PHASE_UNKNOWN'));
+});
+test('duplicate apparatus mappings are blocked',()=>{
+ const p=project();p.branchDevices=[{id:'B1',circuitId:'L1',modules:1},{id:'B2',circuitId:'L1',modules:1}];
+ assert.ok(epCircuitDossierV1(p,lookup).issues.some(x=>x.code==='DUPLICATE_BRANCH_BINDING'));
+});
+test('article width mismatch is blocked',()=>{
+ const p=project();assert.ok(epCircuitDossierV1(p,()=>({...lookup(),modules:2})).issues.some(x=>x.code==='ARTICLE_WIDTH_CONFLICT'));
+});
+test('CSV defangs spreadsheet formulas in user supplied names',()=>{
+ const p=project();p.lines[0].name='=HYPERLINK("https://example.org")';
+ const csv=epCircuitDossierCsvV1(epCircuitDossierV1(p,lookup));
+ assert.match(csv,/"'=HYPERLINK\(""https:\/\/example.org""\)"/);
+});
