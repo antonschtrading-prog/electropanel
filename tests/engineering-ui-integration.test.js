@@ -61,3 +61,13 @@ test('searchable circuit workspace is live and loaded after dossier',()=>{
  assert.match(app,/\$\('circuitWorkspaceQuery'\)\.addEventListener\('input',renderCircuitWorkspaceV1\)/);
  assert.match(app,/\$\('circuitWorkspaceMode'\)\.addEventListener\('change',renderCircuitWorkspaceV1\)/);
 });
+
+test('selection connects circuit workspace, board and load editor',()=>{
+ assert.match(html,/id="circuitFocusLabel"/);
+ assert.match(app,/\$\('circuitDossier'\)\.addEventListener\('click'/);
+ assert.match(app,/data-focus-circuit/);
+ assert.match(app,/data-open-load-circuit/);
+ assert.match(app,/selectedLine=id/);
+ assert.match(app,/renderBoard\(\);renderCircuitGraph\(\);renderCircuitWorkspaceV1\(\)/);
+ assert.match(app,/row\.scrollIntoView/);
+});
