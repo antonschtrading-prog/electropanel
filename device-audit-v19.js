@@ -146,7 +146,13 @@ function epWiringDeviceModelConsistencyV19(wiring,device){
   const a=wiring[key],b=device[key];
   if(!Array.isArray(a)||!Array.isArray(b))
    return {status:'BLOCKED',issues:['MODEL_GROUP_MISSING_'+key]};
-  const normalize=x=>[...x].map(obj=>epWiringCanonicalJSONV18(obj)).sort();
+  // Coupled-pole gang_id belongs only to device_audit; the pure wiring
+  // model intentionally does not contain manufacturer/pole metadata.
+  const normalize=x=>[...x].map(obj=>{
+   const copy={...obj};
+   if(key==='internal_links')delete copy.gang_id;
+   return epWiringCanonicalJSONV18(copy);
+  }).sort();
   const aa=normalize(a),bb=normalize(b);
   if(aa.length!==bb.length||aa.some((x,i)=>x!==bb[i]))
    return {status:'BLOCKED',issues:['MODEL_GROUP_MISMATCH_'+key]};
