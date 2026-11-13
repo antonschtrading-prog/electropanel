@@ -33,6 +33,7 @@ jobs:
           node --check cross-view-audit-ui-v1.js
           node --check engineering-bundle-v1.js
           node --check engineering-print-v1.js
+          node --check engineering-issue-guidance-v1.js
           node --check engineering-issue-register-v1.js
           node --check protective-device-shortlist-v1.js
           node --check protection-workbench-v1.js
