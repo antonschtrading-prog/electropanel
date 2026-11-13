@@ -69,3 +69,28 @@ function epTTScreenV45(data) {
   evidence_state:'USER_ASSERTED_NOT_INDEPENDENTLY_AUTHENTICATED'
  });
 }
+
+const EP_TT_ALLOWED_FIELDS=Object.freeze([
+ 'earthing_system','supply_architecture','special_installation','ra_ohm',
+ 'rcd_rated_residual_current_ma','permitted_touch_voltage_v',
+ 'earth_electrode_measurement_available','ra_includes_protective_conductor',
+ 'rcd_datasheet_verified','required_disconnection_time_verified',
+ 'rcd_disconnection_time_verified','pe_continuity_verified',
+ 'required_disconnection_time_s','measured_rcd_disconnection_time_s',
+ 'rcd_test_condition_verified'
+]);
+function epNormalizeTTContext(input) {
+ if(!input||typeof input!=='object'||Array.isArray(input))throw Error('TT context must be JSON object');
+ const keys=Object.keys(input);
+ if(keys.length>EP_TT_ALLOWED_FIELDS.length)throw Error('Too many TT fields');
+ const result={};
+ for(const key of keys){
+  if(!EP_TT_ALLOWED_FIELDS.includes(key))throw Error('Unknown TT field: '+key);
+  const v=input[key];
+  if(v===null||typeof v==='boolean')result[key]=v;
+  else if(typeof v==='number'&&Number.isFinite(v))result[key]=v;
+  else if(typeof v==='string'&&v.length<=128)result[key]=v;
+  else throw Error('Invalid TT field: '+key);
+ }
+ return result;
+}
