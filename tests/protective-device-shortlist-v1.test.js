@@ -77,3 +77,8 @@ test('valid injected catalogue matches internal article ID',()=>{
  const r=audit({lines:[{...line(),id:'L1',catalogSku:'a'}]},()=>catalog[0].device,catalog);
  assert.ok(!r.issues.some(i=>i.code==='SELECTED_ARTICLE_NOT_IN_CATALOG'));
 });
+
+test('actual app faultInput overrides legacy ikKa field',()=>{
+ const l=line();l.ikKa=100;l.faultInput={ikKa:5};
+ assert.equal(select(l,catalog).candidates.find(c=>c.sku==='a').status,'POTENTIAL');
+});
