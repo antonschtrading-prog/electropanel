@@ -63,6 +63,15 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epNeutralSegregationV1==='function')
   inspect('neutral_segregation',()=>epNeutralSegregationV1(project));
  else add('neutral_segregation','NEUTRAL_SEGREGATION_UNAVAILABLE','UNKNOWN');
+ if(typeof assessDesignEvidence==='function')
+  inspect('design_evidence',()=>{
+   const report=assessDesignEvidence(project);
+   return {status:report.status==='failed'?'BLOCKED':'UNKNOWN',
+    issues:report.items.filter(x=>x.status!=='verified').map(x=>({
+     code:'DESIGN_EVIDENCE_'+x.status.toUpperCase()+'_'+x.area.toUpperCase(),
+     level:x.status==='failed'?'BLOCKED':'UNKNOWN'}))};
+  });
+ else add('design_evidence','DESIGN_EVIDENCE_UNAVAILABLE','UNKNOWN');
  const status=issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
  return {schema_version:'1.0',status,components,issues,
   engineeringApproved:false,ready_for_installation:false,
