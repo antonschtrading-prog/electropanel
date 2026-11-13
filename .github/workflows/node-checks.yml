@@ -40,6 +40,8 @@ jobs:
           node --check circuit-wiring-trace-ui-v1.js
           node --check cross-view-audit-v1.js
           node --check cross-view-audit-ui-v1.js
+          node --check design-evidence-gates-v1.js
+          node --check design-evidence-ui-v1.js
           node --check engineering-bundle-v1.js
           node --check engineering-print-v1.js
           node --check engineering-issue-guidance-v1.js
