@@ -2,6 +2,8 @@
 // Draft bill of materials: exact SKU grouping only, no pricing or substitute guesses.
 function epDraftBomV1(project,lookupSku){
  const issues=[],items=new Map(),devices=[];
+ const expectedCount=(Array.isArray(project?.lines)?project.lines.length:0)+
+  (Array.isArray(project?.sharedDevices)?project.sharedDevices.length:0);
  if(!project||!Array.isArray(project.lines)||project.lines.length>400)
   return {schema:'electropanel.bom.draft.1',status:'BLOCKED',items:[],issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],engineeringApproved:false,ready_for_installation:false};
  const branches=Array.isArray(project.branchDevices)?project.branchDevices:[];
@@ -45,7 +47,9 @@ function epDraftBomV1(project,lookupSku){
  const result=[...items.values()].sort((a,b)=>a.key.localeCompare(b.key));
  if(!result.length)issues.push({code:'NO_VERIFIED_CATALOGUE_ARTICLES',level:'UNKNOWN'});
  return {schema:'electropanel.bom.draft.1',status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
-  items:result,devices,issues,distinctArticles:result.length,totalCataloguedDevices:result.reduce((n,x)=>n+x.quantity,0),
+  items:result,devices,issues,expectedDevices:expectedCount,
+  distinctArticles:result.length,totalCataloguedDevices:result.reduce((n,x)=>n+x.quantity,0),
+  missingDevices:Math.max(0,expectedCount-devices.length),
   engineeringApproved:false,ready_for_installation:false};
 }
 function epDraftBomCsvV1(report){
@@ -63,7 +67,7 @@ function epDraftBomHtmlV1(report){
  '</td><td>'+esc(x.source||'Не указан')+'</td></tr>').join('');
  return '<section aria-label="Предварительная спецификация"><h3>Спецификация оборудования · черновик</h3>'+
  '<p>Артикулов: '+report.distinctArticles+'; аппаратов с артикулами: '+report.totalCataloguedDevices+
- '; замечаний: '+report.issues.length+'. Цены, совместимость и полнота спецификации не подтверждены.</p>'+
+ '; без подтверждённого артикула: '+report.missingDevices+'; замечаний: '+report.issues.length+'. Цены, совместимость и полнота спецификации не подтверждены.</p>'+
  '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
  '<th>Шт.</th><th>Мод.</th><th>Цепи</th><th>Источник</th></tr></thead><tbody>'+
  (rows||'<tr><td colspan="7">Нет подтверждённых записей каталога</td></tr>')+
