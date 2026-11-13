@@ -6,10 +6,11 @@
 const EP43_SQRT3=1.7320508075688772935274463415;
 function ep43Num(v,allowZero=false){
  if(v===null||v===undefined||typeof v==='boolean'||typeof v==='object')return null;
- const n=Number(String(v).trim());
+ const raw=String(v).trim();
+ if(raw.length>128||!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d{1,5})?$/.test(raw))return null;
+ const n=Number(raw);
  if(!Number.isFinite(n)||(!allowZero&&n<=0)||(allowZero&&n<0)||n!==0&&(Math.abs(n)>=1e9||Math.abs(n)<1e-8))
   return null;
- if(String(v).trim()==='')return null;
  return n;
 }
 function ep43Result(status,issues,extra={}) {
