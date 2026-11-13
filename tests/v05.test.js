@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
-const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
+const epBrowserDeps=fs.readFileSync(path.join(__dirname,'../overload-v30.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../tt-screen-v45.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'../protection.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 function env(){const c=vm.createContext({console,Date,Number,String,Array,Set,Math,JSON,Object});vm.runInContext(epBrowserDeps,c);vm.runInContext(s.slice(0,s.indexOf("$('loadRows').addEventListener")),c);vm.runInContext(s.slice(s.indexOf('function newId(){'),s.indexOf('function parseLines(text){')),c);for(const [a,b] of [['function normalizeImport(x){','function parseCSV(text){'],['function parseCSV(text){',"$('nav').addEventListener"]])vm.runInContext(s.slice(s.indexOf(a),s.indexOf(b)),c);return c;}
 const run=(c,expr)=>vm.runInContext(expr,c);
@@ -33,3 +33,21 @@ test('no current is inferred from installed power',()=>{const c=env();run(c,'sta
 test('UI makes numeric-only source warning explicit',()=>{assert.ok(html.includes('id="runCurrentCheck"'));assert.ok(html.includes('НЕ автоматический подбор кабеля'));assert.ok(s.includes('readyForInstallation:false'));});
 test('draft equipment groups only equal labels and widths',()=>{const c=env();const code=s.slice(s.indexOf('function draftEquipment(){'),s.indexOf('function exportSvg(){'));vm.runInContext(code,c);run(c,"state.lines=[{device:'C16',modules:1},{device:'C16',modules:1},{device:'C16',modules:3},{device:'',modules:1}]");const r=run(c,'draftEquipment()');assert.equal(r.length,3);assert.ok(r.some(x=>x.quantity===2&&x.modules===1&&x.name==='C16'));});
 test('two sample projects are different and explicitly instructional',()=>{const c=env();assert.equal(run(c,'demoCommercial().lines.length'),4);assert.equal(run(c,'demo().lines.length'),6);assert.equal(run(c,'demoCommercial().lines.every(x=>x.source===\"demo\")'),true);});
+test('TT v4.5 context JSON survives import without granting installation approval',()=>{
+ const c=env();
+ const payload={earthing_system:'TT',supply_architecture:'single_utility_source',
+  special_installation:false,ra_ohm:'100',rcd_rated_residual_current_ma:'30',
+  permitted_touch_voltage_v:'50',earth_electrode_measurement_available:true,
+  ra_includes_protective_conductor:true,rcd_datasheet_verified:true,
+  required_disconnection_time_verified:true,rcd_disconnection_time_verified:true,
+  pe_continuity_verified:true,required_disconnection_time_s:'0.2',
+  measured_rcd_disconnection_time_s:'0.04',rcd_test_condition_verified:true};
+ c.sampleTT=payload;
+ run(c,"state=normalizeImport(demo());state.earthing='TT';state.ttContext=epNormalizeTTContext(sampleTT)");
+ assert.equal(run(c,'epTTScreenV45(state.ttContext).status'),'PASS');
+ assert.equal(run(c,'projectAudit().engineeringApproved'),false);
+ assert.equal(run(c,"projectAudit().checks.find(x=>x.id==='tt-rcd-screen').status"),'NOT_VERIFIED');
+ assert.equal(run(c,'normalizeImport(JSON.parse(JSON.stringify(state))).ttContext.ra_ohm'),'100');
+ run(c,"state.earthing='TN-S'");
+ assert.equal(run(c,"projectAudit().checks.find(x=>x.id==='tt-rcd-screen').status"),'ERROR');
+});
