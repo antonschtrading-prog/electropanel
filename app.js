@@ -1775,6 +1775,11 @@ $('circuitDossier').addEventListener('click',e=>{
 });
 $('circuitWorkspaceQuery').addEventListener('input',renderCircuitWorkspaceV1);
 $('circuitWorkspaceMode').addEventListener('change',renderCircuitWorkspaceV1);
+$('exportEngineeringBundleBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function')return notify('Сводный отчёт недоступен',true);
+ download(baseName()+'_engineering_bundle_DRAFT.json',
+  JSON.stringify(epEngineeringBundleV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
+});
 $('exportDraftBomCsvBtn').addEventListener('click',()=>{
  if(typeof epDraftBomV1!=='function'||typeof epDraftBomCsvV1!=='function')return notify('Спецификация недоступна',true);
  download(baseName()+'_equipment_BOM_DRAFT.csv',epDraftBomCsvV1(epDraftBomV1(state,catalogDevice)),'text/csv;charset=utf-8');
