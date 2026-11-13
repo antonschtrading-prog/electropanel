@@ -18,6 +18,10 @@ function epCableReferenceHtmlV1(project,lineId,lookupSku){
   '<label class="ep-cable-reference-confirm"><input type="checkbox" name="confirmContext" required'+(method?' checked':'')+
   '> Подтверждаю применимость всех перечисленных условий</label>'+
   '<button class="btn" type="submit">Применить условия</button></div></form>'+
+  '<form data-cable-section-form="'+esc(line.id)+'"><div class="ep-cable-reference-controls"><label>Проектное сечение, мм²'+
+  '<select name="sectionMm2"><option value="">Выберите сечение</option>'+
+  ['1.5','2.5','4','6','10','16'].map(x=>'<option value="'+x+'"'+(line.cableDesignInput?.sectionMm2===Number(x)?' selected':'')+'>'+x+'</option>').join('')+
+  '</select></label><button class="btn" type="submit">Записать сечение в проект</button></div></form>'+
   '<p>Ib: '+esc(report?.ibA??'не задан')+' А · In: '+esc(report?.inA??'не задан')+
   ' А. Справочный кандидат: '+esc(report?.smallestReferenceCandidate?.sectionMm2??'нет')+' мм².</p>'+
   '<div style="overflow-x:auto"><table><thead><tr><th>Сечение, мм²</th><th>Iz, А</th><th>Ib ≤ Iz</th><th>In ≤ Iz</th><th>Статус</th></tr></thead><tbody>'+
