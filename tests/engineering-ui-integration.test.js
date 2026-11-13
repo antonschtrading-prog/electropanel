@@ -38,7 +38,7 @@ test('circuit dossier and CSV are integrated in live UI',()=>{
  assert.ok(scripts.indexOf('circuit-dossier-v1.js')<scripts.indexOf('app.js'));
  assert.match(html,/id="circuitDossier"/);
  assert.match(html,/id="exportCircuitDossierCsvBtn"/);
- assert.match(app,/epCircuitDossierPanelV1\(state,catalogDevice\)/);
+ assert.match(app,/epCircuitWorkspaceV1\(state,catalogDevice,/);
  assert.match(app,/_circuit_dossier_DRAFT\.csv/);
 });
 
