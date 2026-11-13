@@ -14,8 +14,8 @@ Status: experimental draft in PR #10. No changes to main or installation approva
 8. Changing an article uses the project history and marks calculation review as stale. Article geometry is synchronized with the branch apparatus.
 9. Inspect BOM grouping and missing article count; export CSV or JSON.
 10. Compare original sequential DIN placement with optional first-fit packing, without altering project or wiring.
-11. Export a combined draft JSON with circuit dossier, BOM, original DIN, alternative layout, per-circuit protection assessment and engineering gate.
-12. Verify a complete scenario with a curated ABB article and confirm no module ever asserts engineering approval.
+11. Export a full-circuit protection CSV with Ib/Iz/Ik, selected manufacturer article, rejected reasons and potential arithmetic candidates; user-controlled formula-like text is neutralized.\n12. Export a combined draft JSON with circuit dossier, BOM, original DIN, alternative layout, per-circuit protection assessment and engineering gate.
+13. Verify a complete scenario with a curated ABB article and confirm no module ever asserts engineering approval.
 
 ## Explicit engineering limits
 
