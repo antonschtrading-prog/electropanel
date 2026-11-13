@@ -201,3 +201,20 @@ test('Russian issue guidance is loaded before register and app',()=>{
  const source=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
  assert.match(source,/epIssueGuidanceV1\(x.code\)/);
 });
+
+test('per-circuit terminal trace loads before engineering bundle and app',()=>{
+ assert.ok(scripts.indexOf('circuit-wiring-trace-v1.js')>scripts.indexOf('endpoint-bridge-v1.js'));
+ assert.ok(scripts.indexOf('circuit-wiring-trace-ui-v1.js')>scripts.indexOf('circuit-wiring-trace-v1.js'));
+ assert.ok(scripts.indexOf('circuit-wiring-trace-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
+ assert.match(html,/id="circuitWiringTracePanel"/);
+ assert.match(html,/id="exportWiringTraceCsvBtn"/);
+ assert.match(app,/epCircuitWiringTraceHtmlV1\(epCircuitWiringTraceV1\(state\),selectedLine\)/);
+ assert.match(app,/_wiring_trace_DRAFT\.csv/);
+});
+test('wiring trace is included in full engineering bundle and issue register',()=>{
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ const issues=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
+ const printable=fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8');
+ assert.match(bundle,/wiringTrace/);assert.match(issues,/wiringTrace/);
+ assert.match(printable,/sections.wiringTrace/);
+});
