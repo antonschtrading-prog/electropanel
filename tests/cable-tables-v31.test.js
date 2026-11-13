@@ -87,6 +87,6 @@ test('GitHub Pages ships the browser checker and UI wiring is present',()=>{
  assert.ok(html.includes('id="cable31Input"'));
  assert.ok(html.includes('id="assessCable31"'));
  assert.ok(app.includes("$('assessCable31').onclick=assessCable31FromUI;"));
- assert.ok(publish.includes('cp index.html styles.css app.js'));
+ assert.ok(publish.includes('node scripts/build-site.js'));
  assert.ok(publish.includes('cable-tables-v31.js'));
 });
