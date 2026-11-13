@@ -9,7 +9,7 @@ function epLoadCurrentHtmlV1(project,selectedId){
  const options='<option value="single_phase"'+(mode==='single_phase'?' selected':'')+'>1 фаза · U L–N</option>'+
   '<option value="three_phase"'+(mode==='three_phase'?' selected':'')+'>3 фазы · U L–L</option>';
  return '<details class="ep-load-current"><summary>Калькулятор Ib · '+esc(line.name||line.id)+
-  (record.ibA?' · '+esc(record.roundedIbA)+' А':' · не рассчитан')+'</summary>'+
+  (record.stale?' · ТРЕБУЕТ ПЕРЕСЧЁТА':record.ibA?' · '+esc(record.roundedIbA)+' А':' · не рассчитан')+'</summary>'+
   '<p>Укажите все параметры явно. Результат сохраняется как расчётный Ib, остальные исходные токи не изменяются.</p>'+
   '<form data-load-current-form="'+esc(line.id)+'"><div class="ep-load-current-fields">'+
   '<label>Схема питания<select name="mode">'+options+'</select></label>'+
