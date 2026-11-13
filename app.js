@@ -824,8 +824,10 @@ function renderTTContext(){
  field.value=state.ttContext?JSON.stringify(state.ttContext,null,2):'';
  if(!state.ttContext){result.textContent='Данные TT/УЗО не заданы. Проект не проверен на автоматическое отключение.';return;}
  const report=epTTScreenV45(state.ttContext);
- result.textContent='Ограниченная проверка TT: '+report.status+'. '+report.issues.join(', ')+
-  '. Подтверждение монтажа: НЕТ. '+(state.earthing!=='TT'?'КОНФЛИКТ: система проекта не TT.':'');
+ const mismatch=state.earthing!=='TT'||state.ttContext.earthing_system!=='TT';
+ result.textContent='Ограниченная проверка TT: '+(mismatch?'OUT_OF_SCOPE':report.status)+'. '+
+  (mismatch?'КОНФЛИКТ: система заземления проекта и исходные данные TT не согласованы. ':report.issues.join(', '))+
+  ' Подтверждение монтажа: НЕТ.';
 }
 function saveTTContext(){
  const raw=$('ttContextInput').value.trim();
