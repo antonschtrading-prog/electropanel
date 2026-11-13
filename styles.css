@@ -215,3 +215,12 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-load-current-fields label{display:flex;flex-direction:column;gap:4px;font-size:12px}
 .ep-load-current-fields input,.ep-load-current-fields select{padding:8px;border-radius:6px;border:1px solid #a6b4c3;width:100%;min-width:0}
 .ep-load-current-fields button{min-height:38px}
+
+.ep-cable-reference{padding:14px;margin:12px 0;border:1px solid var(--border,#c9d3dd);border-radius:10px}
+.ep-cable-reference summary{font-weight:700;cursor:pointer}
+.ep-cable-reference-controls{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:12px 0}
+.ep-cable-reference-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px}
+.ep-cable-reference-controls .ep-cable-reference-confirm{flex-direction:row;align-items:center;max-width:380px}
+.ep-cable-reference select{padding:8px;border:1px solid #a6b4c3;border-radius:6px}
+.ep-cable-reference table{width:100%;border-collapse:collapse;font-size:12px}
+.ep-cable-reference th,.ep-cable-reference td{padding:7px;border-bottom:1px solid #ccd4dc;text-align:left}
