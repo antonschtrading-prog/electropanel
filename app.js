@@ -1771,6 +1771,13 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
 });
+$('exportProtectionCsvBtn').addEventListener('click',()=>{
+ if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
+  return notify('Ведомость защиты недоступна',true);
+ const catalog=Object.entries(EP_CATALOG).map(([id,device])=>({id,device}));
+ const report=epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine);
+ download(baseName()+'_protection_DRAFT.csv',epProtectionWorkbenchCsvV1(report),'text/csv;charset=utf-8');
+});
 $('protectionWorkbench').addEventListener('submit',e=>{
  const form=e.target.closest('[data-protection-input-form]');if(!form)return;
  e.preventDefault();
