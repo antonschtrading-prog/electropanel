@@ -1,18 +1,18 @@
 'use strict';
 // Shortlist only. Does not establish normative selection or installation safety.
+function epProtectionPositiveV1(v){
+ if(v===null||v===undefined||typeof v==='boolean'||typeof v==='object')return null;
+ const s=String(v).trim().replace(',','.');
+ if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(s))return null;
+ const n=Number(s);return Number.isFinite(n)&&n>0?n:null;
+}
 function epProtectiveDeviceShortlistV1(line,catalog){
  const issues=[],candidates=[];
  const add=(code,level='UNKNOWN')=>issues.push({code,level});
- const positive=v=>{
-  if(v===null||v===undefined||typeof v==='boolean'||typeof v==='object')return null;
-  const s=String(v).trim().replace(',','.');
-  if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;
-  const n=Number(s);return Number.isFinite(n)&&n>0?n:null;
- };
  if(!line||typeof line!=='object')return {status:'BLOCKED',issues:[{code:'LINE_INVALID',level:'BLOCKED'}],
   candidates:[],engineeringApproved:false,ready_for_installation:false};
- const ib=positive(line.overloadInput?.ibA),iz=positive(line.overloadInput?.izA);
- const ik=positive(line.ikKa??line.breakingCapacityInput?.ikKa);
+ const ib=epProtectionPositiveV1(line.overloadInput?.ibA),iz=epProtectionPositiveV1(line.overloadInput?.izA);
+ const ik=epProtectionPositiveV1(line.ikKa??line.breakingCapacityInput?.ikKa);
  if(ib===null)add('DESIGN_CURRENT_MISSING');
  if(iz===null)add('CABLE_CAPACITY_MISSING');
  if(ik===null)add('FAULT_CURRENT_MISSING');
@@ -62,8 +62,9 @@ function epProtectiveDeviceProjectAuditV1(project,lookup){
    try{selected=lookup(line.catalogSku);}catch(_){}
    if(!selected)issues.push({code:'SELECTED_ARTICLE_UNKNOWN',level:'BLOCKED',lineId:line.id});
    else{
-    const match=r.candidates.find(c=>c.sku===line.catalogSku||c.sku===selected.sku);
-    if(match?.status==='REJECTED')issues.push({code:'SELECTED_ARTICLE_REJECTED',level:'BLOCKED',lineId:line.id});
+    const match=r.candidates.find(c=>c.sku===line.catalogSku);
+    if(!match)issues.push({code:'SELECTED_ARTICLE_NOT_IN_CATALOG',level:'BLOCKED',lineId:line.id});
+    else if(match.status==='REJECTED')issues.push({code:'SELECTED_ARTICLE_REJECTED',level:'BLOCKED',lineId:line.id});
    }
   }
  }
