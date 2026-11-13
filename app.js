@@ -1956,6 +1956,17 @@ $('circuitDesignReviewPanel').addEventListener('click',e=>{
  }
 });
 $('cableReferencePanel').addEventListener('submit',e=>{
+ const sectionForm=e.target.closest('[data-cable-section-form]');
+ if(sectionForm){
+  e.preventDefault();
+  const lineId=sectionForm.getAttribute('data-cable-section-form');
+  const section=sectionForm.elements.namedItem('sectionMm2')?.value;
+  const result=epApplyCableSectionV1(state,lineId,section);
+  if(!result.project)return notify('Сечение не записано: '+result.code,true);
+  checkpoint();state=result.project;selectedLine=lineId;changed();
+  notify('Проектное сечение записано. Проверьте расчёты.');
+  return;
+ }
  const form=e.target.closest('[data-cable-reference-form]');if(!form)return;
  e.preventDefault();
  const lineId=form.getAttribute('data-cable-reference-form');
