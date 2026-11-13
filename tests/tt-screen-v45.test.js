@@ -18,6 +18,8 @@ const check=change=>epTTScreenV45({...input,...change});
 test('original v4.5 PASS is only a partial screen and never approval',()=>{
  const x=check({});
  assert.equal(x.status,'PASS');assert.equal(x.calculated_ra_times_idn_v,'3');
+ assert.equal(x.measured_rcd_disconnection_time_s,'0.04');
+ assert.equal(x.required_disconnection_time_s,'0.2');
  assert.equal(x.ready_for_installation,false);assert.equal(x.ready_for_design,false);
  assert.equal(x.evidence_state,'USER_ASSERTED_NOT_INDEPENDENTLY_AUTHENTICATED');
 });
