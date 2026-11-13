@@ -15,6 +15,7 @@ on:
       - 'route-impedance-v44.js'
       - 'layout-v414.js'
       - 'legacy-compat.js'
+      - 'wiring-audit-v18.js'
       - 'index.html'
       - 'styles.css'
       - 'tests/**'
@@ -48,6 +49,7 @@ jobs:
           node --check route-impedance-v44.js
           node --check layout-v414.js
           node --check legacy-compat.js
+          node --check wiring-audit-v18.js
           node --check scripts/build-site.js
       - name: Run regression tests
         run: node --test tests/*.test.js
