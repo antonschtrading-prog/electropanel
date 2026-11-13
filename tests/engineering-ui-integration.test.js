@@ -46,3 +46,9 @@ test('export handlers bind directly to visible panel buttons',()=>{
  assert.match(app,/\$\('exportCircuitDossierCsvBtn'\)\.addEventListener\('click'/);
  assert.doesNotMatch(app,/if\(e\.target\.id==='exportCircuitDossierCsvBtn'\)/);
 });
+
+test('dossier JSON export is visible and connected',()=>{
+ assert.match(html,/id="exportCircuitDossierJsonBtn"/);
+ assert.match(app,/\$\('exportCircuitDossierJsonBtn'\)\.addEventListener\('click'/);
+ assert.match(app,/_circuit_dossier_DRAFT\.json/);
+});
