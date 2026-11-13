@@ -45,6 +45,9 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epDraftBoardPlanV1==='function')
   inspect('draft_board_plan',()=>epDraftBoardPlanV1(project,lookupSku));
  else add('draft_board_plan','DRAFT_BOARD_PLAN_UNAVAILABLE','UNKNOWN');
+ if(typeof epProtectiveDeviceProjectAuditV1==='function')
+  inspect('protective_shortlist',()=>epProtectiveDeviceProjectAuditV1(project,lookupSku));
+ else add('protective_shortlist','PROTECTIVE_SHORTLIST_UNAVAILABLE','UNKNOWN');
  const status=issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
  return {schema_version:'1.0',status,components,issues,
   engineeringApproved:false,ready_for_installation:false,
