@@ -32,3 +32,12 @@ test('normal declarations never imply approval',()=>{
  const a=audit(base(),lookup);assert.equal(a.status,'UNKNOWN');
  assert.equal(a.ready_for_installation,false);
 });
+
+test('fault current in actual app faultInput schema is recognized',()=>{
+ const p=base();delete p.lines[0].ikKa;p.lines[0].faultInput={ikKa:5,source:'user'};
+ assert.ok(!audit(p,lookup).issues.some(i=>i.code==='FAULT_CURRENT_NOT_DECLARED'));
+});
+test('missing branch for declared line blocks',()=>{
+ const p=base();p.branchDevices=[];
+ assert.ok(audit(p,lookup).issues.some(i=>i.code==='MISSING_BRANCH_DEVICE'));
+});
