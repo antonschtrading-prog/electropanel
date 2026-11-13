@@ -1824,7 +1824,7 @@ $('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
  const report=epEngineeringBundleV1(state,catalogDevice).sections.issueRegister;
  download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
 });
-$('exportConductorSvgBtn').addEventListener('click',()=>{
+$('exportCircuitTraceSvgBtn').addEventListener('click',()=>{
  if(typeof epCircuitWiringTraceV1!=='function'||typeof epConductorTraceSvgV1!=='function')
   return notify('Схема проводников недоступна',true);
  if(!selectedLine)return notify('Сначала выберите отходящую цепь',true);
