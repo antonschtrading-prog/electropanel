@@ -13,6 +13,9 @@ function epEngineeringPrintV1(bundle){
   allIssues=sections.issueRegister?.entries||[],wiring=sections.wiringTrace?.rows||[],
   neutral=sections.neutralSegregation?.rows||[],neutralPairs=sections.neutralWireIsolation?.pairs||[],
   singleLine=sections.singleLine?.nodes||[];
+ const evidence=sections.designEvidence?.items||[];
+ const evidenceTable=rows(['Раздел','Статус','Обоснование'],
+  evidence.map(x=>[x.area,x.status,x.reason]));
  const status=bundle?.overallStatus||'BLOCKED';
  const circuitTable=rows(['Цепь','Название','Фаза','Артикул','DIN','Статус проверки'],
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
@@ -53,6 +56,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Доказательная база проектных решений</h2>'+evidenceTable+
   '<h2>Однолинейная структура проекта (декларация)</h2>'+oneLineSvg+singleLineTable+
   '<h2>Разделение нейтралей УЗО и PE</h2>'+neutralTable+
   '<h2>Проверка соединений между N-шинами</h2>'+neutralPairTable+
