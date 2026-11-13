@@ -2,7 +2,7 @@ name: Electropanel JS checks
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feature/design-evidence-integrated-20261114]
 permissions:
   contents: read
 jobs:
