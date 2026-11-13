@@ -293,3 +293,14 @@ test('design evidence editor saves source and method with undo and autosave',()=
  assert.match(app,/state\.evidence\[area\]=\{status,source,method,stale:false\}/);
  assert.match(app,/checkpoint\(\);[\s\S]*?state\.evidence\[area\]/);
 });
+
+test('load-current calculation wizard integrates with protection and dossier',()=>{
+ assert.ok(scripts.indexOf('load-current-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('load-current-ui-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="loadCurrentPanel"/);
+ assert.match(app,/epLoadCurrentHtmlV1\(state,selectedLine\)/);
+ assert.match(app,/epApplyLoadCurrentV1\(state,lineId/);
+ assert.match(app,/\$\('loadCurrentPanel'\)\.addEventListener\('submit'/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/loadCurrent/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Расчёт тока нагрузки/);
+});
