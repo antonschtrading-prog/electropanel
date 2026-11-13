@@ -22,3 +22,20 @@ test('duplicate placement blocked',()=>{
  const result=audit({dinPlacementsV1:[{deviceId:'D1',article:'A-1',modules:2},{deviceId:'D1',article:'A-1',modules:2}]},()=>product);
  assert.ok(result.issues.some(x=>x.code==='DIN_DEVICE_DUPLICATE'));
 });
+
+test('article swap produces a reviewed, nonmutating geometry and facade proposal',()=>{
+ const {epDinArticleReplacementV1:replace}=require('../din-placement-v1.js');
+ const old={dinPlacementsV1:[{deviceId:'D1',article:'A-1',modules:2}]};
+ const next={...product,article:'B-2',geometry:{widthMm:54,heightMm:90,depthMm:60},
+ visual:{mode:'MANUFACTURER_FRONT',verified:true}};
+ const r=replace(old,'D1','B-2',()=>next);
+ assert.equal(r.status,'REVIEW_REQUIRED');assert.equal(r.proposal.modules,3);
+ assert.equal(r.proposal.visual.mode,'MANUFACTURER_FRONT');
+ assert.equal(old.dinPlacementsV1[0].article,'A-1');
+ assert.equal(r.engineeringApproved,false);
+});
+test('article mismatch cannot be substituted',()=>{
+ const {epDinArticleReplacementV1:replace}=require('../din-placement-v1.js');
+ const r=replace({dinPlacementsV1:[{deviceId:'D1'}]},'D1','B-2',()=>product);
+ assert.equal(r.status,'BLOCKED');
+});
