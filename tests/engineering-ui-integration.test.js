@@ -170,3 +170,27 @@ test('DIN apparatus buttons synchronize selected circuit',()=>{
  assert.match(app,/\$\('draftBoardPreview'\)\.addEventListener\('click'/);
  assert.match(app,/selectedLine=id;render\(\)/);
 });
+
+test('unified issue register loads before bundle and is accessible in board view',()=>{
+ assert.ok(scripts.indexOf('engineering-issue-register-v1.js')>=0);
+ assert.ok(scripts.indexOf('engineering-issue-register-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
+ assert.match(html,/id="engineeringIssueRegister"/);
+ assert.match(html,/id="exportIssueRegisterCsvBtn"/);
+ assert.match(app,/epEngineeringIssueRegisterHtmlV1\(bundle.sections.issueRegister,selectedLine\)/);
+ assert.match(app,/\$\('engineeringIssueRegister'\)\.addEventListener\('click'/);
+ assert.match(app,/_issues_DRAFT\.csv/);
+});
+test('standalone printable HTML export is connected to full engineering bundle',()=>{
+ assert.ok(scripts.indexOf('engineering-print-v1.js')>scripts.indexOf('engineering-bundle-v1.js'));
+ assert.ok(scripts.indexOf('engineering-print-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="exportEngineeringPrintBtn"/);
+ assert.match(app,/epEngineeringPrintV1\(report\)/);
+ assert.match(app,/_engineering_DRAFT\.html/);
+});
+test('engineering bundle is computed once for the two read-only audit panels',()=>{
+ const start=app.indexOf("const crossView=$('crossViewAuditPanel')");
+ const end=app.indexOf("const protection=$('protectionWorkbench')",start);
+ assert.ok(start>0&&end>start);
+ const fragment=app.slice(start,end);
+ assert.equal((fragment.match(/epEngineeringBundleV1\(state,catalogDevice\)/g)||[]).length,1);
+});
