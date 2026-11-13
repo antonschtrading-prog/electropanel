@@ -41,3 +41,7 @@ test('selection controls escape malicious circuit IDs',()=>{
  assert.doesNotMatch(h,/<img/);
  assert.match(h,/&quot;&gt;&lt;img/);
 });
+
+test('workspace exposes direct DIN jump for each circuit',()=>{
+ const h=html(work(p(),lookup));assert.match(h,/data-open-board-circuit="L1"/);
+});
