@@ -59,3 +59,23 @@ test('missing dependencies fail closed',()=>{
 test('trace never mutates project',()=>{
  const p=project(),before=JSON.stringify(p);trace(p);assert.equal(JSON.stringify(p),before);
 });
+
+test('feed link with bus endpoints is attributed to explicit circuit',()=>{
+ const p=project();p.feedLinks=[{id:'F1',circuitId:'L1',from:'SOURCE:MAIN/N',to:'BUS:N_MAIN/N'}];
+ p.endpointBindingsV1.push({symbolicRef:'SOURCE:MAIN/N',terminalId:'n1'},
+  {symbolicRef:'BUS:N_MAIN/N',terminalId:'n2'});
+ p.wiringModelV18.terminals.push({id:'n1',conductor:'N'},{id:'n2',conductor:'N'});
+ p.wiringModelV18.wires.push({from:'n1',to:'n2',state:'closed'});
+ const r=trace(p);assert.equal(r.rows[0].connections.length,2);
+ assert(r.rows[0].connections.some(x=>x.group==='feedLinks'&&x.role==='N'));
+});
+test('shared RCD group input is traced for all member circuits',()=>{
+ const p=project();p.sharedDevices=[{id:'RCD1',circuitIds:['L1','L2']}];
+ p.groupInputLinks=[{id:'GI',groupId:'RCD1',from:'SOURCE:MAIN/N',to:'GROUP:RCD1/IN-N'}];
+ p.endpointBindingsV1.push({symbolicRef:'SOURCE:MAIN/N',terminalId:'n1'},
+  {symbolicRef:'GROUP:RCD1/IN-N',terminalId:'n2'});
+ p.wiringModelV18.terminals.push({id:'n1',conductor:'N'},{id:'n2',conductor:'N'});
+ p.wiringModelV18.wires.push({from:'n1',to:'n2',state:'closed'});
+ const r=trace(p);assert(r.rows[0].connections.some(x=>x.group==='groupInputLinks'));
+ assert(r.rows[1].connections.some(x=>x.group==='groupInputLinks'));
+});
