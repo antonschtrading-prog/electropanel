@@ -857,15 +857,13 @@ function renderEngineeringDiagnosticsV1(){
  const bom=$('draftBomPanel');
  if(bom)bom.innerHTML=typeof epDraftBomV1==='function'&&typeof epDraftBomHtmlV1==='function'?
   epDraftBomHtmlV1(epDraftBomV1(state,catalogDevice)):'Модуль спецификации недоступен.';
- const crossView=$('crossViewAuditPanel');
- if(crossView&&typeof epEngineeringBundleV1==='function'&&typeof epCrossViewAuditHtmlV1==='function'){
+ const crossView=$('crossViewAuditPanel'),issueHolder=$('engineeringIssueRegister');
+ if(typeof epEngineeringBundleV1==='function'&&(crossView||issueHolder)){
   const bundle=epEngineeringBundleV1(state,catalogDevice);
-  crossView.innerHTML=epCrossViewAuditHtmlV1(bundle.sections.crossView,selectedLine);
- }
- const issueHolder=$('engineeringIssueRegister');
- if(issueHolder&&typeof epEngineeringBundleV1==='function'&&typeof epEngineeringIssueRegisterHtmlV1==='function'){
-  const bundle=epEngineeringBundleV1(state,catalogDevice);
-  issueHolder.innerHTML=epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine);
+  if(crossView)crossView.innerHTML=typeof epCrossViewAuditHtmlV1==='function'?
+   epCrossViewAuditHtmlV1(bundle.sections.crossView,selectedLine):'Сквозная проверка недоступна.';
+  if(issueHolder)issueHolder.innerHTML=typeof epEngineeringIssueRegisterHtmlV1==='function'?
+   epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
  }
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
