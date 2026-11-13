@@ -168,3 +168,17 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-neutral-panel{margin:14px 0;padding:12px;border:1px solid var(--border,#d8d8d8);border-radius:8px}
 .ep-neutral-panel table{width:100%;border-collapse:collapse;min-width:540px}
 .ep-neutral-panel td,.ep-neutral-panel th{padding:7px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left}
+
+/* Nominal DIN facades: article-specific text only; not verified manufacturer front drawings. */
+.ep-din-block{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;
+ gap:2px;min-width:0;padding:6px 4px;background:linear-gradient(125deg,#f7f9fa 0%,#dfe5ea 50%,#f9fafb 100%);
+ border:1px solid #8c98a3;border-radius:3px;color:#27313c;box-shadow:inset 1px 0 0 #fff,2px 2px 3px #0002}
+.ep-din-brand{font-size:clamp(7px,.7vw,11px);font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ep-din-series{font-size:clamp(7px,.65vw,10px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ep-din-rating{font-size:clamp(11px,1.15vw,18px);font-weight:900;letter-spacing:-.03em}
+.ep-din-breaking{font-size:clamp(8px,.7vw,11px);font-weight:700;color:#526475}
+.ep-din-block-article{font-size:clamp(6px,.55vw,9px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ep-din-block-id{font-size:clamp(7px,.6vw,10px);opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ep-din-block-width{font-size:9px;opacity:.75}
+.ep-din-block.ep-din-unverified{background:repeating-linear-gradient(135deg,#f1e7d9,#f1e7d9 6px,#f7f2eb 6px,#f7f2eb 12px)}
+@media(max-width:700px){.ep-din-brand,.ep-din-series,.ep-din-block-article{font-size:7px}}
