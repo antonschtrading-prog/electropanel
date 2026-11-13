@@ -19,6 +19,8 @@ on:
       - 'styles.css'
       - 'tests/**'
       - '.github/workflows/electropanel-validation.yml'
+      - 'scripts/build-site.js'
+      - '.github/workflows/publish.yml'
   workflow_dispatch:
 jobs:
   test:
@@ -46,15 +48,18 @@ jobs:
           node --check route-impedance-v44.js
           node --check layout-v414.js
           node --check legacy-compat.js
+          node --check scripts/build-site.js
       - name: Run regression tests
         run: node --test tests/*.test.js
+      - name: Verify exact GitHub Pages package
+        run: |
+          node scripts/build-site.js
+          test -s dist/index.html
+          test -s dist/app.js
       - name: Package browser smoke-test fixture
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: electropanel-web-preview
           retention-days: 1
-          path: |
-            index.html
-            styles.css
-            *.js
+          path: dist/
