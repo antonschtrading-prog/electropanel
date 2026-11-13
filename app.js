@@ -670,7 +670,7 @@ function projectAudit(project=state){
    'Система проекта '+project.earthing+', проверка TT: '+tt.status+'. '+tt.issues.join(', ')+'. Независимая инженерная проверка обязательна.');
  }
  for(const l of project.lines){
-  const review=epLV43BoundLine(project,l);
+  const review=l.lv43Input?epLV43BoundLine(project,l):null;
   if(!review)continue;
   add('lv43-line-'+l.id,review.status==='BLOCKED'?'ERROR':'NOT_VERIFIED',
    l.id+': TN '+review.tn.status+', падение напряжения '+review.voltage_drop.status+
@@ -730,7 +730,7 @@ function documentReadiness(project=state){
  for(const row of preflight.lines.filter(x=>x.status==='BLOCKED'))
   blockers.push(row.circuitId+': '+row.rules.filter(x=>x.status==='BLOCKED').map(x=>x.detail).join('; '));
  for(const l of project.lines){
-  const r=epLV43BoundLine(project,l);
+  const r=l.lv43Input?epLV43BoundLine(project,l):null;
   if(r?.status==='BLOCKED')blockers.push(l.id+': конфликт системы TN, фазности, устаревшая проверка или числовой отказ');
  }
  const layout=layoutSlots(project);
