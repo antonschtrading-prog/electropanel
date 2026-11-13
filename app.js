@@ -20,6 +20,15 @@ function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoi
 function safeText(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,error=false){const t=document.createElement('div');t.className='toast'+(error?' error':'');t.textContent=message;document.body.appendChild(t);setTimeout(()=>t.remove(),3800);}
 function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
+ if(Array.isArray(state.lines)){
+  for(const line of state.lines){
+   const calculated=line?.loadCurrentCalculation;
+   if(calculated&&Number(calculated.roundedIbA)!==Number(line.overloadInput?.ibA)){
+    calculated.stale=true;
+    line.calculationReview={required:true,reason:'IB_DIFFERS_FROM_CALCULATED_CURRENT'};
+   }
+  }
+ }
  if(lastDesignSnapshot&&typeof epDesignChangeImpactV1==='function'){
   lastDesignImpact=epDesignChangeImpactV1(lastDesignSnapshot,state);
   if(lastDesignImpact.changed.includes('load')){
