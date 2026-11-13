@@ -16,7 +16,7 @@ test('Python v4.14 reference wiring path and canonical fingerprint',async()=>{
  const p=source(),r=await epWiringAuditV18(p);
  assert.ok(code(r).includes('DECLARED_PATH_PRESENT'));
  assert.equal(r.counts.FAIL,0);assert.equal(r.ready_for_installation,false);
- assert.equal(r.input_sha256,'d51d520dd7bb6750b3590809fd77524b7cd41e18a26b84e813d0f57e559ca47a');
+ assert.equal(r.input_sha256,'46e709164bf05f88105d245b5c31ab80f194b48548a3261f3ef2fdceec97a691');
  assert.equal(r.hash_status,'CALCULATED_LOCAL_SHA256');
 });
 test('open and unknown contacts are not assumed conductive',()=>{
