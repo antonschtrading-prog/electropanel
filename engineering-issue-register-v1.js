@@ -2,7 +2,7 @@
 // Aggregate all draft engineering issues without claiming regulatory compliance.
 function epEngineeringIssueRegisterV1(bundle){
  const sections=bundle?.sections||{},entries=[],counts={BLOCKED:0,UNKNOWN:0};
- const sectionNames=['designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering'];
+ const sectionNames=['designWorkQueue','designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering'];
  for(const name of sectionNames){
   const section=sections[name];
   if(!section||!Array.isArray(section.issues)){
