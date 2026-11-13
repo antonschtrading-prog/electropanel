@@ -12,7 +12,7 @@ function epProtectiveDeviceShortlistV1(line,catalog){
  if(!line||typeof line!=='object')return {status:'BLOCKED',issues:[{code:'LINE_INVALID',level:'BLOCKED'}],
   candidates:[],engineeringApproved:false,ready_for_installation:false};
  const ib=epProtectionPositiveV1(line.overloadInput?.ibA),iz=epProtectionPositiveV1(line.overloadInput?.izA);
- const ik=epProtectionPositiveV1(line.ikKa??line.breakingCapacityInput?.ikKa);
+ const ik=epProtectionPositiveV1(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa);
  if(ib===null)add('DESIGN_CURRENT_MISSING');
  if(iz===null)add('CABLE_CAPACITY_MISSING');
  if(ik===null)add('FAULT_CURRENT_MISSING');
