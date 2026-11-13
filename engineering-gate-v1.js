@@ -33,6 +33,9 @@ function epEngineeringGateV1(project, lookupSku){
     level:r.status==='BLOCKED'?'BLOCKED':'UNKNOWN'}))};
   });
  }else add('model_consistency','MODEL_CONSISTENCY_UNAVAILABLE','UNKNOWN');
+ if(typeof epCatalogEvidenceAuditV1==='function')
+  inspect('catalog',()=>epCatalogEvidenceAuditV1(project,lookupSku));
+ else add('catalog','CATALOG_EVIDENCE_AUDIT_UNAVAILABLE','UNKNOWN');
  const status=issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
  return {schema_version:'1.0',status,components,issues,
   engineeringApproved:false,ready_for_installation:false,
