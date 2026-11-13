@@ -19,3 +19,12 @@ test('search never changes project',()=>{const x=p(),before=JSON.stringify(x);wo
 test('HTML escapes user-controlled line name',()=>{const x=p();x.lines[0].name='<svg onload=alert(1)>';const h=html(work(x,lookup));assert.doesNotMatch(h,/<svg/);assert.match(h,/&lt;svg/);});
 test('empty search results are clearly labelled',()=>assert.match(html(work(p(),lookup,'not-found')),/Нет цепей/));
 test('workspace never grants engineering approval',()=>{const x=work(p(),lookup);assert.equal(x.engineeringApproved,false);assert.equal(x.ready_for_installation,false);});
+
+test('workspace counters cover all lines independently of search filter',()=>{
+ const a=work(p(),lookup,'Кухня'),b=work(p(),lookup);
+ assert.deepEqual(a.counts,b.counts);
+ assert.equal(a.counts.missingArticle,2);
+ assert.equal(a.counts.unplaced,1);
+ assert.equal(a.counts.staleReview,1);
+ assert.match(html(a),/без артикула: 2/);
+});
