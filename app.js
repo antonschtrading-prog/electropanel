@@ -759,6 +759,8 @@ function documentReadiness(project=state){
  if(project.deviceModelV19||project.boardBindingsV1?.length){
   const bound=epBoardBindingsAuditV1(project,catalogDevice);
   if(bound.status==='BLOCKED')blockers.push('Аппараты щита/клеммы: недействительная или устаревшая привязка');
+  if(bound.issues.some(x=>['BOARD_DEVICE_UNBOUND','MODEL_DEVICE_UNBOUND'].includes(x.code)))
+   blockers.push('Не все аппараты и электрические модели сопоставлены между собой');
  }
  if(project.deviceModelV19){
   const result=epDeviceAuditCoreV19(project.deviceModelV19);
