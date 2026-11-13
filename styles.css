@@ -250,3 +250,8 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-drop-fields input{width:100%;min-width:0;padding:8px;border:1px solid #a6b4c3;border-radius:6px}
 .ep-drop-fields .ep-drop-check{flex-direction:row;align-items:center}
 .ep-drop-fields .ep-drop-check input{width:auto}
+
+.ep-design-queue{margin:12px 0;padding:12px;border:1px solid var(--border,#c9d3dd);border-radius:10px}
+.ep-design-queue summary{cursor:pointer;font-weight:700}
+.ep-design-queue table{border-collapse:collapse;width:100%;font-size:12px}
+.ep-design-queue th,.ep-design-queue td{padding:8px;border-bottom:1px solid #d1d9e2;text-align:left}
