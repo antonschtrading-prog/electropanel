@@ -52,3 +52,12 @@ test('dossier JSON export is visible and connected',()=>{
  assert.match(app,/\$\('exportCircuitDossierJsonBtn'\)\.addEventListener\('click'/);
  assert.match(app,/_circuit_dossier_DRAFT\.json/);
 });
+
+test('searchable circuit workspace is live and loaded after dossier',()=>{
+ assert.ok(scripts.indexOf('circuit-dossier-v1.js')<scripts.indexOf('circuit-workspace-v1.js'));
+ assert.ok(scripts.indexOf('circuit-workspace-v1.js')<scripts.indexOf('app.js'));
+ for(const id of ['circuitWorkspaceQuery','circuitWorkspaceMode','circuitDossier'])assert.ok(html.includes('id="'+id+'"'));
+ assert.match(app,/function renderCircuitWorkspaceV1\(\)/);
+ assert.match(app,/\$\('circuitWorkspaceQuery'\)\.addEventListener\('input',renderCircuitWorkspaceV1\)/);
+ assert.match(app,/\$\('circuitWorkspaceMode'\)\.addEventListener\('change',renderCircuitWorkspaceV1\)/);
+});
