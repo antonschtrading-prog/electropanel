@@ -9,7 +9,8 @@ function epEngineeringPrintV1(bundle){
  };
  const sections=bundle?.sections||{},dossier=sections.dossier?.rows||[],
   bom=sections.bom?.items||[],protection=sections.protection?.rows||[],
-  board=sections.board?.placements||[],cross=sections.crossView?.issues||[];
+  board=sections.board?.placements||[],cross=sections.crossView?.issues||[],
+  allIssues=sections.issueRegister?.entries||[];
  const status=bundle?.overallStatus||'BLOCKED';
  const circuitTable=rows(['Цепь','Название','Фаза','Артикул','DIN','Статус проверки'],
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
@@ -23,6 +24,7 @@ function epEngineeringPrintV1(bundle){
  const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
  const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
+ const issueTable=rows(['Раздел','Уровень','Код','Цепь'],allIssues.map(x=>[x.section,x.level,x.code,x.circuitId||'Проект']));
  const style='body{font:13px/1.45 Arial,sans-serif;color:#20252b;margin:32px auto;max-width:1100px;padding:0 18px}'+
  'h1{font-size:26px}h2{margin-top:28px;border-bottom:2px solid #bbb;padding-bottom:5px}'+
  'table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:11px;table-layout:fixed}'+
@@ -39,6 +41,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
   '<h2>Расхождения между представлениями</h2>'+crossTable+
+  '<h2>Все инженерные замечания</h2>'+issueTable+
   '<h2>Статусы инженерных разделов</h2>'+rows(['Раздел','Статус'],Object.entries(bundle?.statuses||{}))+
   '<p>Источник: локальный проект Electropanel. Отчёт отражает только сохранённые и заявленные данные; требуется независимая инженерная проверка.</p></body></html>';
 }
