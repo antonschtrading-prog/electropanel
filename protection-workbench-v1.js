@@ -46,7 +46,7 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   const status=reasons.some(x=>blocking.has(x))?'BLOCKED':'UNKNOWN';
   for(const code of reasons)issues.push({code,lineId:line.id,level:blocking.has(code)?'BLOCKED':'UNKNOWN'});
   rows.push({lineId:line.id,name:line.name||line.device||'',phase:line.phase||null,
-   ibA:ib,izA:iz,ikKa:ik,selectedSku:sku,selectedArticle:article?
+   ibA:ib,izA:iz,ikKa:ik,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
     inA:article.inA??null,icnKa:article.icnKa??null,poles:article.poles??null,
     modules:article.modules??null,source:article.source||null}:null,
