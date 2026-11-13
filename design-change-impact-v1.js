@@ -12,11 +12,12 @@ function epDesignChangeImpactV1(before,after){
  const has=v=>v&&typeof v==='object'&&!Array.isArray(v);
  const stable=v=>JSON.stringify(v===undefined?null:v);
  if(!has(before)||!has(after))return {status:'BLOCKED',changed:['project'],affected:Object.keys(MAP),issues:[{code:'CHANGE_IMPACT_PROJECT_INVALID',level:'BLOCKED'}]};
+ const lines=(project,keys)=>Array.isArray(project.lines)?project.lines.map(x=>Object.fromEntries(['id',...keys].map(k=>[k,x?.[k]??null]))).sort((a,b)=>String(a.id).localeCompare(String(b.id))):null;
  const areas={
-  load:[before.lines,after.lines,before.loads,after.loads],
+  load:[lines(before,['power','powerKw','phase','source']),lines(after,['power','powerKw','phase','source']),before.loads,after.loads],
   network:[before.network,after.network,before.earthing,after.earthing,before.voltage,after.voltage],
   cable:[before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],
-  device:[before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
+  device:[lines(before,['catalogSku','device','modules','templateId']),lines(after,['catalogSku','device','modules','templateId']),before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
   topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1,before.terminalLinks,after.terminalLinks,before.feedLinks,after.feedLinks,before.groupInputLinks,after.groupInputLinks],
   enclosure:[before.railCount,after.railCount,before.railCapacity,after.railCapacity,before.enclosure,after.enclosure]
  };
