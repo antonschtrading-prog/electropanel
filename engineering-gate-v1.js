@@ -57,6 +57,9 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epCircuitWiringTraceV1==='function')
   inspect('circuit_wiring_trace',()=>epCircuitWiringTraceV1(project));
  else add('circuit_wiring_trace','CIRCUIT_WIRING_TRACE_UNAVAILABLE','UNKNOWN');
+ if(typeof epNeutralWireIsolationV1==='function')
+  inspect('neutral_wire_isolation',()=>epNeutralWireIsolationV1(project));
+ else add('neutral_wire_isolation','NEUTRAL_WIRE_ISOLATION_UNAVAILABLE','UNKNOWN');
  if(typeof epNeutralSegregationV1==='function')
   inspect('neutral_segregation',()=>epNeutralSegregationV1(project));
  else add('neutral_segregation','NEUTRAL_SEGREGATION_UNAVAILABLE','UNKNOWN');
