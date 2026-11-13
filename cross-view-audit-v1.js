@@ -3,6 +3,7 @@
 function epCrossViewAuditV1(project, protection, board, bom) {
  const issues=[], add=(code,level='BLOCKED',lineId=null)=>issues.push({code,level,lineId});
  const lines=project?.lines;
+ const bomItems=Array.isArray(bom?.items)?bom.items:null;
  if(!Array.isArray(lines)||lines.length>1000)
   return {schema:'electropanel.crossview.audit.1',status:'BLOCKED',issues:[{code:'PROJECT_INVALID',level:'BLOCKED',lineId:null}],engineeringApproved:false,ready_for_installation:false};
  const ids=new Set();
@@ -13,7 +14,7 @@ function epCrossViewAuditV1(project, protection, board, bom) {
  if(!protection||!Array.isArray(protection.rows))add('PROTECTION_VIEW_MISSING');
  if(!board||!Array.isArray(board.placements))add('BOARD_VIEW_MISSING');
  const pRows=protection?.rows||[], placements=board?.placements||[];
- const pIds=new Set(), placed=new Set();
+ const pIds=new Set(), placed=new Set(), deviceIds=new Set();
  for(const row of pRows){
   if(!row||!ids.has(row.lineId)||pIds.has(row.lineId)){add('PROTECTION_ROW_ORPHAN_OR_DUPLICATE','BLOCKED',row?.lineId??null);continue;}
   pIds.add(row.lineId);
@@ -25,6 +26,8 @@ function epCrossViewAuditV1(project, protection, board, bom) {
  const branches=Array.isArray(project.branchDevices)?project.branchDevices:null;
  for(const item of placements){
   if(!item||typeof item.deviceId!=='string'||!Number.isInteger(item.railIndex)||!Number.isInteger(item.startModule)||!Number.isInteger(item.modules)||item.railIndex<0||item.startModule<0||item.modules<1){add('PLACEMENT_INVALID');continue;}
+  if(deviceIds.has(item.deviceId))add('PLACEMENT_DEVICE_DUPLICATE','BLOCKED',item.deviceId);
+  deviceIds.add(item.deviceId);
   if(item.kind==='branch'){
    const matching=branches?branches.filter(b=>b?.id===item.deviceId):lines.filter(l=>l?.id===item.deviceId);
    if(matching.length!==1){add('PLACEMENT_BRANCH_UNMATCHED','BLOCKED',item.deviceId);continue;}
@@ -36,11 +39,11 @@ function epCrossViewAuditV1(project, protection, board, bom) {
   }
  }
  for(const id of ids)if(!placed.has(id))add('PLACEMENT_BRANCH_MISSING','BLOCKED',id);
- if(board&&Number.isInteger(board.capacityPerRail)&&Number.isInteger(board.rails)){
+ if(board&&Number.isInteger(board.capacityPerRail)&&Number.isInteger(board.rails)&&board.rails>0&&board.rails<=100&&board.capacityPerRail>0&&board.capacityPerRail<=200){
   const occupied=new Set();
   for(const p of placements){
    if(!Number.isInteger(p.railIndex)||!Number.isInteger(p.startModule)||!Number.isInteger(p.modules))continue;
-   if(p.railIndex>=board.rails||p.startModule+p.modules>board.capacityPerRail)add('PLACEMENT_OUT_OF_BOUNDS');
+   if(p.railIndex<0||p.railIndex>=board.rails||p.startModule<0||p.startModule+p.modules>board.capacityPerRail)add('PLACEMENT_OUT_OF_BOUNDS');
    for(let m=p.startModule;m<p.startModule+p.modules&&m<p.startModule+1000;m++){
     const key=p.railIndex+':'+m;
     if(occupied.has(key))add('PLACEMENT_OVERLAP');
@@ -48,7 +51,29 @@ function epCrossViewAuditV1(project, protection, board, bom) {
    }
   }
  }else add('BOARD_CAPACITY_UNVERIFIED','UNKNOWN');
- if(bom===null||bom===undefined)add('BOM_NOT_PROVIDED','UNKNOWN');
+ if(!bomItems)add('BOM_VIEW_MISSING');
+ else {
+  const expected=new Map();
+  const addExpected=(sku,id)=>{if(typeof sku!=='string'||!sku)return;
+   const a=expected.get(sku)||[];a.push(id);expected.set(sku,a);};
+  for(const l of lines)if(l)addExpected(l.catalogSku,l.id);
+  for(const d of Array.isArray(project.sharedDevices)?project.sharedDevices:[])if(d)addExpected(d.catalogSku,d.id);
+  const seen=new Set();
+  for(const item of bomItems){
+   if(!item||typeof item.key!=='string'||seen.has(item.key)){
+    add('BOM_ROW_INVALID_OR_DUPLICATE');continue;
+   }
+   seen.add(item.key);
+   const owners=expected.get(item.key)||[];
+   if(!owners.length)add('BOM_ARTICLE_ORPHAN','BLOCKED',item.key);
+   if(item.quantity!==owners.length)add('BOM_QUANTITY_MISMATCH','BLOCKED',item.key);
+   if(!Array.isArray(item.owners)||item.owners.length!==owners.length||
+    owners.some(owner=>!item.owners.includes(owner)))add('BOM_OWNERS_MISMATCH','BLOCKED',item.key);
+  }
+  for(const sku of expected.keys())if(!seen.has(sku))add('BOM_ARTICLE_MISSING','BLOCKED',sku);
+ }
+ if(board?.status==='BLOCKED')add('BOARD_HAS_BLOCKING_ISSUES');
+ if(protection?.status==='BLOCKED')add('PROTECTION_HAS_BLOCKING_ISSUES');
  // This audit never certifies normative calculations or physical installation.
  return {schema:'electropanel.crossview.audit.1',status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
   issues,checkedCircuits:ids.size,engineeringApproved:false,ready_for_installation:false};
