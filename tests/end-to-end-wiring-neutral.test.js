@@ -4,7 +4,7 @@ const root=path.join(__dirname,'..');
 const source=['catalog.js','draft-board-plan-v1.js','draft-bom-v1.js',
  'circuit-dossier-v1.js','terminal-path-v2.js','endpoint-bridge-v1.js',
  'circuit-wiring-trace-v1.js','neutral-segregation-v1.js','cross-view-audit-v1.js',
- 'engineering-issue-register-v1.js','engineering-bundle-v1.js']
+ 'engineering-issue-register-v1.js','engineering-gate-v1.js','engineering-bundle-v1.js']
  .map(x=>fs.readFileSync(path.join(root,x),'utf8')).join('\n');
 const ctx=vm.createContext({});vm.runInContext(source,ctx);
 const fixture=()=>({title:'ЩР · пример без монтажного допуска',railCount:1,railCapacity:12,
@@ -49,4 +49,17 @@ test('declared path never changes draft-only status to approved',()=>{
  for(const [name,section] of Object.entries(r.sections))
   assert.notEqual(section.engineeringApproved,true,name);
  assert.notEqual(r.overallStatus,'APPROVED');
+});
+
+test('engineering gate propagates neutral segregation blocker',()=>{
+ const p=fixture();p.conductorRoutes[0].neutralBus='N_RCD1';
+ const r=ctx.epEngineeringGateV1(p,ctx.epCatalogSku);
+ assert.equal(r.status,'BLOCKED');
+ assert(r.issues.some(x=>x.origin==='neutral_segregation'&&x.code==='RCD_NEUTRAL_BUS_MISMATCH'));
+});
+test('engineering gate propagates missing declared conductor path',()=>{
+ const p=fixture();p.wiringModelV18.wires=[];
+ const r=ctx.epEngineeringGateV1(p,ctx.epCatalogSku);
+ assert.equal(r.status,'BLOCKED');
+ assert(r.issues.some(x=>x.origin==='circuit_wiring_trace'&&x.code==='DECLARED_WIRE_PATH_MISSING'));
 });
