@@ -111,3 +111,11 @@
  border-radius:50%;background:#2d6fa4;box-shadow:0 0 0 2px #fff9;
 }
 .din-apparatus[data-topology-link="stale"]::after{background:#bd4d21}
+
+/* Selected circuit stays identifiable in both the load table and logical graph. */
+.ep-circuit-active{outline:2px solid var(--accent,#d36c37);outline-offset:-2px;background:rgba(211,108,55,.10)}
+tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
+#circuitDossier table{width:100%;border-collapse:collapse}
+#circuitDossier th,#circuitDossier td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border,#d8d8d8);vertical-align:top}
+#circuitDossier .btn.tiny{white-space:nowrap}
+#circuitFocusLabel{font-weight:600}
