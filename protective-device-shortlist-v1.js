@@ -3,7 +3,7 @@
 function epProtectionPositiveV1(v){
  if(v===null||v===undefined||typeof v==='boolean'||typeof v==='object')return null;
  const s=String(v).trim().replace(',','.');
- if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(s))return null;
+ if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;
  const n=Number(s);return Number.isFinite(n)&&n>0?n:null;
 }
 function epProtectiveDeviceShortlistV1(line,catalog){
