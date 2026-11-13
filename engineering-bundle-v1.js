@@ -16,6 +16,8 @@ function epEngineeringBundleV1(project,lookupSku){
  const crossView=section('CROSS_VIEW',typeof epCrossViewAuditV1==='function'?
   ()=>epCrossViewAuditV1(project,protection,board,bom):null);
  const sections={dossier,bom,board,layoutAlternatives,protection,crossView,engineering};
+ sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
+  ()=>epEngineeringIssueRegisterV1({sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
  return {schema:'electropanel.engineering.bundle.draft.1',projectTitle:String(project?.title??''),
   statuses,sections,overallStatus:Object.values(statuses).includes('BLOCKED')?'BLOCKED':'UNKNOWN',
