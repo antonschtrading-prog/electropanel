@@ -857,6 +857,11 @@ function renderEngineeringDiagnosticsV1(){
  const bom=$('draftBomPanel');
  if(bom)bom.innerHTML=typeof epDraftBomV1==='function'&&typeof epDraftBomHtmlV1==='function'?
   epDraftBomHtmlV1(epDraftBomV1(state,catalogDevice)):'Модуль спецификации недоступен.';
+ const crossView=$('crossViewAuditPanel');
+ if(crossView&&typeof epEngineeringBundleV1==='function'&&typeof epCrossViewAuditHtmlV1==='function'){
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  crossView.innerHTML=epCrossViewAuditHtmlV1(bundle.sections.crossView,selectedLine);
+ }
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
   const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
@@ -1777,6 +1782,23 @@ $('exportProtectionCsvBtn').addEventListener('click',()=>{
  const catalog=Object.entries(EP_CATALOG).map(([id,device])=>({id,device}));
  const report=epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine);
  download(baseName()+'_protection_DRAFT.csv',epProtectionWorkbenchCsvV1(report),'text/csv;charset=utf-8');
+});
+$('crossViewAuditPanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-crossview-focus]');if(!btn)return;
+ const id=btn.dataset.crossviewFocus;
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь не найдена',true);
+ selectedLine=id;render();
+});
+$('exportCrossViewCsvBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function'||typeof epCrossViewAuditCsvV1!=='function')
+  return notify('Проверка согласованности недоступна',true);
+ const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
+ download(baseName()+'_crossview_DRAFT.csv',epCrossViewAuditCsvV1(report),'text/csv;charset=utf-8');
+});
+$('exportCrossViewJsonBtn').addEventListener('click',()=>{
+ if(typeof epEngineeringBundleV1!=='function')return notify('Проверка согласованности недоступна',true);
+ const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
+ download(baseName()+'_crossview_DRAFT.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
 });
 $('protectionWorkbench').addEventListener('submit',e=>{
  const form=e.target.closest('[data-protection-input-form]');if(!form)return;
