@@ -857,6 +857,11 @@ function renderEngineeringDiagnosticsV1(){
  const bom=$('draftBomPanel');
  if(bom)bom.innerHTML=typeof epDraftBomV1==='function'&&typeof epDraftBomHtmlV1==='function'?
   epDraftBomHtmlV1(epDraftBomV1(state,catalogDevice)):'Модуль спецификации недоступен.';
+ const singleHolder=$('singleLineDraftPanel');
+ if(singleHolder)singleHolder.innerHTML=typeof epSingleLineDraftV1==='function'&&
+  typeof epSingleLineSvgV1==='function'?
+  epSingleLineSvgV1(epSingleLineDraftV1(state,catalogDevice),selectedLine):
+  'Однолинейная схема недоступна.';
  const wireHolder=$('circuitWiringTracePanel');
  if(wireHolder)wireHolder.innerHTML=typeof epCircuitWiringTraceV1==='function'&&
   typeof epCircuitWiringTraceHtmlV1==='function'?
@@ -1813,6 +1818,19 @@ $('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
   return notify('Реестр замечаний недоступен',true);
  const report=epEngineeringBundleV1(state,catalogDevice).sections.issueRegister;
  download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
+});
+$('singleLineDraftPanel').addEventListener('click',e=>{
+ const target=e.target.closest('[data-single-line-focus]');if(!target)return;
+ const id=target.getAttribute('data-single-line-focus');
+ if(!state.lines.some(line=>line.id===id))return notify('Цепь не найдена',true);
+ selectedLine=id;render();
+});
+$('singleLineDraftPanel').addEventListener('keydown',e=>{
+ if(e.key!=='Enter'&&e.key!==' ')return;
+ const target=e.target.closest('[data-single-line-focus]');if(!target)return;
+ e.preventDefault();const id=target.getAttribute('data-single-line-focus');
+ if(!state.lines.some(line=>line.id===id))return;
+ selectedLine=id;render();
 });
 $('draftBoardPreview').addEventListener('click',e=>{
  const button=e.target.closest('[data-din-focus]');if(!button||button.disabled)return;
