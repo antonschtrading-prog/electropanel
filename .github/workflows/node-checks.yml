@@ -30,6 +30,7 @@ jobs:
           node --check draft-bom-v1.js
           node --check engineering-bundle-v1.js
           node --check protective-device-shortlist-v1.js
+          node --check protection-workbench-v1.js
           node --check project-integrity-v1.js
           node --check catalog-evidence-audit-v1.js
           node --check engineering-gate-v1.js
