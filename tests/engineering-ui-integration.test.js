@@ -230,3 +230,14 @@ test('neutral segregation panel is wired to current project and selected circuit
  const print=fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8');
  assert.match(bundle,/neutralSegregation/);assert.match(print,/sections.neutralSegregation/);
 });
+
+test('single-line draft SVG is interactive, exportable and included in gate',()=>{
+ assert.ok(scripts.indexOf('single-line-draft-v1.js')>=0);
+ assert.ok(scripts.indexOf('single-line-svg-v1.js')>scripts.indexOf('single-line-draft-v1.js'));
+ assert.ok(scripts.indexOf('single-line-draft-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
+ assert.match(html,/id="singleLineDraftPanel"/);assert.match(html,/id="exportSingleLineSvgBtn"/);
+ assert.match(app,/epSingleLineSvgV1\(epSingleLineDraftV1\(state,catalogDevice\),selectedLine\)/);
+ assert.match(app,/_single_line_DRAFT\.svg/);
+ const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
+ assert.match(gate,/single_line/);
+});
