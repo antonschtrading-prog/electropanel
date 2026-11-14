@@ -18,11 +18,14 @@ function epProjectCatalogV1(project,seed={},options={}){
     !Number.isInteger(r.poles)||r.poles<1||r.poles>8||!num(r.inA)){
    issues.push({index,code:'CATALOG_DIMENSIONS_OR_RATING_INVALID',status:'BLOCKED'});continue;
   }
-  if(!validString(r.source)||!/^https:\/\//i.test(r.source)){
+  if(!validString(r.source)||!/^https:\/\/[a-z0-9.-]+(?:[:/\\?#]|$)/i.test(r.source)){
    issues.push({index,code:'CATALOG_SOURCE_MISSING',status:'UNKNOWN'});continue;
   }
   if(!['MCB','RCD','RCBO','SWITCH','METER','CONTACTOR','RELAY','DIN_PSU','OTHER'].includes(r.kind)){
    issues.push({index,code:'CATALOG_KIND_UNKNOWN',status:'BLOCKED'});continue;
+  }
+  if(Object.values(articles).some(a=>a.maker===r.maker&&a.sku===r.sku)||Object.values(seed).some(a=>a?.maker===r.maker&&a?.sku===r.sku)){
+   issues.push({index,code:'DUPLICATE_MANUFACTURER_SKU',status:'BLOCKED'});continue;
   }
   const article={id:key,sku:r.sku,maker:r.maker,series:r.series,kind:r.kind,label:r.label||r.sku,
    modules:r.modules,widthMm:r.widthMm,poles:r.poles,inA:r.inA,
