@@ -2196,11 +2196,9 @@ $('projectCatalogWorkbench')?.addEventListener('click',e=>{
   if(text.length>250000)throw Error('Превышен размер импорта');
   const records=JSON.parse(text);
   if(!Array.isArray(records)||records.length>500||records.length===0)throw Error('Ожидается массив от 1 до 500 артикулов');
-  const draft=structuredCloneCompat(state);
-  draft.catalogArticles=[...(Array.isArray(draft.catalogArticles)?draft.catalogArticles:[]),...records];
-  const audit=epProjectCatalogV1(draft,typeof EP_CATALOG==='object'?EP_CATALOG:{});
-  if(audit.issues.length)throw Error('Ошибки каталога: '+audit.issues.slice(0,5).map(x=>x.code+' #'+x.index).join(', '));
-  checkpoint();state=draft;changed();notify('Артикулы добавлены в проект; параметры требуют подтверждения источниками');
+  const result=epImportProjectArticlesV2(state,records,typeof EP_CATALOG==='object'?EP_CATALOG:{});
+  if(!result.project)throw Error('Импорт отклонён: '+result.code+(Number.isInteger(result.index)?' (запись '+(result.index+1)+')':''));
+  checkpoint();state=result.project;changed();notify('Добавлено артикулов: '+result.imported+'. Характеристики требуют проверки по документации');
  }catch(error){notify(error.message,true);}
 });
 try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}lastDesignSnapshot=structuredCloneCompat(state);render();
