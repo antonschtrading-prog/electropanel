@@ -7,8 +7,8 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
  if(!Number.isInteger(p.rails)||!Number.isInteger(p.capacityPerRail))
   return '<p>Параметры щита некорректны. Размещение заблокировано.</p>';
  const byRail=Array.from({length:p.rails},()=>[]);
- for(const d of p.placements)if(byRail[d.railIndex])byRail[d.railIndex].push(d);
- const branchMap=new Map((Array.isArray(project?.branchDevices)?project.branchDevices:[]).map(x=>[x.id,x.circuitId]));
+ for(const d of (Array.isArray(p.placements)?p.placements:[]))if(d&&byRail[d.railIndex])byRail[d.railIndex].push(d);
+ const branchMap=new Map((Array.isArray(project?.branchDevices)?project.branchDevices:[]).filter(x=>x&&typeof x==='object').map(x=>[x.id,x.circuitId]));
  const railRows=byRail.map((items,index)=>{
   const used=items.reduce((n,x)=>n+x.modules,0);
   const sorted=[...items].sort((a,b)=>a.startModule-b.startModule);
@@ -23,6 +23,11 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    let catalog=null;
    try{catalog=d.article&&typeof lookupSku==='function'?lookupSku(d.article):null;}catch(_){}
    const maker=catalog?.maker||null,series=catalog?.series||null;
+   const widthKnown=Number.isFinite(catalog?.widthMm)&&catalog.widthMm>0;
+   const moduleMatch=Number.isInteger(catalog?.modules)&&catalog.modules===d.modules;
+   const envelopeMatch=widthKnown&&catalog.widthMm<=d.modules*18+0.001;
+   const geometryIssue=!!catalog&&(!widthKnown||!moduleMatch||!envelopeMatch);
+   const evidenceNote=!catalog?'Артикул не выбран':geometryIssue?'Геометрия каталога не согласована с DIN':catalog.verificationStatus!=='VERIFIED'?'Паспортные данные не подтверждены':'Геометрия по заявленному каталогу';
    const rating=catalog&&Number.isFinite(catalog.inA)?
     (safe(catalog.curve||'')+safe(catalog.inA)+' A'):'';
    const breaking=catalog&&Number.isFinite(catalog.icnKa)?safe(catalog.icnKa)+' kA':'';
@@ -41,7 +46,8 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
     facade+
     '<span class="ep-din-device-face ep-din-face-'+faceStyle+'" aria-hidden="true">'+
     (catalog&&typeof epCatalogFrontSvgV1==='function'?epCatalogFrontSvgV1(catalog,d.deviceId)+'<span class="ep-din-device-toggle" hidden></span>':'<span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span>')+'</span>'+ 
-    '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+
+    '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+ 
+    '<span class="ep-din-block-evidence" title="'+safe(evidenceNote)+'">'+safe(evidenceNote)+'</span>'+
     '<span class="ep-din-block-width">'+d.modules+'M</span></button>';
    cursor=d.startModule+d.modules;
   }
@@ -51,8 +57,8 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    '<div class="ep-din-module-grid" style="--ep-din-columns:'+p.capacityPerRail+'" role="img" aria-label="Предварительная рейка DIN '+(index+1)+'">'+blocks+'</div>'+
    '<details><summary>Позиции аппаратов</summary><ol>'+entries+'</ol></details></section>';
  }).join('');
- const errors=p.issues.filter(x=>x.level==='BLOCKED');
- const warnings=p.issues.filter(x=>x.level!=='BLOCKED');
+ const errors=(Array.isArray(p.issues)?p.issues:[]).filter(x=>x.level==='BLOCKED');
+ const warnings=(Array.isArray(p.issues)?p.issues:[]).filter(x=>x.level!=='BLOCKED');
  return '<div class="ep-draft-board-preview" role="region" aria-label="Предварительная компоновка">'+
   '<p><strong>Предварительный план: '+safe(p.status)+'</strong>. Только геометрическое размещение; монтаж не подтверждён.</p>'+
   railRows+'<p>Блокирующих ошибок: '+errors.length+'; неопределённостей: '+warnings.length+'.</p>'+
