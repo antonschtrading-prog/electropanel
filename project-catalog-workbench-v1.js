@@ -144,13 +144,19 @@ function epImportProjectArticlesV2(project,records,seed={}){
  if(!project||!Array.isArray(project.catalogArticles)||!Array.isArray(project.lines))return {project:null,code:'PROJECT_CATALOG_INVALID'};
  if(project.catalogArticles.length+records.length>500)return {project:null,code:'CATALOG_TOO_LARGE'};
  let draft=project;
+ const circuitIds=new Set(),sharedIds=new Set();
  for(const [index,record] of records.entries()){
   if(!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'IMPORT_RECORD_INVALID',index};
   const result=epUpsertProjectArticleV2(draft,record,seed);
   if(!result.project)return {project:null,code:result.code,index};
+  for(const id of result.affectedCircuits||[])circuitIds.add(id);
+  for(const id of result.affectedShared||[])sharedIds.add(id);
   draft=result.project;
  }
- return {project:draft,imported:records.length,status:'REVIEW_REQUIRED'};
+ return {project:draft,imported:records.length,
+  affectedCircuits:[...circuitIds],affectedShared:[...sharedIds],
+  affectedViews:circuitIds.size||sharedIds.size?['catalogue','board','singleLine','bom','engineeringReview']:['catalogue'],
+  status:'REVIEW_REQUIRED'};
 }
 function epDeleteProjectArticleV2(project,id){
  if((project.lines||[]).some(x=>x.catalogSku===id)||(project.sharedDevices||[]).some(x=>x.catalogSku===id))return {project:null,code:'ARTICLE_IN_USE'};
