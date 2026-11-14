@@ -46,8 +46,11 @@ function epDraftBomV1(project,lookupSku){
   if(!d||typeof d.id!=='string'||!d.id||ids.has(d.id)){issues.push({code:'DEVICE_ID_INVALID',level:'BLOCKED'});continue;}
   ids.add(d.id);push('shared',d.id,d.catalogSku,d.modules,d.id);
  }
+ const processedCircuits=new Set();
  for(const l of project.lines){
   if(!l||typeof l.id!=='string'||!l.id){issues.push({code:'CIRCUIT_INVALID',level:'BLOCKED'});continue;}
+  if(processedCircuits.has(l.id))continue;
+  processedCircuits.add(l.id);
   const matches=branches.filter(b=>b?.circuitId===l.id);
   if(matches.length>1){issues.push({code:'BRANCH_DUPLICATE',level:'BLOCKED',owner:l.id});continue;}
   if(Array.isArray(project.branchDevices)&&!matches.length)issues.push({code:'BRANCH_MISSING',level:'BLOCKED',owner:l.id});
