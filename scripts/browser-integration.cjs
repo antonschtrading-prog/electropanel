@@ -71,7 +71,7 @@ const server=http.createServer((req,res)=>{
    if(!result.project)return {error:'calculation '+result.code};
    state=result.project;
    const line=state.lines.find(l=>l.id===id);
-   line.faultInput={ikKa:3,source:'design input'};
+   line.faultInput={ikKa:'3',source:'design input'};
    line.calculationReview={required:true,pending:['faultInput'],reason:'AWAITING_FAULT_REVIEW'};
    lastDesignSnapshot=structuredCloneCompat(state);
    const oldIb=line.loadCurrentCalculation.roundedIbA;
