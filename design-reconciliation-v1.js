@@ -59,17 +59,46 @@ function epReconcileProjectV2(project,lookup){
  const issues=[],rows=[];
  const add=(code,lineId,level='UNKNOWN')=>issues.push({code,lineId,level});
  if(!project||!Array.isArray(project.lines))return {status:'BLOCKED',issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],rows:[],engineeringApproved:false};
+ const lineIds=new Set(),deviceIds=new Set(),linkedCircuits=new Map();
+ for(const [index,line] of project.lines.entries()){
+  if(!line||typeof line.id!=='string'||!line.id.trim()){
+   add('LINE_ID_MISSING',String(index),'BLOCKED');continue;
+  }
+  if(lineIds.has(line.id))add('LINE_ID_DUPLICATE',line.id,'BLOCKED');
+  lineIds.add(line.id);
+  if(!Number.isInteger(line.modules)||line.modules<=0)add('LINE_MODULE_COUNT_INVALID',line.id,'BLOCKED');
+ }
+ if(project.branchDevices!==undefined&&!Array.isArray(project.branchDevices))add('BRANCH_DEVICES_INVALID',null,'BLOCKED');
+ for(const [index,device] of (Array.isArray(project.branchDevices)?project.branchDevices:[]).entries()){
+  if(!device||typeof device.id!=='string'||!device.id.trim()){
+   add('BRANCH_DEVICE_ID_MISSING',String(index),'BLOCKED');continue;
+  }
+  if(deviceIds.has(device.id))add('BRANCH_DEVICE_ID_DUPLICATE',device.id,'BLOCKED');
+  deviceIds.add(device.id);
+  if(!lineIds.has(device.circuitId))add('BRANCH_DEVICE_ORPHAN',device.circuitId||device.id,'BLOCKED');
+  linkedCircuits.set(device.circuitId,(linkedCircuits.get(device.circuitId)||0)+1);
+  if(!Number.isInteger(device.modules)||device.modules<=0)add('BRANCH_MODULE_COUNT_INVALID',device.id,'BLOCKED');
+  const circuit=project.lines.find(x=>x?.id===device.circuitId);
+  if(circuit&&Number.isInteger(circuit.modules)&&device.modules!==circuit.modules)
+   add('BRANCH_LINE_MODULE_MISMATCH',circuit.id,'BLOCKED');
+ }
+ for(const line of project.lines){
+  if(!line||!line.id)continue;
+  if((linkedCircuits.get(line.id)||0)===0)add('BRANCH_DEVICE_MISSING',line.id,'BLOCKED');
+  if((linkedCircuits.get(line.id)||0)>1)add('BRANCH_DEVICE_DUPLICATE_FOR_LINE',line.id,'BLOCKED');
+ }
  const plan=typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1(project,lookup):null;
  if(!plan)add('BOARD_MODEL_UNAVAILABLE',null,'BLOCKED');
  for(const i of plan?.issues||[])add(i.code,i.id,i.level);
  const review=typeof epCircuitDesignReviewV1==='function'?epCircuitDesignReviewV1(project,lookup):null;
  for(const i of review?.issues||[])issues.push(i);
  for(const line of project.lines){
+  if(!line||typeof line!=='object')continue;
   let article=null;try{article=line.catalogSku&&lookup?.(line.catalogSku);}catch(_){add('CATALOG_LOOKUP_FAILED',line.id,'BLOCKED');}
   const branch=project.branchDevices?.find(x=>x.circuitId===line.id);
   const placement=plan?.placements.find(x=>x.deviceId===(branch?.id||line.id));
   if(!article)add('ARTICLE_NOT_SELECTED_OR_UNKNOWN',line.id);
-  if(article&&(!Number.isFinite(article.widthMm)||article.widthMm<=0||article.widthMm>line.modules*18))add('ARTICLE_ENVELOPE_CONFLICT',line.id,'BLOCKED');
+  if(article&&(!Number.isFinite(article.widthMm)||article.widthMm<=0||!Number.isInteger(line.modules)||line.modules<=0||article.widthMm>line.modules*18))add('ARTICLE_ENVELOPE_CONFLICT',line.id,'BLOCKED');
   rows.push({lineId:line.id,name:line.name||'',powerKw:line.power??null,
    article:article?{id:line.catalogSku,maker:article.maker,series:article.series,sku:article.sku,widthMm:article.widthMm,source:article.source}:null,
    calculation:review?.rows.find(x=>x.lineId===line.id)||null,placement:placement||null});
