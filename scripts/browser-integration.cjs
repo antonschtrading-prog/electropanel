@@ -110,6 +110,22 @@ const server=http.createServer((req,res)=>{
  await editor.locator('button[type="submit"]').click();
  assert.equal(await page.evaluate(()=>catalogDevice('USER-25').inA),32);
  assert.equal(await page.evaluate(()=>catalogDevice('SE-A9F74116').inA),16);
+ 
+ // Bulk JSON import is atomic and cannot bypass width, identity or source validation.
+ await page.locator('#catalogJsonInput').fill(JSON.stringify([
+  {id:'BATCH-OK',maker:'Declared maker',series:'Batch',sku:'B16',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/b16'},
+  {id:'BATCH-BAD',maker:'Declared maker',series:'Batch',sku:'B25',kind:'MCB',modules:1,widthMm:36,poles:1,inA:25,source:'https://example.org/b25'}
+ ]));
+ await page.locator('#catalogImportRecordsBtn').click();
+ assert.equal(await page.evaluate(()=>state.catalogArticles.length),2,'Rejected batch must not partially mutate project');
+ await page.locator('#catalogJsonInput').fill(JSON.stringify([
+  {id:'BATCH-OK',maker:'Declared maker',series:'Batch',sku:'B16',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/b16'}
+ ]));
+ await page.locator('#catalogImportRecordsBtn').click();
+ assert.equal(await page.evaluate(()=>state.catalogArticles.length),3);
+ assert.equal(await page.evaluate(()=>catalogDevice('BATCH-OK').verificationStatus),'UNVERIFIED');
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('electropanel_web_preview')).catalogArticles.length),3);
+
  assert.ok(await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.faultRoutes.rows[0].ikMinA>400));
  await page.locator('#faultRoutePanel summary').click();
  await page.locator('#faultRoutePanel').screenshot({path:'browser-fault-route.png'});
