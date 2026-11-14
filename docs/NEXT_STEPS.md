@@ -45,3 +45,18 @@
 - Reconciliation now flags missing board placement and catalogue-vs-line module drift, rather than relying on a width-only check. Added dedicated native integrity regression cases.
 - Changes are committed in PR #12; CI on the exact final commit is **not yet independently confirmed**. Do not treat this section as evidence of a successful test run.
 - Next substantial work: verify browser workflow on the final HEAD; connect engineering status to export gates; expand verified manufacturer records and genuine frontplate geometry; complete bounded fault-current and protection evidence.
+
+## Ten-task integrated execution queue (2026-11-14)
+This queue is deliberately based on the current PR #12, not a fresh implementation. **Only code-backed results count as completed.**
+1. [x] Native reconciliation must not crash on malformed branch collections; fail closed with issue codes. Commit 321cc171.
+2. [x] Add regressions for malformed imported branch data and incomplete board plan. Commit 158e9eb6.
+3. [x] Combined gate must tolerate malformed issue arrays from independent audits. Commit bbee74cf.
+4. [x] Export bundle must expose blocked/unresolved section summaries and issue count. Commit 849d63a0.
+5. [x] Add export regression coverage for status summaries and untrusted approval flags. Commit e8c33512.
+6. [ ] Verify the entire Node suite at the latest HEAD, not a stale commit.
+7. [ ] Verify actual Playwright browser workflow and repair failures.
+8. [ ] Complete terminal/N/PE trace consistency and documentation gate.
+9. [ ] Extend fault-route evidence with verified boundary assumptions and applicable disconnection criteria.
+10. [ ] Improve source-backed manufacturer-specific device front geometry and integrated cabinet visual.
+
+**Validation constraint:** GitHub workflow runs were not visible for the latest commit at the time of this update. Entries 1–5 describe committed changes and regression additions, **not a confirmed green test run**. Tasks 6–10 remain open.
