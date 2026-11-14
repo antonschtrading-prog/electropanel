@@ -13,6 +13,10 @@ function epEngineeringPrintV1(bundle){
   allIssues=sections.issueRegister?.entries||[],wiring=sections.wiringTrace?.rows||[],
   neutral=sections.neutralSegregation?.rows||[],neutralPairs=sections.neutralWireIsolation?.pairs||[],
   singleLine=sections.singleLine?.nodes||[];
+ const replacementRows=sections.replacementReview?.rows||[];
+ const replacementTable=rows(['Цепь','Предыдущий артикул','Назначенный артикул','Текущий артикул','Предупреждения','Статус'],
+  replacementRows.map(x=>[x.lineId,x.from??'Не указан',x.to??'Не указан',
+   x.currentSku??'Не указан',(x.warnings||[]).join('; '),x.status]));
  const workQueue=sections.designWorkQueue?.items||[];
  const workQueueTable=rows(['Приоритет','Цепь','Задача','Раздел'],workQueue.map(x=>[x.priority,x.lineId,x.action,x.section]));
  const designReview=sections.designReview?.rows||[];
@@ -84,6 +88,7 @@ function epEngineeringPrintV1(bundle){
   '<p>Проект: '+esc(bundle?.projectTitle||'Без названия')+' · Состояние: '+esc(status)+'</p>'+
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Ведомость цепей</h2>'+circuitTable+
+  '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
   '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
