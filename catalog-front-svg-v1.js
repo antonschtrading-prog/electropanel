@@ -69,16 +69,20 @@ function epCatalogFrontSvgV1(device,deviceId=''){
    '<rect data-terminal="true" x="'+(cx-terminalWidth/2)+'" y="222" width="'+terminalWidth+'" height="12" rx="2" fill="#6f7c86"/>';
  }).join('');
  const text=(y,size,fill,value,weight=500)=>'<text x="10" y="'+y+'" font-family="Arial,sans-serif" font-size="'+size+'" font-weight="'+weight+'" fill="'+fill+'">'+esc(value)+'</text>';
- const note=esc(visualNote);
- const legend=esc('Иллюстрация '+(device?.maker||'')+' '+series+' '+(device?.sku||deviceId)+'. '+visualNote);
+ const elide=(value,limit)=>{const raw=String(value??'');return raw.length>limit?raw.slice(0,Math.max(1,limit-1))+'…':raw;};
+ const brandSize=Math.min(14,width/8),seriesSize=Math.min(10,width/11),ratingSize=Math.min(17,width/6);
+ const brandMax=Math.max(6,Math.floor((width-22)/(brandSize*.58)));
+ const seriesMax=Math.max(8,Math.floor((width-22)/(seriesSize*.58)));
+ const ratingMax=Math.max(4,Math.floor((width-22)/(ratingSize*.58)));
+ const legend=esc('Иллюстрация '+(device?.maker||'Условный вид')+' '+series+' '+(device?.sku||deviceId)+'. '+visualNote);
  return '<svg class="ep-manufacturer-front" data-device-kind="'+esc(breaker)+'" data-appearance-family="'+esc(family)+'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+legend+'">'+
  '<defs><linearGradient id="ep-body-'+gradientId+'" x1="0" x2="1"><stop stop-color="#e7e9eb"/><stop offset=".18" stop-color="#fff"/><stop offset=".83" stop-color="#f7f8f9"/><stop offset="1" stop-color="#d7dade"/></linearGradient></defs>'+
  '<rect x="1" y="1" width="'+(width-2)+'" height="238" rx="7" fill="url(#ep-body-'+gradientId+')" stroke="#b9c1c7" stroke-width="2"/>'+
  terminal+'<rect x="5" y="25" width="'+(width-10)+'" height="86" rx="3" fill="'+palette.label+'"/>'+
  '<rect x="5" y="25" width="'+(width-10)+'" height="6" fill="'+palette.stripe+'"/>'+
- text(49,Math.min(14,width/8),palette.brand,labels[0],700)+
- text(65,Math.min(10,width/11),'#394653',labels[1])+
- text(90,Math.min(17,width/6),'#17232b',rated,700)+
+ text(49,brandSize,palette.brand,elide(labels[0],brandMax),700)+
+ text(65,seriesSize,'#394653',elide(labels[1],seriesMax))+
+ text(90,ratingSize,'#17232b',elide(rated,ratingMax),700)+
  '<rect x="5" y="118" width="'+(width-10)+'" height="63" rx="4" fill="#e3e5e8" stroke="#cbd0d4"/>'+faceShape+
  text(198,10,'#36424b',breaker,700)+text(211,Math.min(9,width/12),'#56616a',device?.sku||deviceId)+
  '<path d="M5 218h'+(width-10)+'" stroke="#b7bfc7"/>'+
