@@ -7,6 +7,18 @@ function epDraftBomV1(project,lookupSku){
  if(!project||!Array.isArray(project.lines)||project.lines.length>400)
   return {schema:'electropanel.bom.draft.1',status:'BLOCKED',items:[],issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],engineeringApproved:false,ready_for_installation:false};
  const branches=Array.isArray(project.branchDevices)?project.branchDevices:[];
+ if(project.branchDevices!==undefined&&!Array.isArray(project.branchDevices))issues.push({code:'BRANCH_DEVICES_INVALID',level:'BLOCKED'});
+ const circuitIds=new Set(),branchIds=new Set();
+ for(const line of project.lines){
+  if(!line||typeof line.id!=='string'||!line.id.trim())continue;
+  if(circuitIds.has(line.id))issues.push({code:'CIRCUIT_ID_DUPLICATE',level:'BLOCKED',owner:line.id});
+  circuitIds.add(line.id);
+ }
+ for(const branch of branches){
+  if(!branch||typeof branch.id!=='string'||!branch.id.trim())issues.push({code:'BRANCH_ID_INVALID',level:'BLOCKED'});
+  else if(branchIds.has(branch.id))issues.push({code:'BRANCH_ID_DUPLICATE',level:'BLOCKED',deviceId:branch.id});
+  else branchIds.add(branch.id);
+ }
  const push=(kind,id,sku,modules,owner)=>{
   if(!sku){issues.push({code:'SKU_MISSING',level:'UNKNOWN',deviceId:id,owner});return;}
   let article=null;
@@ -18,6 +30,9 @@ function epDraftBomV1(project,lookupSku){
   }
   if(modules!==article.modules)issues.push({code:'WIDTH_MISMATCH',level:'BLOCKED',deviceId:id,owner,sku});
   if(!article.source)issues.push({code:'SOURCE_NOT_DECLARED',level:'UNKNOWN',deviceId:id,owner,sku});
+  if(article.verificationStatus!=='VERIFIED')issues.push({code:'ARTICLE_EVIDENCE_NOT_VERIFIED',level:'UNKNOWN',deviceId:id,owner,sku});
+  if(!Number.isFinite(article.widthMm)||article.widthMm<=0||article.widthMm>article.modules*18+0.001)
+   issues.push({code:'ARTICLE_GEOMETRY_UNCONFIRMED',level:'BLOCKED',deviceId:id,owner,sku});
   const key=String(sku);
   if(!items.has(key))items.set(key,{key,sku:article.sku||sku,maker:article.maker||null,
    series:article.series||null,label:article.label||null,kind:article.kind||null,
@@ -34,10 +49,10 @@ function epDraftBomV1(project,lookupSku){
  for(const l of project.lines){
   if(!l||typeof l.id!=='string'||!l.id){issues.push({code:'CIRCUIT_INVALID',level:'BLOCKED'});continue;}
   const matches=branches.filter(b=>b?.circuitId===l.id);
-  if(matches.length>1)issues.push({code:'BRANCH_DUPLICATE',level:'BLOCKED',owner:l.id});
+  if(matches.length>1){issues.push({code:'BRANCH_DUPLICATE',level:'BLOCKED',owner:l.id});continue;}
   if(Array.isArray(project.branchDevices)&&!matches.length)issues.push({code:'BRANCH_MISSING',level:'BLOCKED',owner:l.id});
   const b=matches[0],id=b?.id??l.id;
-  if(ids.has(id))issues.push({code:'DEVICE_ID_DUPLICATE',level:'BLOCKED',owner:l.id});
+  if(ids.has(id)){issues.push({code:'DEVICE_ID_DUPLICATE',level:'BLOCKED',owner:l.id});continue;}
   ids.add(id);
   if(b&&b.modules!==l.modules)issues.push({code:'BRANCH_WIDTH_CONFLICT',level:'BLOCKED',owner:l.id});
   push('branch',id,l.catalogSku,b?.modules??l.modules,l.id);
@@ -45,7 +60,7 @@ function epDraftBomV1(project,lookupSku){
  for(const b of branches)if(!project.lines.some(l=>l?.id===b?.circuitId))
   issues.push({code:'BRANCH_ORPHAN',level:'BLOCKED',deviceId:b?.id});
  const result=[...items.values()].sort((a,b)=>a.key.localeCompare(b.key));
- if(!result.length)issues.push({code:'NO_VERIFIED_CATALOGUE_ARTICLES',level:'UNKNOWN'});
+ if(!result.length)issues.push({code:'NO_CATALOGUE_ARTICLES',level:'UNKNOWN'});
  return {schema:'electropanel.bom.draft.1',status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
   items:result,devices,issues,expectedDevices:expectedCount,
   distinctArticles:result.length,totalCataloguedDevices:result.reduce((n,x)=>n+x.quantity,0),
