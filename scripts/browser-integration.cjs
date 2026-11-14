@@ -33,13 +33,15 @@ const server=http.createServer((req,res)=>{
   const rcd={id:'E2E-R',sku:'R40',maker:'E2E Maker',series:'R',kind:'RCD',
    label:'RCD old',modules:2,widthMm:36,poles:2,inA:40,source:'https://example.org/r40'};
   const p={title:'Isolated panel',railCount:1,railCapacity:12,
-   catalogArticles:[breaker,rcd],
+   catalogArticles:[breaker,rcd],loads:[],
    lines:[{id:'L1',name:'Light',phase:'L1',catalogSku:'E2E-B',modules:1,device:'Breaker B16',
     faultInput:{ikKa:3}}],
    branchDevices:[{id:'BD1',circuitId:'L1',label:'Breaker B16',modules:1}],
    sharedDevices:[{id:'R1',catalogSku:'E2E-R',templateId:'RCD_2P',label:'RCD old',modules:2,circuitIds:['L1']}]};
   const change=epUpsertProjectArticleV2(p,{...rcd,label:'RCD new',modules:3,widthMm:54},EP_CATALOG,'E2E-R');
   if(!change.project)return {error:change.code};
+  try{validateEntities(change.project);validateBranchDevices(change.project);}
+  catch(error){return {error:'Project model rejected catalogue RCD: '+error.message};}
   const lookup=epProjectCatalogV1(change.project,EP_CATALOG).lookup;
   const singleLine=epSingleLineDraftV1(change.project,lookup);
   const board=epDraftBoardPlanV1(change.project,lookup);
