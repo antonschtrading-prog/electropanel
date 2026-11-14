@@ -57,10 +57,20 @@ function epSingleLineDraftV1(project,lookupSku){
   if(!line.catalogSku)add('SINGLE_LINE_ARTICLE_MISSING','UNKNOWN',line.id);
   if(!branch)add('SINGLE_LINE_BRANCH_UNBOUND','UNKNOWN',line.id);
   if(!['L1','L2','L3','3Ф'].includes(line.phase))add('SINGLE_LINE_PHASE_UNKNOWN','UNKNOWN',line.id);
+  // Draft scheme carries declared design inputs and review provenance alongside
+  // the apparatus. None of these values is inferred from panel geometry.
+  const design={
+   ibA:line.overloadInput?.ibA??null,izA:line.overloadInput?.izA??null,
+   ikKa:line.faultInput?.ikKa??null,
+   calculationReviewRequired:line.calculationReview?.required===true,
+   loadCurrentStale:line.loadCurrentCalculation?.stale===true,
+   inputSource:line.protectionInputSource||null
+  };
   nodes.push({id,type:'circuit',lineId:line.id,name:line.name||line.id,phase:line.phase||null,
    sku:line.catalogSku||null,article:article?{maker:article.maker||null,series:article.series||null,
     label:article.label||null,kind:article.kind||null,inA:article.inA??null,icnKa:article.icnKa??null,
-    poles:article.poles??null}:null,branchId:branch?.id||null});
+    poles:article.poles??null,modules:article.modules??null}:null,
+   branchId:branch?.id||null,design});
   edges.push({from:groupId||'SOURCE:MAIN',to:id,kind:'declared_group_association'});
  }
  for(const [lineId] of groupFor)if(!project.lines.some(x=>x?.id===lineId))
