@@ -89,18 +89,18 @@ test("shortlist: wrong 3P single phase",()=>{
  assert.ok(r.candidates[0].reasons.includes("POLES_INCOMPATIBLE"));
 });
 test("shortlist: single pole three phase",()=>{
- const {d,p}=fixture();p.phase='3Ф';
+ const {d,p}=fixture();p.lines[0].phase='3Ф';
  const r=shortlist(p.lines[0],[{id:'RC1',device:d}]);
  assert.equal(r.candidates[0].status,"REJECTED",JSON.stringify(r.candidates));
  assert.ok(r.candidates[0].reasons.includes("POLES_INCOMPATIBLE"));
 });
 test("shortlist: valid 3P three phase",()=>{
- const {d,p}=fixture();p.phase='3Ф';d.poles=3;
+ const {d,p}=fixture();p.lines[0].phase='3Ф';d.poles=3;
  const r=shortlist(p.lines[0],[{id:'RC1',device:d}]);
  assert.equal(r.candidates[0].status,"POTENTIAL",JSON.stringify(r.candidates));
 });
 test("shortlist: valid 4P three phase",()=>{
- const {d,p}=fixture();p.phase='3Ф';d.poles=4;
+ const {d,p}=fixture();p.lines[0].phase='3Ф';d.poles=4;
  const r=shortlist(p.lines[0],[{id:'RC1',device:d}]);
  assert.equal(r.candidates[0].status,"POTENTIAL",JSON.stringify(r.candidates));
 });
@@ -141,17 +141,17 @@ test("shortlist: nonfinite width",()=>{
  assert.ok(r.candidates[0].reasons.includes("CATALOG_WIDTH_INVALID"));
 });
 test("shortlist: missing Ib",()=>{
- const {d,p}=fixture();delete p.overloadInput.ibA;
+ const {d,p}=fixture();delete p.lines[0].overloadInput.ibA;
  const r=shortlist(p.lines[0],[{id:'RC1',device:d}]);
  assert.equal(r.candidates[0].status,"INCOMPLETE",JSON.stringify(r.candidates));
 });
 test("shortlist: missing Iz",()=>{
- const {d,p}=fixture();delete p.overloadInput.izA;
+ const {d,p}=fixture();delete p.lines[0].overloadInput.izA;
  const r=shortlist(p.lines[0],[{id:'RC1',device:d}]);
  assert.equal(r.candidates[0].status,"INCOMPLETE",JSON.stringify(r.candidates));
 });
 test("shortlist: missing Ik",()=>{
- const {d,p}=fixture();delete p.faultInput.ikKa;
+ const {d,p}=fixture();delete p.lines[0].faultInput.ikKa;
  const r=shortlist(p.lines[0],[{id:'RC1',device:d}]);
  assert.equal(r.candidates[0].status,"INCOMPLETE",JSON.stringify(r.candidates));
 });
