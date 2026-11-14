@@ -55,7 +55,8 @@ function epCatalogEvidenceAuditV1(project,lookup){
   if(!d||typeof d!=='object'||Array.isArray(d)){
    add('CATALOG_ARTICLE_UNKNOWN','BLOCKED',o);continue;
   }
-  if(!o.kind.includes(d.kind))add('CATALOG_ROLE_KIND_CONFLICT','BLOCKED',o);
+  if(!d.kind)add('CATALOG_KIND_UNDECLARED','UNKNOWN',o);
+  else if(!o.kind.includes(d.kind))add('CATALOG_ROLE_KIND_CONFLICT','BLOCKED',o);
   const item={
    role:o.role,ownerId:o.id,lineId:o.role==='circuit'?o.id:null,
    articleId:o.sku,sku:d.sku??null,manufacturer:d.maker??null,series:d.series??null,
