@@ -89,8 +89,12 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
   const phaseOK=['L1','L2','L3'].includes(line.phase)?article.poles===1:line.phase==='3Ф'&&[3,4].includes(article.poles);
   if(!phaseOK)return {project:null,code:'USED_ARTICLE_POLE_CONFLICT'};
   line.modules=article.modules;line.device=article.label;
-  line.calculationReview={required:true,reason:'PROJECT_ARTICLE_UPDATED'};
-  // A changed manufacturer declaration invalidates any prior protection evidence.
+  // Preserve every pending review field; editing a device must never silently
+  // acknowledge an unrelated overload, short-circuit or routing check.
+  const reviewFields=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
+  const pending=new Set(Array.isArray(line.calculationReview?.pending)?line.calculationReview.pending:[]);
+  for(const field of reviewFields)if(line[field])pending.add(field);
+  line.calculationReview={required:true,reason:'PROJECT_ARTICLE_UPDATED',pending:[...pending]};
   if(line.loadCurrentCalculation)line.loadCurrentCalculation.stale=true;
   if(line.faultRouteInput)line.faultRouteInput.reviewRequired=true;
   const branch=draft.branchDevices?.find(x=>x.circuitId===line.id);
