@@ -112,6 +112,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>catalogDevice('SE-A9F74116').inA),16);
  
  // Bulk JSON import is atomic and cannot bypass width, identity or source validation.
+ await page.locator('#catalogImportRecordsBtn').evaluate(button=>button.closest('details').open=true);
  await page.locator('#catalogJsonInput').fill(JSON.stringify([
   {id:'BATCH-OK',maker:'Declared maker',series:'Batch',sku:'B16',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/b16'},
   {id:'BATCH-BAD',maker:'Declared maker',series:'Batch',sku:'B25',kind:'MCB',modules:1,widthMm:36,poles:1,inA:25,source:'https://example.org/b25'}
