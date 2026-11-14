@@ -21,6 +21,13 @@ function epEngineeringPrintV1(bundle){
  const cableReferenceTable=rows(['Цепь','Ib, A','In, A','Способ','Справочное сечение, мм²','Статус'],cableReference.map(x=>[x.lineId,x.report?.ibA,x.report?.inA,x.report?.installationMethod,x.report?.smallestReferenceCandidate?.sectionMm2,x.report?.status]));
  const loadCurrent=sections.loadCurrent?.rows||[];
  const loadCurrentTable=rows(['Цепь','Ib, A','Источник Ib','Режим','Формула','Исходные данные','Статус','Повторная проверка'],loadCurrent.map(x=>[x.lineId,x.ibA,x.source||'Не указан',x.calculation?.mode||'Не рассчитан',x.calculation?.formula||'',x.calculation?.inputs?JSON.stringify(x.calculation.inputs):'',x.status||'UNKNOWN',x.reviewRequired?'Требуется':'Не заявлена']));
+ const catalogueEvidence=sections.catalogEvidence?.items||[];
+ const catalogueEvidenceTable=rows(['Использует','Артикул проекта','Артикул производителя','Производитель','Серия','Документ','Источник','Проверено по источнику','Подтверждение','Icn: напряжение, В','Стандарт Icn'],
+  catalogueEvidence.map(x=>[x.role==='circuit'?x.ownerId:'УЗО '+x.ownerId,x.articleId,x.sku,
+   x.manufacturer,x.series,x.source||'Отсутствует',
+   x.sourceType||'Не указан',x.sourceReviewedAt||'Не записано',
+   x.verificationStatus==='VERIFIED'?'Заявлено VERIFIED, отдельная проверка необходима':'Не подтверждено',
+   x.icnVoltageV??'—',x.icnStandard||'—']));
  const evidence=sections.designEvidence?.items||[];
  const evidenceTable=rows(['Раздел','Статус','Обоснование'],
   evidence.map(x=>[x.area,x.status,x.reason]));
@@ -74,6 +81,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Паспортные данные выбранного оборудования · источники и ограничения</h2>'+catalogueEvidenceTable+
   '<h2>Очередь инженерных задач</h2>'+workQueueTable+
   '<h2>Матрица проектных расчётов</h2>'+designReviewTable+
   '<h2>Справочные сечения проводников</h2>'+cableReferenceTable+
