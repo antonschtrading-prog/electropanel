@@ -59,7 +59,7 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   if(article&&article.widthMm!==undefined&&
     (!Number.isFinite(article.widthMm)||article.widthMm<=0||article.widthMm>article.modules*18))
    reasons.push('ARTICLE_GEOMETRY_INVALID');
-  if(article&&(['L1','L2','L3'].includes(line.phase)?article.poles!==1:
+  if(article&&(['L1','L2','L3'].includes(line.phase)?!(article.poles===1||article.kind==='RCBO'&&article.poles===2):
      line.phase==='3Ф'?![3,4].includes(article.poles):false))
    reasons.push('ARTICLE_POLES_MISMATCH');
   if(article&&Array.isArray(project.branchDevices)){
