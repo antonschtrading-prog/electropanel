@@ -198,3 +198,24 @@ test('HTML metacharacters in nominal curve are escaped exactly once',()=>{
  assert.match(svg,/&lt;&amp;16/);
  assert.doesNotMatch(svg,/&amp;lt;&amp;amp;16/);
 });
+
+test('illustrative colour families cover nine manufacturers without claiming official facades',()=>{
+ const brands=[
+  ['Schneider Electric','schneider'],
+  ['ABB','abb'],['IEK','iek'],['Legrand','legrand'],['Hager','hager'],
+  ['EKF','ekf'],['CHINT','chint'],['Siemens','siemens'],['DEKraft','dekraft']
+ ];
+ const styles=[];
+ for(const [maker,family] of brands){
+  const svg=epCatalogFrontSvgV1({...article,maker});
+  assert.ok(svg.includes('data-appearance-family="'+family+'"'),maker);
+  assert.ok(svg.includes(maker),maker);
+  assert.match(svg,/Условный эскиз/);
+  styles.push(svg.match(/<rect x="5" y="25" width="[^"]+" height="86" rx="3" fill="([^"]+)"/)?.[1]);
+ }
+ assert.equal(new Set(styles).size,styles.length);
+});
+test('unknown manufacturer does not inherit a brand-specific color family',()=>{
+ assert.match(epCatalogFrontSvgV1({...article,maker:'Small independent factory'}),
+  /data-appearance-family="neutral"/);
+});
