@@ -19,6 +19,9 @@ function epProjectCatalogV1(project,seed={},options={}){
     !Number.isInteger(r.poles)||r.poles<1||r.poles>8||!num(r.inA)){
    issues.push({index,code:'CATALOG_DIMENSIONS_OR_RATING_INVALID',status:'BLOCKED'});continue;
   }
+  if(r.widthMm>r.modules*18){
+   issues.push({index,code:'ARTICLE_WIDTH_EXCEEDS_MODULES',status:'BLOCKED'});continue;
+  }
   if(!httpsSource(r.source)){
    issues.push({index,code:'CATALOG_SOURCE_MISSING',status:'UNKNOWN'});continue;
   }
