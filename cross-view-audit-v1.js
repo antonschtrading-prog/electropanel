@@ -158,7 +158,7 @@ function epSchematicCrossViewV1(project,singleLine,lookupSku){
   if(!declared||typeof declared!=='object'){add(prefix+'_ARTICLE_PROJECTION_MISSING',owner);return;}
   for(const [field,code] of [
    ['maker','MAKER_STALE'],['series','SERIES_STALE'],['label','LABEL_STALE'],
-   ['inA','RATING_STALE'],['icnKa','BREAKING_CAPACITY_STALE'],['poles','POLES_STALE'],
+   ['kind','KIND_STALE'],['inA','RATING_STALE'],['icnKa','BREAKING_CAPACITY_STALE'],['poles','POLES_STALE'],
    ['modules','MODULES_STALE']
   ]){
    // Each component declares only the manufacturer fields that its rendering supports.
