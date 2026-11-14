@@ -17,7 +17,7 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const inA=Number.isFinite(device?.inA)?String(device.inA):'—';
  const curve=String(device?.curve||'');
  const rated=esc(curve+inA);
- const labels=[String(device?.maker||'Изготовитель не указан'),series];
+ const labels=[String(device?.maker||'Условный вид'),series];
  const breaker=String(device?.kind||'OTHER').toUpperCase();
  const levers=Array.from({length:poles},(_,i)=>{
   const cx=width*(i+.5)/poles,leverWidth=Math.min(18,width/poles*.65);
