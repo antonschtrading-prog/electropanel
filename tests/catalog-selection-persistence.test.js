@@ -8,7 +8,7 @@ function environment(){
  }
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  vm.runInContext(app.slice(0,app.indexOf("$('loadRows').addEventListener")),ctx);
- vm.runInContext('state=normalizeImport(demo())',ctx);
+ vm.runInContext('state=demo();ensureV2(state)',ctx);
  return ctx;
 }
 const run=(c,script)=>vm.runInContext(script,c);
