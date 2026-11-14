@@ -27,7 +27,7 @@ function epSingleLineSvgV1(report,selectedId=null){
   const parent=lane.group;
   const title=parent?parent.name:'Без группового УЗО';
   const groupDetail=parent?
-   (parent.templateId||'УЗО')+' · IΔn '+(parent.article?.residualCurrentMa??'—')+
+   (parent.templateId||'УЗО')+' · '+(parent.article?.poleConfiguration||'полюса не уточнены')+' · IΔn '+(parent.article?.residualCurrentMa??'—')+
     ' мА · '+(parent.article?.residualType||'тип не задан'):
    'Непосредственно от ввода · декларация';
   content+='<path d="M 227 84 H 252 V '+center+' H 265" stroke="#708399" stroke-width="2" stroke-dasharray="5 5" fill="none"/>'+
@@ -43,7 +43,8 @@ function epSingleLineSvgV1(report,selectedId=null){
      'Артикул не выбран или не найден';
     const electrical=l.article?
      'Тип '+(l.article.kind||'не указан')+' · In '+(l.article.inA??'?')+
-     ' A · Icn '+(l.article.icnKa??'?')+' kA · '+(l.article.poles??'?')+'P'+
+     ' A · Icn '+(l.article.icnKa??'?')+' kA · '+
+     (l.article.poleConfiguration||((l.article.poles??'?')+'P · конфигурация не указана'))+
      (l.article.kind==='RCBO'?' · IΔn '+(l.article.residualCurrentMa??'—')+
       ' мА '+(l.article.residualType||'тип не задан'):''):
      'Характеристики защиты не подтверждены';
