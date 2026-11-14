@@ -41,3 +41,8 @@ The committed Chromium regression additionally creates/assigns/edits an article 
 - Existing DIN bridge now receives both dimensions from a real project article. The source-provenance audit propagates body dimensions and explicitly reports missing measurements; technical declarations never become VERIFIED automatically.
 - Invalid body measurements and malformed line, branch or shared collections reject catalogue mutations before changing any project state. Focused regressions cover round-trip propagation, incomplete geometry, invalid input, atomic rejection and unchanged original state.
 - Real manufacturer CAD/3D, thermal clearances and mounting suitability are still not verified. Test pass is not normative design approval.
+
+
+### Equipment dimensions in engineering outputs
+
+The draft BOM retains declared W/H/D for each selected article, writes the fields to semicolon-separated CSV, and displays incomplete dimensions explicitly in the visible specification. The standalone printable engineering report displays W/H/D separately in both the material schedule and article provenance table. Regressions cover these outputs and unknown dimensions; no physical clearance, heat dissipation or certified CAD fit is implied.

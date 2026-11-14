@@ -54,3 +54,15 @@ test('print embeds vector one-line diagram when renderer is loaded',()=>{
   assert.match(h,/НЕ ДЛЯ МОНТАЖА/);
  }finally{delete global.epSingleLineSvgV1;}
 });
+
+test('print report includes declared equipment W H D dimensions and marks unknowns',()=>{
+ const b=bundle();
+ b.sections.bom.items[0]={...b.sections.bom.items[0],widthMm:18,heightMm:85,depthMm:78.5};
+ b.sections.catalogEvidence={items:[{role:'circuit',ownerId:'L1',articleId:'ABB-1',
+  sku:'ABB-1',manufacturer:'ABB',series:'S200',widthMm:18,heightMm:85,depthMm:null,
+  source:'https://example.org/abb',verificationStatus:'UNVERIFIED'}]};
+ const h=print(b);
+ assert.match(h,/Глубина, мм/);assert.match(h,/>78.5<\/td>/);
+ assert.match(h,/>85<\/td>/);assert.match(h,/>—<\/td>/);
+ assert.match(h,/НЕ ДЛЯ МОНТАЖА/);
+});

@@ -29,3 +29,15 @@ test('BOM issue details are escaped in HTML',()=>{
  const x=p();x.lines[0].id='<img src=x onerror=alert(1)>';delete x.lines[0].catalogSku;
  const h=html(bom(x,lookup));assert.doesNotMatch(h,/<img/);assert.match(h,/&lt;img/);
 });
+
+test('BOM retains declared body geometry in data, CSV and HTML without inferring missing sizes',()=>{
+ const report=bom(p(),k=>k==='A'?{...lookup(k),heightMm:85,depthMm:78.5}:lookup(k));
+ const item=report.items.find(x=>x.key==='A');
+ assert.equal(item.widthMm,18);assert.equal(item.heightMm,85);assert.equal(item.depthMm,78.5);
+ assert.equal(report.items.find(x=>x.key==='R').heightMm,null);
+ assert.match(csv(report),/Высота мм;"Глубина мм"/);
+ assert.match(csv(report),/"18";"85";"78.5"/);
+ assert.match(html(report),/18 × 85 × 78.5/);
+ assert.match(html(report),/Ш×В×Г, мм/);
+ assert.equal(report.engineeringApproved,false);
+});
