@@ -28,7 +28,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const wiringTrace=section('WIRING_TRACE',typeof epCircuitWiringTraceV1==='function'?
   p=>epCircuitWiringTraceV1(p):null);
  const crossView=section('CROSS_VIEW',typeof epCrossViewAuditV1==='function'?
-  ()=>epCrossViewAuditV1(project,protection,board,bom):null);
+  ()=>epCrossViewAuditV1(project,protection,board,bom,singleLine,projectLookup):null);
  const designEvidence=section('DESIGN_EVIDENCE',typeof assessDesignEvidence==='function'?
   p=>{const a=assessDesignEvidence(p);return {...a,status:a.status==='failed'?'BLOCKED':'UNKNOWN',issues:a.items.filter(x=>x.status!=='verified').map(x=>({code:'DESIGN_EVIDENCE_'+x.status.toUpperCase(),level:x.status==='failed'?'BLOCKED':'UNKNOWN',area:x.area}))};}:null);
  const loadCurrent={status:'UNKNOWN',rows:(Array.isArray(project?.lines)?project.lines:[]).map(x=>({lineId:x.id,calculation:x.loadCurrentCalculation||null,ibA:x.overloadInput?.ibA??null})),issues:[],engineeringApproved:false};
