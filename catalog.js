@@ -52,6 +52,21 @@ const EP_CATALOG = Object.freeze({
     sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-14',
     source:'https://www.legrand.fr/pro/catalogue/disjoncteur-phaseneutre-dnx34500-6ka-arrivee-et-sortie-borne-a-vis-1pn-230v-20a-courbe-c-1-module'
   }),
+  'CH-814014':Object.freeze({
+    maker:'CHINT',series:'NXB-63',sku:'814014',label:'NXB-63 C16 1P',kind:'MCB',
+    poles:1,poleConfiguration:'1P',modules:1,widthMm:18,inA:16,curve:'C',
+    icnKa:null,icuKa:6,icuVoltageV:230,appearance:'chint',
+    sourceType:'MANUFACTURER_CATALOG',sourceReviewedAt:'2026-11-14',
+    source:'https://www.chintglobal.com/content/dam/chint/global/product-center/low-voltage/iec/final-power-distribution/mcb/nxb-63/catalog/NXB-63-MCB-catalog.pdf',
+    productSource:'https://www.chintglobal.com/global/en/products/low-voltage/iec/final-power-distribution/nxb-63.html'
+  }),
+  'EA-286533':Object.freeze({
+    maker:'Eaton',series:'xPole PL6',sku:'286533',label:'PL6-C16/1',kind:'MCB',
+    poles:1,poleConfiguration:'1P',modules:1,widthMm:17.7,heightMm:73,depthMm:85,
+    inA:16,curve:'C',icnKa:6,icnStandard:'IEC/EN 60898-1',appearance:'eaton',
+    sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-14',
+    source:'https://www.eaton.com/gb/en-gb/skuPage.286533.html'
+  }),
   'SI-5SL6116-7':Object.freeze({
     maker:'Siemens',series:'SENTRON 5SL',sku:'5SL6116-7',label:'5SL6116-7 C16',kind:'MCB',
     poles:1,poleConfiguration:'1P',modules:1,widthMm:18,heightMm:90,depthMm:76,
