@@ -16,3 +16,13 @@ test('SVG gradients do not collide for different apparatus',()=>{
  const idA=a.match(/linearGradient id="([^"]+)"/)[1],idB=b.match(/linearGradient id="([^"]+)"/)[1];
  assert.notEqual(idA,idB);assert.ok(a.includes('url(#'+idA+')'));assert.ok(b.includes('url(#'+idB+')'));
 });
+
+test('facade announces unverified geometry instead of presenting a passport drawing',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'ABB',series:'S200',sku:'A',modules:1,poles:1,widthMm:36,verificationStatus:'VERIFIED'});
+ assert.match(svg,/геометрия\/паспорт не подтверждены/);
+});
+test('verified article geometry still remains an original illustrative SVG',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'ABB',series:'S200',sku:'A',modules:1,poles:1,widthMm:17.5,verificationStatus:'VERIFIED'});
+ assert.match(svg,/Эскиз, не официальный фасад/);
+ assert.match(svg,/viewBox="0 0 92 240"/);
+});
