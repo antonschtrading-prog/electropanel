@@ -28,3 +28,26 @@ test('reject malformed records and missing identity',()=>{
  assert.equal(epCatalogDinBridgeV1(null).status,'BLOCKED');
  assert.ok(epCatalogDinBridgeV1({...sch,sku:''}).issues.some(x=>x.code==='CATALOG_IDENTITY_INCOMPLETE'));
 });
+
+test('reject credentialed, non-HTTPS and malformed catalogue evidence URLs',()=>{
+ const bad=['https://user:secret@example.com/data','http://example.com/data','javascript:alert(1)','https://','https://example.com@other.example/data'];
+ for(const source of bad){
+  const r=epCatalogDinBridgeV1({...sch,source});
+  if(source==='https://example.com@other.example/data')assert.equal(r.status,'BLOCKED');
+  else assert.equal(r.status,'BLOCKED');
+  assert.ok(r.issues.some(x=>x.code==='CATALOG_SOURCE_INVALID'));
+  assert.equal(r.record.evidence,null);
+ }
+});
+test('reject invalid pole and current data without approval',()=>{
+ for(const change of [{poles:0},{poles:1.5},{inA:0},{inA:Infinity}]){
+  const r=epCatalogDinBridgeV1({...sch,...change});
+  assert.equal(r.status,'BLOCKED');
+  assert.equal(r.engineeringApproved,false);
+ }
+});
+test('catalogue audit propagates blocking status from invalid source',()=>{
+ const a=epCatalogDinBridgeAuditV1({bad:{...sch,source:'http://example.com'}});
+ assert.equal(a.status,'BLOCKED');
+ assert.ok(a.issues.some(x=>x.code==='CATALOG_SOURCE_INVALID'));
+});
