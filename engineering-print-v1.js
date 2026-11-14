@@ -36,8 +36,8 @@ function epEngineeringPrintV1(bundle){
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
    x.placement?'DIN '+x.placement.rail+' · '+x.placement.from+'–'+x.placement.to:'Не размещено',
    x.calculationReviewRequired?'Требуется перепроверка':'Не подтверждено']));
- const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Артикул','Тип','Изготовитель','In, A','Icn, кА','Напряжение Icn, В','Стандарт Icn','Конфигурация полюсов','IΔn, мА','Тип дифзащиты','Источник','Статус','Причины'],
-  protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.selectedSku,x.selectedArticle?.kind,
+ const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Напряжение сети, В','Артикул','Тип','Изготовитель','In, A','Icn, кА','Напряжение Icn, В','Стандарт Icn','Конфигурация полюсов','IΔn, мА','Тип дифзащиты','Источник','Статус','Причины'],
+  protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.voltageV??'Не указано',x.selectedSku,x.selectedArticle?.kind,
    x.selectedArticle?.maker,x.selectedArticle?.inA,x.selectedArticle?.icnKa,
    x.selectedArticle?.icnVoltageV??'—',x.selectedArticle?.icnStandard||'—',
    x.selectedArticle?.poleConfiguration||'Не указана',
@@ -53,8 +53,9 @@ function epEngineeringPrintV1(bundle){
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
  const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
  const issueTable=rows(['Раздел','Уровень','Код','Цепь'],allIssues.map(x=>[x.section,x.level,x.code,x.circuitId||'Проект']));
- const singleLineTable=rows(['Элемент','ID','Назначение','Фаза','Артикул','Тип','Полюса','Напряжение Icn, В','Стандарт Icn','IΔn, мА','Тип дифзащиты','Группа/аппарат','Ib A','Iz A','Ik кА','Повторная проверка'],
+ const singleLineTable=rows(['Элемент','ID','Назначение','Фаза','Артикул','Тип','Напряжение сети, В','Полюса','Напряжение Icn, В','Стандарт Icn','IΔn, мА','Тип дифзащиты','Группа/аппарат','Ib A','Iz A','Ik кА','Повторная проверка'],
   singleLine.map(x=>[x.type,x.lineId||x.id,x.name,x.phase,x.sku,x.article?.kind||'',
+   x.design?.voltageV??'Не указано',
    x.article?.poleConfiguration||'Не указана',x.article?.icnVoltageV??'—',x.article?.icnStandard||'—',
    x.article?.residualCurrentMa??'—',x.article?.residualType||'—',
    x.branchId||x.templateId,x.design?.ibA??'',x.design?.izA??'',x.design?.ikKa??'',
