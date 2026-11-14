@@ -219,3 +219,27 @@ test('unknown manufacturer does not inherit a brand-specific color family',()=>{
  assert.match(epCatalogFrontSvgV1({...article,maker:'Small independent factory'}),
   /data-appearance-family="neutral"/);
 });
+
+test('long manufacturer and series remain accessible but are elided on narrow face',()=>{
+ const maker='Very Long Manufacturer Company With A Wide Product Name';
+ const series='Unusually Long Electrical Protection Product Series';
+ const svg=epCatalogFrontSvgV1({...article,maker,series,modules:1,widthMm:18,poles:1});
+ assert.ok(svg.includes(maker)&&svg.includes(series),'complete data must remain in aria-label');
+ const visibleMaker=svg.match(/<text x="10" y="49"[^>]*>([^<]*)<\/text>/)?.[1];
+ const visibleSeries=svg.match(/<text x="10" y="65"[^>]*>([^<]*)<\/text>/)?.[1];
+ assert.ok(visibleMaker.endsWith('…'));
+ assert.ok(visibleSeries.endsWith('…'));
+ assert.ok(visibleMaker.length<maker.length);
+ assert.ok(visibleSeries.length<series.length);
+});
+test('short labels retain their exact text on wide DIN devices',()=>{
+ const svg=epCatalogFrontSvgV1({...article,maker:'ABB',series:'S200',widthMm:72,modules:4,poles:4});
+ assert.match(svg,/y="49"[^>]*>ABB<\/text>/);
+ assert.match(svg,/y="65"[^>]*>S200<\/text>/);
+});
+test('long nominal trip curve is clipped visually but escaped in the accessible legend',()=>{
+ const svg=epCatalogFrontSvgV1({...article,widthMm:18,modules:1,poles:1,curve:'CURVE123456789'});
+ const rated=svg.match(/<text x="10" y="90"[^>]*>([^<]*)<\/text>/)?.[1];
+ assert.ok(rated.endsWith('…'));
+ assert.ok(rated.length<14);
+});
