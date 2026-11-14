@@ -29,7 +29,12 @@ function epCatalogDinBridgeV1(seed){
   geometry:{widthMm:Number.isFinite(width)&&width>0?width:null,heightMm:Number.isFinite(seed.heightMm)&&seed.heightMm>0?seed.heightMm:null,depthMm:Number.isFinite(seed.depthMm)&&seed.depthMm>0?seed.depthMm:null},
   evidence:epCatalogSourceSafeV2(seed.source)?{url:seed.source}:null,
   visual:{mode:'STYLIZED_PREVIEW',verified:false},
-  electrical:{poles:seed.poles,inA:seed.inA,curve:seed.curve,icnKa:seed.icnKa},
+  electrical:{poles:seed.poles,inA:seed.inA,curve:seed.curve,
+   icnKa:Number.isFinite(seed.icnKa)&&seed.icnKa>0?seed.icnKa:null,
+   icnVoltageV:Number.isFinite(seed.icnVoltageV)&&seed.icnVoltageV>0?seed.icnVoltageV:null,
+   icnStandard:typeof seed.icnStandard==='string'&&seed.icnStandard.trim()?seed.icnStandard:null,
+   icuKa:Number.isFinite(seed.icuKa)&&seed.icuKa>0?seed.icuKa:null,
+   icuVoltageV:Number.isFinite(seed.icuVoltageV)&&seed.icuVoltageV>0?seed.icuVoltageV:null},
   engineeringApproved:false,ready_for_installation:false};
  if(typeof epDinCatalogValidateV1==='function'){
   const audit=epDinCatalogValidateV1(record);
