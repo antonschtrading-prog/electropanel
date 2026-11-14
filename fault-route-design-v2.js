@@ -165,6 +165,7 @@ function epMaximumFaultCurrentV2(project,line,lookup){
   if(thresholdStatus==='FAIL')add('MAX_FAULT_EXCEEDS_ICN','BLOCKED');
  }
  return end({ikMaxKa:ikKa,ikMaxA:ikA,impedanceOhm:z,rOhm:r,xOhm:x,segments,
+  numericComparison:article&&parse(article.icnKa)!==null?(ikKa>article.icnKa?'EXCEEDS_ICN':'BELOW_OR_EQUAL_ICN'):'UNAVAILABLE',
   cmax:c,voltageV:u,model:input.model,icnKa:article?.icnKa??null,
   thresholdStatus,formula:three?
    'Ik3,max = cmax × ULL / (sqrt(3) × |Z1|)':
