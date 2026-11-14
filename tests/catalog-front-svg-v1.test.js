@@ -9,3 +9,10 @@ test('brand and series alter vector facade',()=>{
 });
 test('untrusted catalog text is escaped',()=>assert.doesNotMatch(epCatalogFrontSvgV1({maker:'<script>',sku:'"><img>'}),/<script>|<img>/));
 test('unavailable article uses neutral appearance',()=>assert.match(epCatalogFrontSvgV1(null),/Условный вид/));
+
+test('SVG gradients do not collide for different apparatus',()=>{
+ const a=epCatalogFrontSvgV1({maker:'ABB',widthMm:18},'BR-01');
+ const b=epCatalogFrontSvgV1({maker:'ABB',widthMm:18},'BR-02');
+ const idA=a.match(/linearGradient id="([^"]+)"/)[1],idB=b.match(/linearGradient id="([^"]+)"/)[1];
+ assert.notEqual(idA,idB);assert.ok(a.includes('url(#'+idA+')'));assert.ok(b.includes('url(#'+idB+')'));
+});
