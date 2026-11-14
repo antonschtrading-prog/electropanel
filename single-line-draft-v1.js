@@ -70,6 +70,7 @@ function epSingleLineDraftV1(project,lookupSku){
   const design={
    ibA:line.overloadInput?.ibA??null,izA:line.overloadInput?.izA??null,
    ikKa:line.faultInput?.ikKa??null,
+   voltageV:line.faultInput?.voltageV??null,
    calculationReviewRequired:line.calculationReview?.required===true,
    loadCurrentStale:line.loadCurrentCalculation?.stale===true,
    inputSource:line.protectionInputSource||null
