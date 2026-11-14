@@ -15,10 +15,19 @@ function epProtectionInputsV1(project,lineId,raw){
  const ib=parse(raw.ibA,100000),iz=parse(raw.izA,100000),ik=parse(raw.ikKa,1000);
  if(ib===null||iz===null||ik===null)return {status:'BLOCKED',code:'POSITIVE_DECLARATIONS_REQUIRED',project:null};
  if(ib>iz)return {status:'BLOCKED',code:'IB_EXCEEDS_IZ',project:null};
+ const voltageSupplied=Object.prototype.hasOwnProperty.call(raw,'voltageV');
+ const emptyVoltage=raw.voltageV===null||raw.voltageV===undefined||raw.voltageV==='';
+ const voltage=voltageSupplied&&!emptyVoltage?parse(raw.voltageV,1500):null;
+ if(voltageSupplied&&!emptyVoltage&&voltage===null)
+  return {status:'BLOCKED',code:'FAULT_VOLTAGE_INVALID',project:null};
  const copy=JSON.parse(JSON.stringify(project));
  const target=copy.lines.find(x=>x.id===lineId);
  target.overloadInput={...(target.overloadInput||{}),ibA:ib,izA:iz};
  target.faultInput={...(target.faultInput||{}),ikKa:ik};
+ if(voltageSupplied){
+  if(emptyVoltage)delete target.faultInput.voltageV;
+  else target.faultInput.voltageV=voltage;
+ }
  // Preserve outstanding checks when a manual declaration is edited.
  // A manually overridden Ib is no longer safe to auto-refresh as circuit-linked.
  const prior=target.loadCurrentCalculation;
@@ -44,7 +53,7 @@ function epProtectionInputsV1(project,lineId,raw){
  }
  target.protectionInputSource='manual_declaration';
  return {status:'UNKNOWN',code:'MANUAL_INPUTS_RECORDED_REVIEW_REQUIRED',
-  project:copy,lineId,values:{ibA:ib,izA:iz,ikKa:ik},
+  project:copy,lineId,values:{ibA:ib,izA:iz,ikKa:ik,...(voltageSupplied?{voltageV:voltage}: {})},
   manualIbOverride:!!manualIbOverride,affectedViews:['protection','singleLine','engineeringReview','loadCurrent'],
   engineeringApproved:false,ready_for_installation:false};
 }
