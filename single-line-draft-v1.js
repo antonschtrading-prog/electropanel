@@ -34,6 +34,8 @@ function epSingleLineDraftV1(project,lookupSku){
    article:groupArticle?{maker:groupArticle.maker||null,series:groupArticle.series||null,
     label:groupArticle.label||null,kind:groupArticle.kind||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
     poles:groupArticle.poles??null,modules:groupArticle.modules??null,
+    poleConfiguration:groupArticle.poleConfiguration??null,
+    icnVoltageV:groupArticle.icnVoltageV??null,icnStandard:groupArticle.icnStandard??null,
     residualCurrentMa:groupArticle.residualCurrentMa??null,
     residualType:groupArticle.residualType??null}:null,
    templateId:group.templateId||null});
@@ -76,6 +78,8 @@ function epSingleLineDraftV1(project,lookupSku){
    sku:line.catalogSku||null,article:article?{maker:article.maker||null,series:article.series||null,
     label:article.label||null,kind:article.kind||null,inA:article.inA??null,icnKa:article.icnKa??null,
     poles:article.poles??null,modules:article.modules??null,
+    poleConfiguration:article.poleConfiguration??null,
+    icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
     residualCurrentMa:article.residualCurrentMa??null,
     residualType:article.residualType??null}:null,
    branchId:branch?.id||null,design});
