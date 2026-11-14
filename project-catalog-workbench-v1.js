@@ -87,6 +87,9 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
   if(!phaseOK)return {project:null,code:'USED_ARTICLE_POLE_CONFLICT'};
   line.modules=article.modules;line.device=article.label;
   line.calculationReview={required:true,reason:'PROJECT_ARTICLE_UPDATED'};
+  // A changed manufacturer declaration invalidates any prior protection evidence.
+  if(line.loadCurrentCalculation)line.loadCurrentCalculation.stale=true;
+  if(line.faultRouteInput)line.faultRouteInput.reviewRequired=true;
   const branch=draft.branchDevices?.find(x=>x.circuitId===line.id);
   if(branch){branch.modules=article.modules;branch.label=article.label;branch.templateId=null;}
   affected.push(line.id);
