@@ -3,13 +3,14 @@
 function epProjectCatalogV1(project,seed={},options={}){
  const records=Array.isArray(project?.catalogArticles)?project.catalogArticles:[];
  const issues=[],articles=Object.create(null),seen=new Set();
+ if(records.length>500)issues.push({index:500,code:'CATALOG_TOO_LARGE',status:'BLOCKED'});
  const validString=x=>typeof x==='string'&&x.trim().length>0;
  const num=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
  const bounded=x=>validString(x)&&x.length<=200&&x.trim()===x&&!/[\u0000-\u001f\u007f]/.test(x);
  const httpsSource=x=>{if(!validString(x))return false;try{const u=new URL(x);return u.protocol==='https:'&&!!u.hostname&&!u.username&&!u.password;}catch(_){return false;}};
  for(const [index,r] of records.entries()){
   const key=r?.id;
-  if(!validString(key)||['__proto__','constructor','prototype'].includes(key)||key.trim()!==key||key.length>100||!bounded(r?.sku)||!bounded(r?.maker)||!bounded(r?.series)){
+  if(!validString(key)||['__proto__','constructor','prototype'].includes(key)||key.trim()!==key||key.length>100||/[\u0000-\u001f\u007f]/.test(key)||!bounded(r?.sku)||!bounded(r?.maker)||!bounded(r?.series)){
    issues.push({index,code:'IDENTITY_INCOMPLETE',status:'BLOCKED'});continue;
   }
   if(seen.has(key)||Object.prototype.hasOwnProperty.call(seed,key)){
