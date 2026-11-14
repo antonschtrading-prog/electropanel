@@ -43,6 +43,13 @@ jobs:
           node --check design-change-impact-v1.js
           node --check design-evidence-gates-v1.js
           node --check design-evidence-ui-v1.js
+          node --check coordination-evidence-v1.js
+          node --check fault-loop-screen-v1.js
+          node --check catalog-evidence-v1.js
+          node --check din-geometry-evidence-v1.js
+          node --check design-quality-gates-v1.js
+          node --check integrated-evidence-review-v1.js
+          node --check integrated-evidence-ui-v1.js
           node --check engineering-bundle-v1.js
           node --check engineering-print-v1.js
           node --check engineering-issue-guidance-v1.js
