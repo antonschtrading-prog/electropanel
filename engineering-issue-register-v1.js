@@ -6,6 +6,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  const sectionNames=['designWorkQueue','designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering'];
  if(sections.catalogueIntegrity)sectionNames.unshift('catalogueIntegrity');
  if(sections.loadCurrent)sectionNames.splice(1,0,'loadCurrent');
+ if(sections.protectionSelection)sectionNames.push('protectionSelection');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
