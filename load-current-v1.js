@@ -1,6 +1,17 @@
 'use strict';
 const epLoadReviewMarkV1=typeof module!=='undefined'&&module.exports?
- require('./calculation-review-v1.js').epMarkCalculationReviewV1:epMarkCalculationReviewV1;
+ require('./calculation-review-v1.js').epMarkCalculationReviewV1:
+ typeof epMarkCalculationReviewV1==='function'?epMarkCalculationReviewV1:
+ (line,reason,fields=[],force=false)=>{
+  const old=line.calculationReview&&typeof line.calculationReview==='object'?line.calculationReview:{};
+  const allowed=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
+  const pending=new Set(Array.isArray(old.pending)?old.pending.filter(x=>allowed.includes(x)):[]);
+  if(old.required&&!Array.isArray(old.pending))for(const k of allowed)if(line[k])pending.add(k);
+  for(const key of fields)if(allowed.includes(key)&&line[key])pending.add(key);
+  if(!old.required&&!pending.size&&!force)return null;
+  line.calculationReview={...old,required:true,reason,pending:[...pending]};
+  return line.calculationReview;
+ };
 // Explicit design-stage load-current arithmetic. Values must be declared; no assumed voltage or power factor.
 function epLoadCurrentV1(input){
  const result=(status,code,details={})=>({schema:'electropanel.load.current.1',status,code,...details,engineeringApproved:false});
