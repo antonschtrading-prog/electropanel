@@ -38,7 +38,13 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   if(line.loadCurrentCalculation?.stale)reasons.push('LOAD_CURRENT_STALE');
   const derivedIb=safePositive(line.loadCurrentCalculation?.roundedIbA);
   if(derivedIb!==null&&ib!==derivedIb)reasons.push('IB_DIFFERS_FROM_CALCULATION');
-  if(article&&article.kind==='RCBO')reasons.push('RCBO_RESIDUAL_PROTECTION_UNVERIFIED');
+  if(article&&article.kind==='RCBO'){
+   reasons.push('RCBO_RESIDUAL_PROTECTION_UNVERIFIED');
+   if(!Number.isFinite(article.residualCurrentMa)||article.residualCurrentMa<=0)
+    reasons.push('RCBO_RESIDUAL_CURRENT_UNDECLARED');
+   if(!['AC','A','F','B','B+'].includes(article.residualType))
+    reasons.push('RCBO_RESIDUAL_TYPE_UNDECLARED');
+  }
   if(article&&article.kind==='MCB')reasons.push('MCB_DISCONNECTION_UNVERIFIED');
   if(ib===null)reasons.push('IB_MISSING_OR_INVALID');
   if(iz===null)reasons.push('IZ_MISSING_OR_INVALID');
@@ -78,6 +84,7 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
    ibA:ib,izA:iz,ikKa:ik,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
     kind:article.kind||null,label:article.label||null,
+    residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
     inA:article.inA??null,icnKa:article.icnKa??null,poles:article.poles??null,
     modules:article.modules??null,source:article.source||null,
     verificationStatus:article.verificationStatus||'UNKNOWN'}:null,
@@ -100,7 +107,9 @@ function epProtectionWorkbenchHtmlV1(report){
   const reasons=(c.reasons.length?c.reasons.join(', '):'Арифметических противоречий не выявлено')+
    (c.caution?.length?' · требуют проверки: '+c.caution.join(', '):'');
   return '<tr><td>'+esc(c.maker||'—')+'</td><td>'+esc(c.series||'—')+'</td><td>'+
-   esc(c.sku)+' ('+esc(c.kind||'MCB')+')</td><td>'+fmt(c.inA)+'</td><td>'+fmt(c.icnKa)+'</td><td>'+
+   esc(c.sku)+' ('+esc(c.kind||'MCB')+
+   (c.kind==='RCBO'?' · IΔn '+fmt(c.residualCurrentMa)+' мА · '+esc(c.residualType||'тип не задан'):'')+
+   ')</td><td>'+fmt(c.inA)+'</td><td>'+fmt(c.icnKa)+'</td><td>'+
    esc(c.status)+'</td><td>'+esc(reasons)+'</td><td>'+
    '<button type="button" class="btn tiny" data-protection-sku="'+esc(c.sku)+'" data-protection-line="'+esc(x.lineId)+'"'+
    (c.status==='REJECTED'?' disabled title="Кандидат не проходит заявленные проверки"':'')+
