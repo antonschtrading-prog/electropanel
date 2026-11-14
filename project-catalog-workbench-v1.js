@@ -5,6 +5,7 @@ function epProjectCatalogV1(project,seed={},options={}){
  const issues=[],articles={},seen=new Set();
  const validString=x=>typeof x==='string'&&x.trim().length>0;
  const num=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
+ const httpsSource=x=>{if(!validString(x))return false;try{const u=new URL(x);return u.protocol==='https:'&&!!u.hostname&&!u.username&&!u.password;}catch(_){return false;}};
  for(const [index,r] of records.entries()){
   const key=r?.id;
   if(!validString(key)||!validString(r?.sku)||!validString(r?.maker)||!validString(r?.series)){
@@ -18,7 +19,7 @@ function epProjectCatalogV1(project,seed={},options={}){
     !Number.isInteger(r.poles)||r.poles<1||r.poles>8||!num(r.inA)){
    issues.push({index,code:'CATALOG_DIMENSIONS_OR_RATING_INVALID',status:'BLOCKED'});continue;
   }
-  if(!validString(r.source)||!/^https:\/\/[a-z0-9.-]+(?:[:/\\?#]|$)/i.test(r.source)){
+  if(!httpsSource(r.source)){
    issues.push({index,code:'CATALOG_SOURCE_MISSING',status:'UNKNOWN'});continue;
   }
   if(!['MCB','RCD','RCBO','SWITCH','METER','CONTACTOR','RELAY','DIN_PSU','OTHER'].includes(r.kind)){
