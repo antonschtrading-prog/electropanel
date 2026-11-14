@@ -48,10 +48,11 @@ function epEngineeringBundleV1(project,lookupSku){
   p=>epIntegratedEvidenceReview(p):null);
  const reconciliation=section('RECONCILIATION',typeof epReconcileProjectV2==='function'?epReconcileProjectV2:null);
  const faultRoutes=section('FAULT_ROUTES',typeof epFaultRouteProjectV2==='function'?epFaultRouteProjectV2:null);
+ const catalogEvidence=section('CATALOG_EVIDENCE',typeof epCatalogEvidenceAuditV1==='function'?epCatalogEvidenceAuditV1:null);
  const catalogueIntegrity={status:!catalog||catalog.issues.some(x=>x.status==='BLOCKED')?'BLOCKED':'UNKNOWN',
   issues:catalog?.issues?.map(x=>({code:x.code,level:x.status==='BLOCKED'?'BLOCKED':'UNKNOWN',recordIndex:x.index}))||[{code:'PROJECT_CATALOGUE_AUDIT_UNAVAILABLE',level:'BLOCKED'}],
   engineeringApproved:false};
- const sections={catalogueIntegrity,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const sections={catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
