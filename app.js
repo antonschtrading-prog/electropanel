@@ -873,6 +873,11 @@ function renderEngineeringDiagnosticsV1(){
  const evidenceHolder=$('designEvidencePanel');
  if(evidenceHolder)evidenceHolder.innerHTML=typeof assessDesignEvidence==='function'&&typeof epDesignEvidenceHtmlV1==='function'?
   epDesignEvidenceHtmlV1(assessDesignEvidence(state)):'Проверка доказательной базы недоступна.';
+ const integrated=$('integratedEvidencePanel');
+ if(integrated&&typeof epIntegratedEvidenceReview==='function'&&typeof epIntegratedEvidenceHtmlV1==='function'){
+  const review=epIntegratedEvidenceReview(state);
+  integrated.innerHTML=epIntegratedEvidenceHtmlV1(review);
+ }
  const holder=$('engineeringDiagnostics');
  if(!holder)return;
  if(typeof epEngineeringDiagnosticsPanelV1!=='function'){
