@@ -184,7 +184,12 @@ function validateEntities(project){
  for(const d of project.sharedDevices){
   if(!d||typeof d.id!=='string'||!/^[A-Za-z0-9_-]{1,40}$/.test(d.id)||ids.has(d.id))throw Error('Некорректный или повторный ID общего аппарата');
   ids.add(d.id);
-  if(!['RCD_2P','RCD_4P'].includes(d.templateId)||!Number.isInteger(d.modules)||d.modules!==DEVICE_TEMPLATES[d.templateId].modules)throw Error('Неизвестный тип или ширина общего аппарата');
+  // The template identifies RCD topology. Its standard DIN width is only the
+  // fallback when a manufacturer article has not been selected.
+  if(!['RCD_2P','RCD_4P'].includes(d.templateId)||!Number.isInteger(d.modules)||
+     d.modules<1||d.modules>24||
+     (!d.catalogSku&&d.modules!==DEVICE_TEMPLATES[d.templateId].modules))
+   throw Error('Неизвестный тип или ширина общего аппарата');
   if(typeof d.label!=='string'||!d.label.trim()||d.label.length>50)throw Error('Не указано обозначение общего аппарата');
   if(!Array.isArray(d.circuitIds)||!d.circuitIds.length||new Set(d.circuitIds).size!==d.circuitIds.length)throw Error('Общий аппарат должен иметь неповторяющийся список цепей');
   for(const id of d.circuitIds)if(!circuitIds.has(id))throw Error('Общий аппарат ссылается на несуществующую цепь');
