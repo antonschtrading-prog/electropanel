@@ -110,7 +110,7 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  // article must also update the board width and trigger a layout recheck.
  for(const shared of Array.isArray(draft.sharedDevices)?draft.sharedDevices:[]){
   if(shared?.catalogSku!==record.id)continue;
-  if(article.kind!=='RCD'&&article.kind!=='RCBO')return {project:null,code:'SHARED_ARTICLE_KIND_CONFLICT'};
+  if(article.kind!=='RCD')return {project:null,code:'SHARED_ARTICLE_KIND_CONFLICT'};
   if(![2,4].includes(article.poles))return {project:null,code:'SHARED_ARTICLE_POLE_CONFLICT'};
   if(shared.templateId==='RCD_2P'&&article.poles!==2||
      shared.templateId==='RCD_4P'&&article.poles!==4)
