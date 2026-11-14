@@ -133,6 +133,8 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
  font-size:10px;font-weight:700}
 .ep-din-block-article{font-weight:400;font-size:9px}
 .ep-din-block-width{font-size:10px;align-self:flex-end}
+.ep-din-block-body-size{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ font-size:9px;line-height:1.2;color:#53616c}
 .ep-din-block.ep-circuit-active{outline:3px solid #dc7c29;outline-offset:-2px}
 .ep-din-block.ep-din-unverified{border-top:4px dashed #b66a29}
 .ep-din-empty{min-width:0;border:1px dashed #ffffff55;background:#f5f8fb33}

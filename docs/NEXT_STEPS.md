@@ -67,3 +67,9 @@ This queue is deliberately based on the current PR #12, not a fresh implementati
 - Added input/source-length guards, malformed project handling, UI diagnostics and focused regression cases in `tests/fault-route-v2.test.js`.
 - This is a **bounded evidence review**, not normative certification. Verification of device time-current characteristics, actual disconnection-time applicability and full three-phase/TT/IT fault studies remain open.
 - GitHub workflow success on this HEAD has **not been observed**. Do not mark CI complete until confirmed.
+
+
+## After body-geometry integration — next engineering-critical tasks
+- Collect actual manufacturer CAD/STEP or legally usable product photography for exact articles and series, with explicit provenance and licence review; the current SVG remains an original schematic illustration.
+- Bind declared height/depth to a verified enclosure-clearance model only after collecting inner-case, cover and wiring-space geometry. Width in 18 mm modules is **not** a 3D fit verification.
+- Continue bounded short-circuit, cable and disconnection source verification, cross-view N/PE graph integrity and migration parity with the legacy source; keep status UNKNOWN where evidence is absent.

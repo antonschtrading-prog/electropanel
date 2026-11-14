@@ -88,3 +88,24 @@ test('preview shows illustrated apparatus faceplate without claiming manufacture
  assert.match(h,/ep-din-device-face/);assert.match(h,/ep-din-face-abb/);
  assert.match(h,/ep-din-device-toggle/);
 });
+
+test('DIN preview carries declared body dimensions into accessible labels and visible face',()=>{
+ const project={railCount:1,railCapacity:4,
+  lines:[{id:'L1',modules:1,catalogSku:'CUSTOM'}],
+  branchDevices:[{id:'BR1',circuitId:'L1',modules:1}],sharedDevices:[]};
+ const device={sku:'CUSTOM',maker:'ABB',series:'Example',kind:'MCB',modules:1,widthMm:18,
+  heightMm:85,depthMm:78.5,inA:16,source:'https://example.org/data'};
+ const before=JSON.stringify(project);
+ const h=epDraftBoardPreviewV1(project,()=>device,'L1');
+ assert.match(h,/Корпус Ш×В×Г: 18 × 85 × 78.5 мм/);
+ assert.match(h,/class="ep-din-block-body-size"/);
+ assert.match(h,/18 × 85 × 78.5 мм<\/span>/);
+ assert.equal(JSON.stringify(project),before);
+});
+test('DIN preview never fabricates missing cabinet body dimensions',()=>{
+ const project={railCount:1,railCapacity:4,lines:[{id:'L1',modules:1,catalogSku:'CUSTOM'}],
+  branchDevices:[{id:'BR1',circuitId:'L1',modules:1}]};
+ const h=epDraftBoardPreviewV1(project,()=>({modules:1,widthMm:18,kind:'MCB'}));
+ assert.match(h,/18 × — × — мм/);
+ assert.doesNotMatch(h,/18 × 85 × 78.5/);
+});

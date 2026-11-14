@@ -23,6 +23,10 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    let catalog=null;
    try{catalog=d.article&&typeof lookupSku==='function'?lookupSku(d.article):null;}catch(_){}
    const maker=catalog?.maker||null,series=catalog?.series||null;
+   const bodySize=catalog?[catalog.widthMm,catalog.heightMm,catalog.depthMm]
+    .map(v=>Number.isFinite(v)&&v>0?String(v):'—').join(' × ')+' мм':null;
+   // Measured body-size declarations are distinct from nominal DIN slots and a stylized facade.
+   const fullLabel=label+(bodySize?' · Корпус Ш×В×Г: '+safe(bodySize):'');
    const widthKnown=Number.isFinite(catalog?.widthMm)&&catalog.widthMm>0;
    const moduleMatch=Number.isInteger(catalog?.modules)&&catalog.modules===d.modules;
    const envelopeMatch=widthKnown&&catalog.widthMm<=d.modules*18+0.001;
@@ -40,13 +44,14 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
     '<span class="ep-din-brand">Нет каталожной записи</span>';
    const circuitId=branchMap.get(d.deviceId)||((project?.lines||[]).some(l=>l?.id===d.deviceId)?d.deviceId:null);
    blocks+='<button type="button" class="ep-din-block'+(active?' ep-circuit-active':'')+(d.article?'':' ep-din-unverified')+
-    '" style="grid-column:span '+d.modules+'" title="'+label+'" aria-label="'+label+'"'+
+    '" style="grid-column:span '+d.modules+'" title="'+fullLabel+'" aria-label="'+fullLabel+'"'+
     (circuitId?' data-din-focus="'+safe(circuitId)+'"':' disabled')+'>'+
     '<span class="ep-din-block-id">'+safe(d.deviceId)+'</span>'+
     facade+
     '<span class="ep-din-device-face ep-din-face-'+faceStyle+'" aria-hidden="true">'+
     (catalog&&typeof epCatalogFrontSvgV1==='function'?epCatalogFrontSvgV1(catalog,d.deviceId)+'<span class="ep-din-device-toggle" hidden></span>':'<span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span>')+'</span>'+ 
-    '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+ 
+    '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+
+    (bodySize?'<span class="ep-din-block-body-size" title="Заявленный корпус, Ш×В×Г">'+safe(bodySize)+'</span>':'')+ 
     '<span class="ep-din-block-evidence" title="'+safe(evidenceNote)+'">'+safe(evidenceNote)+'</span>'+
     '<span class="ep-din-block-width">'+d.modules+'M</span></button>';
    cursor=d.startModule+d.modules;

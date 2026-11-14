@@ -31,3 +31,7 @@ See [FAULT_ROUTE_AND_CATALOG_V2.md](FAULT_ROUTE_AND_CATALOG_V2.md). Added multi-
 
 ## 14 November 2026 — BOM and combined engineering gate integrity
 The native project reconciliation and draft BOM now participate in the combined engineering gate. Duplicate circuit/branch IDs, orphan bindings, module mismatch, unplaced equipment, duplicate material takeoff and invalid catalogue geometry are reported as blockers. The draft BOM also distinguishes declared sources from verified manufacturer evidence. New regression files cover BOM and gate integration. All outputs remain DRAFT; no safety approval is inferred. Changes committed to PR #12. The latest workflow result has **not** been independently verified; recorded test additions are not a claim of a successful run.
+
+
+## 14 November 2026 — manufacturer body dimensions across design outputs
+PR #12: editable manufacturer declaration retains optional height/depth and propagates width/height/depth into the DIN evidence bridge, catalogue audit, draft BOM, CSV, printable engineering report and visual DIN preview. Inputs are bounded and malformed edits are transactional. Unknown dimensions remain explicit. Manufacturer-certified CAD/3D fit and thermal/enclosure clearance are not established. Verify commit-specific CI before treating this block as regression-tested.
