@@ -31,7 +31,8 @@ function epEngineeringBundleV1(project,lookupSku){
   ()=>epCrossViewAuditV1(project,protection,board,bom,singleLine,projectLookup):null);
  const designEvidence=section('DESIGN_EVIDENCE',typeof assessDesignEvidence==='function'?
   p=>{const a=assessDesignEvidence(p);return {...a,status:a.status==='failed'?'BLOCKED':'UNKNOWN',issues:a.items.filter(x=>x.status!=='verified').map(x=>({code:'DESIGN_EVIDENCE_'+x.status.toUpperCase(),level:x.status==='failed'?'BLOCKED':'UNKNOWN',area:x.area}))};}:null);
- const loadCurrent={status:'UNKNOWN',rows:(Array.isArray(project?.lines)?project.lines:[]).map(x=>({lineId:x.id,calculation:x.loadCurrentCalculation||null,ibA:x.overloadInput?.ibA??null})),issues:[],engineeringApproved:false};
+ const loadCurrent=section('LOAD_CURRENT',typeof epLoadCurrentEvidenceV1==='function'?epLoadCurrentEvidenceV1:
+  p=>({status:'UNKNOWN',rows:(Array.isArray(p?.lines)?p.lines:[]).map(x=>({lineId:x.id,calculation:x.loadCurrentCalculation||null,ibA:x.overloadInput?.ibA??null})),issues:[],engineeringApproved:false}));
  const cableReference=section('CABLE_REFERENCE',typeof epCableReferenceForCircuitV1==='function'?
   (p,lookup)=>({status:'UNKNOWN',rows:(Array.isArray(p?.lines)?p.lines:[]).map(line=>({
    lineId:line.id,report:epCableReferenceForCircuitV1(p,line,lookup)
