@@ -1,0 +1,12 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {epEngineeringGateV1}=require('../engineering-gate-v1.js');
+const {epReconcileProjectV2}=require('../design-reconciliation-v1.js');
+const {epDraftBomV1}=require('../draft-bom-v1.js');
+global.epReconcileProjectV2=epReconcileProjectV2;
+global.epDraftBomV1=epDraftBomV1;
+const project=()=>({lines:[{id:'L1',catalogSku:'A',modules:1}],branchDevices:[{id:'Q1',circuitId:'L1',modules:1}]});
+const lookup=()=>({sku:'A',maker:'M',modules:1,widthMm:18,source:'https://example.org/doc'});
+test('engineering gate includes reconciliation and BOM in combined evidence',()=>{const r=epEngineeringGateV1(project(),lookup);assert.ok(r.components.native_reconciliation);assert.ok(r.components.draft_bom);assert.equal(r.engineeringApproved,false);});
+test('orphan branch prevents clean combined gate even when other audits unavailable',()=>{const p=project();p.branchDevices[0].circuitId='missing';const r=epEngineeringGateV1(p,lookup);assert.equal(r.status,'BLOCKED');assert.ok(r.issues.some(x=>x.origin==='native_reconciliation'&&x.code==='BRANCH_DEVICE_ORPHAN'));});
+test('catalogue width overrun blocks combined gate through BOM',()=>{const r=epEngineeringGateV1(project(),()=>({...lookup(),widthMm:40}));assert.equal(r.status,'BLOCKED');assert.ok(r.issues.some(x=>x.origin==='draft_bom'&&x.code==='ARTICLE_GEOMETRY_UNCONFIRMED'));});

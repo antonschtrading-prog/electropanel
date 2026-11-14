@@ -13,6 +13,17 @@ function epEngineeringPrintV1(bundle){
   allIssues=sections.issueRegister?.entries||[],wiring=sections.wiringTrace?.rows||[],
   neutral=sections.neutralSegregation?.rows||[],neutralPairs=sections.neutralWireIsolation?.pairs||[],
   singleLine=sections.singleLine?.nodes||[];
+ const workQueue=sections.designWorkQueue?.items||[];
+ const workQueueTable=rows(['Приоритет','Цепь','Задача','Раздел'],workQueue.map(x=>[x.priority,x.lineId,x.action,x.section]));
+ const designReview=sections.designReview?.rows||[];
+ const designReviewTable=rows(['Цепь','Ib A','In A','Iz A','Icn kA','Ik kA','Сечение мм²','ΔU %','Статус'],designReview.map(x=>[x.lineId,x.ibA,x.inA,x.izA,x.icnKa,x.ikKa,x.sectionMm2,x.voltageDrop?.dropPercent,x.status]));
+ const cableReference=sections.cableReference?.rows||[];
+ const cableReferenceTable=rows(['Цепь','Ib, A','In, A','Способ','Справочное сечение, мм²','Статус'],cableReference.map(x=>[x.lineId,x.report?.ibA,x.report?.inA,x.report?.installationMethod,x.report?.smallestReferenceCandidate?.sectionMm2,x.report?.status]));
+ const loadCurrent=sections.loadCurrent?.rows||[];
+ const loadCurrentTable=rows(['Цепь','Ib, A','Режим','Формула','Исходные данные'],loadCurrent.map(x=>[x.lineId,x.ibA,x.calculation?.mode||'Не рассчитан',x.calculation?.formula||'',x.calculation?.inputs?JSON.stringify(x.calculation.inputs):'']));
+ const evidence=sections.designEvidence?.items||[];
+ const evidenceTable=rows(['Раздел','Статус','Обоснование'],
+  evidence.map(x=>[x.area,x.status,x.reason]));
  const status=bundle?.overallStatus||'BLOCKED';
  const circuitTable=rows(['Цепь','Название','Фаза','Артикул','DIN','Статус проверки'],
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
@@ -51,8 +62,14 @@ function epEngineeringPrintV1(bundle){
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
+  '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
+  '<h2>Очередь инженерных задач</h2>'+workQueueTable+
+  '<h2>Матрица проектных расчётов</h2>'+designReviewTable+
+  '<h2>Справочные сечения проводников</h2>'+cableReferenceTable+
+  '<h2>Расчёт тока нагрузки</h2>'+loadCurrentTable+
+  '<h2>Доказательная база проектных решений</h2>'+evidenceTable+
   '<h2>Однолинейная структура проекта (декларация)</h2>'+oneLineSvg+singleLineTable+
   '<h2>Разделение нейтралей УЗО и PE</h2>'+neutralTable+
   '<h2>Проверка соединений между N-шинами</h2>'+neutralPairTable+

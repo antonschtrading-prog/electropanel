@@ -7,9 +7,9 @@ function epEngineeringGateV1(project, lookupSku){
   try{
    const r=fn();
    components[name]={status:r?.status??'UNKNOWN',engineeringApproved:false};
-   for(const issue of r?.issues||[]){
-    const code=typeof issue==='string'?issue:issue.code||'UNSPECIFIED';
-    const level=typeof issue==='string'?'UNKNOWN':issue.level||'UNKNOWN';
+   for(const issue of (Array.isArray(r?.issues)?r.issues:[])){
+    const code=typeof issue==='string'?issue:issue?.code||'UNSPECIFIED';
+    const level=typeof issue==='string'?'UNKNOWN':issue?.level||'UNKNOWN';
     add(name,code,level);
    }
    if(r?.status==='BLOCKED'&&!issues.some(i=>i.origin===name&&i.level==='BLOCKED'))
@@ -39,9 +39,27 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epDinPlacementAuditV1==='function')
   inspect('din_placement',()=>epDinPlacementAuditV1(project,lookupSku));
  else add('din_placement','DIN_PLACEMENT_AUDIT_UNAVAILABLE','UNKNOWN');
+ if(typeof epFaultRouteProjectV2==='function')
+  inspect('fault_routes',()=>epFaultRouteProjectV2(project,lookupSku));
+ if(typeof epCircuitDesignReviewV1==='function')
+  inspect('design_review',()=>epCircuitDesignReviewV1(project,lookupSku));
+ else add('design_review','DESIGN_REVIEW_UNAVAILABLE','UNKNOWN');
+ if(typeof epCableReferenceForCircuitV1==='function')
+  inspect('cable_reference',()=>({status:'UNKNOWN',
+   issues:(Array.isArray(project?.lines)?project.lines:[]).flatMap(line=>{
+    const report=epCableReferenceForCircuitV1(project,line,lookupSku);
+    return (report.issues||[]).map(code=>({code:'CABLE_'+code,level:report.status==='BLOCKED'?'BLOCKED':'UNKNOWN'}));
+   })}));
+ else add('cable_reference','CABLE_REFERENCE_UNAVAILABLE','UNKNOWN');
  if(typeof epProjectCalculationCoverageV1==='function')
   inspect('calculation_coverage',()=>epProjectCalculationCoverageV1(project,lookupSku));
  else add('calculation_coverage','CALCULATION_COVERAGE_UNAVAILABLE','UNKNOWN');
+ if(typeof epReconcileProjectV2==='function')
+  inspect('native_reconciliation',()=>epReconcileProjectV2(project,lookupSku));
+ else add('native_reconciliation','RECONCILIATION_UNAVAILABLE','UNKNOWN');
+ if(typeof epDraftBomV1==='function')
+  inspect('draft_bom',()=>epDraftBomV1(project,lookupSku));
+ else add('draft_bom','BOM_UNAVAILABLE','UNKNOWN');
  if(typeof epDraftBoardPlanV1==='function')
   inspect('draft_board_plan',()=>epDraftBoardPlanV1(project,lookupSku));
  else add('draft_board_plan','DRAFT_BOARD_PLAN_UNAVAILABLE','UNKNOWN');
@@ -63,6 +81,15 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epNeutralSegregationV1==='function')
   inspect('neutral_segregation',()=>epNeutralSegregationV1(project));
  else add('neutral_segregation','NEUTRAL_SEGREGATION_UNAVAILABLE','UNKNOWN');
+ if(typeof assessDesignEvidence==='function')
+  inspect('design_evidence',()=>{
+   const report=assessDesignEvidence(project);
+   return {status:report.status==='failed'?'BLOCKED':'UNKNOWN',
+    issues:report.items.filter(x=>x.status!=='verified').map(x=>({
+     code:'DESIGN_EVIDENCE_'+x.status.toUpperCase()+'_'+x.area.toUpperCase(),
+     level:x.status==='failed'?'BLOCKED':'UNKNOWN'}))};
+  });
+ else add('design_evidence','DESIGN_EVIDENCE_UNAVAILABLE','UNKNOWN');
  const status=issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
  return {schema_version:'1.0',status,components,issues,
   engineeringApproved:false,ready_for_installation:false,

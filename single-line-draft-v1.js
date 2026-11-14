@@ -14,8 +14,23 @@ function epSingleLineDraftV1(project,lookupSku){
   if(!group||typeof group.id!=='string'||!group.id||seen.has('RCD:'+group.id)||
    !Array.isArray(group.circuitIds)){add('SINGLE_LINE_RCD_INVALID','BLOCKED');continue;}
   const id='RCD:'+group.id;seen.add(id);
+  let groupArticle=null;
+  if(group.catalogSku&&typeof lookupSku==='function')
+   try{groupArticle=lookupSku(group.catalogSku);}catch(_){add('SINGLE_LINE_SHARED_LOOKUP_FAILED','BLOCKED',group.id);}
+  if(group.catalogSku&&!groupArticle)add('SINGLE_LINE_SHARED_ARTICLE_UNKNOWN','BLOCKED',group.id);
+  if(!group.catalogSku)add('SINGLE_LINE_SHARED_ARTICLE_MISSING','UNKNOWN',group.id);
+  if(groupArticle){
+   if(groupArticle.modules!==group.modules)add('SINGLE_LINE_SHARED_WIDTH_MISMATCH','BLOCKED',group.id);
+   if(!['RCD','RCBO'].includes(groupArticle.kind))add('SINGLE_LINE_SHARED_KIND_MISMATCH','BLOCKED',group.id);
+   if(group.templateId==='RCD_2P'&&groupArticle.poles!==2||
+      group.templateId==='RCD_4P'&&groupArticle.poles!==4)
+    add('SINGLE_LINE_SHARED_POLE_MISMATCH','BLOCKED',group.id);
+  }
   nodes.push({id,type:'rcd',name:group.label||group.id,phase:null,sku:group.catalogSku||null,
-   article:null,templateId:group.templateId||null});
+   article:groupArticle?{maker:groupArticle.maker||null,series:groupArticle.series||null,
+    label:groupArticle.label||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
+    poles:groupArticle.poles??null,modules:groupArticle.modules??null}:null,
+   templateId:group.templateId||null});
   edges.push({from:'SOURCE:MAIN',to:id,kind:'declared_group_association'});
   for(const lineId of group.circuitIds){
    if(groupFor.has(lineId))add('SINGLE_LINE_MULTIPLE_RCD','BLOCKED',lineId);

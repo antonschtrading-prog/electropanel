@@ -195,3 +195,94 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-neutral-wire-isolation summary{cursor:pointer;font-weight:700}
 .ep-neutral-wire-isolation table{width:100%;border-collapse:collapse}
 .ep-neutral-wire-isolation th,.ep-neutral-wire-isolation td{padding:7px;border-bottom:1px solid var(--border,#d8d8d8);text-align:left}
+
+/* Design-stage traceability: review reminders are not installation approvals. */
+.ep-design-evidence{margin:12px 0;padding:12px 14px;border:1px solid var(--border,#d1d9e2);border-radius:10px;background:var(--surface,#f9fafb)}
+.ep-design-evidence summary{font-weight:700;cursor:pointer}
+.ep-design-evidence p{font-size:13px;line-height:1.5;max-width:75ch}
+.ep-design-evidence table{width:100%;border-collapse:collapse;font-size:12px}
+.ep-design-evidence th,.ep-design-evidence td{padding:8px;border-bottom:1px solid var(--border,#d1d9e2);text-align:left}
+#designChangeImpactPanel{padding:10px 14px;border-left:3px solid #c59a39;margin:10px 0;font-size:13px;background:rgba(197,154,57,.07)}
+
+.ep-evidence-edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;align-items:end;margin-top:8px}
+.ep-evidence-edit label{display:flex;flex-direction:column;gap:3px;font-size:11px}
+.ep-evidence-edit input,.ep-evidence-edit select{width:100%;min-width:0;font-size:12px;padding:6px;border:1px solid #a6b4c3;border-radius:5px}
+.ep-evidence-edit button{min-height:33px;white-space:normal}
+
+.ep-load-current{margin:12px 0;padding:14px;border:1px solid var(--border,#c9d3dd);border-radius:10px}
+.ep-load-current summary{font-weight:700;cursor:pointer}
+.ep-load-current-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;align-items:end}
+.ep-load-current-fields label{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.ep-load-current-fields input,.ep-load-current-fields select{padding:8px;border-radius:6px;border:1px solid #a6b4c3;width:100%;min-width:0}
+.ep-load-current-fields button{min-height:38px}
+
+.ep-cable-reference{padding:14px;margin:12px 0;border:1px solid var(--border,#c9d3dd);border-radius:10px}
+.ep-cable-reference summary{font-weight:700;cursor:pointer}
+.ep-cable-reference-controls{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:12px 0}
+.ep-cable-reference-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px}
+.ep-cable-reference-controls .ep-cable-reference-confirm{flex-direction:row;align-items:center;max-width:380px}
+.ep-cable-reference select{padding:8px;border:1px solid #a6b4c3;border-radius:6px}
+.ep-cable-reference table{width:100%;border-collapse:collapse;font-size:12px}
+.ep-cable-reference th,.ep-cable-reference td{padding:7px;border-bottom:1px solid #ccd4dc;text-align:left}
+
+/* Original illustrated faceplates; visual distinctions are not manufacturer CAD assets. */
+.ep-din-device-face{display:flex;position:relative;justify-content:center;align-items:center;min-height:45px;margin:5px 3px 7px;border-radius:3px;background:linear-gradient(110deg,#e5e7e9,#fff 32%,#d9dde2 72%,#f3f4f6);box-shadow:inset 0 1px 2px #fff,inset 1px 0 3px #aeb6bf,0 1px 2px #9da7b3}
+.ep-din-device-face:before,.ep-din-device-face:after{content:"";position:absolute;left:9%;right:9%;height:2px;background:#c7cbd1}
+.ep-din-device-face:before{top:6px}.ep-din-device-face:after{bottom:6px}
+.ep-din-device-toggle{width:36%;min-width:9px;max-width:24px;height:23px;border-radius:3px;background:linear-gradient(90deg,#a6adb4,#eceef0 48%,#8e98a3);box-shadow:1px 3px 3px #6c768180, inset 0 2px 1px #fff;transform:perspective(50px) rotateX(-12deg)}
+.ep-din-device-indicator{position:absolute;top:9px;right:9px;width:5px;height:5px;border-radius:50%;background:#929da8;box-shadow:0 0 0 1px #c9ced4}
+.ep-din-face-schneider{border-top:4px solid #28a85e}.ep-din-face-schneider .ep-din-device-toggle{background:linear-gradient(90deg,#c1c7c9,#f6f7f7,#8d999d)}
+.ep-din-face-abb{border-top:4px solid #d8272e}.ep-din-face-abb .ep-din-device-toggle{background:linear-gradient(90deg,#737c85,#d3d7d9,#5e6770)}
+.ep-din-face-iek{border-top:4px solid #f2b521}.ep-din-face-iek .ep-din-device-toggle{background:linear-gradient(90deg,#bdc1c6,#fff,#8d9298)}
+.ep-din-face-generic{border-top:4px solid #9aa6b3}
+.ep-din-block.ep-circuit-active .ep-din-device-face{outline:2px solid #2b82c9;outline-offset:2px}
+
+.ep-design-review{margin:14px 0;padding:14px;border:1px solid var(--border,#c9d3dd);border-radius:12px}
+.ep-design-review-head{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.ep-design-review-scroll{overflow-x:auto;max-width:100%;margin-top:12px}
+.ep-design-review table{border-collapse:collapse;font-size:12px;min-width:1120px;width:100%}
+.ep-design-review th,.ep-design-review td{border-bottom:1px solid #d5dce4;padding:7px;text-align:left;white-space:nowrap}
+.ep-design-review thead{background:rgba(125,140,155,.12)}
+.ep-drop-editor{margin-top:14px;padding:10px;border:1px solid #c5ced7;border-radius:8px}
+.ep-drop-editor summary{cursor:pointer;font-weight:700}
+.ep-drop-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
+.ep-drop-fields label{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.ep-drop-fields input{width:100%;min-width:0;padding:8px;border:1px solid #a6b4c3;border-radius:6px}
+.ep-drop-fields .ep-drop-check{flex-direction:row;align-items:center}
+.ep-drop-fields .ep-drop-check input{width:auto}
+
+.ep-design-queue{margin:12px 0;padding:12px;border:1px solid var(--border,#c9d3dd);border-radius:10px}
+.ep-design-queue summary{cursor:pointer;font-weight:700}
+.ep-design-queue table{border-collapse:collapse;width:100%;font-size:12px}
+.ep-design-queue th,.ep-design-queue td{padding:8px;border-bottom:1px solid #d1d9e2;text-align:left}
+
+/* Original vector manufacturer-family fronts, distinct from official product photographs. */
+.ep-din-device-face:has(.ep-manufacturer-front){display:block;overflow:hidden;background:transparent;padding:0;border:0;box-shadow:none;min-height:0}
+.ep-manufacturer-front{display:block;width:100%;height:auto;max-height:180px;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(12,25,34,.16))}
+.ep-din-block:has(.ep-manufacturer-front){min-height:230px}
+.ep-din-block:has(.ep-manufacturer-front) .ep-din-device-face{flex:1;display:flex;align-items:center;justify-content:center}
+@media(max-width:800px){.ep-din-block:has(.ep-manufacturer-front){min-height:190px}.ep-manufacturer-front{max-height:125px}}
+
+/* Position controls remain usable on narrow screens. */
+.ep-position-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;padding:12px;border:1px solid var(--border,#dce3ed);border-radius:10px}
+.ep-position-form strong,.ep-position-form button{grid-column:1/-1}
+.ep-position-form label{display:grid;gap:5px;min-width:0}
+.ep-position-form input{width:100%;min-width:0;padding:8px}
+.ep-project-chain table td{vertical-align:middle}
+
+.ep-engineering-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+.ep-engineering-fields label{display:grid;gap:6px;font-size:12px;color:#445661;min-width:0}
+.ep-engineering-fields input,.ep-engineering-fields select,#catalogSearchInput{width:100%;min-width:0;padding:10px;border:1px solid #ccd7de;border-radius:7px;background:#fff;color:#172a35}
+.ep-fault-route{padding:18px;border:1px solid #dce4e8;border-radius:12px;margin:16px 0;background:#fafcfd}
+.ep-fault-route summary{font-weight:700;cursor:pointer}
+.ep-fault-route p,.ep-fault-route li{font-size:12px;line-height:1.65;color:#4d606c}
+.ep-fault-route fieldset{border:1px solid #d5e0e6;border-radius:10px;margin:14px 0;padding:14px}
+.ep-fault-route legend{font-size:12px;font-weight:700;padding:0 8px}
+.ep-route-result{display:flex;flex-wrap:wrap;gap:20px;padding:16px;margin-top:16px;background:#eaf1f5;border-radius:9px;font-size:13px}
+.ep-catalog-workbench table,.ep-project-chain table{width:100%;border-collapse:collapse;font-size:12px;margin:16px 0}
+.ep-catalog-workbench th,.ep-catalog-workbench td,.ep-project-chain th,.ep-project-chain td{padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7eb;overflow-wrap:anywhere}
+.ep-catalog-workbench th,.ep-project-chain th{background:#eef3f6;color:#526773;font-weight:700}
+.ep-catalog-workbench .table-scroll,.ep-project-chain .table-scroll{overflow:auto}
+.ep-catalog-workbench details{margin-top:18px;padding:12px;border-top:1px solid #e0e7eb}
+.ep-catalog-workbench p{font-size:12px;line-height:1.65;color:#526773}
+.ep-catalog-workbench [hidden]{display:none!important}

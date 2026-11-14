@@ -269,3 +269,124 @@ test('downstream N bus isolation is visible in board and engineering bundle',()=
  const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
  assert.match(bundle,/neutralWireIsolation/);assert.match(gate,/neutral_wire_isolation/);
 });
+
+test('design evidence and change impact are wired into current engineering editor',()=>{
+ assert.ok(scripts.indexOf('design-change-impact-v1.js')>=0);
+ assert.ok(scripts.indexOf('design-evidence-gates-v1.js')>scripts.indexOf('design-change-impact-v1.js'));
+ assert.ok(scripts.indexOf('design-evidence-ui-v1.js')>scripts.indexOf('design-evidence-gates-v1.js'));
+ assert.ok(scripts.indexOf('design-evidence-gates-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
+ for(const id of ['designEvidencePanel','designChangeImpactPanel'])assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(app,/epDesignChangeImpactV1\(lastDesignSnapshot,state\)/);
+ assert.match(app,/epInvalidateDesignEvidenceV1\(state,lastDesignImpact\)/);
+ assert.match(app,/epDesignEvidenceHtmlV1\(assessDesignEvidence\(state\)\)/);
+ const gate=fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8');
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ const print=fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8');
+ assert.match(gate,/design_evidence/);assert.match(bundle,/designEvidence/);
+ assert.match(print,/Доказательная база проектных решений/);
+});
+
+test('design evidence editor saves source and method with undo and autosave',()=>{
+ assert.match(app,/\$\('designEvidencePanel'\)\.addEventListener\('click'/);
+ assert.match(app,/data-save-evidence/);
+ assert.match(app,/status==='verified'&&\(!source\|\|!method\)/);
+ assert.match(app,/state\.evidence\[area\]=\{status,source,method,stale:false\}/);
+ assert.match(app,/checkpoint\(\);[\s\S]*?state\.evidence\[area\]/);
+});
+
+test('load-current calculation wizard integrates with protection and dossier',()=>{
+ assert.ok(scripts.indexOf('load-current-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('load-current-ui-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="loadCurrentPanel"/);
+ assert.match(app,/epLoadCurrentHtmlV1\(state,selectedLine\)/);
+ assert.match(app,/epApplyLoadCurrentV1\(state,lineId/);
+ assert.match(app,/\$\('loadCurrentPanel'\)\.addEventListener\('submit'/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/loadCurrent/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Расчёт тока нагрузки/);
+});
+
+test('cable reference editor and issue register are connected',()=>{
+ assert.ok(scripts.indexOf('cable-reference-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('cable-reference-ui-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="cableReferencePanel"/);
+ assert.match(app,/epCableReferenceHtmlV1\(state,selectedLine,catalogDevice\)/);
+ assert.match(app,/epApplyCableReferenceInputV1\(state,lineId/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-gate-v1.js'),'utf8'),/cable_reference/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/cableReference/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Справочные сечения проводников/);
+});
+
+test('integrated design review, voltage drop and export are wired to editor and reports',()=>{
+ assert.ok(scripts.indexOf('voltage-drop-design-v1.js')<scripts.indexOf('circuit-design-review-v1.js'));
+ assert.ok(scripts.indexOf('circuit-design-review-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('circuit-design-review-ui-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="circuitDesignReviewPanel"/);
+ assert.match(app,/epCircuitDesignReviewHtmlV1\(state,catalogDevice,selectedLine\)/);
+ assert.match(app,/epApplyVoltageDropInputV1\(state,/);
+ assert.match(app,/epCircuitDesignReviewCsvV1\(report\)/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/designReview/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Матрица проектных расчётов/);
+});
+
+test('prioritized work queue is integrated with circuit selection and printable dossier',()=>{
+ assert.ok(scripts.indexOf('design-work-queue-v1.js')<scripts.indexOf('app.js'));
+ assert.match(html,/id="designWorkQueuePanel"/);
+ assert.match(app,/epDesignWorkQueueV1\(state,catalogDevice\)/);
+ assert.match(app,/\$\('designWorkQueuePanel'\)\.addEventListener\('click'/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8'),/designWorkQueue/);
+ assert.match(fs.readFileSync(path.join(root,'engineering-print-v1.js'),'utf8'),/Очередь инженерных задач/);
+});
+
+test('manual cable section and current-provenance invalidation are connected',()=>{
+ assert.match(app,/epApplyCableSectionV1\(state,lineId,section\)/);
+ assert.match(app,/IB_DIFFERS_FROM_CALCULATED_CURRENT/);
+ assert.match(fs.readFileSync(path.join(root,'cable-reference-ui-v1.js'),'utf8'),/data-cable-section-form/);
+});
+
+test('project catalogue, engineering evidence and vector facade are loaded in application',()=>{
+ for(const name of ['project-catalog-workbench-v1.js','catalog-front-svg-v1.js','integrated-evidence-review-v1.js','integrated-evidence-ui-v1.js'])
+  assert.ok(scripts.includes(name),name);
+ assert.ok(scripts.indexOf('project-catalog-workbench-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('catalog-front-svg-v1.js')<scripts.indexOf('draft-board-preview-v1.js'));
+ for(const id of ['projectCatalogWorkbench','integratedEvidencePanel'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(app,/renderProjectCatalogWorkbenchV1\(\)/);
+ assert.match(app,/epIntegratedEvidenceReview\(state\)/);
+});
+test('catalogue imports use shared engineering validation and remain undoable',()=>{
+ assert.match(app,/epImportProjectArticlesV2\(state,records/);
+ assert.match(app,/if\(!result\.project\)throw Error\('Импорт отклонён:/);
+ assert.match(app,/checkpoint\(\);state=result\.project;changed\(\)/);
+});
+
+test('catalogue audit uses the supplied project and preserves review dependencies',()=>{
+ assert.match(app,/projectCatalogEntries\(project\)\.find/);
+ const catalog=fs.readFileSync(path.join(root,'project-catalog-workbench-v1.js'),'utf8');
+ assert.match(catalog,/const pending=new Set\(/);
+ assert.match(catalog,/for\(const field of reviewFields\)if\(line\[field\]\)pending\.add\(field\)/);
+ assert.match(catalog,/line\.calculationReview=\{required:true,reason:'PROJECT_ARTICLE_UPDATED',pending:/);
+});
+
+test('engineering bundle uses project-local catalogue for every projection',()=>{
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ assert.match(bundle,/epProjectCatalogV1\(project,/);
+ assert.match(bundle,/const projectLookup=catalog\?catalog\.lookup:lookupSku/);
+ assert.match(bundle,/fn\(project,projectLookup\)/);
+ assert.match(bundle,/catalogueIntegrity/);
+ assert.match(bundle,/recordIndex:x\.index/);
+});
+
+test('issue register includes catalogue and integrated evidence defects',()=>{
+ const register=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
+ assert.match(register,/sectionNames\.unshift\('catalogueIntegrity'\)/);
+ assert.match(register,/sectionNames\.push\('integratedEvidence'\)/);
+ assert.match(register,/issue\.status==='BLOCKED'/);
+});
+
+test('engineering bundle uses one catalogue snapshot and fails closed when audit missing',()=>{
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ const register=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
+ assert.match(bundle,/catalog\?Object\.entries\(catalog\.articles\)/);
+ assert.match(bundle,/PROJECT_CATALOGUE_AUDIT_UNAVAILABLE/);
+ assert.match(register,/recordIndex:Number\.isInteger\(issue\.recordIndex\)/);
+});

@@ -2,7 +2,7 @@ name: Electropanel JS checks
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feature/design-evidence-integrated-20261114]
 permissions:
   contents: read
 jobs:
@@ -16,6 +16,7 @@ jobs:
           node-version: '22'
       - name: Syntax checks
         run: |
+          for file in *.js scripts/*.js scripts/*.cjs; do node --check "$file"; done
           node --check app.js
           node --check endpoint-bridge-v1.js
           node --check terminal-path-v2.js
@@ -24,6 +25,8 @@ jobs:
           node --check din-placement-v1.js
           node --check project-calculation-coverage-v1.js
           node --check draft-board-plan-v1.js
+          node --check project-catalog-workbench-v1.js
+          node --check catalog-front-svg-v1.js
           node --check draft-board-preview-v1.js
           node --check draft-layout-alternatives-v1.js
           node --check circuit-dossier-v1.js
@@ -40,6 +43,16 @@ jobs:
           node --check circuit-wiring-trace-ui-v1.js
           node --check cross-view-audit-v1.js
           node --check cross-view-audit-ui-v1.js
+          node --check design-change-impact-v1.js
+          node --check design-evidence-gates-v1.js
+          node --check design-evidence-ui-v1.js
+          node --check coordination-evidence-v1.js
+          node --check fault-loop-screen-v1.js
+          node --check catalog-evidence-v1.js
+          node --check din-geometry-evidence-v1.js
+          node --check design-quality-gates-v1.js
+          node --check integrated-evidence-review-v1.js
+          node --check integrated-evidence-ui-v1.js
           node --check engineering-bundle-v1.js
           node --check engineering-print-v1.js
           node --check engineering-issue-guidance-v1.js
@@ -47,6 +60,14 @@ jobs:
           node --check protective-device-shortlist-v1.js
           node --check protection-workbench-v1.js
           node --check protection-inputs-v1.js
+          node --check load-current-v1.js
+          node --check load-current-ui-v1.js
+          node --check cable-reference-v1.js
+          node --check cable-reference-ui-v1.js
+          node --check voltage-drop-design-v1.js
+          node --check circuit-design-review-v1.js
+          node --check circuit-design-review-ui-v1.js
+          node --check design-work-queue-v1.js
           node --check project-integrity-v1.js
           node --check catalog-evidence-audit-v1.js
           node --check engineering-gate-v1.js
