@@ -366,3 +366,12 @@ test('catalogue audit uses the supplied project and preserves review dependencie
  assert.match(catalog,/for\(const field of reviewFields\)if\(line\[field\]\)pending\.add\(field\)/);
  assert.match(catalog,/line\.calculationReview=\{required:true,reason:'PROJECT_ARTICLE_UPDATED',pending:/);
 });
+
+test('engineering bundle uses project-local catalogue for every projection',()=>{
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ assert.match(bundle,/epProjectCatalogV1\(project,/);
+ assert.match(bundle,/const projectLookup=catalog\?catalog\.lookup:lookupSku/);
+ assert.match(bundle,/fn\(project,projectLookup\)/);
+ assert.match(bundle,/catalogueIntegrity/);
+ assert.match(bundle,/recordIndex:x\.index/);
+});
