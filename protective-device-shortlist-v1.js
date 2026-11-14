@@ -22,24 +22,45 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   candidates:[],engineeringApproved:false,ready_for_installation:false};
  for(const item of records){
   const d=item?.device??item,sku=item?.id??d?.sku;
-  if(!d||d.kind!=='MCB'||!sku)continue;
+  if(!d||!['MCB','RCBO'].includes(d.kind)||!sku)continue;
   const reasons=[];
   if(!Number.isFinite(d.inA)||d.inA<=0||!Number.isFinite(d.icnKa)||d.icnKa<=0||
-    !Number.isInteger(d.poles)||d.poles<1)reasons.push('CATALOG_SPEC_INVALID');
+    !Number.isInteger(d.poles)||d.poles<1||d.poles>8||
+    !Number.isInteger(d.modules)||d.modules<1||d.modules>12)reasons.push('CATALOG_SPEC_INVALID');
+  if(d.widthMm!==undefined&&d.widthMm!==null&&
+     (!Number.isFinite(d.widthMm)||d.widthMm<=0||d.widthMm>d.modules*18))
+   reasons.push('CATALOG_WIDTH_INVALID');
+  if(!d.label&&d.sku===undefined)reasons.push('CATALOG_IDENTITY_MISSING');
   if(!['L1','L2','L3','3Ф'].includes(line.phase))reasons.push('PHASE_UNDECLARED');
   else if(line.phase==='3Ф'?![3,4].includes(d.poles):d.poles!==1)reasons.push('POLES_INCOMPATIBLE');
   if(ib!==null&&d.inA<ib)reasons.push('IN_LT_IB');
   if(iz!==null&&d.inA>iz)reasons.push('IN_GT_IZ');
   if(ik!==null&&d.icnKa<ik)reasons.push('ICN_LT_DECLARED_IK');
-  candidates.push({sku,maker:d.maker??null,series:d.series??null,
-   inA:d.inA,icnKa:d.icnKa,poles:d.poles,
+  const caution=[];
+  if(!d.source)caution.push('DATASHEET_SOURCE_MISSING');
+  if(d.verificationStatus!=='VERIFIED')caution.push('CATALOG_DATA_UNVERIFIED');
+  if(line.calculationReview?.required)caution.push('CALCULATION_REVIEW_REQUIRED');
+  if(line.loadCurrentCalculation?.stale)caution.push('LOAD_CURRENT_STALE');
+  if(line.loadCurrentCalculation&&
+     epProtectionPositiveV1(line.loadCurrentCalculation.roundedIbA)!==null&&
+     ib!==epProtectionPositiveV1(line.loadCurrentCalculation.roundedIbA))
+   caution.push('IB_DIFFERS_FROM_CALCULATION');
+  candidates.push({sku,manufacturerSku:d.sku??null,maker:d.maker??null,series:d.series??null,
+   label:d.label??null,kind:d.kind,inA:d.inA,icnKa:d.icnKa,poles:d.poles,modules:d.modules,
+   source:d.source??null,verificationStatus:d.verificationStatus??'UNKNOWN',
    status:reasons.length?'REJECTED':(ib===null||iz===null||ik===null?'INCOMPLETE':'POTENTIAL'),
-   reasons,engineeringApproved:false});
+   reasons,caution,engineeringApproved:false});
  }
  candidates.sort((a,b)=>({POTENTIAL:0,INCOMPLETE:1,REJECTED:2}[a.status]-{POTENTIAL:0,INCOMPLETE:1,REJECTED:2}[b.status])||
   (Number.isFinite(a.inA)?a.inA:Infinity)-(Number.isFinite(b.inA)?b.inA:Infinity)||
   String(a.sku).localeCompare(String(b.sku)));
  if(!candidates.some(c=>c.status==='POTENTIAL'))add('NO_POTENTIAL_ARTICLES');
+ if(line.calculationReview?.required)add('CALCULATION_REVIEW_REQUIRED');
+ if(line.loadCurrentCalculation?.stale)add('LOAD_CURRENT_STALE');
+ if(line.loadCurrentCalculation&&
+    epProtectionPositiveV1(line.loadCurrentCalculation.roundedIbA)!==null&&
+    ib!==epProtectionPositiveV1(line.loadCurrentCalculation.roundedIbA))
+  add('IB_DIFFERS_FROM_CALCULATION');
  add('I2_TRIP_CURVE_SELECTIVITY_AND_DISCONNECTION_NOT_VERIFIED');
  add('INSTALLATION_METHOD_AND_CABLE_EVIDENCE_NOT_VERIFIED');
  return {status:'UNKNOWN',issues,candidates,engineeringApproved:false,
@@ -58,13 +79,14 @@ function epProtectiveDeviceProjectAuditV1(project,lookup,catalogInput){
   const r=epProtectiveDeviceShortlistV1(line,catalog);
   results.push({lineId:line?.id??null,potential:r.candidates.filter(c=>c.status==='POTENTIAL').map(c=>c.sku)});
   for(const issue of r.issues)issues.push({...issue,lineId:line?.id??null});
-  if(line?.catalogSku&&typeof lookup==='function'){
+  if(line?.catalogSku){
    let selected=null;
-   try{selected=lookup(line.catalogSku);}catch(_){}
+   try{selected=typeof lookup==='function'?lookup(line.catalogSku):null;}catch(_){issues.push({code:'SELECTED_ARTICLE_LOOKUP_FAILED',level:'BLOCKED',lineId:line.id});}
    if(!selected)issues.push({code:'SELECTED_ARTICLE_UNKNOWN',level:'BLOCKED',lineId:line.id});
    else{
     const match=r.candidates.find(c=>c.sku===line.catalogSku);
     if(!match)issues.push({code:'SELECTED_ARTICLE_NOT_IN_CATALOG',level:'BLOCKED',lineId:line.id});
+    else if(match.kind!==selected.kind)issues.push({code:'SELECTED_ARTICLE_KIND_STALE',level:'BLOCKED',lineId:line.id});
     else if(match.status==='REJECTED')issues.push({code:'SELECTED_ARTICLE_REJECTED',level:'BLOCKED',lineId:line.id});
     else if(match.status==='INCOMPLETE')issues.push({code:'SELECTED_ARTICLE_EVIDENCE_INCOMPLETE',level:'UNKNOWN',lineId:line.id});
    }
