@@ -122,7 +122,7 @@ function catalogAudit(project){
   if(l.calculationReview?.required)
    issues.push({circuitId:l.id,code:'CALCULATION_REVIEW_REQUIRED',message:'Исходные данные или аппарат изменены; ранее введённые токи требуют повторной проверки'});
   if(!l.catalogSku)continue;
-  const dev=projectCatalogEntries(project).find(([id])=>id===l.catalogSku)?.[1];
+  const dev=typeof projectCatalogEntries==='function'?projectCatalogEntries(project).find(([id])=>id===l.catalogSku)?.[1]:catalogDevice(l.catalogSku);
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
   if(!((['L1','L2','L3'].includes(l.phase)&&dev.poles===1)||(l.phase==='3Ф'&&(dev.poles===3||dev.poles===4)))||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
