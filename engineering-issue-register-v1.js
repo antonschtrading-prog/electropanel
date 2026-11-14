@@ -19,7 +19,7 @@ function epEngineeringIssueRegisterV1(bundle){
    const level=issue.level==='BLOCKED'||issue.status==='BLOCKED'?'BLOCKED':'UNKNOWN';
    const circuitId=issue.lineId??issue.circuitId??issue.owner??null;
    entries.push({section:name,level,code:issue.code,circuitId:
-    typeof circuitId==='string'?circuitId:null});
+    typeof circuitId==='string'?circuitId:null,recordIndex:Number.isInteger(issue.recordIndex)?issue.recordIndex:null});
   }
  }
  for(const x of entries)counts[x.level]++;
