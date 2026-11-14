@@ -42,14 +42,28 @@ function epRestoreProjectExtensionsV2(raw,project){
   const saved=line.loadCurrentCalculation;
   if(saved){
    const result=typeof epLoadCurrentV1==='function'?epLoadCurrentV1({mode:saved.mode,...saved.inputs}):null;
+   const linkedPower=line.power??line.powerKw;
+   const linkedMismatch=saved.powerSource==='circuit'&&
+    (linkedPower===null||linkedPower===undefined||
+     Number(linkedPower)!==Number(saved.inputs?.powerKw));
    const stale=saved.stale===true||!result||result.status!=='CALCULATED'||
     Number(saved.roundedIbA)!==result.roundedIbA||Number(line.overloadInput?.ibA)!==result.roundedIbA||
-    (line.phase==='3Ф'?saved.mode!=='three_phase':saved.mode!=='single_phase');
+    (line.phase==='3Ф'?saved.mode!=='three_phase':saved.mode!=='single_phase')||linkedMismatch;
    if(result?.status==='CALCULATED')line.loadCurrentCalculation={mode:result.mode,inputs:result.inputs,
     formula:result.formula,ibA:result.ibA,roundedIbA:result.roundedIbA,assumptions:result.assumptions,
     powerSource:saved.powerSource==='circuit'?'circuit':'manual',stale};
    else saved.stale=true;
-   if(stale)line.calculationReview={required:true,reason:'IMPORTED_CURRENT_REQUIRES_REVIEW'};
+   if(stale){
+    if(typeof epMarkCalculationReviewV1==='function')
+     epMarkCalculationReviewV1(line,'IMPORTED_CURRENT_REQUIRES_REVIEW',['overloadInput','overloadV30','lv43Input'],true);
+    else{
+     const valid=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
+     const previous=line.calculationReview||{};
+     const pending=new Set(Array.isArray(previous.pending)?previous.pending.filter(x=>valid.includes(x)):[]);
+     for(const key of ['overloadInput','overloadV30','lv43Input'])if(line[key])pending.add(key);
+     line.calculationReview={...previous,required:true,reason:'IMPORTED_CURRENT_REQUIRES_REVIEW',pending:[...pending]};
+    }
+   }
   }
  }
  project.projectExtensionsVersion=1;
