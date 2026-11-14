@@ -77,8 +77,106 @@ function epApplyFaultRouteV2(project,lineId,input,lookup){
  line.calculationReview={required:true,reason:'FAULT_ROUTE_UPDATED'};
  return {project:draft,report,status:'REVIEW_REQUIRED'};
 }
-function epFaultRouteProjectV2(project,lookup){
- const rows=(Array.isArray(project?.lines)?project.lines:[]).filter(line=>line&&typeof line==='object').map(line=>({lineId:line.id,...epFaultRouteReviewV2(project,line,lookup)}));
- return {status:rows.some(r=>r.status==='BLOCKED')?'BLOCKED':'UNKNOWN',rows,issues:rows.flatMap(r=>r.issues),engineeringApproved:false};
+
+// Separate maximum prospective current assessment. Input impedance must describe
+// the declared fault topology; TN L-PE minimum-route values are NOT reused.
+function epMaximumFaultCurrentV2(project,line,lookup){
+ const issues=[],add=(code,level='UNKNOWN')=>issues.push({code,level,lineId:line?.id??null});
+ const end=(extra={})=>({schema:'electropanel.maxfault.declared.1',
+  status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
+  issues,ikMaxKa:null,thresholdStatus:'UNKNOWN',
+  engineeringApproved:false,ready_for_installation:false,...extra});
+ const input=line?.maximumFaultInput;
+ if(input===undefined||input===null){add('MAX_FAULT_INPUT_MISSING');return end();}
+ if(!input||typeof input!=='object'||Array.isArray(input)){
+  add('MAX_FAULT_INPUT_INVALID','BLOCKED');return end();
+ }
+ const three=input.model==='THREE_PHASE_POSITIVE_SEQUENCE';
+ const single=input.model==='SINGLE_PHASE_L_N';
+ if(!three&&!single){add('MAX_FAULT_MODEL_UNSUPPORTED','BLOCKED');return end();}
+ const parse=(v,allowZero=false)=>{
+  if(typeof v!=='number'&&typeof v!=='string')return null;
+  const str=String(v).trim().replace(',','.');
+  if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(str))return null;
+  const n=Number(str);
+  return Number.isFinite(n)&&n<=1e7&&(allowZero?n>=0:n>0)?n:null;
+ };
+ const u=parse(three?input.uLLV:input.u0V),c=parse(input.cmax);
+ const sr=parse(input.sourceROhm,true),sx=parse(input.sourceXOhm,true);
+ if(u===null||u>1000||c===null||c<1||c>1.2||sr===null||sx===null){
+  add('MAX_FAULT_NETWORK_INVALID','BLOCKED');return end();
+ }
+ if(typeof input.networkSource!=='string'||!input.networkSource.trim())
+  add('MAX_FAULT_NETWORK_SOURCE_MISSING');
+ else if(input.networkSource.length>2000)add('MAX_FAULT_NETWORK_SOURCE_TOO_LONG','BLOCKED');
+ if(!Array.isArray(input.segments)||input.segments.length>50){
+  add('MAX_FAULT_SEGMENTS_INVALID','BLOCKED');return end();
+ }
+ let r=sr,x=sx;const segments=[];
+ for(const [index,part] of input.segments.entries()){
+  const length=parse(part?.lengthM),rp=parse(part?.[three?'r1OhmKm':'phaseROhmKm']),
+   rn=three?0:parse(part?.neutralROhmKm),
+   xp=parse(part?.[three?'x1OhmKm':'phaseXOhmKm'],true),
+   xn=three?0:parse(part?.neutralXOhmKm,true);
+  if([length,rp,rn,xp,xn].includes(null)||length>100000){
+   add('MAX_FAULT_SEGMENT_INVALID','BLOCKED');continue;
+  }
+  const dr=length/1000*(rp+rn),dx=length/1000*(xp+xn);
+  r+=dr;x+=dx;segments.push({index:index+1,lengthM:length,rOhm:dr,xOhm:dx});
+  if(typeof part.source!=='string'||!part.source.trim())
+   add('MAX_FAULT_SEGMENT_SOURCE_MISSING');
+  else if(part.source.length>2000)add('MAX_FAULT_SEGMENT_SOURCE_TOO_LONG','BLOCKED');
+  if(part.temperatureBasisConfirmed!==true)
+   add('MAX_FAULT_TEMPERATURE_BASIS_UNCONFIRMED');
+ }
+ if(issues.some(x=>x.level==='BLOCKED'))return end();
+ const z=Math.hypot(r,x);
+ if(z<=0||!Number.isFinite(z)){add('MAX_FAULT_ZERO_OR_INVALID_IMPEDANCE','BLOCKED');return end();}
+ const ikA=c*u/(three?Math.sqrt(3)*z:z),ikKa=ikA/1000;
+ if(!Number.isFinite(ikKa)||ikKa<=0||ikKa>1e6){
+  add('MAX_FAULT_RESULT_INVALID','BLOCKED');return end();
+ }
+ if(three&&line?.phase!=='3Ф')add('MAX_FAULT_PHASE_SCOPE_MISMATCH','BLOCKED');
+ if(single&&!['L1','L2','L3'].includes(line?.phase))
+  add('MAX_FAULT_PHASE_SCOPE_MISMATCH','BLOCKED');
+ let article=null;
+ try{article=line?.catalogSku&&lookup?.(line.catalogSku)||null;}
+ catch(_){add('MAX_FAULT_CATALOG_LOOKUP_FAILED','BLOCKED');}
+ if(!article)add('MAX_FAULT_ARTICLE_UNAVAILABLE');
+ else {
+  if(article.kind!=='MCB'&&article.kind!=='RCBO')
+   add('MAX_FAULT_DEVICE_KIND_UNSUPPORTED');
+  if(three&&![3,4].includes(article.poles))
+   add('MAX_FAULT_THREE_PHASE_POLES_UNCONFIRMED');
+  if(single&&!(article.poles===1||article.poles===2&&
+      (article.kind==='RCBO'||['1P+N','2P'].includes(article.poleConfiguration))))
+   add('MAX_FAULT_SINGLE_PHASE_POLES_UNCONFIRMED');
+  if(parse(article.icnKa)===null)add('MAX_FAULT_ICN_UNDECLARED');
+  if(parse(article.icnVoltageV)===null)add('MAX_FAULT_ICN_VOLTAGE_UNDECLARED');
+  else if(article.icnVoltageV<u)add('MAX_FAULT_ICN_VOLTAGE_INSUFFICIENT','BLOCKED');
+  if(typeof article.icnStandard!=='string'||!article.icnStandard.trim())
+   add('MAX_FAULT_ICN_STANDARD_UNDECLARED');
+  if(article.verificationStatus!=='VERIFIED')add('MAX_FAULT_ARTICLE_VERIFICATION_PENDING');
+ }
+ let thresholdStatus='UNKNOWN';
+ if(article&&parse(article.icnKa)!==null&&
+   !issues.some(i=>i.level==='UNKNOWN'||i.level==='BLOCKED')){
+  thresholdStatus=ikKa>article.icnKa?'FAIL':'PRELIMINARY_PASS';
+  if(thresholdStatus==='FAIL')add('MAX_FAULT_EXCEEDS_ICN','BLOCKED');
+ }
+ return end({ikMaxKa:ikKa,ikMaxA:ikA,impedanceOhm:z,rOhm:r,xOhm:x,segments,
+  cmax:c,voltageV:u,model:input.model,icnKa:article?.icnKa??null,
+  thresholdStatus,formula:three?
+   'Ik3,max = cmax × ULL / (sqrt(3) × |Z1|)':
+   'IkLN,max = cmax × U0 / |ZL+ZN|',
+  notice:'Declared topology and R/X only; source network model, conductor temperature, Icn standard and manufacturer applicability require independent review.'});
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epFaultRouteBasisV2,epFaultRouteReviewV2,epApplyFaultRouteV2,epFaultRouteProjectV2};
+
+function epFaultRouteProjectV2(project,lookup){
+ const lines=(Array.isArray(project?.lines)?project.lines:[]).filter(line=>line&&typeof line==='object');
+ const rows=lines.map(line=>({lineId:line.id,...epFaultRouteReviewV2(project,line,lookup),
+  maximum:epMaximumFaultCurrentV2(project,line,lookup)}));
+ const issues=rows.flatMap(r=>r.issues.concat(r.maximum.issues));
+ return {status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN',rows,issues,engineeringApproved:false};
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epFaultRouteBasisV2,epFaultRouteReviewV2,epApplyFaultRouteV2,epFaultRouteProjectV2,epMaximumFaultCurrentV2};
