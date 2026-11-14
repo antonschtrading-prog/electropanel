@@ -17,6 +17,15 @@ const server=http.createServer((req,res)=>{
  await page.locator('#loadDemo').click();
  await page.evaluate(()=>{selectedLine='L1';switchView('board');});
  assert.equal(await page.locator('#boardCanvas [data-line]').count(),6);
+ // A project audit must resolve devices from the project argument, not the open editor.
+ const auditIsolation=await page.evaluate(()=>{
+  const p=JSON.parse(JSON.stringify(state));
+  p.catalogArticles=[{id:'LOCAL-ONLY',sku:'LOCAL',maker:'Local',series:'S',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/local'}];
+  p.lines[0].catalogSku='LOCAL-ONLY';p.lines[0].modules=1;p.lines[0].device='LOCAL';
+  return {globalMissing:catalogDevice('LOCAL-ONLY')===null,unknown:catalogAudit(p).some(x=>x.circuitId===p.lines[0].id&&x.code==='CATALOG_UNKNOWN')};
+ });
+ assert.deepEqual(auditIsolation,{globalMissing:true,unknown:false});
+
  // Assign a real seeded article through the actual editor.
  await page.locator('#boardCanvas [data-line="L1"]').click();
  await page.locator('#catalogSku').selectOption('SE-A9F74116');
