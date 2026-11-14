@@ -161,7 +161,7 @@ test('cross-view issue navigation and exports use current project',()=>{
  assert.match(app,/_crossview_DRAFT\.csv/);
  assert.match(app,/_crossview_DRAFT\.json/);
  const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
- assert.match(bundle,/epCrossViewAuditV1\(project,protection,board,bom\)/);
+ assert.match(bundle,/epCrossViewAuditV1\(project,protection,board,bom,singleLine,projectLookup\)/);
 });
 
 test('DIN apparatus buttons synchronize selected circuit',()=>{
@@ -389,4 +389,12 @@ test('engineering bundle uses one catalogue snapshot and fails closed when audit
  assert.match(bundle,/catalog\?Object\.entries\(catalog\.articles\)/);
  assert.match(bundle,/PROJECT_CATALOGUE_AUDIT_UNAVAILABLE/);
  assert.match(register,/recordIndex:Number\.isInteger\(issue\.recordIndex\)/);
+});
+
+test('cross-view audit includes schematic, BOM and DIN output reconciliation',()=>{
+ const crossView=fs.readFileSync(path.join(root,'cross-view-audit-v1.js'),'utf8');
+ assert.match(crossView,/function epSchematicCrossViewV1\(/);
+ assert.match(crossView,/function epCatalogOutputCrossViewV1\(/);
+ assert.match(crossView,/epSchematicCrossViewV1\(project,singleLine,lookupSku\)/);
+ assert.match(crossView,/epCatalogOutputCrossViewV1\(project,board,bom,lookupSku\)/);
 });
