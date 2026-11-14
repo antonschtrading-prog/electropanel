@@ -26,17 +26,18 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   const reasons=[];
   if(!Number.isFinite(d.inA)||d.inA<=0||!Number.isFinite(d.icnKa)||d.icnKa<=0||
     !Number.isInteger(d.poles)||d.poles<1||d.poles>8||
-    !Number.isInteger(d.modules)||d.modules<1||d.modules>12)reasons.push('CATALOG_SPEC_INVALID');
+    (d.modules!==undefined&&(!Number.isInteger(d.modules)||d.modules<1||d.modules>12)))reasons.push('CATALOG_SPEC_INVALID');
   if(d.widthMm!==undefined&&d.widthMm!==null&&
      (!Number.isFinite(d.widthMm)||d.widthMm<=0||d.widthMm>d.modules*18))
    reasons.push('CATALOG_WIDTH_INVALID');
-  if(!d.label&&d.sku===undefined)reasons.push('CATALOG_IDENTITY_MISSING');
+  if(typeof sku!=='string'||!sku.trim())reasons.push('CATALOG_IDENTITY_MISSING');
   if(!['L1','L2','L3','3Ф'].includes(line.phase))reasons.push('PHASE_UNDECLARED');
   else if(line.phase==='3Ф'?![3,4].includes(d.poles):d.poles!==1)reasons.push('POLES_INCOMPATIBLE');
   if(ib!==null&&d.inA<ib)reasons.push('IN_LT_IB');
   if(iz!==null&&d.inA>iz)reasons.push('IN_GT_IZ');
   if(ik!==null&&d.icnKa<ik)reasons.push('ICN_LT_DECLARED_IK');
   const caution=[];
+  if(d.modules===undefined)caution.push('CATALOG_MODULES_UNDECLARED');
   if(!d.source)caution.push('DATASHEET_SOURCE_MISSING');
   if(d.verificationStatus!=='VERIFIED')caution.push('CATALOG_DATA_UNVERIFIED');
   if(line.calculationReview?.required)caution.push('CALCULATION_REVIEW_REQUIRED');
