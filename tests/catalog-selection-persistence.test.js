@@ -123,3 +123,12 @@ test('locked DIN layout permits fit-safe width increase and retains positions',(
  assert.equal(out.manualLayoutV1[1].startModule,4);
  assert.equal(out.lines[0].articleReplacementReview.engineeringApproved,false);
 });
+
+test('live catalogue audit distinguishes Icu-only article and voltage conflicts',()=>{
+ const c=environment();
+ run(c,"applyCatalogueSku(state,'L1','CH-814014');state.lines[0].faultInput={ikKa:3,voltageV:230,source:'engineer'}");
+ assert.ok(run(c,"catalogAudit(state).issues.some(x=>x.code==='CATALOG_ICN_UNDECLARED')"));
+ run(c,"applyCatalogueSku(state,'L1','EA-286533');state.lines[0].faultInput={ikKa:3,voltageV:400,source:'engineer'}");
+ assert.ok(run(c,"catalogAudit(state).issues.some(x=>x.code==='CATALOG_ICN_VOLTAGE_INSUFFICIENT')"));
+ assert.equal(run(c,"catalogAudit(state).engineeringApproved"),false);
+});
