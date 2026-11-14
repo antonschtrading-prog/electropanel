@@ -63,3 +63,18 @@ test('changing conductor section invalidates old voltage-drop impedance evidence
  const same=run(c,"epApplyCableSectionV1(p,'L1','2.5').project",p);assert.equal(same.lines[0].voltageDropDesignInput.conductorBasisDocumented,true);
  const changed=run(c,"epApplyCableSectionV1(p,'L1','4').project",p);assert.equal(changed.lines[0].voltageDropDesignInput.conductorBasisDocumented,false);assert.equal(changed.lines[0].voltageDropDesignInput.rOhmKm,8);
 });
+test('actual app normalizer retains engineering inputs, custom catalogue and manual coordinates',()=>{
+ const c=env(),source=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'utf8');
+ vm.runInContext(source.slice(0,source.indexOf("$('loadRows').addEventListener")),c);
+ vm.runInContext(source.slice(source.indexOf('function normalizeImport(x){'),source.indexOf('function parseCSV(text){')),c);
+ const out=vm.runInContext(`let actual=ensureV2(demo());
+ actual=epApplyLoadCurrentV1(actual,'L1',{mode:'single_phase',powerSource:'circuit',voltageV:230,powerFactor:1,efficiency:1,demandFactor:1}).project;
+ actual=epApplyCableReferenceInputV1(actual,'L1',{installationMethod:'C',confirmContext:true}).project;
+ actual=epApplyCableSectionV1(actual,'L1','2.5').project;
+ actual.catalogArticles=[{id:'USR',sku:'test',maker:'Declared',series:'test',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/data'}];
+ actual.manualLayoutV1=[{deviceId:actual.branchDevices[0].id,railIndex:1,startModule:4}];
+ normalizeImport(JSON.parse(JSON.stringify(actual)));`,c);
+ assert.equal(out.lines[0].cableDesignInput.sectionMm2,2.5);
+ assert.equal(out.lines[0].loadCurrentCalculation.roundedIbA,5.218);
+ assert.equal(out.catalogArticles[0].id,'USR');assert.equal(out.manualLayoutV1[0].startModule,4);
+});

@@ -11,9 +11,9 @@ The runtime used the Web entity model (catalogSku / branchDevices), while the ne
 - Extended dependency invalidation to calculation inputs, cable section/context, catalogue edits and manual positions.
 
 ## Verification
-Baseline: 882 Node tests passed. Added 10 integration regressions covering persistence, tampering, dependent recalculation, manual overrides, phase changes, collision rejection, free-slot placement and HTML escaping. Complete suite: 892 passed locally; static package: 72 scripts / 75 assets.
+Baseline: 882 Node tests passed. Added 12 integration regressions covering persistence, tampering, dependent recalculation, manual overrides, phase changes, collision rejection, free-slot placement and HTML escaping. Complete suite: 894 passed locally; static package: 72 scripts / 75 assets.
 
-A committed Chromium regression exercises the actual page: seeded article selection, Ib form, linked consumer update, manual positioning, undo/redo, reload, JSON roundtrip, custom catalogue candidates and bundle. Local Chromium launch is denied by the execution environment's socket policy; GitHub Actions runs this browser scenario independently. Consult commit-specific Actions results for the outcome.
+The browser workflow pins Ubuntu 24.04 to match its pinned Playwright runtime. A committed Chromium regression exercises the actual page: seeded article selection, Ib form, linked consumer update, manual positioning, undo/redo, reload, JSON roundtrip, custom catalogue candidates and bundle. Local Chromium launch is denied by the execution environment's socket policy; GitHub Actions runs this browser scenario independently. Consult commit-specific Actions results for the outcome.
 
 ## Boundaries
 This cycle does not add manufacturer-certified 3D geometry, expand the three seeded products, verify new normative methods or implement full short-circuit/selectivity/thermal design. Module slots remain nominal 18 mm envelopes; measured enclosure clearances are not inferred. Custom records remain declarations. No engineering approval is inferred from arithmetic, successful tests or a consistent model.
