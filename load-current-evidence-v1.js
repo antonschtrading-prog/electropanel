@@ -26,6 +26,7 @@ function epLoadCurrentEvidenceV1(project,calculator){
   const pending=Array.isArray(line.calculationReview?.pending)?line.calculationReview.pending:[];
   if(!data){
    if(ib===null)add(line.id,'LOAD_CURRENT_IB_MISSING');
+   if(line.calculationReview?.required)add(line.id,'LOAD_CURRENT_REVIEW_REQUIRED');
    rows.push({lineId:line.id,calculation:null,ibA:line.overloadInput?.ibA??null,
     source:ib===null?'MISSING':'MANUAL_DECLARATION',status:'UNKNOWN',
     reviewRequired:!!line.calculationReview?.required,pending:[...pending]});
