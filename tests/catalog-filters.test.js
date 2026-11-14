@@ -10,7 +10,7 @@ const api=vm.runInNewContext(source+'\n({epCatalogMakers,epCatalogSeries,epCatal
 
 test('catalog makers and series are deduplicated and scoped',()=>{
  const makers=Array.from(api.epCatalogMakers());
- assert.deepEqual(makers,['ABB','Hager','IEK','Legrand','Schneider Electric','Siemens']);
+ assert.deepEqual(makers,['ABB','CHINT','Eaton','Hager','IEK','Legrand','Schneider Electric','Siemens']);
  assert.deepEqual(Array.from(api.epCatalogSeries('IEK')),['KARAT ВА47-29']);
  assert.deepEqual(Array.from(api.epCatalogSeries('missing')),[]);
 });
@@ -19,7 +19,7 @@ test('manufacturer and series filter retains only matching SKUs',()=>{
  assert.equal(filtered.length,1);
  assert.equal(filtered[0][1].sku,'2CDS251001R0164');
  assert.equal(api.epCatalogFilter('IEK','Acti9 iC60N').length,0);
- assert.equal(api.epCatalogFilter().length,9);
+ assert.equal(api.epCatalogFilter().length,11);
 });
 test('unknown product is never filled with invented catalogue values',()=>{
  assert.equal(api.epCatalogSku('UNKNOWN'),null);
@@ -31,7 +31,7 @@ test('phase filtering rejects wrong pole counts, without electrical approval',()
  assert.equal(api.epCatalogCompatible('SE-A9F74116',''),false);
  assert.equal(api.epCatalogCompatible('UNKNOWN','L1'),false);
  assert.equal(api.epCatalogFilter('','', '3Ф').length,2);
- assert.equal(api.epCatalogFilter('','', 'L1').length,7);
+ assert.equal(api.epCatalogFilter('','', 'L1').length,9);
 });
 
 test('declared current is checked against the selected actual rating',()=>{
