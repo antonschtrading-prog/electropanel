@@ -16,7 +16,7 @@ function epCircuitDesignReviewV1(project,lookupSku){
   }
   ids.add(line.id);
   const reasons=[],ib=finite(line.overloadInput?.ibA),iz=finite(line.overloadInput?.izA),
-   ik=finite(line.faultInput?.ikKa);
+   ik=finite(line.faultInput?.ikKa),voltageV=finite(line.faultInput?.voltageV);
   let article=null,lookupFailed=false;
   if(line.catalogSku&&typeof lookupSku==='function')
    try{article=lookupSku(line.catalogSku);}catch(_){lookupFailed=true;}
@@ -29,6 +29,13 @@ function epCircuitDesignReviewV1(project,lookupSku){
   const current=check('IB_IN',ib!==null&&inA!==null&&ib<=inA,ib===null||inA===null,'EXCEEDED');
   const cable=check('IN_IZ',inA!==null&&iz!==null&&inA<=iz,inA===null||iz===null,'EXCEEDED');
   const breaking=check('ICN_IK',icnKa!==null&&ik!==null&&icnKa>=ik,icnKa===null||ik===null,'EXCEEDED');
+  if(voltageV===null)reasons.push({code:'FAULT_VOLTAGE_NOT_DECLARED',level:'UNKNOWN'});
+  if(article&&voltageV!==null){
+   if(!Number.isFinite(article.icnVoltageV))
+    reasons.push({code:'CATALOG_ICN_VOLTAGE_UNDECLARED',level:'UNKNOWN'});
+   else if(article.icnVoltageV<voltageV)
+    reasons.push({code:'CATALOG_ICN_VOLTAGE_LT_DECLARED',level:'BLOCKED'});
+  }
   const reference=typeof epCableReferenceForCircuitV1==='function'?
    epCableReferenceForCircuitV1(project,line,lookupSku):null;
   const section=finite(line.cableDesignInput?.sectionMm2);
@@ -73,7 +80,7 @@ function epCircuitDesignReviewV1(project,lookupSku){
   for(const reason of reasons)issues.push({...reason,lineId:line.id});
   const status=reasons.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId:line.id,name:line.name||'',phase:line.phase||null,sku:line.catalogSku||null,
-   ibA:ib,inA,izA:iz,ikKa:ik,icnKa,sectionMm2:section,current,cable,breaking,referenceStatus,
+   ibA:ib,inA,izA:iz,ikKa:ik,voltageV,icnKa,sectionMm2:section,current,cable,breaking,referenceStatus,
    referenceIzA:candidate?.izA??null,voltageDrop:drop,status,reasons});
  }
  return {schema:'electropanel.design.review.1',
