@@ -121,6 +121,7 @@ const server=http.createServer((req,res)=>{
  try{
   const residualPage=await residualContext.newPage();
   await residualPage.goto('http://127.0.0.1:'+server.address().port);
+  await residualPage.locator('#loadDemo').click();
   const result=await residualPage.evaluate(()=>{
    const form=document.getElementById('catalogArticleForm');
    if(!form)return {error:'Catalogue form missing'};
