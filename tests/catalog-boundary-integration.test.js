@@ -108,3 +108,30 @@ test('import of unused articles does not invent affected circuits',()=>{
  assert.ok(result.project);assert.deepEqual(result.affectedCircuits,[]);
  assert.deepEqual(result.affectedShared,[]);assert.deepEqual(result.affectedViews,['catalogue']);
 });
+
+
+test('editing a selected catalogue apparatus clears its obsolete line template',()=>{
+ const record={...base,label:'B16 new'};
+ const p={catalogArticles:[record],lines:[{id:'L1',phase:'L1',catalogSku:record.id,templateId:'LEGACY',device:'B16',modules:1}],
+  branchDevices:[{id:'BD1',circuitId:'L1',label:'B16',modules:1,templateId:'LEGACY'}]};
+ const result=epUpsertProjectArticleV2(p,record,{},record.id);
+ assert.ok(result.project);
+ assert.equal(Object.hasOwn(result.project.lines[0],'templateId'),false);
+ assert.equal(result.project.branchDevices[0].templateId,null);
+ assert.equal(p.lines[0].templateId,'LEGACY');
+});
+test('used branch apparatus cannot exceed model supported DIN modules',()=>{
+ const record={...base,modules:13,widthMm:234};
+ const p={catalogArticles:[],lines:[{id:'L1',phase:'L1',catalogSku:record.id,modules:1}]};
+ assert.equal(epUpsertProjectArticleV2(p,record).code,'USED_ARTICLE_MODULES_UNSUPPORTED');
+});
+test('used branch label must fit the apparatus editor',()=>{
+ const record={...base,label:'x'.repeat(26)};
+ const p={catalogArticles:[],lines:[{id:'L1',phase:'L1',catalogSku:record.id,modules:1}]};
+ assert.equal(epUpsertProjectArticleV2(p,record).code,'USED_ARTICLE_LABEL_TOO_LONG');
+});
+test('shared RCD label must fit the shared apparatus entity model',()=>{
+ const record={...base,id:'RCD-L',kind:'RCD',poles:2,modules:2,widthMm:36,label:'x'.repeat(51)};
+ const p={catalogArticles:[],lines:[],sharedDevices:[{id:'R1',catalogSku:'RCD-L',templateId:'RCD_2P',modules:2,circuitIds:[]}]};
+ assert.equal(epUpsertProjectArticleV2(p,record).code,'SHARED_ARTICLE_LABEL_TOO_LONG');
+});
