@@ -87,7 +87,7 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  if(draft.catalogArticles.length>500)return {project:null,code:'CATALOG_TOO_LARGE'};
  const audit=epProjectCatalogV1(draft,seed);
  if(audit.issues.length)return {project:null,code:audit.issues[0].code};
- const article=audit.lookup(record.id),affected=[];
+ const article=audit.lookup(record.id),affected=[],affectedCircuits=[],affectedShared=[];
  if(article.widthMm>article.modules*18)return {project:null,code:'ARTICLE_WIDTH_EXCEEDS_MODULES'};
  for(const line of draft.lines){
   if(line.catalogSku!==record.id)continue;
@@ -104,7 +104,7 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
   if(line.faultRouteInput)line.faultRouteInput.reviewRequired=true;
   const branch=draft.branchDevices?.find(x=>x.circuitId===line.id);
   if(branch){branch.modules=article.modules;branch.label=article.label;branch.templateId=null;}
-  affected.push(line.id);
+  affected.push(line.id);affectedCircuits.push(line.id);
  }
  // Shared protective apparatus is a separate entity. Updating its catalogue
  // article must also update the board width and trigger a layout recheck.
@@ -117,14 +117,26 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
    return {project:null,code:'SHARED_ARTICLE_TEMPLATE_CONFLICT'};
   shared.modules=article.modules;
   shared.label=article.label;
-  affected.push(shared.id);
+  affected.push(shared.id);affectedShared.push(shared.id);
+  // Shared RCD selection is part of each assigned circuit's protection evidence.
+  // Preserve other pending checks and never silently approve existing fault data.
+  for(const line of draft.lines){
+   if(!Array.isArray(shared.circuitIds)||!shared.circuitIds.includes(line.id))continue;
+   const pending=new Set(Array.isArray(line.calculationReview?.pending)?line.calculationReview.pending:[]);
+   for(const field of ['faultInput','lv43Input','route44Input'])if(line[field])pending.add(field);
+   line.calculationReview={required:true,reason:'SHARED_ARTICLE_UPDATED',pending:[...pending]};
+   if(line.faultRouteInput)line.faultRouteInput.reviewRequired=true;
+   if(!affectedCircuits.includes(line.id))affectedCircuits.push(line.id);
+  }
  }
  if(affected.length&&typeof epDraftBoardPlanV1==='function'){
   const layout=epDraftBoardPlanV1(draft,audit.lookup);
   const invalid=layout.issues.find(x=>x.level==='BLOCKED');
   if(invalid)return {project:null,code:invalid.code};
  }
- return {project:draft,affected,status:'REVIEW_REQUIRED'};
+ return {project:draft,affected,affectedCircuits,affectedShared,
+  affectedViews:affected.length?['catalogue','board','singleLine','bom','engineeringReview']:['catalogue'],
+  status:'REVIEW_REQUIRED'};
 }
 // Transactional import: apply the same engineering constraints as the manual editor.
 function epImportProjectArticlesV2(project,records,seed={}){
