@@ -190,6 +190,17 @@ function catalogAudit(project){
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
   for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput,dev))
    issues.push({circuitId:l.id,...issue});
+  if(['MCB','RCBO'].includes(dev.kind)&&(!Number.isFinite(dev.icnKa)||dev.icnKa<=0))
+   issues.push({circuitId:l.id,code:'CATALOG_ICN_UNDECLARED',
+    message:Number.isFinite(dev.icuKa)&&dev.icuKa>0?
+     'Указан Icu, но Icn не подтверждён; подмена запрещена':
+     'Icn не указан; проверка отключающей способности не завершена'});
+  if(l.faultInput?.voltageV!==undefined&&l.faultInput?.voltageV!==null&&
+     (!Number.isFinite(Number(l.faultInput.voltageV))||Number(l.faultInput.voltageV)<=0))
+   issues.push({circuitId:l.id,code:'CATALOG_FAULT_VOLTAGE_INVALID',message:'Некорректное заявленное напряжение'});
+  else if(l.faultInput?.voltageV&&Number.isFinite(dev.icnVoltageV)&&
+          dev.icnVoltageV<Number(l.faultInput.voltageV))
+   issues.push({circuitId:l.id,code:'CATALOG_ICN_VOLTAGE_INSUFFICIENT',message:'Паспортное напряжение Icn ниже заявленного напряжения сети'});
   const fault=epBreakingCapacityCheck(dev,l.faultInput?.ikKa);
   if(fault.status==='FAIL'||fault.status==='INVALID')
    issues.push({circuitId:l.id,code:'CATALOG_IK_'+fault.status,message:fault.message});
