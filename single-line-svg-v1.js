@@ -26,11 +26,15 @@ function epSingleLineSvgV1(report,selectedId=null){
   const count=Math.max(1,lane.lines.length),laneY=y,center=laneY+(count-1)*rowHeight/2+21;
   const parent=lane.group;
   const title=parent?parent.name:'Без группового УЗО';
+  const groupDetail=parent?
+   (parent.templateId||'УЗО')+' · IΔn '+(parent.article?.residualCurrentMa??'—')+
+    ' мА · '+(parent.article?.residualType||'тип не задан'):
+   'Непосредственно от ввода · декларация';
   content+='<path d="M 227 84 H 252 V '+center+' H 265" stroke="#708399" stroke-width="2" stroke-dasharray="5 5" fill="none"/>'+
    '<rect x="265" y="'+(center-22)+'" width="215" height="44" rx="5" fill="'+(parent?'#e7e5f6':'#e9edf0')+'" stroke="#7a8ba0"/>'+
    '<text x="275" y="'+(center-5)+'" fill="#28374a" font-size="12" font-weight="700">'+esc(title)+'</text>'+
    '<text x="275" y="'+(center+11)+'" fill="#596c80" font-size="10">'+
-   esc(parent?(parent.templateId||'УЗО · тип не подтверждён'):'Непосредственно от ввода · декларация')+'</text>';
+   esc(groupDetail)+'</text>';
   if(lane.lines.length){
    content+='<path d="M 480 '+center+' H 502 V '+(laneY+21)+'" stroke="#708399" stroke-width="2" stroke-dasharray="5 5" fill="none"/>';
    for(let i=0;i<lane.lines.length;i++){
@@ -39,7 +43,9 @@ function epSingleLineSvgV1(report,selectedId=null){
      'Артикул не выбран или не найден';
     const electrical=l.article?
      'Тип '+(l.article.kind||'не указан')+' · In '+(l.article.inA??'?')+
-     ' A · Icn '+(l.article.icnKa??'?')+' kA · '+(l.article.poles??'?')+'P':
+     ' A · Icn '+(l.article.icnKa??'?')+' kA · '+(l.article.poles??'?')+'P'+
+     (l.article.kind==='RCBO'?' · IΔn '+(l.article.residualCurrentMa??'—')+
+      ' мА '+(l.article.residualType||'тип не задан'):''):
      'Характеристики защиты не подтверждены';
     const measured=l.design||{};
     const declared='Заявлено: Ib '+(measured.ibA??'—')+' А · Iz '+(measured.izA??'—')+
