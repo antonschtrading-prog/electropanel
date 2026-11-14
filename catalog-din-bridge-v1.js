@@ -43,7 +43,6 @@ function epCatalogDinBridgeAuditV1(catalog){
    const identity=result.record.manufacturer.toLowerCase()+'|'+result.record.article.toLowerCase();
    if(identities.has(identity))issues.push({key,code:'DUPLICATE_MANUFACTURER_ARTICLE'});
    identities.add(identity);
-   if(key!==seed.maker?.slice(0,0)+key && !key)issues.push({key,code:'KEY_INVALID'});
    records.push({key,...result});
   }
   for(const issue of result.issues)issues.push({key,...issue});
