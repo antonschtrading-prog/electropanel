@@ -58,7 +58,7 @@ const DEVICE_TEMPLATES=Object.freeze({
 function projectCatalogEntries(project=state){return typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(project,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles):Object.entries(typeof EP_CATALOG==='object'?EP_CATALOG:{});}
 function catalogDevice(sku){if(typeof epProjectCatalogV1==='function'){const c=epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{});return c.lookup(sku);}return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
 // UI filters are temporary preferences, never electrical or catalogue data.
-let catalogMakerFilter='',catalogSeriesFilter='';
+let catalogMakerFilter='',catalogSeriesFilter='',catalogTierFilter='';
 function catalogBranchPolesCompatible(phase,device){
  if(!device||!['MCB','RCBO'].includes(device.kind))return false;
  if(['L1','L2','L3'].includes(phase))
@@ -69,7 +69,7 @@ function catalogBranchPolesCompatible(phase,device){
 }
 function catalogChoices(selected,phase=''){
  const entries=typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles):[];
- const items=entries.filter(([id,d])=>['MCB','RCBO'].includes(d.kind)&&(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||catalogBranchPolesCompatible(phase,d)));
+ const items=entries.filter(([id,d])=>['MCB','RCBO'].includes(d.kind)&&(!catalogTierFilter||typeof epBrandTier!=='function'||epBrandTier(d.maker)===catalogTierFilter)&&(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||catalogBranchPolesCompatible(phase,d)));
  const current=catalogDevice(selected);
  if(current&&!items.some(([id])=>id===selected))items.unshift([selected,current]);
  const unknown=selected&&!current;
@@ -78,11 +78,20 @@ function catalogChoices(selected,phase=''){
   items.map(([id,d])=>'<option value="'+safeText(id)+'" '+(selected===id?'selected':'')+'>'+safeText(d.maker+' / '+d.series+' / '+d.label+' / '+d.sku)+'</option>').join('');
 }
 function catalogFilterControls(){
- const maker=catalogMakerFilter,series=catalogSeriesFilter;
- const makers=[...new Set(projectCatalogEntries().map(([,d])=>d.maker))].sort();
- const seriesList=[...new Set(projectCatalogEntries().filter(([,d])=>!maker||d.maker===maker).map(([,d])=>d.series))].sort();
- return '<label class="device-preset-label">Производитель<select id="catalogMaker"><option value="">Все производители</option>'+
-  makers.map(m=>'<option value="'+safeText(m)+'" '+(m===maker?'selected':'')+'>'+safeText(m)+'</option>').join('')+
+ const maker=catalogMakerFilter,series=catalogSeriesFilter,tier=catalogTierFilter;
+ const entries=projectCatalogEntries();
+ const known=typeof EP_BRAND_TIERS==='object'&&EP_BRAND_TIERS!==null?
+  Object.values(EP_BRAND_TIERS).flat():[];
+ const makers=[...new Set([...known,...entries.map(([,d])=>d.maker)])].filter(m=>!tier||typeof epBrandTier!=='function'||epBrandTier(m)===tier).sort((a,b)=>a.localeCompare(b,'ru'));
+ const counts=new Map();
+ for(const [,d] of entries)counts.set(d.maker,(counts.get(d.maker)||0)+1);
+ const seriesList=[...new Set(entries.filter(([,d])=>(!maker||d.maker===maker)&&(!tier||typeof epBrandTier!=='function'||epBrandTier(d.maker)===tier)).map(([,d])=>d.series))].sort();
+ return '<label class="device-preset-label">Сегмент<select id="catalogTier"><option value="">Все сегменты</option>'+
+  [['budget','Бюджет'],['comfort','Комфорт'],['premium','Премиум']].map(([id,name])=>
+   '<option value="'+id+'" '+(tier===id?'selected':'')+'>'+name+'</option>').join('')+
+  '</select></label><label class="device-preset-label">Производитель<select id="catalogMaker"><option value="">Все производители</option>'+
+  makers.map(m=>'<option value="'+safeText(m)+'" '+(m===maker?'selected':'')+
+   (counts.has(m)?'':' disabled')+'>'+safeText(m)+(counts.has(m)?' · '+counts.get(m)+' арт.':' · нет артикулов')+'</option>').join('')+
   '</select></label><label class="device-preset-label">Серия<select id="catalogSeries"><option value="">Все серии</option>'+
   seriesList.map(m=>'<option value="'+safeText(m)+'" '+(m===series?'selected':'')+'>'+safeText(m)+'</option>').join('')+
   '</select></label>';
@@ -124,9 +133,23 @@ function applyCatalogueSku(project,circuitId,sku){
     (dev.kind==='RCBO'||['1P+N','2P'].includes(dev.poleConfiguration)):
    line.phase==='3Ф'&&[3,4].includes(dev.poles));
  if(!validPoles)throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
- if(line.catalogSku!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
+ // Reject an invalid article before touching branch or calculation state.
+ if(!Number.isInteger(dev.modules)||dev.modules<1||dev.modules>12||
+    !Number.isFinite(dev.widthMm)||dev.widthMm<=0||dev.widthMm>dev.modules*18+0.001||
+    !Number.isFinite(dev.inA)||dev.inA<=0||
+    typeof dev.label!=='string'||!dev.label.trim()||dev.label.length>25)
+  throw Error('Артикул содержит недопустимые габариты, обозначение или номинальный ток');
+ const current=line.catalogSku;
+ if(current!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
  updateBranchApparatus(project,circuitId,{label:dev.label,modules:dev.modules,templateId:null});
  line.catalogSku=sku;
+ if(current!==sku){
+  const warnings=typeof epCatalogueReplacementImpactV1==='function'?
+   epCatalogueReplacementImpactV1(projectCatalogEntries(project).find(([id])=>id===current)?.[1],dev).warnings:[];
+  // These are review instructions only. Never overwrite declared Ik, Ib or Iz.
+  line.articleReplacementReview={required:true,from:current||null,to:sku,
+   warnings,engineeringApproved:false};
+ }
  return dev;
 }
 function catalogAudit(project){
@@ -134,6 +157,8 @@ function catalogAudit(project){
  for(const l of project.lines){
   if(l.calculationReview?.required)
    issues.push({circuitId:l.id,code:'CALCULATION_REVIEW_REQUIRED',message:'Исходные данные или аппарат изменены; ранее введённые токи требуют повторной проверки'});
+  if(l.articleReplacementReview?.required)
+   issues.push({circuitId:l.id,code:'ARTICLE_REPLACEMENT_REVIEW_REQUIRED',message:'После замены артикула повторно проверить параметры защиты, DIN и схему'});
   if(!l.catalogSku)continue;
   const dev=typeof projectCatalogEntries==='function'?projectCatalogEntries(project).find(([id])=>id===l.catalogSku)?.[1]:catalogDevice(l.catalogSku);
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
@@ -1537,6 +1562,7 @@ $('boardCanvas').addEventListener('dragover',e=>{const b=e.target.closest('[data
 $('boardCanvas').addEventListener('drop',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId)return;e.preventDefault();const id=dragLineId;dragLineId=null;reorderLine(id,b.dataset.line);});
 $('boardCanvas').addEventListener('dragend',()=>{dragLineId=null;});
 $('selectedDevice').addEventListener('change',e=>{
+ if(e.target.id==='catalogTier'){catalogTierFilter=e.target.value;catalogMakerFilter='';catalogSeriesFilter='';renderBoard();return;}
  if(e.target.id==='catalogMaker'){catalogMakerFilter=e.target.value;catalogSeriesFilter='';renderBoard();return;}
  if(e.target.id==='catalogSeries'){catalogSeriesFilter=e.target.value;renderBoard();return;}
  if(e.target.id==='devicePreset'&&selectedLine&&e.target.value){applyDeviceTemplate(selectedLine,e.target.value);notify('Шаблон применён. Характеристики не подтверждены.');}
