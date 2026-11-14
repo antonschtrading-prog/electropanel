@@ -69,6 +69,7 @@ function epCatalogEditorHtmlV2(){
 function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object')return {project:null,code:'PROJECT_OR_RECORD_INVALID'};
  if(originalId&&originalId!==record.id)return {project:null,code:'ARTICLE_ID_IMMUTABLE'};
+ if(!Object.prototype.hasOwnProperty.call(record,'id')||typeof record.id!=='string')return {project:null,code:'ARTICLE_ID_INVALID'};
  const existing=project.catalogArticles||[];
  if(!Array.isArray(existing))return {project:null,code:'CATALOG_INVALID'};
  if(originalId&&!existing.some(x=>x.id===originalId))return {project:null,code:'ARTICLE_NOT_FOUND'};
