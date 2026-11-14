@@ -236,6 +236,9 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-din-face-schneider{border-top:4px solid #28a85e}.ep-din-face-schneider .ep-din-device-toggle{background:linear-gradient(90deg,#c1c7c9,#f6f7f7,#8d999d)}
 .ep-din-face-abb{border-top:4px solid #d8272e}.ep-din-face-abb .ep-din-device-toggle{background:linear-gradient(90deg,#737c85,#d3d7d9,#5e6770)}
 .ep-din-face-iek{border-top:4px solid #f2b521}.ep-din-face-iek .ep-din-device-toggle{background:linear-gradient(90deg,#bdc1c6,#fff,#8d9298)}
+.ep-din-face-hager{border-top:4px solid #4477b3}
+.ep-din-face-legrand{border-top:4px solid #c73b52}
+.ep-din-face-siemens{border-top:4px solid #188c88}
 .ep-din-face-generic{border-top:4px solid #9aa6b3}
 .ep-din-block.ep-circuit-active .ep-din-device-face{outline:2px solid #2b82c9;outline-offset:2px}
 

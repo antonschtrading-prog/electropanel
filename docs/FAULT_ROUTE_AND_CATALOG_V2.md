@@ -46,3 +46,16 @@ The committed Chromium regression additionally creates/assigns/edits an article 
 ### Equipment dimensions in engineering outputs
 
 The draft BOM retains declared W/H/D for each selected article, writes the fields to semicolon-separated CSV, and displays incomplete dimensions explicitly in the visible specification. The standalone printable engineering report displays W/H/D separately in both the material schedule and article provenance table. Regressions cover these outputs and unknown dimensions; no physical clearance, heat dissipation or certified CAD fit is implied.
+
+
+## Official-source catalogue expansion — 14 November 2026
+
+Three new concrete MCB records increase the seed catalogue from 6 to 9 articles and cover **six manufacturers** (ABB, IEK, Schneider Electric, Hager, Legrand, Siemens). Sources and dimensions were checked against manufacturer-hosted pages or a manufacturer datasheet; no CAD front or mechanical fitting is inferred.
+
+| Project key | Manufacturer article | Circuit | In / curve | W × H × D, mm | Icn at 230 V AC, EN/IEC 60898-1 | Evidence |
+|---|---|---|---|---|---|---|
+| HA-MBN116 | Hager MBN116 | 1P, 1 module | B16 | 17.5 × 83 × 70 | 6 kA | https://hager.com/en-tr/catalogue/product-information/mbn116-mcb-1p-6ka-b-16a-1m |
+| LE-406775 | Legrand 406775 | 1P+N, 1 module | C20 | 17.8 × 94.8 × 77.7 | **4.5 kA** | https://www.legrand.fr/pro/catalogue/disjoncteur-phaseneutre-dnx34500-6ka-arrivee-et-sortie-borne-a-vis-1pn-230v-20a-courbe-c-1-module |
+| SI-5SL6116-7 | Siemens 5SL6116-7 | 1P, 1 module | C16 | 18 × 90 × 76 | 6 kA | https://support.industry.siemens.com/teddatasheet/?caller=SIOS&format=pdf&language=en&mlfbs=5SL6116-7 |
+
+**Critical Legrand distinction:** the official product page states 4.5 kA according to EN 60898-1 and 6 kA according to IEC 60947-2. The catalogue stores **Icn=4.5 kA**, not Icu=6 kA. The 1P+N device has two poles but occupies one 18 mm module, and is enabled for single-phase selection only by its declared pole configuration. The preview retains an original stylized front, not licensed manufacturer photography. Manufacturer-hosted sources are not a substitute for independent project-specific suitability checks.

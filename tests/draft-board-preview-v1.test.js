@@ -109,3 +109,16 @@ test('DIN preview never fabricates missing cabinet body dimensions',()=>{
  assert.match(h,/18 × — × — мм/);
  assert.doesNotMatch(h,/18 × 85 × 78.5/);
 });
+
+test('new official-source manufacturer series have distinct styled DIN facades',()=>{
+ const {epCatalogSku}=require('../catalog.js');
+ for(const [id,appearance] of [['HA-MBN116','hager'],['LE-406775','legrand'],['SI-5SL6116-7','siemens']]){
+  const device=epCatalogSku(id),project={railCount:1,railCapacity:6,
+   lines:[{id:'L1',modules:1,catalogSku:id}],branchDevices:[{id:'BR1',circuitId:'L1',modules:1}]};
+  const h=epDraftBoardPreviewV1(project,epCatalogSku,'L1');
+  assert.match(h,new RegExp('ep-din-face-'+appearance));
+  assert.match(h,new RegExp('ep-din-block-body-size'));
+  assert.ok(h.includes(String(device.widthMm)));
+  assert.equal(device.verificationStatus,undefined);
+ }
+});

@@ -37,6 +37,28 @@ const EP_CATALOG = Object.freeze({
     maker:'IEK',series:'KARAT ВА47-29',sku:'MVA20-1-016-C',label:'ВА47-29 C16',kind:'MCB',
     poles:1,modules:1,widthMm:18,inA:16,curve:'C',icnKa:4.5,appearance:'iek',
     source:'https://www.iek.ru/upload/pictures/katalogi/ru_ru/1-catalog_moduln_app.pdf'
+  }),
+  'HA-MBN116':Object.freeze({
+    maker:'Hager',series:'MBN 6 kA',sku:'MBN116',label:'MBN116 B16',kind:'MCB',
+    poles:1,poleConfiguration:'1P',modules:1,widthMm:17.5,heightMm:83,depthMm:70,
+    inA:16,curve:'B',icnKa:6,icnVoltageV:230,icnStandard:'IEC 60898-1',appearance:'hager',
+    sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-14',
+    source:'https://hager.com/en-tr/catalogue/product-information/mbn116-mcb-1p-6ka-b-16a-1m'
+  }),
+  'LE-406775':Object.freeze({
+    maker:'Legrand',series:'DNX3 4500',sku:'406775',label:'DNX3 C20 1P+N',kind:'MCB',
+    poles:2,poleConfiguration:'1P+N',modules:1,widthMm:17.8,heightMm:94.8,depthMm:77.7,
+    inA:20,curve:'C',icnKa:4.5,icnVoltageV:230,icnStandard:'EN 60898-1',appearance:'legrand',
+    sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-14',
+    source:'https://www.legrand.fr/pro/catalogue/disjoncteur-phaseneutre-dnx34500-6ka-arrivee-et-sortie-borne-a-vis-1pn-230v-20a-courbe-c-1-module'
+  }),
+  'SI-5SL6116-7':Object.freeze({
+    maker:'Siemens',series:'SENTRON 5SL',sku:'5SL6116-7',label:'5SL6116-7 C16',kind:'MCB',
+    poles:1,poleConfiguration:'1P',modules:1,widthMm:18,heightMm:90,depthMm:76,
+    inA:16,curve:'C',icnKa:6,icnVoltageV:230,icnStandard:'EN 60898-1',appearance:'siemens',
+    sourceType:'MANUFACTURER_DATASHEET_OFFICIAL',sourceReviewedAt:'2026-11-14',
+    source:'https://support.industry.siemens.com/teddatasheet/?caller=SIOS&format=pdf&language=en&mlfbs=5SL6116-7',
+    productSource:'https://mall.industry.siemens.com/mall/en/en/Catalog/product?mlfb=5SL6116-7'
   })
 });
 function epCatalogSku(sku) { return Object.prototype.hasOwnProperty.call(EP_CATALOG,sku)?EP_CATALOG[sku]:null; }
@@ -50,7 +72,9 @@ function epCatalogSeries(maker='') {
 function epCatalogCompatible(sku,phase) {
  const d=epCatalogSku(sku);
  if(!d)return false;
- if(['L1','L2','L3'].includes(phase))return d.poles===1;
+ if(!['MCB','RCBO'].includes(d.kind))return false;
+ if(['L1','L2','L3'].includes(phase))return d.poles===1||
+  (d.poles===2&&['1P+N','2P'].includes(d.poleConfiguration));
  if(phase==='3Ф')return d.poles===3||d.poles===4;
  return false;
 }
