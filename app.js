@@ -62,11 +62,12 @@ const DEVICE_TEMPLATES=Object.freeze({
 });
 
 
-function catalogDevice(sku){return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
+function catalogDevice(sku){if(typeof epProjectCatalogV1==='function'){const c=epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{});return c.lookup(sku);}return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
 // UI filters are temporary preferences, never electrical or catalogue data.
 let catalogMakerFilter='',catalogSeriesFilter='';
 function catalogChoices(selected,phase=''){
- const items=typeof epCatalogFilter==='function'?epCatalogFilter(catalogMakerFilter,catalogSeriesFilter,phase):[];
+ const entries=typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles):[];
+ const items=entries.filter(([id,d])=>(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||(['L1','L2','L3'].includes(phase)?d.poles===1:phase==='3Ф'&&(d.poles===3||d.poles===4))));
  const current=catalogDevice(selected);
  if(current&&!items.some(([id])=>id===selected))items.unshift([selected,current]);
  const unknown=selected&&!current;
@@ -1418,7 +1419,12 @@ function commitPending(){
  checkpoint();for(const x of pendingRows)addLine(x.name,x.power,{source:'tz',sourceRef:'ТЗ, строка '+x.sourceLine});
  const n=pendingRows.length;pendingRows=[];changed();switchView('loads');notify(`Добавлено ${n} строк. Сверьте с исходным ТЗ.`);return true;
 }
+function renderProjectCatalogWorkbenchV1(){
+ const panel=$('projectCatalogWorkbench');
+ if(panel&&typeof epProjectCatalogHtmlV1==='function')panel.innerHTML=epProjectCatalogHtmlV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{});
+}
 function renderBoard(){
+ renderProjectCatalogWorkbenchV1();
  const board=$('boardCanvas');board.innerHTML='';$('boardTitle').textContent=state.title+' / компоновка';
  const layout=layoutSlots();
  layout.rails.forEach((slots,r)=>{
@@ -2095,5 +2101,22 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('projectCatalogWorkbench')?.addEventListener('click',e=>{
+ if(e.target.id==='catalogExportRecordsBtn'){
+  download(baseName()+'_project_catalog_DRAFT.json',JSON.stringify(state.catalogArticles||[],null,2),'application/json;charset=utf-8');return;
+ }
+ if(e.target.id!=='catalogImportRecordsBtn')return;
+ try{
+  const text=$('catalogJsonInput').value;
+  if(text.length>250000)throw Error('Превышен размер импорта');
+  const records=JSON.parse(text);
+  if(!Array.isArray(records)||records.length>500||records.length===0)throw Error('Ожидается массив от 1 до 500 артикулов');
+  const draft=structuredCloneCompat(state);
+  draft.catalogArticles=[...(Array.isArray(draft.catalogArticles)?draft.catalogArticles:[]),...records];
+  const audit=epProjectCatalogV1(draft,typeof EP_CATALOG==='object'?EP_CATALOG:{});
+  if(audit.issues.length)throw Error('Ошибки каталога: '+audit.issues.slice(0,5).map(x=>x.code+' #'+x.index).join(', '));
+  checkpoint();state=draft;changed();notify('Артикулы добавлены в проект; параметры требуют подтверждения источниками');
+ }catch(error){notify(error.message,true);}
 });
 try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}lastDesignSnapshot=structuredCloneCompat(state);render();
