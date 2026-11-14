@@ -2087,7 +2087,8 @@ $('protectionWorkbench').addEventListener('submit',e=>{
  e.preventDefault();
  const id=form.dataset.protectionInputForm;
  const inputs={ibA:form.elements.namedItem('ibA')?.value,
-  izA:form.elements.namedItem('izA')?.value,ikKa:form.elements.namedItem('ikKa')?.value};
+  izA:form.elements.namedItem('izA')?.value,ikKa:form.elements.namedItem('ikKa')?.value,
+  voltageV:form.elements.namedItem('voltageV')?.value??''};
  if(typeof epProtectionInputsV1!=='function')return notify('Модуль исходных токов недоступен',true);
  const result=epProtectionInputsV1(state,id,inputs);
  if(!result.project)return notify('Исходные токи не записаны: '+result.code,true);
