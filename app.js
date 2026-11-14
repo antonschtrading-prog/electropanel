@@ -2185,10 +2185,19 @@ $('faultRoutePanel').addEventListener('submit',e=>{
  if(!result.project)return notify('Расчёт не сохранён: '+result.code,true);
  checkpoint();state=result.project;changed();notify('Трасса сохранена. Сравнение с Ia: '+result.report.thresholdStatus);
 });
+function filterProjectCatalogue(){
+ const panel=$('projectCatalogWorkbench');
+ const query=(panel.querySelector('#catalogSearchInput')?.value||'').trim().toLocaleLowerCase('ru');
+ const tier=panel.querySelector('#catalogTierFilter')?.value||'';
+ for(const row of panel.querySelectorAll('[data-catalog-row]'))
+  row.hidden=!!((tier&&row.dataset.catalogTier!==tier)||
+   (query&&!row.textContent.toLocaleLowerCase('ru').includes(query)));
+}
 $('projectCatalogWorkbench').addEventListener('input',e=>{
- if(e.target.id!=='catalogSearchInput')return;
- const query=e.target.value.trim().toLocaleLowerCase('ru');
- for(const row of $('projectCatalogWorkbench').querySelectorAll('[data-catalog-row]'))row.hidden=!row.textContent.toLocaleLowerCase('ru').includes(query);
+ if(e.target.id==='catalogSearchInput')filterProjectCatalogue();
+});
+$('projectCatalogWorkbench').addEventListener('change',e=>{
+ if(e.target.id==='catalogTierFilter')filterProjectCatalogue();
 });
 document.addEventListener('submit',e=>{
  if(e.target.getAttribute('id')!=='catalogArticleForm')return;e.preventDefault();
