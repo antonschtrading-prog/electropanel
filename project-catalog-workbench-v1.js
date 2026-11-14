@@ -24,6 +24,11 @@ function epProjectCatalogV1(project,seed={},options={}){
   if(r.widthMm>r.modules*18){
    issues.push({index,code:'ARTICLE_WIDTH_EXCEEDS_MODULES',status:'BLOCKED'});continue;
   }
+  // Do not infer body dimensions from the module count or a drawn preview.
+  if(['heightMm','depthMm'].some(key=>r[key]!==undefined&&r[key]!==null&&r[key]!==''&&
+     (!num(r[key])||r[key]>2000))){
+   issues.push({index,code:'CATALOG_BODY_DIMENSIONS_INVALID',status:'BLOCKED'});continue;
+  }
   if(typeof r.source!=='string'||r.source.length>2000||!httpsSource(r.source)){
    issues.push({index,code:'CATALOG_SOURCE_MISSING',status:'UNKNOWN'});continue;
   }
@@ -72,7 +77,9 @@ function epProjectCatalogV1(project,seed={},options={}){
    issues.push({index,code:'CATALOG_RESIDUAL_KIND_CONFLICT',status:'BLOCKED'});continue;
   }
   const article={id:key,sku:r.sku,maker:r.maker,series:r.series,kind:r.kind,label:r.label||r.sku,
-   modules:r.modules,widthMm:r.widthMm,poles:r.poles,inA:r.inA,
+   modules:r.modules,widthMm:r.widthMm,
+   heightMm:num(r.heightMm)?r.heightMm:null,depthMm:num(r.depthMm)?r.depthMm:null,
+   poles:r.poles,inA:r.inA,
    curve:typeof r.curve==='string'?r.curve:null,
    icnKa:num(r.icnKa)?r.icnKa:null,
    icnVoltageV:num(r.icnVoltageV)?r.icnVoltageV:null,
@@ -97,7 +104,7 @@ function epProjectCatalogHtmlV1(project,seed={}){
   const provenance=custom?'Декларация пользователя · не проверено':esc(a.sourceType||'Встроенный каталог');
   const residual=['RCD','RCBO'].includes(a.kind)?
    (a.residualCurrentMa??'—')+' мА / '+(a.residualType||'—'):'—';
-  return '<tr data-catalog-row><td>'+esc(a.maker)+'</td><td>'+esc(a.series)+'</td><td>'+esc(a.sku)+'</td><td>'+esc(a.inA)+' A</td><td>'+esc(residual)+'</td><td>'+esc(a.modules)+' M / '+esc(a.widthMm)+' мм</td><td>'+source+'</td><td>'+provenance+'</td><td>'+(custom?'<button type="button" class="btn tiny" data-edit-article="'+esc(id)+'">Изменить</button> <button type="button" class="btn tiny" data-delete-article="'+esc(id)+'">Удалить</button>':'Встроенный')+'</td></tr>';
+  return '<tr data-catalog-row><td>'+esc(a.maker)+'</td><td>'+esc(a.series)+'</td><td>'+esc(a.sku)+'</td><td>'+esc(a.inA)+' A</td><td>'+esc(residual)+'</td><td>'+esc(a.modules)+' M / '+[a.widthMm,a.heightMm,a.depthMm].map(x=>typeof x==='number'?esc(x):'—').join(' × ')+' мм (Ш×В×Г)</td><td>'+source+'</td><td>'+provenance+'</td><td>'+(custom?'<button type="button" class="btn tiny" data-edit-article="'+esc(id)+'">Изменить</button> <button type="button" class="btn tiny" data-delete-article="'+esc(id)+'">Удалить</button>':'Встроенный')+'</td></tr>';
  }).join('');
  const issues=c.issues.length?'<details><summary>Ошибки каталога ('+c.issues.length+')</summary><ul>'+c.issues.map(i=>'<li>Запись '+(i.index+1)+': '+esc(i.code)+' · '+esc(i.status)+'</li>').join('')+'</ul></details>':'';
  return '<section class="panel compact ep-catalog-workbench"><h3>Каталог оборудования · проект</h3>'+
@@ -115,11 +122,15 @@ function epProjectCatalogHtmlV1(project,seed={}){
 if(typeof module!=='undefined'&&module.exports)module.exports={epProjectCatalogV1,epProjectCatalogHtmlV1};
 
 function epCatalogEditorHtmlV2(){
- const fields=[['id','ID записи'],['maker','Производитель'],['series','Серия'],['sku','Артикул'],['label','Обозначение'],['modules','Модули DIN'],['widthMm','Ширина, мм'],['poles','Полюса'],['inA','Номинальный ток, А'],['curve','Характеристика'],['icnKa','Icn, кА'],['icnVoltageV','Напряжение для Icn, В'],['icnStandard','Стандарт Icn'],['residualCurrentMa','IΔn, мА (только УЗО/RCBO)'],['residualType','Тип дифзащиты: AC, A, F, B, B+'],['source','Ссылка на источник HTTPS'],['productSource','Страница изготовителя HTTPS'],['sourceReviewedAt','Дата сверки с источником, ГГГГ-ММ-ДД']];
- return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label','residualCurrentMa','residualType','icnVoltageV','icnStandard','productSource','sourceReviewedAt'].includes(name)?'':'required')+' '+(['source','productSource'].includes(name)?'type="url" pattern="https://.*"':(['modules','widthMm','poles','inA','icnKa','residualCurrentMa','icnVoltageV'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>Полюса: паспортная конфигурация<select name="poleConfiguration"><option value="">Не указана</option>'+['1P','1P+N','2P','3P','3P+N','4P'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
+ const fields=[['id','ID записи'],['maker','Производитель'],['series','Серия'],['sku','Артикул'],['label','Обозначение'],['modules','Модули DIN'],['widthMm','Ширина, мм'],['heightMm','Высота корпуса, мм'],['depthMm','Глубина корпуса, мм'],['poles','Полюса'],['inA','Номинальный ток, А'],['curve','Характеристика'],['icnKa','Icn, кА'],['icnVoltageV','Напряжение для Icn, В'],['icnStandard','Стандарт Icn'],['residualCurrentMa','IΔn, мА (только УЗО/RCBO)'],['residualType','Тип дифзащиты: AC, A, F, B, B+'],['source','Ссылка на источник HTTPS'],['productSource','Страница изготовителя HTTPS'],['sourceReviewedAt','Дата сверки с источником, ГГГГ-ММ-ДД']];
+ return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label','heightMm','depthMm','residualCurrentMa','residualType','icnVoltageV','icnStandard','productSource','sourceReviewedAt'].includes(name)?'':'required')+' '+(['source','productSource'].includes(name)?'type="url" pattern="https://.*"':(['modules','widthMm','heightMm','depthMm','poles','inA','icnKa','residualCurrentMa','icnVoltageV'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>Полюса: паспортная конфигурация<select name="poleConfiguration"><option value="">Не указана</option>'+['1P','1P+N','2P','3P','3P+N','4P'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
 }
 function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'PROJECT_OR_RECORD_INVALID'};
+ if(project.lines.some(x=>!x||typeof x!=='object'||Array.isArray(x))||
+    ['catalogArticles','branchDevices','sharedDevices'].some(key=>project[key]!==undefined&&
+     (!Array.isArray(project[key])||project[key].some(x=>!x||typeof x!=='object'||Array.isArray(x)))))
+  return {project:null,code:'PROJECT_COLLECTION_INVALID'};
  if(originalId&&originalId!==record.id)return {project:null,code:'ARTICLE_ID_IMMUTABLE'};
  if(!Object.prototype.hasOwnProperty.call(record,'id')||typeof record.id!=='string')return {project:null,code:'ARTICLE_ID_INVALID'};
  const existing=project.catalogArticles||[];
@@ -211,6 +222,12 @@ function epImportProjectArticlesV2(project,records,seed={}){
   status:'REVIEW_REQUIRED'};
 }
 function epDeleteProjectArticleV2(project,id){
+ if(!project||!Array.isArray(project.lines)||!Array.isArray(project.catalogArticles)||
+    project.lines.some(x=>!x||typeof x!=='object')||
+    project.catalogArticles.some(x=>!x||typeof x!=='object')||
+    (project.sharedDevices!==undefined&&(!Array.isArray(project.sharedDevices)||
+     project.sharedDevices.some(x=>!x||typeof x!=='object'))))
+  return {project:null,code:'PROJECT_COLLECTION_INVALID'};
  if((project.lines||[]).some(x=>x.catalogSku===id)||(project.sharedDevices||[]).some(x=>x.catalogSku===id))return {project:null,code:'ARTICLE_IN_USE'};
  if(!(project.catalogArticles||[]).some(x=>x.id===id))return {project:null,code:'ARTICLE_NOT_CUSTOM'};
  const draft=JSON.parse(JSON.stringify(project));draft.catalogArticles=draft.catalogArticles.filter(x=>x.id!==id);

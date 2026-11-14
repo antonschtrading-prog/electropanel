@@ -31,3 +31,47 @@ test('custom record cannot self-assert verified catalogue status',()=>{
  const project=save({lines:[]},{...a(),verificationStatus:'VERIFIED'}).project;
  assert.equal(epProjectCatalogV1(project).lookup('USER').verificationStatus,'UNVERIFIED');
 });
+
+const {epCatalogDinBridgeV1:bridge}=require('../catalog-din-bridge-v1');
+const {epCatalogEvidenceAuditV1:sourceAudit}=require('../catalog-evidence-audit-v1');
+test('editable article body dimensions survive catalogue, DIN and provenance projections',()=>{
+ const original=p(),before=JSON.stringify(original);
+ const r=save(original,{...a(),heightMm:85,depthMm:78.5},{},'USER');
+ assert.ok(r.project);assert.equal(JSON.stringify(original),before);
+ const stored=r.project.catalogArticles[0],resolved=epProjectCatalogV1(r.project).lookup('USER');
+ assert.equal(stored.heightMm,85);assert.equal(stored.depthMm,78.5);
+ assert.equal(resolved.heightMm,85);assert.equal(resolved.depthMm,78.5);
+ const din=bridge(resolved);
+ assert.deepEqual(din.record.geometry,{widthMm:18,heightMm:85,depthMm:78.5});
+ const evidence=sourceAudit(r.project,()=>resolved);
+ assert.equal(evidence.items[0].heightMm,85);assert.equal(evidence.items[0].depthMm,78.5);
+ assert.equal(evidence.issues.some(x=>x.code==='CATALOG_BODY_DIMENSIONS_UNDECLARED'),false);
+ assert.equal(evidence.engineeringApproved,false);
+});
+test('partial body geometry remains unknown, not an inferred physical envelope',()=>{
+ const r=save({lines:[]},{...a(),heightMm:85});
+ assert.ok(r.project);
+ const resolved=epProjectCatalogV1(r.project).lookup('USER');
+ assert.equal(resolved.heightMm,85);assert.equal(resolved.depthMm,null);
+ const evidence=sourceAudit({lines:[{id:'L1',catalogSku:'USER'}]},()=>resolved);
+ assert.ok(evidence.issues.some(x=>x.code==='CATALOG_BODY_DIMENSIONS_UNDECLARED'));
+});
+test('invalid body dimensions fail closed without mutating catalogue or board',()=>{
+ for(const [name,value] of [['heightMm',0],['heightMm',-1],['heightMm',2001],
+  ['heightMm',Infinity],['heightMm','85'],['depthMm',-1],['depthMm',2001],['depthMm','78.5']]){
+  const source=p(),before=JSON.stringify(source),result=save(source,{...a(),[name]:value},{},'USER');
+  assert.equal(result.project,null,name+'='+String(value));
+  assert.equal(result.code,'CATALOG_BODY_DIMENSIONS_INVALID');
+  assert.equal(JSON.stringify(source),before);
+ }
+});
+test('malformed project branch and shared collections cannot mutate catalogue',()=>{
+ for(const defect of [{branchDevices:{bad:true}},{branchDevices:[null]},{sharedDevices:{bad:true}},
+  {sharedDevices:[null]},{lines:[null]},{catalogArticles:[null]}]){
+  const source={...p(),...defect},before=JSON.stringify(source);
+  assert.equal(save(source,{...a(),heightMm:85},{},'USER').code,'PROJECT_COLLECTION_INVALID');
+  assert.equal(JSON.stringify(source),before);
+ }
+ for(const source of [null,{}, {lines:[],catalogArticles:[],sharedDevices:[null]}])
+  assert.equal(del(source,'USER').project,null);
+});

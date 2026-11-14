@@ -33,3 +33,11 @@ Official product references: [A9F73110](https://www.se.com/sg/en/product/A9F7311
 908 Node regressions pass locally. The route reference example is independently evaluated with Python Decimal: Rloop=0.5 Ω, Xloop=0.054 Ω, Zs=0.5029075461752388539 Ω, Ik,min=434.4734964940521342 A for U0=230 V and cmin=0.95. Negative, unsupported, stale and missing-evidence cases are covered. Catalogue tests cover atomic updates, used-record deletion, fixed-position collision, reserved IDs and seed immutability.
 
 The committed Chromium regression additionally creates/assigns/edits an article through the form, searches the catalogue, refuses deletion of used equipment, selects a seeded 3P breaker, fills the route form, checks stale state after replacement, and reloads the saved project. See commit-specific Actions for its execution outcome.
+
+
+## Integrated custom article geometry and transactional integrity — 14 November 2026
+
+- Project articles accept optional, bounded positive heightMm and depthMm through the normal editor, JSON and persisted records, without inventing absent dimensions. The catalogue table shows width × height × depth, retaining unknowns as dashes.
+- Existing DIN bridge now receives both dimensions from a real project article. The source-provenance audit propagates body dimensions and explicitly reports missing measurements; technical declarations never become VERIFIED automatically.
+- Invalid body measurements and malformed line, branch or shared collections reject catalogue mutations before changing any project state. Focused regressions cover round-trip propagation, incomplete geometry, invalid input, atomic rejection and unchanged original state.
+- Real manufacturer CAD/3D, thermal clearances and mounting suitability are still not verified. Test pass is not normative design approval.

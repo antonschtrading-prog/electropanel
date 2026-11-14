@@ -60,7 +60,8 @@ function epCatalogEvidenceAuditV1(project,lookup){
   const item={
    role:o.role,ownerId:o.id,lineId:o.role==='circuit'?o.id:null,
    articleId:o.sku,sku:d.sku??null,manufacturer:d.maker??null,series:d.series??null,
-   kind:d.kind??null,source:d.source??null,productSource:d.productSource??null,
+   kind:d.kind??null,widthMm:d.widthMm??null,heightMm:d.heightMm??null,depthMm:d.depthMm??null,
+   source:d.source??null,productSource:d.productSource??null,
    sourceType:d.sourceType??'UNCLASSIFIED',sourceReviewedAt:d.sourceReviewedAt??null,
    verificationStatus:d.verificationStatus??'UNVERIFIED',
    icnKa:d.icnKa??null,icnVoltageV:d.icnVoltageV??null,icnStandard:d.icnStandard??null,
@@ -75,6 +76,8 @@ function epCatalogEvidenceAuditV1(project,lookup){
   if(d.sourceReviewedAt&&!goodDate(d.sourceReviewedAt))
    add('CATALOG_SOURCE_REVIEW_DATE_INVALID','BLOCKED',o);
   if(!d.sourceReviewedAt)add('CATALOG_SOURCE_REVIEW_NOT_RECORDED','UNKNOWN',o);
+  if(![d.widthMm,d.heightMm,d.depthMm].every(x=>typeof x==='number'&&Number.isFinite(x)&&x>0))
+   add('CATALOG_BODY_DIMENSIONS_UNDECLARED','UNKNOWN',o);
   if(d.sourceType==='MANUFACTURER_DATASHEET_MIRROR')
    add('CATALOG_MIRROR_REQUIRES_MANUFACTURER_CONFIRMATION','UNKNOWN',o);
   if(d.sourceType==='PROJECT_DECLARATION')
