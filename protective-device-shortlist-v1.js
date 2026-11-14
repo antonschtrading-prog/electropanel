@@ -40,6 +40,12 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   if(d.modules===undefined)caution.push('CATALOG_MODULES_UNDECLARED');
   if(!d.source)caution.push('DATASHEET_SOURCE_MISSING');
   if(d.verificationStatus!=='VERIFIED')caution.push('CATALOG_DATA_UNVERIFIED');
+  if(d.kind==='RCBO'){
+   if(!Number.isFinite(d.residualCurrentMa)||d.residualCurrentMa<=0)
+    caution.push('RCBO_RESIDUAL_CURRENT_UNDECLARED');
+   if(!['AC','A','F','B','B+'].includes(d.residualType))
+    caution.push('RCBO_RESIDUAL_TYPE_UNDECLARED');
+  }
   if(line.calculationReview?.required)caution.push('CALCULATION_REVIEW_REQUIRED');
   if(line.loadCurrentCalculation?.stale)caution.push('LOAD_CURRENT_STALE');
   if(line.loadCurrentCalculation&&
@@ -48,6 +54,7 @@ function epProtectiveDeviceShortlistV1(line,catalog){
    caution.push('IB_DIFFERS_FROM_CALCULATION');
   candidates.push({sku,manufacturerSku:d.sku??null,maker:d.maker??null,series:d.series??null,
    label:d.label??null,kind:d.kind,inA:d.inA,icnKa:d.icnKa,poles:d.poles,modules:d.modules,
+   residualCurrentMa:d.residualCurrentMa??null,residualType:d.residualType??null,
    source:d.source??null,verificationStatus:d.verificationStatus??'UNKNOWN',
    status:reasons.length?'REJECTED':(ib===null||iz===null||ik===null?'INCOMPLETE':'POTENTIAL'),
    reasons,caution,engineeringApproved:false});
