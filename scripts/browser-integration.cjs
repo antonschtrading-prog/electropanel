@@ -26,6 +26,45 @@ const server=http.createServer((req,res)=>{
  });
  assert.deepEqual(auditIsolation,{globalMissing:true,unknown:false});
 
+ // End-to-end RCD catalogue edit: original project -> review -> scheme -> DIN -> BOM -> cross-view.
+ const rcdEdit=await page.evaluate(()=>{
+  const breaker={id:'E2E-B',sku:'B16',maker:'E2E Maker',series:'M',kind:'MCB',
+   label:'Breaker B16',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/b16'};
+  const rcd={id:'E2E-R',sku:'R40',maker:'E2E Maker',series:'R',kind:'RCD',
+   label:'RCD old',modules:2,widthMm:36,poles:2,inA:40,source:'https://example.org/r40'};
+  const p={title:'Isolated panel',railCount:1,railCapacity:12,
+   catalogArticles:[breaker,rcd],
+   lines:[{id:'L1',name:'Light',phase:'L1',catalogSku:'E2E-B',modules:1,device:'Breaker B16',
+    faultInput:{ikKa:3}}],
+   branchDevices:[{id:'BD1',circuitId:'L1',label:'Breaker B16',modules:1}],
+   sharedDevices:[{id:'R1',catalogSku:'E2E-R',templateId:'RCD_2P',label:'RCD old',modules:2,circuitIds:['L1']}]};
+  const change=epUpsertProjectArticleV2(p,{...rcd,label:'RCD new',modules:3,widthMm:54},EP_CATALOG,'E2E-R');
+  if(!change.project)return {error:change.code};
+  const lookup=epProjectCatalogV1(change.project,EP_CATALOG).lookup;
+  const singleLine=epSingleLineDraftV1(change.project,lookup);
+  const board=epDraftBoardPlanV1(change.project,lookup);
+  const bom=epDraftBomV1(change.project,lookup);
+  const audit=epCatalogOutputCrossViewV1(change.project,board,bom,lookup);
+  const schematicAudit=epSchematicCrossViewV1(change.project,singleLine,lookup);
+  return {
+   affectedCircuits:change.affectedCircuits,affectedShared:change.affectedShared,
+   review:change.project.lines[0].calculationReview?.required===true,
+   groupName:singleLine.nodes.find(n=>n.id==='RCD:R1')?.name,
+   groupModules:singleLine.nodes.find(n=>n.id==='RCD:R1')?.article?.modules,
+   boardModules:board.placements.find(x=>x.deviceId==='R1')?.modules,
+   bomModules:bom.items.find(x=>x.key==='E2E-R')?.modules,
+   schematicIssues:schematicAudit.issues.map(x=>x.code),
+   outputIssues:audit.issues.map(x=>x.code),
+   originalUnchanged:p.sharedDevices[0].modules===2
+  };
+ });
+ assert.deepEqual(rcdEdit,{
+  affectedCircuits:['L1'],affectedShared:['R1'],review:true,groupName:'RCD new',
+  groupModules:3,boardModules:3,bomModules:3,schematicIssues:[],outputIssues:[],
+  originalUnchanged:true
+ },'RCD edit must reconcile every project view without silently changing source');
+
+
  // Assign a real seeded article through the actual editor.
  await page.locator('#boardCanvas [data-line="L1"]').click();
  await page.locator('#catalogSku').selectOption('SE-A9F74116');
