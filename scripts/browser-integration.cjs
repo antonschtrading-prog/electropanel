@@ -22,7 +22,7 @@ const server=http.createServer((req,res)=>{
   const p=JSON.parse(JSON.stringify(state));
   p.catalogArticles=[{id:'LOCAL-ONLY',sku:'LOCAL',maker:'Local',series:'S',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/local'}];
   p.lines[0].catalogSku='LOCAL-ONLY';p.lines[0].modules=1;p.lines[0].device='LOCAL';
-  return {globalMissing:catalogDevice('LOCAL-ONLY')===null,unknown:catalogAudit(p).some(x=>x.circuitId===p.lines[0].id&&x.code==='CATALOG_UNKNOWN')};
+  return {globalMissing:catalogDevice('LOCAL-ONLY')===null,unknown:catalogAudit(p).issues.some(x=>x.circuitId===p.lines[0].id&&x.code==='CATALOG_UNKNOWN')};
  });
  assert.deepEqual(auditIsolation,{globalMissing:true,unknown:false});
 
