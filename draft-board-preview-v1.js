@@ -40,7 +40,7 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
     '<span class="ep-din-block-id">'+safe(d.deviceId)+'</span>'+
     facade+
     '<span class="ep-din-device-face ep-din-face-'+faceStyle+'" aria-hidden="true">'+
-    (catalog&&typeof epCatalogFrontSvgV1==='function'?epCatalogFrontSvgV1(catalog,d.deviceId):'<span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span>')+'</span>'+ 
+    (catalog&&typeof epCatalogFrontSvgV1==='function'?epCatalogFrontSvgV1(catalog,d.deviceId)+'<span class="ep-din-device-toggle" hidden></span>':'<span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span>')+'</span>'+ 
     '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+
     '<span class="ep-din-block-width">'+d.modules+'M</span></button>';
    cursor=d.startModule+d.modules;
