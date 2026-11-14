@@ -92,6 +92,14 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
   '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
+  '<h2>Максимальный заявленный ток КЗ · независимая расчётная модель</h2>'+
+  rows(['Цепь','Модель','Напряжение, В','cmax','R, Ом','X, Ом','|Z|, Ом','Ik,max, кА','Icn, кА','Арифметическое сравнение','Статус'],
+   (sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.maximum?.model??'Не выбран',
+    x.maximum?.voltageV??'—',x.maximum?.cmax??'—',x.maximum?.rOhm??'—',
+    x.maximum?.xOhm??'—',x.maximum?.impedanceOhm??'—',
+    x.maximum?.ikMaxKa??'—',x.maximum?.icnKa??'—',
+    x.maximum?.numericComparison??'Не проверено',x.maximum?.thresholdStatus??'UNKNOWN']))+
+  '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
   '<h2>Паспортные данные выбранного оборудования · источники и ограничения</h2>'+catalogueEvidenceTable+
