@@ -211,13 +211,14 @@ function epSchematicCrossViewV1(project,singleLine,lookupSku){
   const expectDesign={
    ibA:l.overloadInput?.ibA??null,izA:l.overloadInput?.izA??null,
    ikKa:l.faultInput?.ikKa??null,
+   voltageV:l.faultInput?.voltageV??null,
    calculationReviewRequired:l.calculationReview?.required===true,
    loadCurrentStale:l.loadCurrentCalculation?.stale===true,
    inputSource:l.protectionInputSource||null
   };
   if(!n.design||typeof n.design!=='object')add('SCHEMATIC_DESIGN_EVIDENCE_MISSING',id);
   else for(const [key,code] of [
-   ['ibA','IB_STALE'],['izA','IZ_STALE'],['ikKa','IK_STALE'],
+   ['ibA','IB_STALE'],['izA','IZ_STALE'],['ikKa','IK_STALE'],['voltageV','FAULT_VOLTAGE_STALE'],
    ['calculationReviewRequired','REVIEW_FLAG_STALE'],
    ['loadCurrentStale','CALCULATED_CURRENT_STATUS_STALE'],
    ['inputSource','CURRENT_PROVENANCE_STALE']
@@ -389,6 +390,7 @@ function epProtectionProjectionAuditV1(project,protection,lookupSku){
   compare(id,value(r.ibA),value(line.overloadInput?.ibA),'PROTECTION_IB_STALE');
   compare(id,value(r.izA),value(line.overloadInput?.izA),'PROTECTION_IZ_STALE');
   compare(id,value(r.ikKa),value(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa),'PROTECTION_IK_STALE');
+  compare(id,value(r.voltageV),value(line.faultInput?.voltageV),'PROTECTION_FAULT_VOLTAGE_STALE');
   compare(id,r.phase||null,line.phase||null,'PROTECTION_PHASE_STALE');
   compare(id,r.selectedSku||null,line.catalogSku||null,'PROTECTION_SELECTED_SKU_STALE');
   const review=!!line.calculationReview?.required,stale=!!line.loadCurrentCalculation?.stale;
