@@ -96,6 +96,10 @@ function epCrossViewAuditV1(project, protection, board, bom, singleLine, lookupS
   issues.push(...schematic.issues);
   const catalogueOutputs=epCatalogOutputCrossViewV1(project,board,bom,lookupSku);
   issues.push(...catalogueOutputs.issues);
+  if(arguments.length>=6){
+   const protectionOutputs=epProtectionProjectionAuditV1(project,protection,lookupSku);
+   issues.push(...protectionOutputs.issues);
+  }
  }
  if(board?.status==='BLOCKED')add('BOARD_HAS_BLOCKING_ISSUES');
  if(protection?.status==='BLOCKED')add('PROTECTION_HAS_BLOCKING_ISSUES');
@@ -343,4 +347,78 @@ function epCatalogOutputCrossViewV1(project,board,bom,lookupSku){
  return {status:issues.length?'BLOCKED':'UNKNOWN',issues,engineeringApproved:false};
 }
 
-if(typeof module!=='undefined'&&module.exports)module.exports={epCrossViewAuditV1,epSchematicCrossViewV1,epCatalogOutputCrossViewV1};
+
+/**
+ * Compare selected apparatus, design inputs and their derived protection row
+ * to a single project snapshot. No approval is produced by matching rows.
+ */
+function epProtectionProjectionAuditV1(project,protection,lookupSku){
+ const issues=[],add=(code,lineId=null)=>issues.push({code,level:'BLOCKED',lineId});
+ if(!project||!Array.isArray(project.lines)||!protection||!Array.isArray(protection.rows))
+  return {status:'BLOCKED',issues:[{code:'PROTECTION_PROJECTION_UNAVAILABLE',level:'BLOCKED'}],engineeringApproved:false};
+ const value=x=>{
+  if(x===null||x===undefined||typeof x==='boolean'||typeof x==='object')return null;
+  const s=String(x).trim().replace(',','.');
+  if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;
+  const n=Number(s);return Number.isFinite(n)&&n>0?n:null;
+ };
+ const lines=new Map(),rows=new Map();
+ for(const l of project.lines){
+  if(!l||typeof l.id!=='string'||!l.id){add('PROTECTION_PROJECT_CIRCUIT_INVALID');continue;}
+  if(lines.has(l.id))add('PROTECTION_PROJECT_CIRCUIT_DUPLICATE',l.id);
+  lines.set(l.id,l);
+ }
+ for(const r of protection.rows){
+  if(!r||typeof r.lineId!=='string'||!r.lineId){add('PROTECTION_ROW_INVALID');continue;}
+  if(rows.has(r.lineId))add('PROTECTION_ROW_DUPLICATE',r.lineId);
+  if(!lines.has(r.lineId))add('PROTECTION_ROW_ORPHAN',r.lineId);
+  rows.set(r.lineId,r);
+ }
+ const compare=(lineId,a,b,code)=>{if(a!==b)add(code,lineId);};
+ for(const [id,line] of lines){
+  const r=rows.get(id);
+  if(!r){add('PROTECTION_ROW_MISSING',id);continue;}
+  compare(id,value(r.ibA),value(line.overloadInput?.ibA),'PROTECTION_IB_STALE');
+  compare(id,value(r.izA),value(line.overloadInput?.izA),'PROTECTION_IZ_STALE');
+  compare(id,value(r.ikKa),value(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa),'PROTECTION_IK_STALE');
+  compare(id,r.phase||null,line.phase||null,'PROTECTION_PHASE_STALE');
+  compare(id,r.selectedSku||null,line.catalogSku||null,'PROTECTION_SELECTED_SKU_STALE');
+  const review=!!line.calculationReview?.required,stale=!!line.loadCurrentCalculation?.stale;
+  const expectedIb=value(line.overloadInput?.ibA),calculated=value(line.loadCurrentCalculation?.roundedIbA);
+  const staleReasons=[
+   ['CALCULATION_REVIEW_STALE',review,'PROTECTION_REVIEW_STATUS_STALE'],
+   ['LOAD_CURRENT_STALE',stale,'PROTECTION_LOAD_STATUS_STALE'],
+   ['IB_DIFFERS_FROM_CALCULATION',calculated!==null&&expectedIb!==calculated,
+    'PROTECTION_IB_CALC_STATUS_STALE']
+  ];
+  if(!Array.isArray(r.reasons)){add('PROTECTION_REASONS_INVALID',id);}
+  else for(const [reason,expected,code] of staleReasons)
+   if(r.reasons.includes(reason)!==expected)add(code,id);
+  if(!line.catalogSku){
+   if(r.selectedArticle!=null)add('PROTECTION_UNSELECTED_ARTICLE_STALE',id);
+   continue;
+  }
+  if(typeof lookupSku!=='function'){add('PROTECTION_LOOKUP_UNAVAILABLE',id);continue;}
+  let article=null;
+  try{article=lookupSku(line.catalogSku);}catch(_){add('PROTECTION_LOOKUP_FAILED',id);}
+  if(!article){add('PROTECTION_ARTICLE_UNRESOLVED',id);continue;}
+  if(!r.selectedArticle||typeof r.selectedArticle!=='object'){
+   add('PROTECTION_SELECTED_ARTICLE_MISSING',id);continue;
+  }
+  for(const [field,code] of [
+   ['kind','KIND_STALE'],['sku','MANUFACTURER_SKU_STALE'],['maker','MAKER_STALE'],
+   ['series','SERIES_STALE'],['label','LABEL_STALE'],['inA','NOMINAL_STALE'],
+   ['icnKa','BREAKING_CAPACITY_STALE'],['poles','POLES_STALE'],
+   ['modules','MODULES_STALE'],['source','SOURCE_STALE'],
+   ['verificationStatus','EVIDENCE_STALE']
+  ]){
+   const expected=article[field]??(field==='sku'?line.catalogSku:
+    field==='verificationStatus'?'UNKNOWN':null);
+   compare(id,r.selectedArticle[field]??null,expected,'PROTECTION_'+code);
+  }
+ }
+ return {status:issues.length?'BLOCKED':'UNKNOWN',issues,
+  checkedCircuits:lines.size,engineeringApproved:false,ready_for_installation:false};
+}
+
+if(typeof module!=='undefined'&&module.exports)module.exports={epCrossViewAuditV1,epSchematicCrossViewV1,epCatalogOutputCrossViewV1,epProtectionProjectionAuditV1};
