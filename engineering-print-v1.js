@@ -20,7 +20,7 @@ function epEngineeringPrintV1(bundle){
  const cableReference=sections.cableReference?.rows||[];
  const cableReferenceTable=rows(['Цепь','Ib, A','In, A','Способ','Справочное сечение, мм²','Статус'],cableReference.map(x=>[x.lineId,x.report?.ibA,x.report?.inA,x.report?.installationMethod,x.report?.smallestReferenceCandidate?.sectionMm2,x.report?.status]));
  const loadCurrent=sections.loadCurrent?.rows||[];
- const loadCurrentTable=rows(['Цепь','Ib, A','Режим','Формула','Исходные данные'],loadCurrent.map(x=>[x.lineId,x.ibA,x.calculation?.mode||'Не рассчитан',x.calculation?.formula||'',x.calculation?.inputs?JSON.stringify(x.calculation.inputs):'']));
+ const loadCurrentTable=rows(['Цепь','Ib, A','Источник Ib','Режим','Формула','Исходные данные','Статус','Повторная проверка'],loadCurrent.map(x=>[x.lineId,x.ibA,x.source||'Не указан',x.calculation?.mode||'Не рассчитан',x.calculation?.formula||'',x.calculation?.inputs?JSON.stringify(x.calculation.inputs):'',x.status||'UNKNOWN',x.reviewRequired?'Требуется':'Не заявлена']));
  const evidence=sections.designEvidence?.items||[];
  const evidenceTable=rows(['Раздел','Статус','Обоснование'],
   evidence.map(x=>[x.area,x.status,x.reason]));
