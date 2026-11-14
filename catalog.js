@@ -111,4 +111,27 @@ function epCatalogDeviceSummary(sku) {
  return d?{sku:d.sku,maker:d.maker,series:d.series,modules:d.modules,widthMm:d.widthMm,inA:d.inA,curve:d.curve,icnKa:d.icnKa}:null;
 }
 
-if(typeof module!=='undefined'&&module.exports)module.exports={EP_CATALOG,epCatalogSku,epCatalogMakers,epCatalogSeries,epCatalogCompatible,epCatalogFilter,epCatalogDeclaredCurrentIssues,epCatalogDeviceSummary};
+
+// Commercial navigation only. A tier is not a quality, suitability or price
+// certification of a manufacturer's individual product/series.
+const EP_BRAND_TIERS=Object.freeze({
+ budget:Object.freeze(['IEK','CHINT','Systeme Electric','DEKraft','Himel']),
+ comfort:Object.freeze(['Schneider Electric','Legrand','Panasonic']),
+ premium:Object.freeze(['ABB','Siemens','Hager','Schrack Technik','КЭАЗ','Eaton'])
+});
+function epBrandTier(maker){
+ for(const [tier,members] of Object.entries(EP_BRAND_TIERS))
+  if(members.includes(maker))return tier;
+ return null;
+}
+function epBrandCoverage(articles=EP_CATALOG){
+ const actual=Object.values(articles||{}).filter(a=>a&&typeof a==='object');
+ return Object.entries(EP_BRAND_TIERS).map(([tier,makers])=>({
+  tier,makers:makers.map(maker=>({
+   maker,articles:actual.filter(a=>a.maker===maker).length,
+   series:[...new Set(actual.filter(a=>a.maker===maker).map(a=>a.series).filter(Boolean))].length
+  }))
+ }));
+}
+
+if(typeof module!=='undefined'&&module.exports)module.exports={EP_CATALOG,epCatalogSku,epCatalogMakers,epCatalogSeries,epCatalogCompatible,epCatalogFilter,epCatalogDeclaredCurrentIssues,epCatalogDeviceSummary,EP_BRAND_TIERS,epBrandTier,epBrandCoverage};
