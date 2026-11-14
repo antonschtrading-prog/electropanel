@@ -14,12 +14,12 @@ function epDesignChangeImpactV1(before,after){
  if(!has(before)||!has(after))return {status:'BLOCKED',changed:['project'],affected:Object.keys(MAP),issues:[{code:'CHANGE_IMPACT_PROJECT_INVALID',level:'BLOCKED'}]};
  const lines=(project,keys)=>Array.isArray(project.lines)?project.lines.map(x=>Object.fromEntries(['id',...keys].map(k=>[k,x?.[k]??null]))).sort((a,b)=>String(a.id).localeCompare(String(b.id))):null;
  const areas={
-  load:[lines(before,['power','powerKw','phase','source']),lines(after,['power','powerKw','phase','source']),before.loads,after.loads],
+  load:[lines(before,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),lines(after,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),before.loads,after.loads],
   network:[before.network,after.network,before.earthing,after.earthing,before.voltage,after.voltage],
-  cable:[before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],
-  device:[lines(before,['catalogSku','device','modules','templateId']),lines(after,['catalogSku','device','modules','templateId']),before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
+  cable:[lines(before,['cableReferenceInput','cableDesignInput','voltageDropDesignInput']),lines(after,['cableReferenceInput','cableDesignInput','voltageDropDesignInput']),before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],
+  device:[before.catalogArticles,after.catalogArticles,lines(before,['catalogSku','device','modules','templateId']),lines(after,['catalogSku','device','modules','templateId']),before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
   topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1,before.terminalLinks,after.terminalLinks,before.feedLinks,after.feedLinks,before.groupInputLinks,after.groupInputLinks],
-  enclosure:[before.railCount,after.railCount,before.railCapacity,after.railCapacity,before.enclosure,after.enclosure]
+  enclosure:[before.manualLayoutV1,after.manualLayoutV1,before.railCount,after.railCount,before.railCapacity,after.railCapacity,before.enclosure,after.enclosure]
  };
  const changed=[];
  for(const [key,parts] of Object.entries(areas)){

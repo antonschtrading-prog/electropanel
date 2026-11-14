@@ -53,3 +53,32 @@ function epReconcileDesign(project) {
  return {status:issues.length?'BLOCKED':'CONSISTENT_UNVERIFIED',issues,rows,placements,engineeringApproved:false,readyForInstallation:false};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epReconcileDesign};
+
+// Native Web model adapter. Legacy evidence format above remains readable as-is.
+function epReconcileProjectV2(project,lookup){
+ const issues=[],rows=[];
+ const add=(code,lineId,level='UNKNOWN')=>issues.push({code,lineId,level});
+ if(!project||!Array.isArray(project.lines))return {status:'BLOCKED',issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],rows:[],engineeringApproved:false};
+ const plan=typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1(project,lookup):null;
+ if(!plan)add('BOARD_MODEL_UNAVAILABLE',null,'BLOCKED');
+ for(const i of plan?.issues||[])add(i.code,i.id,i.level);
+ const review=typeof epCircuitDesignReviewV1==='function'?epCircuitDesignReviewV1(project,lookup):null;
+ for(const i of review?.issues||[])issues.push(i);
+ for(const line of project.lines){
+  let article=null;try{article=line.catalogSku&&lookup?.(line.catalogSku);}catch(_){add('CATALOG_LOOKUP_FAILED',line.id,'BLOCKED');}
+  const branch=project.branchDevices?.find(x=>x.circuitId===line.id);
+  const placement=plan?.placements.find(x=>x.deviceId===(branch?.id||line.id));
+  if(!article)add('ARTICLE_NOT_SELECTED_OR_UNKNOWN',line.id);
+  if(article&&(!Number.isFinite(article.widthMm)||article.widthMm<=0||article.widthMm>line.modules*18))add('ARTICLE_ENVELOPE_CONFLICT',line.id,'BLOCKED');
+  rows.push({lineId:line.id,name:line.name||'',powerKw:line.power??null,
+   article:article?{id:line.catalogSku,maker:article.maker,series:article.series,sku:article.sku,widthMm:article.widthMm,source:article.source}:null,
+   calculation:review?.rows.find(x=>x.lineId===line.id)||null,placement:placement||null});
+ }
+ return {schema:'electropanel.reconciled.project.2',status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
+  rows,issues,board:plan,engineeringApproved:false,ready_for_installation:false};
+}
+function epReconcileProjectHtmlV2(report){
+ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ return '<section class="panel compact ep-project-chain"><h3>Связанный проект · нагрузка → аппарат → DIN</h3><p>Обновляется по текущей модели. '+report.rows.length+' цепей; '+report.issues.filter(x=>x.level==='BLOCKED').length+' противоречий. Проверка согласованности не заменяет инженерные основания.</p><div class="table-scroll"><table><thead><tr><th>Цепь</th><th>кВт / Ib</th><th>Оборудование</th><th>Сечение / ΔU</th><th>Позиция DIN</th></tr></thead><tbody>'+report.rows.map(r=>'<tr><td><button type="button" class="btn tiny" data-project-focus="'+esc(r.lineId)+'">'+esc(r.lineId+' · '+r.name)+'</button></td><td>'+esc(r.powerKw??'—')+' / '+esc(r.calculation?.ibA??'—')+' A</td><td>'+esc(r.article?r.article.maker+' / '+r.article.sku:'Артикул не выбран')+'</td><td>'+esc(r.calculation?.sectionMm2??'—')+' мм² / '+esc(r.calculation?.voltageDrop?.dropPercent?.toFixed(2)??'—')+'%</td><td>'+esc(r.placement?'Рейка '+(r.placement.railIndex+1)+' · модуль '+(r.placement.startModule+1):'Не размещён')+'</td></tr>').join('')+'</tbody></table></div></section>';
+}
+if(typeof module!=='undefined'&&module.exports)Object.assign(module.exports,{epReconcileProjectV2,epReconcileProjectHtmlV2});

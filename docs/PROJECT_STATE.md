@@ -22,3 +22,6 @@
 3. Для нужной задачи читать только относящиеся к ней исходники и тесты.
 4. После блока: тесты, проверка артефакта публикации, обновление реестра и этих трёх документов.
 5. Не менять согласованные решения и не утверждать успешные проверки без запуска.
+
+## 14 November 2026 — native integrated project cycle (PR #12)
+Current work supersedes the old snapshot above for Web integration. See [INTEGRATED_PROJECT_V2.md](INTEGRATED_PROJECT_V2.md): persistence repaired; catalogue candidates unified; opt-in linked current recalculation; collision-checked DIN positioning; native reconciliation table and bundle. Local suite: 892/892. Browser coverage is now committed as a separate GitHub Actions workflow. Main was not changed.

@@ -10,8 +10,8 @@ function epEngineeringBundleV1(project,lookupSku){
  const engineering=section('GATE',typeof epEngineeringGateV1==='function'?epEngineeringGateV1:null);
  const protection=section('PROTECTION',typeof epProtectionWorkbenchV1==='function'?
   (p,lookup)=>epProtectionWorkbenchV1(p,lookup,
-   typeof EP_CATALOG==='object'&&EP_CATALOG?
-   Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[],null):null);
+   typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(p,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles).map(([id,device])=>({id,device})):
+   typeof EP_CATALOG==='object'?Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[],null):null);
  const layoutAlternatives=section('LAYOUT_ALTERNATIVES',typeof epDraftLayoutAlternativesV1==='function'?epDraftLayoutAlternativesV1:null);
  const singleLine=section('SINGLE_LINE',typeof epSingleLineDraftV1==='function'?
   (p,lookup)=>epSingleLineDraftV1(p,lookup):null);
@@ -36,7 +36,8 @@ function epEngineeringBundleV1(project,lookupSku){
   (p,lookup)=>({...epDesignWorkQueueV1(p,lookup),issues:[]}):null);
  const integratedEvidence=section('INTEGRATED_EVIDENCE',typeof epIntegratedEvidenceReview==='function'?
   p=>epIntegratedEvidenceReview(p):null);
- const sections={integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const reconciliation=section('RECONCILIATION',typeof epReconcileProjectV2==='function'?epReconcileProjectV2:null);
+ const sections={reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));

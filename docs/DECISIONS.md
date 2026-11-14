@@ -24,3 +24,6 @@
 
 ## Правило принятия решения
 Указывать альтернативы, риски и доказательства. Не заменять утверждённые версии по памяти. Любое существенное архитектурное изменение сначала документировать с причиной и последствиями.
+
+## 2026-11-14 — preserve Web entity model and input provenance
+Retain the existing Web schema and stable branch IDs. Add versioned extensions instead of replacing the project or converting it to the evidence-only schema. Recompute derived current on import. Opt-in automatic Ib uses the circuit power with explicitly declared electrical factors; phase-mode changes and manual current overrides cannot silently adopt a new calculation. DIN coordinates are nominal module positions, not certified CAD geometry. One planner drives visible board and exported projections.

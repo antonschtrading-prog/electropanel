@@ -18,6 +18,7 @@ function epLoadCurrentHtmlV1(project,selectedId){
   '<label>cos φ<input name="powerFactor" inputmode="decimal" required value="'+value('powerFactor','')+'" placeholder="0…1"></label>'+
   '<label>КПД η<input name="efficiency" inputmode="decimal" required value="'+value('efficiency','')+'" placeholder="0…1"></label>'+
   '<label>Коэффициент спроса<input name="demandFactor" inputmode="decimal" required value="'+value('demandFactor','')+'" placeholder="0…1"></label>'+
+  '<label><input type="checkbox" name="linkCircuitPower"'+(record.powerSource==='circuit'?' checked':'')+'> Использовать мощность цепи и автоматически пересчитывать Ib</label>'+
   '<button class="btn" type="submit">Рассчитать и записать Ib</button></div></form>'+
   (record.formula?'<p>Формула: <code>'+esc(record.formula)+'</code>. Расчётное значение: '+esc(record.ibA)+' А. Требуется проверка применимости исходных данных.</p>':'')+
   '<p>Для трёхфазного режима предполагается симметричная нагрузка. Пусковые токи, гармоники и специальные режимы учитываются отдельно.</p></details>';

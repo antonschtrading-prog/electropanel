@@ -262,3 +262,10 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-din-block:has(.ep-manufacturer-front){min-height:230px}
 .ep-din-block:has(.ep-manufacturer-front) .ep-din-device-face{flex:1;display:flex;align-items:center;justify-content:center}
 @media(max-width:800px){.ep-din-block:has(.ep-manufacturer-front){min-height:190px}.ep-manufacturer-front{max-height:125px}}
+
+/* Position controls remain usable on narrow screens. */
+.ep-position-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;padding:12px;border:1px solid var(--border,#dce3ed);border-radius:10px}
+.ep-position-form strong,.ep-position-form button{grid-column:1/-1}
+.ep-position-form label{display:grid;gap:5px;min-width:0}
+.ep-position-form input{width:100%;min-width:0;padding:8px}
+.ep-project-chain table td{vertical-align:middle}
