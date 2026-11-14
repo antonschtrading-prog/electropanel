@@ -68,7 +68,7 @@ function catalogBranchPolesCompatible(phase,device){
 }
 function catalogChoices(selected,phase=''){
  const entries=typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles):[];
- const items=entries.filter(([id,d])=>(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||catalogBranchPolesCompatible(phase,d)));
+ const items=entries.filter(([id,d])=>['MCB','RCBO'].includes(d.kind)&&(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||catalogBranchPolesCompatible(phase,d)));
  const current=catalogDevice(selected);
  if(current&&!items.some(([id])=>id===selected))items.unshift([selected,current]);
  const unknown=selected&&!current;
