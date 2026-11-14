@@ -125,6 +125,7 @@ const server=http.createServer((req,res)=>{
  await page.locator('#catalogImportRecordsBtn').click();
  assert.equal(await page.evaluate(()=>state.catalogArticles.length),3);
  // A duplicate manufacturer/article pair must be rejected without partial commit.
+ await page.locator('#catalogImportRecordsBtn').evaluate(button=>button.closest('details').open=true);
  await page.locator('#catalogJsonInput').fill(JSON.stringify([
   {id:'BATCH-NEW',maker:'Declared maker',series:'Batch',sku:'B20',kind:'MCB',modules:1,widthMm:18,poles:1,inA:20,source:'https://example.org/b20'},
   {id:'BATCH-DUP',maker:'Declared maker',series:'Batch',sku:'B16',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/duplicate'}
