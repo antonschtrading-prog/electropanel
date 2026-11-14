@@ -105,7 +105,8 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
   const pending=new Set(Array.isArray(line.calculationReview?.pending)?line.calculationReview.pending:[]);
   for(const field of reviewFields)if(line[field])pending.add(field);
   line.calculationReview={required:true,reason:'PROJECT_ARTICLE_UPDATED',pending:[...pending]};
-  if(line.loadCurrentCalculation)line.loadCurrentCalculation.stale=true;
+  // Changing a protective apparatus does not alter previously calculated load Ib.
+  // Protection checks are still marked for review above.
   if(line.faultRouteInput)line.faultRouteInput.reviewRequired=true;
   const branch=draft.branchDevices?.find(x=>x.circuitId===line.id);
   if(branch){branch.modules=article.modules;branch.label=article.label;branch.templateId=null;}
