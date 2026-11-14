@@ -52,7 +52,7 @@ function epProjectCatalogHtmlV1(project,seed={}){
  }).join('');
  const issues=c.issues.length?'<details><summary>Ошибки каталога ('+c.issues.length+')</summary><ul>'+c.issues.map(i=>'<li>Запись '+(i.index+1)+': '+esc(i.code)+' · '+esc(i.status)+'</li>').join('')+'</ul></details>':'';
  return '<section class="panel compact ep-catalog-workbench"><h3>Каталог оборудования · проект</h3>'+
- '<p>Записей: '+Object.keys(c.articles).length+'. Пользовательские данные не подтверждены производителем автоматически. Замечаний: '+c.issues.length+'.</p>'+
+ '<p>Записей: '+Object.keys(c.articles).length+' (пользовательских: '+Object.keys(c.customArticles).length+'). Пользовательские данные не подтверждены производителем автоматически. Замечаний: '+c.issues.length+'.</p>'+
  '<label>Поиск по производителю, серии и артикулу<input id="catalogSearchInput" type="search" placeholder="Например: ABB или C16"></label>'+
  issues+'<div class="table-scroll"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th><th>In</th><th>Ширина</th><th>Документ</th><th>Статус</th><th>Действия</th></tr></thead><tbody>'+items+'</tbody></table></div>'+
  epCatalogEditorHtmlV2()+
