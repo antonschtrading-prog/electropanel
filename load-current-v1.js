@@ -1,4 +1,6 @@
 'use strict';
+const epLoadReviewMarkV1=typeof module!=='undefined'&&module.exports?
+ require('./calculation-review-v1.js').epMarkCalculationReviewV1:epMarkCalculationReviewV1;
 // Explicit design-stage load-current arithmetic. Values must be declared; no assumed voltage or power factor.
 function epLoadCurrentV1(input){
  const result=(status,code,details={})=>({schema:'electropanel.load.current.1',status,code,...details,engineeringApproved:false});
@@ -43,7 +45,7 @@ function epApplyLoadCurrentV1(project,lineId,input){
  line.overloadInput={...(line.overloadInput||{}),ibA:calculation.roundedIbA};
  line.loadCurrentCalculation={mode:calculation.mode,inputs:calculation.inputs,formula:calculation.formula,
   ibA:calculation.ibA,roundedIbA:calculation.roundedIbA,assumptions:calculation.assumptions,powerSource:input.powerSource==='circuit'?'circuit':'manual'};
- line.calculationReview={required:true,reason:'LOAD_CURRENT_CALCULATED_REVIEW_REQUIRED'};
+ epLoadReviewMarkV1(line,'LOAD_CURRENT_CALCULATED_REVIEW_REQUIRED',['overloadInput','overloadV30','lv43Input'],true);
  line.protectionInputSource='load_current_formula';
  return {status:'REVIEW_REQUIRED',code:'CURRENT_CALCULATED',project:copy,lineId,calculation};
 }
@@ -56,19 +58,25 @@ function epRefreshLinkedCurrentsV1(project){
   const old=line.loadCurrentCalculation;
   if(!old||old.powerSource!=='circuit')continue;
   if(Number(line.overloadInput?.ibA)!==Number(old.roundedIbA)){
-   old.powerSource='manual';old.stale=true;updates.push({lineId:line.id,code:'MANUAL_IB_OVERRIDE'});continue;
+   old.powerSource='manual';old.stale=true;
+   epLoadReviewMarkV1(line,'MANUAL_IB_OVERRIDE',['overloadInput'],true);
+   updates.push({lineId:line.id,code:'MANUAL_IB_OVERRIDE'});continue;
   }
   const phaseMode=line.phase==='3Ф'?'three_phase':['L1','L2','L3'].includes(line.phase)?'single_phase':null;
   // Voltage cannot be inferred after a 1ph/3ph change.
-  if(phaseMode!==old.mode){old.stale=true;updates.push({lineId:line.id,code:'PHASE_CHANGED_REENTER_VOLTAGE'});continue;}
+  if(phaseMode!==old.mode){old.stale=true;
+   epLoadReviewMarkV1(line,'PHASE_CHANGED_REENTER_VOLTAGE',['overloadInput','faultInput','lv43Input','route44Input'],true);
+   updates.push({lineId:line.id,code:'PHASE_CHANGED_REENTER_VOLTAGE'});continue;}
   const power=line.power??line.powerKw;
   if(Number(power)===Number(old.inputs?.powerKw)&&!old.stale)continue;
   const result=epLoadCurrentV1({...old.inputs,powerKw:power,mode:old.mode});
-  if(result.status!=='CALCULATED'){old.stale=true;updates.push({lineId:line.id,code:result.code});continue;}
+  if(result.status!=='CALCULATED'){old.stale=true;
+   epLoadReviewMarkV1(line,'LINKED_CURRENT_RECALC_FAILED',['overloadInput'],true);
+   updates.push({lineId:line.id,code:result.code});continue;}
   line.loadCurrentCalculation={mode:result.mode,inputs:result.inputs,formula:result.formula,
    ibA:result.ibA,roundedIbA:result.roundedIbA,assumptions:result.assumptions,powerSource:'circuit',stale:false};
   line.overloadInput={...line.overloadInput,ibA:result.roundedIbA};
-  line.calculationReview={required:true,reason:'LINKED_LOAD_UPDATED_REVIEW_REQUIRED'};
+  epLoadReviewMarkV1(line,'LINKED_LOAD_UPDATED_REVIEW_REQUIRED',['overloadInput','overloadV30','lv43Input'],true);
   updates.push({lineId:line.id,code:'CURRENT_RECALCULATED'});
  }
  return updates;
