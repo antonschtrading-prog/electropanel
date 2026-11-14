@@ -26,7 +26,7 @@ function epCatalogDinBridgeV1(seed){
  if(!Number.isFinite(seed.inA)||seed.inA<=0)issues.push({code:'CATALOG_CURRENT_INVALID',level:'BLOCKED'});
  const record={category:seed.kind,manufacturer:maker,series,article,
   verificationStatus:'UNVERIFIED',mounting:'DIN',
-  geometry:{widthMm:Number.isFinite(width)&&width>0?width:null,heightMm:null,depthMm:null},
+  geometry:{widthMm:Number.isFinite(width)&&width>0?width:null,heightMm:Number.isFinite(seed.heightMm)&&seed.heightMm>0?seed.heightMm:null,depthMm:Number.isFinite(seed.depthMm)&&seed.depthMm>0?seed.depthMm:null},
   evidence:epCatalogSourceSafeV2(seed.source)?{url:seed.source}:null,
   visual:{mode:'STYLIZED_PREVIEW',verified:false},
   electrical:{poles:seed.poles,inA:seed.inA,curve:seed.curve,icnKa:seed.icnKa},

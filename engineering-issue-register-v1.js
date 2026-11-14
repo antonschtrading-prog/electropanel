@@ -3,6 +3,8 @@
 function epEngineeringIssueRegisterV1(bundle){
  const sections=bundle?.sections||{},entries=[],counts={BLOCKED:0,UNKNOWN:0};
  const sectionNames=['designWorkQueue','designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering'];
+ if(sections.faultRoutes)sectionNames.push('faultRoutes');
+ if(sections.reconciliation)sectionNames.push('reconciliation');
  for(const name of sectionNames){
   const section=sections[name];
   if(!section||!Array.isArray(section.issues)){

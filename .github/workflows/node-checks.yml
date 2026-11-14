@@ -16,6 +16,7 @@ jobs:
           node-version: '22'
       - name: Syntax checks
         run: |
+          for file in *.js scripts/*.js scripts/*.cjs; do node --check "$file"; done
           node --check app.js
           node --check endpoint-bridge-v1.js
           node --check terminal-path-v2.js

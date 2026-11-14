@@ -20,8 +20,12 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.reasons.some(x=>x.code==='CALCULATION_REVIEW_REQUIRED'))
    add(row.lineId,3,'REVIEW_REQUIRED','Проверить актуальность расчётных данных','review');
  }
+ if(typeof epFaultRouteProjectV2==='function')for(const row of epFaultRouteProjectV2(project,lookupSku).rows){
+  if(row.status==='BLOCKED')add(row.lineId,1,'FAULT_ROUTE_BLOCKED','Проверить трассу и условие Ik,min ≥ Ia','fault_route');
+  else if(row.thresholdStatus==='UNKNOWN')add(row.lineId,2,'FAULT_ROUTE_EVIDENCE_REQUIRED','Уточнить исходные данные и основания проверки петли L–PE','fault_route');
+ }
  items.sort((a,b)=>a.priority-b.priority||String(a.lineId).localeCompare(String(b.lineId),'ru')||a.code.localeCompare(b.code));
- return {schema:'electropanel.design.queue.1',status:review.status,items,
+ return {schema:'electropanel.design.queue.1',status:items.some(x=>x.priority===1)?'BLOCKED':review.status,items,
   summary:{circuits:review.rows.length,urgent:items.filter(x=>x.priority===1).length,
    missing:items.filter(x=>x.priority===2).length,review:items.filter(x=>x.priority===3).length},
   engineeringApproved:false};

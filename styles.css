@@ -269,3 +269,20 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-position-form label{display:grid;gap:5px;min-width:0}
 .ep-position-form input{width:100%;min-width:0;padding:8px}
 .ep-project-chain table td{vertical-align:middle}
+
+.ep-engineering-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+.ep-engineering-fields label{display:grid;gap:6px;font-size:12px;color:#445661;min-width:0}
+.ep-engineering-fields input,.ep-engineering-fields select,#catalogSearchInput{width:100%;min-width:0;padding:10px;border:1px solid #ccd7de;border-radius:7px;background:#fff;color:#172a35}
+.ep-fault-route{padding:18px;border:1px solid #dce4e8;border-radius:12px;margin:16px 0;background:#fafcfd}
+.ep-fault-route summary{font-weight:700;cursor:pointer}
+.ep-fault-route p,.ep-fault-route li{font-size:12px;line-height:1.65;color:#4d606c}
+.ep-fault-route fieldset{border:1px solid #d5e0e6;border-radius:10px;margin:14px 0;padding:14px}
+.ep-fault-route legend{font-size:12px;font-weight:700;padding:0 8px}
+.ep-route-result{display:flex;flex-wrap:wrap;gap:20px;padding:16px;margin-top:16px;background:#eaf1f5;border-radius:9px;font-size:13px}
+.ep-catalog-workbench table,.ep-project-chain table{width:100%;border-collapse:collapse;font-size:12px;margin:16px 0}
+.ep-catalog-workbench th,.ep-catalog-workbench td,.ep-project-chain th,.ep-project-chain td{padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7eb;overflow-wrap:anywhere}
+.ep-catalog-workbench th,.ep-project-chain th{background:#eef3f6;color:#526773;font-weight:700}
+.ep-catalog-workbench .table-scroll,.ep-project-chain .table-scroll{overflow:auto}
+.ep-catalog-workbench details{margin-top:18px;padding:12px;border-top:1px solid #e0e7eb}
+.ep-catalog-workbench p{font-size:12px;line-height:1.65;color:#526773}
+.ep-catalog-workbench [hidden]{display:none!important}

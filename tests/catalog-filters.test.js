@@ -19,7 +19,7 @@ test('manufacturer and series filter retains only matching SKUs',()=>{
  assert.equal(filtered.length,1);
  assert.equal(filtered[0][1].sku,'2CDS251001R0164');
  assert.equal(api.epCatalogFilter('IEK','Acti9 iC60N').length,0);
- assert.equal(api.epCatalogFilter().length,3);
+ assert.equal(api.epCatalogFilter().length,6);
 });
 test('unknown product is never filled with invented catalogue values',()=>{
  assert.equal(api.epCatalogSku('UNKNOWN'),null);
@@ -30,8 +30,8 @@ test('phase filtering rejects wrong pole counts, without electrical approval',()
  assert.equal(api.epCatalogCompatible('SE-A9F74116','3Ф'),false);
  assert.equal(api.epCatalogCompatible('SE-A9F74116',''),false);
  assert.equal(api.epCatalogCompatible('UNKNOWN','L1'),false);
- assert.equal(api.epCatalogFilter('','', '3Ф').length,0);
- assert.equal(api.epCatalogFilter('','', 'L1').length,3);
+ assert.equal(api.epCatalogFilter('','', '3Ф').length,2);
+ assert.equal(api.epCatalogFilter('','', 'L1').length,4);
 });
 
 test('declared current is checked against the selected actual rating',()=>{

@@ -39,6 +39,8 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epDinPlacementAuditV1==='function')
   inspect('din_placement',()=>epDinPlacementAuditV1(project,lookupSku));
  else add('din_placement','DIN_PLACEMENT_AUDIT_UNAVAILABLE','UNKNOWN');
+ if(typeof epFaultRouteProjectV2==='function')
+  inspect('fault_routes',()=>epFaultRouteProjectV2(project,lookupSku));
  if(typeof epCircuitDesignReviewV1==='function')
   inspect('design_review',()=>epCircuitDesignReviewV1(project,lookupSku));
  else add('design_review','DESIGN_REVIEW_UNAVAILABLE','UNKNOWN');

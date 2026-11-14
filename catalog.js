@@ -7,6 +7,27 @@ const EP_CATALOG = Object.freeze({
     poles:1,modules:1,widthMm:18,inA:16,curve:'C',icnKa:6,appearance:'schneider',
     source:'https://eshop.se.com/sg/ic60n-miniature-circuit-breaker-1p-16a-c-curve-a9f74116.html'
   }),
+  'SE-A9F73110':Object.freeze({
+    maker:'Schneider Electric',series:'Acti9 iC60N',sku:'A9F73110',label:'iC60N B10 1P',kind:'MCB',
+    poles:1,modules:1,widthMm:18,heightMm:85,depthMm:78.5,inA:10,curve:'B',icnKa:6,appearance:'schneider',
+    icnVoltageV:230,icnStandard:'IEC/EN 60898-1',sourceReviewedAt:'2026-11-14',
+    sourceType:'MANUFACTURER_DATASHEET_MIRROR',source:'https://technocare.az/wp-content/uploads/2024/01/Schneider-A9F73110_document-EN.pdf',
+    productSource:'https://www.se.com/sg/en/product/A9F73110/'
+  }),
+  'SE-A9F74316':Object.freeze({
+    maker:'Schneider Electric',series:'Acti9 iC60N',sku:'A9F74316',label:'iC60N C16 3P',kind:'MCB',
+    poles:3,modules:3,widthMm:54,heightMm:85,depthMm:78.5,inA:16,curve:'C',icnKa:6,appearance:'schneider',
+    icnVoltageV:400,icnStandard:'IEC/EN 60898-1',sourceReviewedAt:'2026-11-14',
+    sourceType:'MANUFACTURER_DATASHEET_MIRROR',source:'https://aygelectrocompany.com/wp-content/uploads/2026/01/PES_Schneider-Electric_Acti-9-iC60_A9F74316.pdf',
+    productSource:'https://www.se.com/sg/en/product/A9F74316/'
+  }),
+  'SE-A9F74332':Object.freeze({
+    maker:'Schneider Electric',series:'Acti9 iC60N',sku:'A9F74332',label:'iC60N C32 3P',kind:'MCB',
+    poles:3,modules:3,widthMm:54,heightMm:85,depthMm:78.5,inA:32,curve:'C',icnKa:6,appearance:'schneider',
+    icnVoltageV:400,icnStandard:'IEC/EN 60898-1',sourceReviewedAt:'2026-11-14',
+    sourceType:'MANUFACTURER_DATASHEET_MIRROR',source:'https://storage.googleapis.com/eezee-technical-data/uCW73Qu86ZsNE1Tl.pdf',
+    productSource:'https://www.se.com/sg/en/product/A9F74332/'
+  }),
   'ABB-2CDS251001R0164':Object.freeze({
     maker:'ABB',series:'System pro M S200',sku:'2CDS251001R0164',label:'S201-C16',kind:'MCB',
     poles:1,modules:1,widthMm:17.5,inA:16,curve:'C',icnKa:6,appearance:'abb',
@@ -40,8 +61,8 @@ function epCatalogFilter(maker='',series='',phase='') {
 // Compare an explicitly declared calculation record with the chosen article.
 // This is a consistency check, NOT cable selection or a compliance certificate.
 // Missing and invalid inputs never become inferred values.
-function epCatalogDeclaredCurrentIssues(sku, input) {
- const d=epCatalogSku(sku);
+function epCatalogDeclaredCurrentIssues(sku, input, resolvedDevice=null) {
+ const d=resolvedDevice||epCatalogSku(sku);
  if(!d||!input||typeof input!=='object')return [];
  const issues=[];
  const number=(key)=>{

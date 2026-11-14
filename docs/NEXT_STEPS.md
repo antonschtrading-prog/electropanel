@@ -34,3 +34,8 @@
 - Проверить новый браузерный workflow на точном HEAD PR #12; не считать Node-тесты заменой браузерной проверки.
 - Расширять паспортную базу и подтверждённую геометрию, сохраняя различие между декларациями и заводскими данными.
 - Полное расчётное ядро КЗ/отключения/селективности/нагрева и реалистичные 3D-модели остаются незавершёнными; текущая интеграция их не подменяет.
+
+## After TN route/catalogue cycle
+- Extend verified source/method coverage for max prospective fault current, selectivity and thermal calculations; preserve the distinction between numeric comparison and applicable normative design.
+- Expand catalogue categories and genuine manufacturer CAD/visual data; current additions support single- and three-phase MCB workflows only.
+- Improve workspace navigation and explicit conductor cross-section/temperature provenance across multi-segment routes; current segment R/X is declared directly.

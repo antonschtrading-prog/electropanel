@@ -37,7 +37,8 @@ function epEngineeringBundleV1(project,lookupSku){
  const integratedEvidence=section('INTEGRATED_EVIDENCE',typeof epIntegratedEvidenceReview==='function'?
   p=>epIntegratedEvidenceReview(p):null);
  const reconciliation=section('RECONCILIATION',typeof epReconcileProjectV2==='function'?epReconcileProjectV2:null);
- const sections={reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const faultRoutes=section('FAULT_ROUTES',typeof epFaultRouteProjectV2==='function'?epFaultRouteProjectV2:null);
+ const sections={faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));

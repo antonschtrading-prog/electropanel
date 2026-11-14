@@ -126,7 +126,7 @@ function catalogAudit(project){
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
   if(!((['L1','L2','L3'].includes(l.phase)&&dev.poles===1)||(l.phase==='3Ф'&&(dev.poles===3||dev.poles===4)))||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
-  for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput))
+  for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput,dev))
    issues.push({circuitId:l.id,...issue});
   const fault=epBreakingCapacityCheck(dev,l.faultInput?.ikKa);
   if(fault.status==='FAIL'||fault.status==='INVALID')
@@ -831,6 +831,10 @@ function documentReadiness(project=state){
   const route=l.route44Input?ep44BindLine(project,l):null;
   if(route?.status==='BLOCKED')blockers.push(l.id+': TN v4.4 — несовместимая схема, устаревшие данные или расчётное несоответствие');
  }
+ if(typeof epFaultRouteReviewV2==='function')for(const line of project.lines){
+  if(!line.faultRouteInput)continue;const report=epFaultRouteReviewV2(project,line,catalogDevice);
+  if(report.thresholdStatus!=='PASS')blockers.push(line.id+': петля L–PE — исходные данные или условие отключения требуют проверки');
+ }
  for(const l of project.lines){
   const r=l.lv43Input?epLV43BoundLine(project,l):null;
   if(r?.status==='BLOCKED')blockers.push(l.id+': конфликт системы TN, фазности, устаревшая проверка или числовой отказ');
@@ -951,6 +955,8 @@ function renderEngineeringDiagnosticsV1(){
   if(issueHolder)issueHolder.innerHTML=typeof epEngineeringIssueRegisterHtmlV1==='function'?
    epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
  }
+ const faultPanel=$('faultRoutePanel');
+ if(faultPanel)faultPanel.innerHTML=epFaultRouteHtmlV2(state,selectedLine,catalogDevice);
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
@@ -1489,7 +1495,7 @@ function renderBoard(){
   ['Геометрия корпуса и тепловой режим не подтверждены',false]];
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
- $('selectedDevice').innerHTML=l?`<div class="selected-info">${devicePreviewHtml(l)}<b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div>${boardPositionForm(l)}${faultLineInfo(l)}${l.calculationReview?.required?'<div class="ep-fault-status ep-fault-fail"><strong>ПОВТОРНАЯ ПРОВЕРКА</strong><span>Параметры цепи или аппарат изменены. Сохранённые расчёты требуют перепроверки.</span></div>':''}<div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
+ $('selectedDevice').innerHTML=l?`<div class="selected-info">${devicePreviewHtml(l)}<b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Доступны одно- и трёхполюсные модели и пользовательский каталог.'}</div>${boardPositionForm(l)}${faultLineInfo(l)}${l.calculationReview?.required?'<div class="ep-fault-status ep-fault-fail"><strong>ПОВТОРНАЯ ПРОВЕРКА</strong><span>Параметры цепи или аппарат изменены. Сохранённые расчёты требуют перепроверки.</span></div>':''}<div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
 }
 $('selectedDevice').addEventListener('submit',e=>{
  const form=e.target.closest('[data-board-position]');if(!form)return;e.preventDefault();
@@ -2140,6 +2146,45 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('faultRoutePanel').addEventListener('click',e=>{
+ const add=e.target.closest('[data-add-route-segment]'),remove=e.target.closest('[data-remove-route-segment]');
+ if(add){const holder=add.closest('form').querySelector('[data-route-segments]');if(holder.children.length>=50)return notify('Максимум 50 участков',true);holder.insertAdjacentHTML('beforeend',epFaultSegmentHtmlV2({},holder.children.length));}
+ if(remove)remove.closest('[data-route-segment]').remove();
+});
+$('faultRoutePanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-fault-route]');if(!form)return;e.preventDefault();
+ const input=Object.fromEntries(['u0V','cmin','sourceROhm','sourceXOhm','networkSource','iaA','requiredTimeS','tripSource','timeSource'].map(key=>[key,form.elements.namedItem(key).value]));
+ input.segments=[...form.querySelectorAll('[data-route-segment]')].map(row=>({...Object.fromEntries([...row.querySelectorAll('[data-segment-field]')].map(el=>[el.dataset.segmentField,el.value])),temperatureBasisConfirmed:row.querySelector('[data-segment-temperature]').checked}));
+ const result=epApplyFaultRouteV2(state,form.dataset.faultRoute,input,catalogDevice);
+ if(!result.project)return notify('Расчёт не сохранён: '+result.code,true);
+ checkpoint();state=result.project;changed();notify('Трасса сохранена. Сравнение с Ia: '+result.report.thresholdStatus);
+});
+$('projectCatalogWorkbench').addEventListener('input',e=>{
+ if(e.target.id!=='catalogSearchInput')return;
+ const query=e.target.value.trim().toLocaleLowerCase('ru');
+ for(const row of $('projectCatalogWorkbench').querySelectorAll('[data-catalog-row]'))row.hidden=!row.textContent.toLocaleLowerCase('ru').includes(query);
+});
+$('projectCatalogWorkbench').addEventListener('submit',e=>{
+ if(e.target.id!=='catalogArticleForm')return;e.preventDefault();
+ const form=e.target,record={};
+ for(const key of ['id','maker','series','sku','label','modules','widthMm','poles','inA','curve','icnKa','source','kind']){
+  const value=form.elements.namedItem(key).value.trim();
+  record[key]=['modules','widthMm','poles','inA','icnKa'].includes(key)?(value===''?null:Number(value.replace(',','.'))):value;
+ }
+ const result=epUpsertProjectArticleV2(state,record,EP_CATALOG,form.elements.originalId.value);
+ if(!result.project)return notify('Аппарат не сохранён: '+result.code,true);
+ checkpoint();state=result.project;changed();notify('Аппарат сохранён. Связанных цепей: '+result.affected.length);
+});
+$('projectCatalogWorkbench').addEventListener('click',e=>{
+ const edit=e.target.closest('[data-edit-article]'),del=e.target.closest('[data-delete-article]');
+ if(edit){
+  const article=state.catalogArticles?.find(x=>x.id===edit.dataset.editArticle);if(!article)return;
+  const form=$('catalogArticleForm');form.reset();
+  for(const [key,value] of Object.entries(article)){const field=form.elements.namedItem(key);if(field)field.value=value??'';}
+  form.elements.originalId.value=article.id;$('catalogEditor').open=true;form.scrollIntoView({block:'center'});
+ }
+ if(del){const result=epDeleteProjectArticleV2(state,del.dataset.deleteArticle);if(!result.project)return notify('Удаление заблокировано: '+result.code,true);checkpoint();state=result.project;changed();notify('Пользовательский аппарат удалён');}
 });
 $('projectCatalogWorkbench')?.addEventListener('click',e=>{
  if(e.target.id==='catalogExportRecordsBtn'){

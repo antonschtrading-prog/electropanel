@@ -62,6 +62,7 @@ function epEngineeringPrintV1(bundle){
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
+  '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
   '<h2>Очередь инженерных задач</h2>'+workQueueTable+

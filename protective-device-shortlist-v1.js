@@ -51,8 +51,8 @@ function epProtectiveDeviceProjectAuditV1(project,lookup,catalogInput){
  if(!project||!Array.isArray(project.lines))
   return {status:'BLOCKED',issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],engineeringApproved:false};
  const catalog=Array.isArray(catalogInput)?catalogInput:
-  (typeof EP_CATALOG==='object'&&EP_CATALOG!==null?
-  Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[]);
+  (typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(project,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles).map(([id,device])=>({id,device})):
+  typeof EP_CATALOG==='object'&&EP_CATALOG!==null?Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[]);
  const issues=[],results=[];
  for(const line of project.lines){
   const r=epProtectiveDeviceShortlistV1(line,catalog);
