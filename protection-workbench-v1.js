@@ -86,6 +86,8 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
     kind:article.kind||null,label:article.label||null,
     residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
     inA:article.inA??null,icnKa:article.icnKa??null,poles:article.poles??null,
+    poleConfiguration:article.poleConfiguration??null,
+    icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
     modules:article.modules??null,source:article.source||null,
     verificationStatus:article.verificationStatus||'UNKNOWN'}:null,
    status,reasons,candidates:raw.candidates,engineeringApproved:false});
