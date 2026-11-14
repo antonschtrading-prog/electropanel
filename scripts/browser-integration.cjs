@@ -124,6 +124,17 @@ const server=http.createServer((req,res)=>{
  ]));
  await page.locator('#catalogImportRecordsBtn').click();
  assert.equal(await page.evaluate(()=>state.catalogArticles.length),3);
+ // A duplicate manufacturer/article pair must be rejected without partial commit.
+ await page.locator('#catalogJsonInput').fill(JSON.stringify([
+  {id:'BATCH-NEW',maker:'Declared maker',series:'Batch',sku:'B20',kind:'MCB',modules:1,widthMm:18,poles:1,inA:20,source:'https://example.org/b20'},
+  {id:'BATCH-DUP',maker:'Declared maker',series:'Batch',sku:'B16',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/duplicate'}
+ ]));
+ await page.locator('#catalogImportRecordsBtn').click();
+ assert.equal(await page.evaluate(()=>state.catalogArticles.length),3,'Duplicate maker/SKU must roll back whole batch');
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.catalogArticles.length),2,'Undo must revert accepted import');
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>state.catalogArticles.length),3,'Redo must restore accepted import');
  assert.equal(await page.evaluate(()=>catalogDevice('BATCH-OK').verificationStatus),'UNVERIFIED');
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('electropanel_web_preview')).catalogArticles.length),3);
 
