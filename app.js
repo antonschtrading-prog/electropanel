@@ -855,7 +855,7 @@ function layoutSlots(project=state){
    placed.add(line.id);
    for(let i=0;i<item.modules;i++)rails[item.railIndex][item.startModule+i]={line,first:i===0};
   }
-  return {rails,unplaced:entries.filter(x=>!placed.has(x.id)).map(x=>({id:x.id,reason:'Размещение требует проверки'})),used:rails.reduce((n,r)=>n+r.filter(Boolean).length,0)};
+  return {issues:plan.issues,rails,unplaced:entries.filter(x=>!placed.has(x.id)).map(x=>({id:x.id,reason:'Размещение требует проверки'})),used:rails.reduce((n,r)=>n+r.filter(Boolean).length,0)};
  }
 
   const rails=Array.from({length:project.railCount},()=>Array(project.railCapacity).fill(null));
@@ -1478,6 +1478,7 @@ function renderBoard(){
   board.appendChild(holder);
  });
  if(layout.unplaced.length){const warn=document.createElement('div');warn.className='board-unplaced';warn.textContent='Не размещено: '+layout.unplaced.map(x=>x.id).join(', ');board.appendChild(warn);}
+ if(layout.issues?.some(x=>x.level==='BLOCKED')){const warn=document.createElement('div');warn.className='board-unplaced';warn.textContent='Ошибки компоновки: '+layout.issues.filter(x=>x.level==='BLOCKED').map(x=>x.code+(x.id?' · '+x.id:'')).join(', ');board.appendChild(warn);}
  const catalogueIssues=catalogAudit(state).issues;
  const preflight=epEngineeringPreflight(state,catalogDevice,checkOverload);
  const items=[['Все аппараты помещаются на рейках',layout.unplaced.length===0],

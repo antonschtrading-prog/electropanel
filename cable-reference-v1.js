@@ -73,6 +73,8 @@ function epApplyCableSectionV1(project,lineId,section){
  if(!['B1','C'].includes(lines[0].cableReferenceInput?.installationMethod))
   return {status:'BLOCKED',code:'REFERENCE_CONTEXT_REQUIRED',project:null};
  const copy=JSON.parse(JSON.stringify(project)),line=copy.lines.find(x=>x.id===lineId);
+ if(line.cableDesignInput?.sectionMm2!==Number(value)&&line.voltageDropDesignInput)
+  line.voltageDropDesignInput={...line.voltageDropDesignInput,conductorBasisDocumented:false};
  line.cableDesignInput={sectionMm2:Number(value),source:'manual_design_selection'};
  line.calculationReview={required:true,reason:'CABLE_SECTION_UPDATED'};
  return {status:'REVIEW_REQUIRED',code:'SECTION_DECLARED',project:copy};

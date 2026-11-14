@@ -58,3 +58,8 @@ test('native project table escapes circuit and manufacturer strings',()=>{
  const c=env(),p=fixture();p.lines[0].name='<img src=x onerror=x>';
  const html=run(c,'epReconcileProjectHtmlV2(epReconcileProjectV2(p,epCatalogSku))',p);assert.doesNotMatch(html,/<img/);assert.match(html,/&lt;img/);
 });
+test('changing conductor section invalidates old voltage-drop impedance evidence',()=>{
+ const c=env(),p=fixture();p.lines[0].cableReferenceInput={installationMethod:'C'};p.lines[0].cableDesignInput={sectionMm2:2.5};p.lines[0].voltageDropDesignInput={conductorBasisDocumented:true,rOhmKm:8};
+ const same=run(c,"epApplyCableSectionV1(p,'L1','2.5').project",p);assert.equal(same.lines[0].voltageDropDesignInput.conductorBasisDocumented,true);
+ const changed=run(c,"epApplyCableSectionV1(p,'L1','4').project",p);assert.equal(changed.lines[0].voltageDropDesignInput.conductorBasisDocumented,false);assert.equal(changed.lines[0].voltageDropDesignInput.rOhmKm,8);
+});
