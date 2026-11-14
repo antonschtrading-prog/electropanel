@@ -5,10 +5,11 @@ function epProjectCatalogV1(project,seed={},options={}){
  const issues=[],articles=Object.create(null),seen=new Set();
  const validString=x=>typeof x==='string'&&x.trim().length>0;
  const num=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
+ const bounded=x=>validString(x)&&x.length<=200&&x.trim()===x&&!/[\u0000-\u001f\u007f]/.test(x);
  const httpsSource=x=>{if(!validString(x))return false;try{const u=new URL(x);return u.protocol==='https:'&&!!u.hostname&&!u.username&&!u.password;}catch(_){return false;}};
  for(const [index,r] of records.entries()){
   const key=r?.id;
-  if(!validString(key)||['__proto__','constructor','prototype'].includes(key)||key.trim()!==key||key.length>100||!validString(r?.sku)||!validString(r?.maker)||!validString(r?.series)){
+  if(!validString(key)||['__proto__','constructor','prototype'].includes(key)||key.trim()!==key||key.length>100||!bounded(r?.sku)||!bounded(r?.maker)||!bounded(r?.series)){
    issues.push({index,code:'IDENTITY_INCOMPLETE',status:'BLOCKED'});continue;
   }
   if(seen.has(key)||Object.prototype.hasOwnProperty.call(seed,key)){
@@ -22,7 +23,7 @@ function epProjectCatalogV1(project,seed={},options={}){
   if(r.widthMm>r.modules*18){
    issues.push({index,code:'ARTICLE_WIDTH_EXCEEDS_MODULES',status:'BLOCKED'});continue;
   }
-  if(!httpsSource(r.source)){
+  if(typeof r.source!=='string'||r.source.length>2000||!httpsSource(r.source)){
    issues.push({index,code:'CATALOG_SOURCE_MISSING',status:'UNKNOWN'});continue;
   }
   if(!['MCB','RCD','RCBO','SWITCH','METER','CONTACTOR','RELAY','DIN_PSU','OTHER'].includes(r.kind)){
@@ -31,6 +32,9 @@ function epProjectCatalogV1(project,seed={},options={}){
   if(Object.values(articles).some(a=>a.maker===r.maker&&a.sku===r.sku)||Object.values(seed).some(a=>a?.maker===r.maker&&a?.sku===r.sku)){
    issues.push({index,code:'DUPLICATE_MANUFACTURER_SKU',status:'BLOCKED'});continue;
   }
+  if(r.label!=null&&r.label!==''&&!bounded(r.label)){issues.push({index,code:'CATALOG_LABEL_INVALID',status:'BLOCKED'});continue;}
+  if(r.curve!=null&&r.curve!==''&&(typeof r.curve!=='string'||r.curve.length>50||/[\u0000-\u001f\u007f]/.test(r.curve))){issues.push({index,code:'CATALOG_CURVE_INVALID',status:'BLOCKED'});continue;}
+  if(r.icnKa!=null&&r.icnKa!==''&&!num(r.icnKa)){issues.push({index,code:'CATALOG_ICN_INVALID',status:'BLOCKED'});continue;}
   const article={id:key,sku:r.sku,maker:r.maker,series:r.series,kind:r.kind,label:r.label||r.sku,
    modules:r.modules,widthMm:r.widthMm,poles:r.poles,inA:r.inA,
    curve:typeof r.curve==='string'?r.curve:null,
