@@ -64,3 +64,47 @@ test('shared RCD pole mismatch is blocked transactionally',()=>{
  assert.equal(epUpsertProjectArticleV2(project,{...record,poles:4}, {},'RCD-A').code,'SHARED_ARTICLE_TEMPLATE_CONFLICT');
  assert.equal(project.sharedDevices[0].modules,2);
 });
+
+
+test('shared RCD article edit reopens assigned circuit fault checks without invalidating load current',()=>{
+ const rcd={...base,id:'RCD-G',sku:'RCD-G',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={catalogArticles:[rcd],lines:[{
+  id:'L1',phase:'L1',catalogSku:'OTHER',modules:1,device:'B16',
+  faultInput:{ikKa:6},route44Input:{route:'A'},calculationReview:{pending:['overloadInput'],required:true},
+  loadCurrentCalculation:{stale:false},faultRouteInput:{reviewRequired:false}
+ }],sharedDevices:[{id:'G1',catalogSku:'RCD-G',templateId:'RCD_2P',modules:2,label:'Old',circuitIds:['L1']}]};
+ const result=epUpsertProjectArticleV2(project,{...rcd,label:'New RCD'}, {},'RCD-G');
+ assert.ok(result.project);
+ const line=result.project.lines[0],pending=new Set(line.calculationReview.pending);
+ assert.deepEqual(pending,new Set(['overloadInput','faultInput','route44Input']));
+ assert.equal(line.calculationReview.reason,'SHARED_ARTICLE_UPDATED');
+ assert.equal(line.calculationReview.required,true);
+ assert.equal(line.faultRouteInput.reviewRequired,true);
+ assert.equal(line.loadCurrentCalculation.stale,false);
+ assert.deepEqual(result.affectedCircuits,['L1']);
+ assert.deepEqual(result.affectedShared,['G1']);
+ assert.deepEqual(result.affectedViews,['catalogue','board','singleLine','bom','engineeringReview']);
+ assert.equal(project.lines[0].faultRouteInput.reviewRequired,false);
+});
+test('shared RCD cannot silently change into an RCBO',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const p={catalogArticles:[record],lines:[],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,circuitIds:[]}]};
+ const result=epUpsertProjectArticleV2(p,{...record,kind:'RCBO'}, {},'RCD-A');
+ assert.equal(result.project,null);assert.equal(result.code,'SHARED_ARTICLE_KIND_CONFLICT');
+});
+test('import reports affected circuits linked to previously unresolved catalogue articles',()=>{
+ const record={...base,id:'NEW-A',sku:'NEW-16',label:'New breaker'};
+ const p={catalogArticles:[],lines:[{id:'L1',phase:'L1',catalogSku:'NEW-A',modules:1,device:'Old'}],sharedDevices:[]};
+ const result=epImportProjectArticlesV2(p,[record]);
+ assert.ok(result.project);assert.deepEqual(result.affectedCircuits,['L1']);
+ assert.deepEqual(result.affectedShared,[]);
+ assert.equal(result.project.lines[0].device,'New breaker');
+ assert.equal(result.project.lines[0].calculationReview.required,true);
+ assert.equal(p.catalogArticles.length,0);
+});
+test('import of unused articles does not invent affected circuits',()=>{
+ const p={catalogArticles:[],lines:[],sharedDevices:[]};
+ const result=epImportProjectArticlesV2(p,[base,{...base,id:'USER-B',sku:'B16'}]);
+ assert.ok(result.project);assert.deepEqual(result.affectedCircuits,[]);
+ assert.deepEqual(result.affectedShared,[]);assert.deepEqual(result.affectedViews,['catalogue']);
+});
