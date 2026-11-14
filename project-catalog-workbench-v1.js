@@ -70,7 +70,7 @@ function epCatalogEditorHtmlV2(){
  return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label'].includes(name)?'':'required')+' '+(name==='source'?'type="url" pattern="https://.*"':(['modules','widthMm','poles','inA','icnKa'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
 }
 function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
- if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object')return {project:null,code:'PROJECT_OR_RECORD_INVALID'};
+ if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'PROJECT_OR_RECORD_INVALID'};
  if(originalId&&originalId!==record.id)return {project:null,code:'ARTICLE_ID_IMMUTABLE'};
  if(!Object.prototype.hasOwnProperty.call(record,'id')||typeof record.id!=='string')return {project:null,code:'ARTICLE_ID_INVALID'};
  const existing=project.catalogArticles||[];
@@ -111,7 +111,7 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
 // Transactional import: apply the same engineering constraints as the manual editor.
 function epImportProjectArticlesV2(project,records,seed={}){
  if(!Array.isArray(records)||!records.length||records.length>500)return {project:null,code:'IMPORT_RECORD_COUNT_INVALID'};
- if(!project||!Array.isArray(project.catalogArticles))return {project:null,code:'PROJECT_CATALOG_INVALID'};
+ if(!project||!Array.isArray(project.catalogArticles)||!Array.isArray(project.lines))return {project:null,code:'PROJECT_CATALOG_INVALID'};
  if(project.catalogArticles.length+records.length>500)return {project:null,code:'CATALOG_TOO_LARGE'};
  let draft=project;
  for(const [index,record] of records.entries()){
