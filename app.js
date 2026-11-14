@@ -2171,9 +2171,9 @@ $('projectCatalogWorkbench').addEventListener('input',e=>{
 document.addEventListener('submit',e=>{
  if(e.target.getAttribute('id')!=='catalogArticleForm')return;e.preventDefault();
  const form=e.target,record={};
- for(const key of ['id','maker','series','sku','label','modules','widthMm','poles','inA','curve','icnKa','source','kind']){
+ for(const key of ['id','maker','series','sku','label','modules','widthMm','poles','inA','curve','icnKa','residualCurrentMa','residualType','source','kind']){
   const value=form.elements.namedItem(key).value.trim();
-  record[key]=['modules','widthMm','poles','inA','icnKa'].includes(key)?(value===''?null:Number(value.replace(',','.'))):value;
+  record[key]=['modules','widthMm','poles','inA','icnKa','residualCurrentMa'].includes(key)?(value===''?null:Number(value.replace(',','.'))):value;
  }
  const result=epUpsertProjectArticleV2(state,record,EP_CATALOG,form.elements.originalId.value);
  if(!result.project)return notify('Аппарат не сохранён: '+result.code,true);
