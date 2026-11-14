@@ -1,7 +1,13 @@
 'use strict';
 // Reproducible draft bundle of existing independent projections, without approval claims.
 function epEngineeringBundleV1(project,lookupSku){
- const section=(name,fn)=>{try{return typeof fn==='function'?fn(project,lookupSku):{
+ // A project-specific catalogue must be resolved once for every downstream
+ // projection. A caller's editor-global lookup may refer to another project.
+ const catalog=typeof epProjectCatalogV1==='function'
+  ?epProjectCatalogV1(project,typeof EP_CATALOG==='object'?EP_CATALOG:{})
+  :null;
+ const projectLookup=catalog?catalog.lookup:lookupSku;
+ const section=(name,fn)=>{try{return typeof fn==='function'?fn(project,projectLookup):{
   status:'BLOCKED',issues:[{code:name+'_UNAVAILABLE',level:'BLOCKED'}]};}
  catch(e){return {status:'BLOCKED',issues:[{code:name+'_FAILED',level:'BLOCKED'}]};}};
  const dossier=section('DOSSIER',typeof epCircuitDossierV1==='function'?epCircuitDossierV1:null);
@@ -38,7 +44,10 @@ function epEngineeringBundleV1(project,lookupSku){
   p=>epIntegratedEvidenceReview(p):null);
  const reconciliation=section('RECONCILIATION',typeof epReconcileProjectV2==='function'?epReconcileProjectV2:null);
  const faultRoutes=section('FAULT_ROUTES',typeof epFaultRouteProjectV2==='function'?epFaultRouteProjectV2:null);
- const sections={faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const catalogueIntegrity={status:catalog?.issues?.some(x=>x.status==='BLOCKED')?'BLOCKED':'UNKNOWN',
+  issues:catalog?.issues?.map(x=>({code:x.code,level:x.status==='BLOCKED'?'BLOCKED':'UNKNOWN',recordIndex:x.index}))||[],
+  engineeringApproved:false};
+ const sections={catalogueIntegrity,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
