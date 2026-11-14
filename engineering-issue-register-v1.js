@@ -3,6 +3,8 @@
 function epEngineeringIssueRegisterV1(bundle){
  const sections=bundle?.sections||{},entries=[],counts={BLOCKED:0,UNKNOWN:0};
  const sectionNames=['designWorkQueue','designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering'];
+ if(sections.catalogueIntegrity)sectionNames.unshift('catalogueIntegrity');
+ if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
  for(const name of sectionNames){
@@ -14,7 +16,7 @@ function epEngineeringIssueRegisterV1(bundle){
    if(!issue||typeof issue.code!=='string'||!issue.code){
     entries.push({section:name,level:'BLOCKED',code:'ISSUE_INVALID',circuitId:null});continue;
    }
-   const level=issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN';
+   const level=issue.level==='BLOCKED'||issue.status==='BLOCKED'?'BLOCKED':'UNKNOWN';
    const circuitId=issue.lineId??issue.circuitId??issue.owner??null;
    entries.push({section:name,level,code:issue.code,circuitId:
     typeof circuitId==='string'?circuitId:null});
