@@ -22,7 +22,8 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
    epProtectiveDeviceShortlistV1(line,catalogue):
    {candidates:[],issues:[{code:'SHORTLIST_UNAVAILABLE',level:'BLOCKED'}]};
   const ib=safePositive(line.overloadInput?.ibA),iz=safePositive(line.overloadInput?.izA),
-   ik=safePositive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa);
+   ik=safePositive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa),
+   voltageV=safePositive(line.faultInput?.voltageV);
   const sku=line.catalogSku||null;
   let article=null;
   if(sku&&typeof lookupSku==='function'){try{article=lookupSku(sku);}catch(_){}}
@@ -38,6 +39,11 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   if(line.loadCurrentCalculation?.stale)reasons.push('LOAD_CURRENT_STALE');
   const derivedIb=safePositive(line.loadCurrentCalculation?.roundedIbA);
   if(derivedIb!==null&&ib!==derivedIb)reasons.push('IB_DIFFERS_FROM_CALCULATION');
+  if(voltageV===null)reasons.push('FAULT_VOLTAGE_UNDECLARED');
+  if(article&&voltageV!==null){
+   if(!Number.isFinite(article.icnVoltageV))reasons.push('ARTICLE_ICN_VOLTAGE_UNDECLARED');
+   else if(article.icnVoltageV<voltageV)reasons.push('ARTICLE_ICN_VOLTAGE_LT_DECLARED');
+  }
   if(article&&article.kind==='RCBO'){
    reasons.push('RCBO_RESIDUAL_PROTECTION_UNVERIFIED');
    if(!Number.isFinite(article.residualCurrentMa)||article.residualCurrentMa<=0)
@@ -78,11 +84,12 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
    'ARTICLE_MODULE_WIDTH_MISMATCH','ARTICLE_LABEL_MISMATCH','ARTICLE_MODULES_INVALID',
    'ARTICLE_GEOMETRY_INVALID','ARTICLE_POLES_MISMATCH','BRANCH_ASSIGNMENT_DUPLICATE',
    'BRANCH_ASSIGNMENT_MISSING','BRANCH_WIDTH_MISMATCH','BRANCH_LABEL_MISMATCH',
-   'IB_DIFFERS_FROM_CALCULATION']);
+   'IB_DIFFERS_FROM_CALCULATION','ICN_VOLTAGE_LT_DECLARED',
+   'ARTICLE_ICN_VOLTAGE_LT_DECLARED']);
   const status=reasons.some(x=>blocking.has(x))?'BLOCKED':'UNKNOWN';
   for(const code of reasons)issues.push({code,lineId:line.id,level:blocking.has(code)?'BLOCKED':'UNKNOWN'});
   rows.push({lineId:line.id,name:line.name||line.device||'',phase:line.phase||null,
-   ibA:ib,izA:iz,ikKa:ik,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
+   ibA:ib,izA:iz,ikKa:ik,voltageV,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
     kind:article.kind||null,label:article.label||null,
     residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
@@ -120,7 +127,7 @@ function epProtectionWorkbenchHtmlV1(report){
  }).join('');
  return '<section class="ep-protection-workbench" aria-label="Черновой подбор защиты">'+
   '<h3>Защита цепи '+esc(x.lineId)+' · '+esc(x.name)+'</h3>'+
-  '<p>Ib: '+fmt(x.ibA)+' А · Iz: '+fmt(x.izA)+' А · Ik: '+fmt(x.ikKa)+' кА · фаза: '+fmt(x.phase)+
+  '<p>Ib: '+fmt(x.ibA)+' А · Iz: '+fmt(x.izA)+' А · Ik: '+fmt(x.ikKa)+' кА · напряжение для Icn: '+fmt(x.voltageV)+' В · фаза: '+fmt(x.phase)+
   '. Выбран: '+esc(x.selectedSku||'нет')+'; статус: '+esc(x.status)+'.</p>'+
   '<p>Паспорт выбранного аппарата: '+(article?
    esc(article.maker)+' / '+esc(article.series)+' / '+esc(article.sku)+
@@ -132,6 +139,7 @@ function epProtectionWorkbenchHtmlV1(report){
   '<label>Ib, А <input name="ibA" type="text" inputmode="decimal" required value="'+(x.ibA===null?'':esc(x.ibA))+'"></label>'+
   '<label>Iz, А <input name="izA" type="text" inputmode="decimal" required value="'+(x.izA===null?'':esc(x.izA))+'"></label>'+
   '<label>Ik, кА <input name="ikKa" type="text" inputmode="decimal" required value="'+(x.ikKa===null?'':esc(x.ikKa))+'"></label>'+
+  '<label>Напряжение сети для проверки Icn, В (по исходным данным) <input name="voltageV" type="text" inputmode="decimal" value="'+(x.voltageV===null?'':esc(x.voltageV))+'"></label>'+
   '<button type="submit" class="btn">Записать исходные токи</button></fieldset></form>'+
   '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
   '<th>In, А</th><th>Icn, кА</th><th>Оценка</th><th>Причины</th><th>Действие</th></tr></thead><tbody>'+
