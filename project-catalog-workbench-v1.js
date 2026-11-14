@@ -93,7 +93,11 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
   if(line.catalogSku!==record.id)continue;
   const phaseOK=['L1','L2','L3'].includes(line.phase)?article.poles===1:line.phase==='3Ф'&&[3,4].includes(article.poles);
   if(!phaseOK)return {project:null,code:'USED_ARTICLE_POLE_CONFLICT'};
+  if(article.modules>12)return {project:null,code:'USED_ARTICLE_MODULES_UNSUPPORTED'};
+  if(article.label.length>25)return {project:null,code:'USED_ARTICLE_LABEL_TOO_LONG'};
   line.modules=article.modules;line.device=article.label;
+  // A manufacturer article is not a generic apparatus template.
+  delete line.templateId;
   // Preserve every pending review field; editing a device must never silently
   // acknowledge an unrelated overload, short-circuit or routing check.
   const reviewFields=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
@@ -112,6 +116,7 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
   if(shared?.catalogSku!==record.id)continue;
   if(article.kind!=='RCD')return {project:null,code:'SHARED_ARTICLE_KIND_CONFLICT'};
   if(![2,4].includes(article.poles))return {project:null,code:'SHARED_ARTICLE_POLE_CONFLICT'};
+  if(article.label.length>50)return {project:null,code:'SHARED_ARTICLE_LABEL_TOO_LONG'};
   if(shared.templateId==='RCD_2P'&&article.poles!==2||
      shared.templateId==='RCD_4P'&&article.poles!==4)
    return {project:null,code:'SHARED_ARTICLE_TEMPLATE_CONFLICT'};
