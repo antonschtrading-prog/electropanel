@@ -74,3 +74,20 @@ test('malformed replacement review is rejected instead of silently cleared',()=>
  c.target={lines:[{id:'L1',catalogSku:'CH-814014'}]};
  assert.throws(()=>vm.runInContext('epRestoreProjectExtensionsV2(raw,target)',c),/articleReplacementReview/);
 });
+
+test('engineering design review exports replacement uncertainty and blocks stale mapping',()=>{
+ const {epCircuitDesignReviewV1}=require('../circuit-design-review-v1.js');
+ const {EP_CATALOG}=require('../catalog.js');
+ const line={id:'L1',name:'Load',phase:'L1',catalogSku:'CH-814014',device:'NXB-63 C16 1P',
+  modules:1,overloadInput:{ibA:10,izA:25},faultInput:{ikKa:3,voltageV:230},
+  articleReplacementReview:{required:true,from:'EA-286533',to:'CH-814014',warnings:['ICU_IS_NOT_ICN','BODY_GEOMETRY_INCOMPLETE']}};
+ const p={lines:[line],branchDevices:[{id:'BD1',circuitId:'L1',modules:1,label:line.device}]};
+ const r=epCircuitDesignReviewV1(p,sku=>EP_CATALOG[sku]);
+ assert.ok(r.issues.some(x=>x.code==='ARTICLE_REPLACEMENT_REVIEW_REQUIRED'));
+ assert.ok(r.issues.some(x=>x.code==='ARTICLE_REPLACEMENT_ICU_IS_NOT_ICN'));
+ assert.equal(r.engineeringApproved,false);
+ line.articleReplacementReview.to='EA-286533';
+ const stale=epCircuitDesignReviewV1(p,sku=>EP_CATALOG[sku]);
+ assert.ok(stale.issues.some(x=>x.code==='ARTICLE_REPLACEMENT_SELECTION_STALE'&&x.level==='BLOCKED'));
+ assert.equal(stale.status,'BLOCKED');
+});
