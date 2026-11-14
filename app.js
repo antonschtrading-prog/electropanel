@@ -115,7 +115,13 @@ function applyCatalogueSku(project,circuitId,sku){
  const dev=projectCatalogEntries(project).find(([id])=>id===sku)?.[1],line=project.lines.find(l=>l.id===circuitId);
  if(!dev||!line)throw Error('Не найдена цепь или артикул');
  if(!['MCB','RCBO'].includes(dev.kind))throw Error('Для защиты отходящей линии требуется автоматический выключатель или дифавтомат');
- if(!catalogBranchPolesCompatible(line.phase,dev))throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
+ const validPoles=typeof catalogBranchPolesCompatible==='function'?
+  catalogBranchPolesCompatible(line.phase,dev):
+  ['MCB','RCBO'].includes(dev.kind)&&
+  (['L1','L2','L3'].includes(line.phase)?
+   dev.poles===1||dev.kind==='RCBO'&&dev.poles===2:
+   line.phase==='3Ф'&&[3,4].includes(dev.poles));
+ if(!validPoles)throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
  if(line.catalogSku!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
  updateBranchApparatus(project,circuitId,{label:dev.label,modules:dev.modules,templateId:null});
  line.catalogSku=sku;
@@ -129,7 +135,12 @@ function catalogAudit(project){
   if(!l.catalogSku)continue;
   const dev=typeof projectCatalogEntries==='function'?projectCatalogEntries(project).find(([id])=>id===l.catalogSku)?.[1]:catalogDevice(l.catalogSku);
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
-  if(!catalogBranchPolesCompatible(l.phase,dev)||l.modules!==dev.modules||l.device!==dev.label)
+  if(!(typeof catalogBranchPolesCompatible==='function'?
+   catalogBranchPolesCompatible(l.phase,dev):
+   ['MCB','RCBO'].includes(dev.kind)&&
+   (['L1','L2','L3'].includes(l.phase)?
+    dev.poles===1||dev.kind==='RCBO'&&dev.poles===2:
+    l.phase==='3Ф'&&[3,4].includes(dev.poles)))||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
   for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput,dev))
    issues.push({circuitId:l.id,...issue});
