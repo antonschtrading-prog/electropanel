@@ -43,7 +43,21 @@ const server=http.createServer((req,res)=>{
  // Import a project-specific catalogue record, exercise its protection shortlist.
  await page.evaluate(()=>{state.catalogArticles=[{id:'USER-16',sku:'user16',maker:'User maker',series:'Declared',kind:'MCB',poles:1,modules:1,widthMm:18,inA:16,icnKa:6,curve:'C',source:'https://example.org/datasheet'}];changed();});
  assert.equal(await page.evaluate(()=>normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview'))).lines.length),6);
+ const savedBeforeReload=await page.evaluate(()=>localStorage.getItem('electropanel_web_preview'));
  await page.reload();
+ const reloadReport=await page.evaluate(before=>{
+  const raw=localStorage.getItem('electropanel_web_preview');
+  let storedLines=null,importedLines=null,importError=null;
+  try{
+   const parsed=JSON.parse(raw);
+   storedLines=parsed?.lines?.length??null;
+   try{importedLines=normalizeImport(parsed).lines.length;}catch(e){importError=String(e);}
+  }catch(e){importError='JSON: '+String(e);}
+  return {runtimeLines:state?.lines?.length??null,storedLines,importedLines,importError,
+   changed:raw!==before,storedLength:raw?.length??null,
+   schema:state?.schema??null};
+ },savedBeforeReload);
+ assert.equal(reloadReport.runtimeLines,6,'Saved project did not restore: '+JSON.stringify({reloadReport,errors}));
  assert.equal(await page.evaluate(()=>state.lines[0].loadCurrentCalculation.roundedIbA),10);
  assert.equal(await page.evaluate(()=>state.lines[0].cableDesignInput.sectionMm2),2.5);
  assert.equal(await page.evaluate(()=>state.catalogArticles.length),1);
