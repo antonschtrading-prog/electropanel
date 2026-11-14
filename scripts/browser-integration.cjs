@@ -17,6 +17,18 @@ const server=http.createServer((req,res)=>{
  await page.locator('#loadDemo').click();
  await page.evaluate(()=>{selectedLine='L1';switchView('board');});
  assert.equal(await page.locator('#boardCanvas [data-line]').count(),6);
+ // Actual board controls must expose approved tier names, preserve selected
+ // circuit, and never permit a manufacturer without source-backed articles.
+ await page.locator('#boardCanvas [data-line="L1"]').click();
+ assert.equal(await page.locator('#catalogTier').count(),1);
+ await page.locator('#catalogTier').selectOption('comfort');
+ assert.equal(await page.locator('#catalogMaker option[value="Panasonic"]').isDisabled(),true);
+ assert.equal(await page.locator('#catalogMaker option[value="Schneider Electric"]').isDisabled(),false);
+ await page.locator('#catalogTier').selectOption('premium');
+ assert.equal(await page.locator('#catalogMaker option[value="Eaton"]').count(),1);
+ assert.equal(await page.locator('#catalogMaker option[value="CHINT"]').count(),0);
+ await page.locator('#catalogTier').selectOption('');
+ assert.equal(await page.locator('#catalogTier').inputValue(),'');
 
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
