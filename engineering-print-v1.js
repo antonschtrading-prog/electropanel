@@ -29,9 +29,12 @@ function epEngineeringPrintV1(bundle){
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
    x.placement?'DIN '+x.placement.rail+' · '+x.placement.from+'–'+x.placement.to:'Не размещено',
    x.calculationReviewRequired?'Требуется перепроверка':'Не подтверждено']));
- const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Артикул','In, A','Icn, кА','Статус','Причины'],
-  protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.selectedSku,x.selectedArticle?.inA,
-   x.selectedArticle?.icnKa,x.status,(x.reasons||[]).join(', ')]));
+ const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Артикул','Тип','Изготовитель','In, A','Icn, кА','Источник','Статус','Причины'],
+  protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.selectedSku,x.selectedArticle?.kind,
+   x.selectedArticle?.maker,x.selectedArticle?.inA,x.selectedArticle?.icnKa,
+   x.selectedArticle?.source||'Не подтверждён',x.status,(x.reasons||[]).join(', ')]));
+ const selectionTable=rows(['Цепь','Арифметически возможные артикулы','Количество'],
+  (sections.protectionSelection?.results||[]).map(x=>[x.lineId,(x.potential||[]).join(', '),(x.potential||[]).length]));
  const bomTable=rows(['Артикул','Производитель','Серия','Количество','Модули','Источник'],
   bom.map(x=>[x.sku,x.maker,x.series,x.quantity,x.modules,x.source||'Не указан']));
  const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],
