@@ -36,6 +36,30 @@ function epProjectCatalogV1(project,seed={},options={}){
   if(r.label!=null&&r.label!==''&&!bounded(r.label)){issues.push({index,code:'CATALOG_LABEL_INVALID',status:'BLOCKED'});continue;}
   if(r.curve!=null&&r.curve!==''&&(typeof r.curve!=='string'||r.curve.length>50||/[\u0000-\u001f\u007f]/.test(r.curve))){issues.push({index,code:'CATALOG_CURVE_INVALID',status:'BLOCKED'});continue;}
   if(r.icnKa!=null&&r.icnKa!==''&&!num(r.icnKa)){issues.push({index,code:'CATALOG_ICN_INVALID',status:'BLOCKED'});continue;}
+  if(r.icnVoltageV!=null&&r.icnVoltageV!==''&&(!num(r.icnVoltageV)||r.icnVoltageV>1500)){
+   issues.push({index,code:'CATALOG_BREAKING_VOLTAGE_INVALID',status:'BLOCKED'});continue;
+  }
+  if(r.icnStandard!=null&&r.icnStandard!==''&&!bounded(r.icnStandard)){
+   issues.push({index,code:'CATALOG_BREAKING_STANDARD_INVALID',status:'BLOCKED'});continue;
+  }
+  if(r.productSource!=null&&r.productSource!==''&&
+    (typeof r.productSource!=='string'||r.productSource.length>2000||!httpsSource(r.productSource))){
+   issues.push({index,code:'CATALOG_PRODUCT_SOURCE_INVALID',status:'BLOCKED'});continue;
+  }
+  if(r.sourceReviewedAt!=null&&r.sourceReviewedAt!==''){
+   const str=r.sourceReviewedAt;
+   const parsed=typeof str==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(str)?new Date(str+'T00:00:00Z'):null;
+   if(!parsed||!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==str){
+    issues.push({index,code:'CATALOG_REVIEW_DATE_INVALID',status:'BLOCKED'});continue;
+   }
+  }
+  const configs={'1P':1,'1P+N':2,'2P':2,'3P':3,'3P+N':4,'4P':4};
+  if(r.poleConfiguration!=null&&r.poleConfiguration!==''&&
+    (!Object.prototype.hasOwnProperty.call(configs,r.poleConfiguration)||
+      configs[r.poleConfiguration]!==r.poles||
+      !['MCB','RCD','RCBO','SWITCH'].includes(r.kind))){
+   issues.push({index,code:'CATALOG_POLE_CONFIGURATION_INVALID',status:'BLOCKED'});continue;
+  }
   const hasResidualCurrent=r.residualCurrentMa!==undefined&&r.residualCurrentMa!==null&&r.residualCurrentMa!=='';
   const hasResidualType=r.residualType!==undefined&&r.residualType!==null&&r.residualType!=='';
   if(hasResidualCurrent&&(!num(r.residualCurrentMa)||r.residualCurrentMa>3000)){
@@ -51,6 +75,11 @@ function epProjectCatalogV1(project,seed={},options={}){
    modules:r.modules,widthMm:r.widthMm,poles:r.poles,inA:r.inA,
    curve:typeof r.curve==='string'?r.curve:null,
    icnKa:num(r.icnKa)?r.icnKa:null,
+   icnVoltageV:num(r.icnVoltageV)?r.icnVoltageV:null,
+   icnStandard:typeof r.icnStandard==='string'&&r.icnStandard.trim()?r.icnStandard:null,
+   poleConfiguration:typeof r.poleConfiguration==='string'&&r.poleConfiguration?r.poleConfiguration:null,
+   sourceReviewedAt:typeof r.sourceReviewedAt==='string'&&r.sourceReviewedAt?r.sourceReviewedAt:null,
+   productSource:typeof r.productSource==='string'&&r.productSource?r.productSource:null,
    residualCurrentMa:hasResidualCurrent?r.residualCurrentMa:null,
    residualType:hasResidualType?r.residualType:null,
    appearance:'generic',source:r.source,verificationStatus:'UNVERIFIED',sourceType:'PROJECT_DECLARATION'};
@@ -86,8 +115,8 @@ function epProjectCatalogHtmlV1(project,seed={}){
 if(typeof module!=='undefined'&&module.exports)module.exports={epProjectCatalogV1,epProjectCatalogHtmlV1};
 
 function epCatalogEditorHtmlV2(){
- const fields=[['id','ID записи'],['maker','Производитель'],['series','Серия'],['sku','Артикул'],['label','Обозначение'],['modules','Модули DIN'],['widthMm','Ширина, мм'],['poles','Полюса'],['inA','Номинальный ток, А'],['curve','Характеристика'],['icnKa','Icn, кА'],['residualCurrentMa','IΔn, мА (только УЗО/RCBO)'],['residualType','Тип дифзащиты: AC, A, F, B, B+'],['source','Ссылка на источник HTTPS']];
- return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label','residualCurrentMa','residualType'].includes(name)?'':'required')+' '+(name==='source'?'type="url" pattern="https://.*"':(['modules','widthMm','poles','inA','icnKa','residualCurrentMa'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
+ const fields=[['id','ID записи'],['maker','Производитель'],['series','Серия'],['sku','Артикул'],['label','Обозначение'],['modules','Модули DIN'],['widthMm','Ширина, мм'],['poles','Полюса'],['inA','Номинальный ток, А'],['curve','Характеристика'],['icnKa','Icn, кА'],['icnVoltageV','Напряжение для Icn, В'],['icnStandard','Стандарт Icn'],['residualCurrentMa','IΔn, мА (только УЗО/RCBO)'],['residualType','Тип дифзащиты: AC, A, F, B, B+'],['source','Ссылка на источник HTTPS'],['productSource','Страница изготовителя HTTPS'],['sourceReviewedAt','Дата сверки с источником, ГГГГ-ММ-ДД']];
+ return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label','residualCurrentMa','residualType','icnVoltageV','icnStandard','productSource','sourceReviewedAt'].includes(name)?'':'required')+' '+(['source','productSource'].includes(name)?'type="url" pattern="https://.*"':(['modules','widthMm','poles','inA','icnKa','residualCurrentMa','icnVoltageV'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>Полюса: паспортная конфигурация<select name="poleConfiguration"><option value="">Не указана</option>'+['1P','1P+N','2P','3P','3P+N','4P'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
 }
 function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'PROJECT_OR_RECORD_INVALID'};
