@@ -242,4 +242,5 @@ test('long nominal trip curve is clipped visually but escaped in the accessible 
  const rated=svg.match(/<text x="10" y="90"[^>]*>([^<]*)<\/text>/)?.[1];
  assert.ok(rated.endsWith('…'));
  assert.ok(rated.length<14);
+ assert.match(svg,/Обозначение номинала: CURVE12345678916/);
 });
