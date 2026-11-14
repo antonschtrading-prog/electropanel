@@ -353,8 +353,8 @@ test('project catalogue, engineering evidence and vector facade are loaded in ap
  assert.match(app,/renderProjectCatalogWorkbenchV1\(\)/);
  assert.match(app,/epIntegratedEvidenceReview\(state\)/);
 });
-test('catalogue imports are transactional and undoable',()=>{
- assert.match(app,/draft\.catalogArticles=/);
- assert.match(app,/audit\.issues\.length/);
- assert.match(app,/checkpoint\(\);state=draft;changed\(\)/);
+test('catalogue imports use shared engineering validation and remain undoable',()=>{
+ assert.match(app,/epImportProjectArticlesV2\(state,records/);
+ assert.match(app,/if\(!result\.project\)throw Error\('Импорт отклонён:/);
+ assert.match(app,/checkpoint\(\);state=result\.project;changed\(\)/);
 });
