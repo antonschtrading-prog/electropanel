@@ -12,3 +12,6 @@ test('native reconciliation blocks multiple devices bound to same line',()=>{con
 test('native reconciliation blocks invalid and mismatched module counts',()=>{const p=base();p.lines[0].modules=0;p.branchDevices[0].modules=2;const c=codes(p);assert.ok(c.includes('LINE_MODULE_COUNT_INVALID'));assert.ok(c.includes('BRANCH_LINE_MODULE_MISMATCH'));assert.ok(c.includes('ARTICLE_ENVELOPE_CONFLICT'));});
 test('native reconciliation blocks missing branch devices collection',()=>{const p=base();p.branchDevices={};assert.ok(codes(p).includes('BRANCH_DEVICES_INVALID'));});
 test('native reconciliation never asserts engineering approval',()=>{const p=base(),r=epReconcileProjectV2(p,lookup);assert.equal(r.engineeringApproved,false);assert.equal(r.ready_for_installation,false);});
+
+test('native reconciliation rejects mismatch between catalogue and line modules',()=>{const p=base();const r=epReconcileProjectV2(p,()=>({...lookup(),modules:2}));assert.ok(r.issues.some(i=>i.code==='CATALOG_LINE_MODULE_MISMATCH'&&i.level==='BLOCKED'));});
+test('native reconciliation handles incomplete placement reports safely',()=>{const p=base();global.epDraftBoardPlanV1=()=>({issues:[],placements:[]});try{const r=epReconcileProjectV2(p,lookup);assert.ok(r.issues.some(i=>i.code==='BRANCH_DEVICE_NOT_PLACED'&&i.level==='BLOCKED'));}finally{delete global.epDraftBoardPlanV1;}});
