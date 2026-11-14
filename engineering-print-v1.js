@@ -22,13 +22,13 @@ function epEngineeringPrintV1(bundle){
  const loadCurrent=sections.loadCurrent?.rows||[];
  const loadCurrentTable=rows(['Цепь','Ib, A','Источник Ib','Режим','Формула','Исходные данные','Статус','Повторная проверка'],loadCurrent.map(x=>[x.lineId,x.ibA,x.source||'Не указан',x.calculation?.mode||'Не рассчитан',x.calculation?.formula||'',x.calculation?.inputs?JSON.stringify(x.calculation.inputs):'',x.status||'UNKNOWN',x.reviewRequired?'Требуется':'Не заявлена']));
  const catalogueEvidence=sections.catalogEvidence?.items||[];
- const catalogueEvidenceTable=rows(['Использует','Артикул проекта','Артикул производителя','Производитель','Серия','Ширина, мм','Высота, мм','Глубина, мм','Конфигурация полюсов','Документ','Источник','Страница производителя','Дата сверки','Подтверждение','Icn: напряжение, В','Стандарт Icn'],
+ const catalogueEvidenceTable=rows(['Использует','Артикул проекта','Артикул производителя','Производитель','Серия','Ширина, мм','Высота, мм','Глубина, мм','Конфигурация полюсов','Документ','Источник','Страница производителя','Дата сверки','Подтверждение','Icn, кА','Icn: напряжение, В','Стандарт Icn','Icu, кА','Icu: напряжение, В'],
   catalogueEvidence.map(x=>[x.role==='circuit'?x.ownerId:'УЗО '+x.ownerId,x.articleId,x.sku,
    x.manufacturer,x.series,x.widthMm??'—',x.heightMm??'—',x.depthMm??'—',
    x.poleConfiguration||'Не указана',x.source||'Отсутствует',
    x.sourceType||'Не указан',x.productSource||'Не указана',x.sourceReviewedAt||'Не записано',
    x.verificationStatus==='VERIFIED'?'Заявлено VERIFIED, отдельная проверка необходима':'Не подтверждено',
-   x.icnVoltageV??'—',x.icnStandard||'—']));
+   x.icnKa??'—',x.icnVoltageV??'—',x.icnStandard||'—',x.icuKa??'—',x.icuVoltageV??'—']));
  const evidence=sections.designEvidence?.items||[];
  const evidenceTable=rows(['Раздел','Статус','Обоснование'],
   evidence.map(x=>[x.area,x.status,x.reason]));
@@ -37,19 +37,20 @@ function epEngineeringPrintV1(bundle){
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
    x.placement?'DIN '+x.placement.rail+' · '+x.placement.from+'–'+x.placement.to:'Не размещено',
    x.calculationReviewRequired?'Требуется перепроверка':'Не подтверждено']));
- const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Напряжение сети, В','Артикул','Тип','Изготовитель','In, A','Icn, кА','Напряжение Icn, В','Стандарт Icn','Конфигурация полюсов','IΔn, мА','Тип дифзащиты','Источник','Статус','Причины'],
+ const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Напряжение сети, В','Артикул','Тип','Изготовитель','In, A','Icn, кА','Напряжение Icn, В','Стандарт Icn','Icu, кА','Напряжение Icu, В','Конфигурация полюсов','IΔn, мА','Тип дифзащиты','Источник','Статус','Причины'],
   protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.voltageV??'Не указано',x.selectedSku,x.selectedArticle?.kind,
    x.selectedArticle?.maker,x.selectedArticle?.inA,x.selectedArticle?.icnKa,
    x.selectedArticle?.icnVoltageV??'—',x.selectedArticle?.icnStandard||'—',
+   x.selectedArticle?.icuKa??'—',x.selectedArticle?.icuVoltageV??'—',
    x.selectedArticle?.poleConfiguration||'Не указана',
    x.selectedArticle?.residualCurrentMa??'—',x.selectedArticle?.residualType||'—',
    x.selectedArticle?.source||'Не подтверждён',x.status,(x.reasons||[]).join(', ')]));
  const selectionTable=rows(['Цепь','Арифметически возможные артикулы','Количество'],
   (sections.protectionSelection?.results||[]).map(x=>[x.lineId,(x.potential||[]).join(', '),(x.potential||[]).length]));
- const bomTable=rows(['Артикул','Производитель','Серия','Количество','Модули','Ширина, мм','Высота, мм','Глубина, мм','Полюса','Icn, В','Стандарт Icn','IΔn, мА','Тип дифзащиты','Источник','Дата сверки'],
+ const bomTable=rows(['Артикул','Производитель','Серия','Количество','Модули','Ширина, мм','Высота, мм','Глубина, мм','Полюса','Icn, кА','Icn, В','Стандарт Icn','Icu, кА','Icu, В','IΔn, мА','Тип дифзащиты','Источник','Дата сверки'],
   bom.map(x=>[x.sku,x.maker,x.series,x.quantity,x.modules,
    x.widthMm??'—',x.heightMm??'—',x.depthMm??'—',x.poleConfiguration||'Не указана',
-   x.icnVoltageV??'—',x.icnStandard||'—',x.residualCurrentMa??'—',
+   x.icnKa??'—',x.icnVoltageV??'—',x.icnStandard||'—',x.icuKa??'—',x.icuVoltageV??'—',x.residualCurrentMa??'—',
    x.residualType||'—',x.source||'Не указан',x.sourceReviewedAt||'Не записано']));
  const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
