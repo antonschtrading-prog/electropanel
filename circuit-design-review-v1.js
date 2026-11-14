@@ -17,8 +17,9 @@ function epCircuitDesignReviewV1(project,lookupSku){
   ids.add(line.id);
   const reasons=[],ib=finite(line.overloadInput?.ibA),iz=finite(line.overloadInput?.izA),
    ik=finite(line.faultInput?.ikKa);
-  let article=null;
-  try{article=line.catalogSku&&typeof lookupSku==='function'?lookupSku(line.catalogSku):null;}catch(_){}
+  let article=null,lookupFailed=false;
+  if(line.catalogSku&&typeof lookupSku==='function')
+   try{article=lookupSku(line.catalogSku);}catch(_){lookupFailed=true;}
   const inA=finite(article?.inA),icnKa=finite(article?.icnKa);
   const check=(name,ok,missing,fail)=>{
    const status=missing?'UNKNOWN':ok?'PASS':'FAIL';
@@ -41,8 +42,33 @@ function epCircuitDesignReviewV1(project,lookupSku){
    {status:'UNKNOWN',issues:['VOLTAGE_DROP_MODULE_UNAVAILABLE']};
   for(const code of drop.issues||[])reasons.push({code:'DROP_'+code,level:drop.status==='FAIL'?'BLOCKED':'UNKNOWN'});
   if(line.loadCurrentCalculation?.stale)reasons.push({code:'LOAD_CURRENT_STALE',level:'UNKNOWN'});
-  if(line.calculationReview?.required)reasons.push({code:'CALCULATION_REVIEW_REQUIRED',level:'UNKNOWN'});
-  if(!article)reasons.push({code:'CATALOG_ARTICLE_MISSING',level:'UNKNOWN'});
+  if(line.calculationReview?.required){
+   reasons.push({code:'CALCULATION_REVIEW_REQUIRED',level:'UNKNOWN'});
+   const pending=Array.isArray(line.calculationReview.pending)?line.calculationReview.pending:[];
+   for(const field of ['overloadInput','faultInput','overloadV30','lv43Input','route44Input'])
+    if(pending.includes(field))reasons.push({code:'CALCULATION_REVIEW_'+field,level:'UNKNOWN'});
+  }
+  if(!line.catalogSku)reasons.push({code:'CATALOG_ARTICLE_MISSING',level:'UNKNOWN'});
+  else if(lookupFailed)reasons.push({code:'CATALOG_LOOKUP_FAILED',level:'BLOCKED'});
+  else if(!article)reasons.push({code:'CATALOG_ARTICLE_UNKNOWN',level:'BLOCKED'});
+  else{
+   if(!['MCB','RCBO'].includes(article.kind))
+    reasons.push({code:'CATALOG_PROTECTION_KIND_UNSUPPORTED',level:'BLOCKED'});
+   const correctPoles=['L1','L2','L3'].includes(line.phase)?article.poles===1:
+    line.phase==='3Ф'?[3,4].includes(article.poles):null;
+   if(correctPoles===false)reasons.push({code:'CATALOG_PHASE_POLES_MISMATCH',level:'BLOCKED'});
+   if(line.modules!==article.modules)reasons.push({code:'CATALOG_MODULES_STALE',level:'BLOCKED'});
+   if(line.device!==article.label)reasons.push({code:'CATALOG_LABEL_STALE',level:'BLOCKED'});
+   const linked=Array.isArray(project.branchDevices)?
+    project.branchDevices.filter(b=>b?.circuitId===line.id):[];
+   if(linked.length>1)reasons.push({code:'CATALOG_BRANCH_DUPLICATED',level:'BLOCKED'});
+   for(const branch of linked){
+    if(branch.modules!==article.modules)reasons.push({code:'CATALOG_BRANCH_MODULES_STALE',level:'BLOCKED'});
+    if(branch.label!==article.label)reasons.push({code:'CATALOG_BRANCH_LABEL_STALE',level:'BLOCKED'});
+   }
+   if(article.verificationStatus!=='VERIFIED')
+    reasons.push({code:'CATALOG_EVIDENCE_NOT_VERIFIED',level:'UNKNOWN'});
+  }
   for(const reason of reasons)issues.push({...reason,lineId:line.id});
   const status=reasons.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId:line.id,name:line.name||'',phase:line.phase||null,sku:line.catalogSku||null,
