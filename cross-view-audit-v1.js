@@ -170,12 +170,14 @@ function epSchematicCrossViewV1(project,singleLine,lookupSku){
  for(const [id,g] of groups){
   const nodeId='RCD:'+id;expectedIds.add(nodeId);
   const n=nodes.get(nodeId);
-  if(!n){add('SCHEMATIC_GROUP_MISSING',id);continue;}
-  if(n.type!=='rcd')add('SCHEMATIC_GROUP_TYPE_MISMATCH',id);
-  if(n.name!==(g.label||g.id))add('SCHEMATIC_GROUP_LABEL_STALE',id);
-  if((n.sku||null)!==(g.catalogSku||null))add('SCHEMATIC_GROUP_SKU_STALE',id);
-  if((n.templateId||null)!==(g.templateId||null))add('SCHEMATIC_GROUP_TEMPLATE_STALE',id);
-  compareArticle('SCHEMATIC_GROUP',id,n.article,g.catalogSku);
+  if(!n)add('SCHEMATIC_GROUP_MISSING',id);
+  else{
+   if(n.type!=='rcd')add('SCHEMATIC_GROUP_TYPE_MISMATCH',id);
+   if(n.name!==(g.label||g.id))add('SCHEMATIC_GROUP_LABEL_STALE',id);
+   if((n.sku||null)!==(g.catalogSku||null))add('SCHEMATIC_GROUP_SKU_STALE',id);
+   if((n.templateId||null)!==(g.templateId||null))add('SCHEMATIC_GROUP_TEMPLATE_STALE',id);
+   compareArticle('SCHEMATIC_GROUP',id,n.article,g.catalogSku);
+  }
   if(!Array.isArray(g.circuitIds)){add('SCHEMATIC_GROUP_CIRCUITS_INVALID',id);continue;}
   const inGroup=new Set();
   for(const circuitId of g.circuitIds){
