@@ -139,10 +139,9 @@ function applyCatalogueSku(project,circuitId,sku){
     !Number.isFinite(dev.inA)||dev.inA<=0||
     typeof dev.label!=='string'||!dev.label.trim()||dev.label.length>25)
   throw Error('Артикул содержит недопустимые габариты, обозначение или номинальный ток');
- // A locked manual DIN location may be invalidated by a wider apparatus.
- // Preflight the exact updated draft before any changes to the user's project.
- if(Array.isArray(project.manualLayoutV1)&&project.manualLayoutV1.length&&
-    dev.modules!==line.modules){
+ // Width changes must pass the complete DIN capacity/overlap plan, including
+ // automatically placed boards. Never mutate the source on failure.
+ if(dev.modules!==line.modules){
   if(typeof epDraftBoardPlanV1!=='function')
    throw Error('Проверка размещения DIN недоступна; замена отменена');
   const candidate=structuredCloneCompat(project);
