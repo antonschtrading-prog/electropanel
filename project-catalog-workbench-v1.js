@@ -107,7 +107,7 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  for(const line of draft.lines){
   if(line.catalogSku!==record.id)continue;
   if(!['MCB','RCBO'].includes(article.kind))return {project:null,code:'USED_ARTICLE_KIND_CONFLICT'};
-  const phaseOK=['L1','L2','L3'].includes(line.phase)?article.poles===1:line.phase==='3Ф'&&[3,4].includes(article.poles);
+  const phaseOK=['L1','L2','L3'].includes(line.phase)?(article.poles===1||article.kind==='RCBO'&&article.poles===2):line.phase==='3Ф'&&[3,4].includes(article.poles);
   if(!phaseOK)return {project:null,code:'USED_ARTICLE_POLE_CONFLICT'};
   if(article.modules>12)return {project:null,code:'USED_ARTICLE_MODULES_UNSUPPORTED'};
   if(article.label.length>25)return {project:null,code:'USED_ARTICLE_LABEL_TOO_LONG'};
