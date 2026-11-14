@@ -28,3 +28,6 @@ Current work supersedes the old snapshot above for Web integration. See [INTEGRA
 
 ## 14 November 2026 — TN route and catalogue workbench
 See [FAULT_ROUTE_AND_CATALOG_V2.md](FAULT_ROUTE_AND_CATALOG_V2.md). Added multi-segment declared TN L–PE fault-loop arithmetic, source/time/temperature evidence, current article/cable binding, gate/queue/report integration, catalogue CRUD with atomic geometry changes, and three source-backed Schneider records (six seeds total). Local regression suite: 908 passed. Full max-fault studies, selectivity, thermal design, normative applicability automation and manufacturer 3D remain outside the completed scope.
+
+## 14 November 2026 — BOM and combined engineering gate integrity
+The native project reconciliation and draft BOM now participate in the combined engineering gate. Duplicate circuit/branch IDs, orphan bindings, module mismatch, unplaced equipment, duplicate material takeoff and invalid catalogue geometry are reported as blockers. The draft BOM also distinguishes declared sources from verified manufacturer evidence. New regression files cover BOM and gate integration. All outputs remain DRAFT; no safety approval is inferred. Changes committed to PR #12. The latest workflow result has **not** been independently verified; recorded test additions are not a claim of a successful run.
