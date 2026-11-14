@@ -41,9 +41,13 @@ function epEngineeringBundleV1(project,lookupSku){
  const sections={faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections}):null);
- const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.status||'UNKNOWN']));
+ const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
+ const blockedSections=Object.entries(statuses).filter(([,status])=>status==='BLOCKED').map(([name])=>name);
+ const unresolvedSections=Object.entries(statuses).filter(([,status])=>status!=='BLOCKED').map(([name])=>name);
+ const issueCount=Object.values(sections).reduce((sum,section)=>sum+(Array.isArray(section?.issues)?section.issues.length:0),0);
  return {schema:'electropanel.engineering.bundle.draft.1',projectTitle:String(project?.title??''),
-  statuses,sections,overallStatus:Object.values(statuses).includes('BLOCKED')?'BLOCKED':'UNKNOWN',
+  statuses,sections,blockedSections,unresolvedSections,issueCount,
+  overallStatus:blockedSections.length?'BLOCKED':'UNKNOWN',
   engineeringApproved:false,ready_for_installation:false,
   disclaimer:'DRAFT ONLY. Catalogue data, declared calculations, wiring and DIN placement require independent verification.'};
 }
