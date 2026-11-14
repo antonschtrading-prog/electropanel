@@ -62,7 +62,8 @@ let catalogMakerFilter='',catalogSeriesFilter='';
 function catalogBranchPolesCompatible(phase,device){
  if(!device||!['MCB','RCBO'].includes(device.kind))return false;
  if(['L1','L2','L3'].includes(phase))
-  return device.poles===1||(device.kind==='RCBO'&&device.poles===2);
+  return device.poles===1||(device.poles===2&&
+   (device.kind==='RCBO'||['1P+N','2P'].includes(device.poleConfiguration)));
  if(phase==='3Ф')return device.poles===3||device.poles===4;
  return false;
 }
@@ -119,7 +120,8 @@ function applyCatalogueSku(project,circuitId,sku){
   catalogBranchPolesCompatible(line.phase,dev):
   ['MCB','RCBO'].includes(dev.kind)&&
   (['L1','L2','L3'].includes(line.phase)?
-   dev.poles===1||dev.kind==='RCBO'&&dev.poles===2:
+   dev.poles===1||dev.poles===2&&
+    (dev.kind==='RCBO'||['1P+N','2P'].includes(dev.poleConfiguration)):
    line.phase==='3Ф'&&[3,4].includes(dev.poles));
  if(!validPoles)throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
  if(line.catalogSku!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
@@ -139,7 +141,8 @@ function catalogAudit(project){
    catalogBranchPolesCompatible(l.phase,dev):
    ['MCB','RCBO'].includes(dev.kind)&&
    (['L1','L2','L3'].includes(l.phase)?
-    dev.poles===1||dev.kind==='RCBO'&&dev.poles===2:
+    dev.poles===1||dev.poles===2&&
+    (dev.kind==='RCBO'||['1P+N','2P'].includes(dev.poleConfiguration)):
     l.phase==='3Ф'&&[3,4].includes(dev.poles)))||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
   for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput,dev))
