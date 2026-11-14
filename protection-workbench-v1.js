@@ -35,6 +35,10 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   else if(!selectedCandidate)reasons.push('ARTICLE_NOT_IN_SHORTLIST');
   else reasons.push(...selectedCandidate.reasons);
   if(article&&article.verificationStatus!=='VERIFIED')reasons.push('CATALOG_DATA_UNVERIFIED');
+  if(article&&(!Number.isFinite(article.icnKa)||article.icnKa<=0)){
+   reasons.push('ARTICLE_ICN_UNDECLARED');
+   if(Number.isFinite(article.icuKa)&&article.icuKa>0)reasons.push('ICU_CANNOT_REPLACE_ICN');
+  }
   if(article&&!article.source)reasons.push('DATASHEET_SOURCE_MISSING');
   if(line.loadCurrentCalculation?.stale)reasons.push('LOAD_CURRENT_STALE');
   const derivedIb=safePositive(line.loadCurrentCalculation?.roundedIbA);
@@ -81,6 +85,7 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   if(article&&!article.source)reasons.push('ARTICLE_SOURCE_MISSING');
   const blocking=new Set(['ARTICLE_UNKNOWN','SELECTED_ARTICLE_NOT_MCB','ARTICLE_NOT_IN_SHORTLIST',
    'IN_LT_IB','IN_GT_IZ','ICN_LT_DECLARED_IK','POLES_INCOMPATIBLE','CATALOG_SPEC_INVALID',
+   'ARTICLE_ICN_UNDECLARED',
    'ARTICLE_MODULE_WIDTH_MISMATCH','ARTICLE_LABEL_MISMATCH','ARTICLE_MODULES_INVALID',
    'ARTICLE_GEOMETRY_INVALID','ARTICLE_POLES_MISMATCH','BRANCH_ASSIGNMENT_DUPLICATE',
    'BRANCH_ASSIGNMENT_MISSING','BRANCH_WIDTH_MISMATCH','BRANCH_LABEL_MISMATCH',
@@ -93,7 +98,8 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
     kind:article.kind||null,label:article.label||null,
     residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
-    inA:article.inA??null,icnKa:article.icnKa??null,poles:article.poles??null,
+    inA:article.inA??null,icnKa:article.icnKa??null,
+    icuKa:article.icuKa??null,icuVoltageV:article.icuVoltageV??null,poles:article.poles??null,
     poleConfiguration:article.poleConfiguration??null,
     icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
     modules:article.modules??null,source:article.source||null,
@@ -131,7 +137,7 @@ function epProtectionWorkbenchHtmlV1(report){
   '. Выбран: '+esc(x.selectedSku||'нет')+'; статус: '+esc(x.status)+'.</p>'+
   '<p>Паспорт выбранного аппарата: '+(article?
    esc(article.maker)+' / '+esc(article.series)+' / '+esc(article.sku)+
-   ' · In '+fmt(article.inA)+' А · Icn '+fmt(article.icnKa)+' кА · '+fmt(article.poles)+' пол.':
+   ' · In '+fmt(article.inA)+' А · Icn '+fmt(article.icnKa)+' кА · Icu '+fmt(article.icuKa)+' кА · '+fmt(article.poles)+' пол.':
    'Артикул не выбран или отсутствует в каталоге')+'</p>'+
   '<p>Замечания: '+(x.reasons.length?x.reasons.map(esc).join('; '):'Нет по проверяемым входным данным')+'</p>'+
   '<form data-protection-input-form="'+esc(x.lineId)+'" class="ep-protection-inputs">'+
