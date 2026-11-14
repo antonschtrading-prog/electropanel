@@ -97,10 +97,24 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  }
  return {project:draft,affected,status:'REVIEW_REQUIRED'};
 }
+// Transactional import: apply the same engineering constraints as the manual editor.
+function epImportProjectArticlesV2(project,records,seed={}){
+ if(!Array.isArray(records)||!records.length||records.length>500)return {project:null,code:'IMPORT_RECORD_COUNT_INVALID'};
+ if(!project||!Array.isArray(project.catalogArticles))return {project:null,code:'PROJECT_CATALOG_INVALID'};
+ if(project.catalogArticles.length+records.length>500)return {project:null,code:'CATALOG_TOO_LARGE'};
+ let draft=project;
+ for(const [index,record] of records.entries()){
+  if(!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'IMPORT_RECORD_INVALID',index};
+  const result=epUpsertProjectArticleV2(draft,record,seed);
+  if(!result.project)return {project:null,code:result.code,index};
+  draft=result.project;
+ }
+ return {project:draft,imported:records.length,status:'REVIEW_REQUIRED'};
+}
 function epDeleteProjectArticleV2(project,id){
  if((project.lines||[]).some(x=>x.catalogSku===id)||(project.sharedDevices||[]).some(x=>x.catalogSku===id))return {project:null,code:'ARTICLE_IN_USE'};
  if(!(project.catalogArticles||[]).some(x=>x.id===id))return {project:null,code:'ARTICLE_NOT_CUSTOM'};
  const draft=JSON.parse(JSON.stringify(project));draft.catalogArticles=draft.catalogArticles.filter(x=>x.id!==id);
  return {project:draft,status:'REVIEW_REQUIRED'};
 }
-if(typeof module!=='undefined'&&module.exports)Object.assign(module.exports,{epCatalogEditorHtmlV2,epUpsertProjectArticleV2,epDeleteProjectArticleV2});
+if(typeof module!=='undefined'&&module.exports)Object.assign(module.exports,{epCatalogEditorHtmlV2,epUpsertProjectArticleV2,epImportProjectArticlesV2,epDeleteProjectArticleV2});
