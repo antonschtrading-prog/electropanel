@@ -159,10 +159,13 @@ function epMaximumFaultCurrentV2(project,line,lookup){
   if(article.verificationStatus!=='VERIFIED')add('MAX_FAULT_ARTICLE_VERIFICATION_PENDING');
  }
  let thresholdStatus='UNKNOWN';
- if(article&&parse(article.icnKa)!==null&&
+ // A declared overrun is a blocker even when provenance is incomplete;
+ // missing evidence can suppress a pass, never suppress a known numerical fail.
+ if(article&&parse(article.icnKa)!==null&&ikKa>article.icnKa){
+  thresholdStatus='FAIL';add('MAX_FAULT_EXCEEDS_ICN','BLOCKED');
+ }else if(article&&parse(article.icnKa)!==null&&
    !issues.some(i=>i.level==='UNKNOWN'||i.level==='BLOCKED')){
-  thresholdStatus=ikKa>article.icnKa?'FAIL':'PRELIMINARY_PASS';
-  if(thresholdStatus==='FAIL')add('MAX_FAULT_EXCEEDS_ICN','BLOCKED');
+  thresholdStatus='PRELIMINARY_PASS';
  }
  return end({ikMaxKa:ikKa,ikMaxA:ikA,impedanceOhm:z,rOhm:r,xOhm:x,segments,
   numericComparison:article&&parse(article.icnKa)!==null?(ikKa>article.icnKa?'EXCEEDS_ICN':'BELOW_OR_EQUAL_ICN'):'UNAVAILABLE',
