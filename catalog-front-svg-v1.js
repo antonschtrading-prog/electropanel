@@ -74,7 +74,7 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const brandMax=Math.max(6,Math.floor((width-22)/(brandSize*.58)));
  const seriesMax=Math.max(8,Math.floor((width-22)/(seriesSize*.58)));
  const ratingMax=Math.max(4,Math.floor((width-22)/(ratingSize*.58)));
- const legend=esc('Иллюстрация '+(device?.maker||'Условный вид')+' '+series+' '+(device?.sku||deviceId)+'. '+visualNote);
+ const legend=esc('Иллюстрация '+(device?.maker||'Условный вид')+' '+series+' '+(device?.sku||deviceId)+(rated==='—'?'':'. Обозначение номинала: '+rated)+'. '+visualNote);
  return '<svg class="ep-manufacturer-front" data-device-kind="'+esc(breaker)+'" data-appearance-family="'+esc(family)+'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+legend+'">'+
  '<defs><linearGradient id="ep-body-'+gradientId+'" x1="0" x2="1"><stop stop-color="#e7e9eb"/><stop offset=".18" stop-color="#fff"/><stop offset=".83" stop-color="#f7f8f9"/><stop offset="1" stop-color="#d7dade"/></linearGradient></defs>'+
  '<rect x="1" y="1" width="'+(width-2)+'" height="238" rx="7" fill="url(#ep-body-'+gradientId+')" stroke="#b9c1c7" stroke-width="2"/>'+
