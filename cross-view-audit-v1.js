@@ -94,6 +94,8 @@ function epCrossViewAuditV1(project, protection, board, bom, singleLine, lookupS
  if(arguments.length>=5){
   const schematic=epSchematicCrossViewV1(project,singleLine,lookupSku);
   issues.push(...schematic.issues);
+  const catalogueOutputs=epCatalogOutputCrossViewV1(project,board,bom,lookupSku);
+  issues.push(...catalogueOutputs.issues);
  }
  if(board?.status==='BLOCKED')add('BOARD_HAS_BLOCKING_ISSUES');
  if(protection?.status==='BLOCKED')add('PROTECTION_HAS_BLOCKING_ISSUES');
@@ -220,4 +222,108 @@ function epSchematicCrossViewV1(project,singleLine,lookupSku){
   checkedGroups:groups.size,engineeringApproved:false};
 }
 
-if(typeof module!=='undefined'&&module.exports)module.exports={epCrossViewAuditV1,epSchematicCrossViewV1};
+
+/**
+ * Reconcile project apparatus -> DIN placements -> grouped BOM.
+ * The audit reports stale declared data and never manufactures missing values.
+ */
+function epCatalogOutputCrossViewV1(project,board,bom,lookupSku){
+ const issues=[],add=(code,lineId=null,level='BLOCKED')=>issues.push({code,level,lineId});
+ if(!project||!Array.isArray(project.lines)||!Array.isArray(project.sharedDevices))
+  return {status:'BLOCKED',issues:[{code:'OUTPUT_PROJECT_INVALID',level:'BLOCKED'}],engineeringApproved:false};
+ const branches=Array.isArray(project.branchDevices)?project.branchDevices:null;
+ const byCircuit=new Map(),lineIds=new Set();
+ for(const line of project.lines)if(line&&typeof line.id==='string')lineIds.add(line.id);
+ if(branches){
+  for(const branch of branches){
+   if(!branch||typeof branch.circuitId!=='string'){add('OUTPUT_BRANCH_INVALID');continue;}
+   if(!lineIds.has(branch.circuitId))add('OUTPUT_BRANCH_ORPHAN',branch.circuitId);
+   if(byCircuit.has(branch.circuitId))add('OUTPUT_BRANCH_DUPLICATE',branch.circuitId);
+   byCircuit.set(branch.circuitId,branch);
+  }
+ }
+ const expectedDevices=new Map();
+ for(const line of project.lines){
+  if(!line||typeof line.id!=='string')continue;
+  const branch=byCircuit.get(line.id);
+  if(branches&&!branch)add('OUTPUT_BRANCH_MISSING',line.id);
+  if(branch){
+   if(branch.modules!==line.modules)add('OUTPUT_BRANCH_MODULES_STALE',line.id);
+   if(branch.label!==(line.device||''))add('OUTPUT_BRANCH_LABEL_STALE',line.id);
+   if((branch.templateId||null)!==(line.templateId||null))add('OUTPUT_BRANCH_TEMPLATE_STALE',line.id);
+  }
+  if(line.catalogSku)expectedDevices.set(branch?.id||line.id,
+   {id:branch?.id||line.id,owner:line.id,kind:'branch',sku:line.catalogSku,
+    modules:branch?.modules??line.modules});
+ }
+ for(const d of project.sharedDevices){
+  if(!d||typeof d.id!=='string')continue;
+  if(d.catalogSku)expectedDevices.set(d.id,
+   {id:d.id,owner:d.id,kind:'shared',sku:d.catalogSku,modules:d.modules});
+ }
+ const auditCatalogue=id=>{
+  if(typeof lookupSku!=='function'){add('OUTPUT_CATALOG_LOOKUP_UNAVAILABLE',id);return null;}
+  try{return lookupSku(id)||null;}catch(_){add('OUTPUT_CATALOG_LOOKUP_FAILED',id);return null;}
+ };
+ if(board&&Array.isArray(board.placements)){
+  if(Number.isInteger(project.railCount)&&board.rails!==project.railCount)add('OUTPUT_BOARD_RAILS_STALE');
+  if(Number.isInteger(project.railCapacity)&&board.capacityPerRail!==project.railCapacity)add('OUTPUT_BOARD_CAPACITY_STALE');
+  const positions=new Map();
+  for(const p of board.placements){
+   if(!p||typeof p.deviceId!=='string')continue;
+   positions.set(p.deviceId,p);
+   const expected=expectedDevices.get(p.deviceId);
+   if(expected){
+    if(p.modules!==expected.modules)add('OUTPUT_BOARD_MODULES_STALE',expected.owner);
+    if(p.kind!==expected.kind)add('OUTPUT_BOARD_DEVICE_KIND_STALE',expected.owner);
+    if((p.article||null)!==expected.sku)add('OUTPUT_BOARD_SKU_STALE',expected.owner);
+   }
+  }
+  for(const manual of Array.isArray(project.manualLayoutV1)?project.manualLayoutV1:[]){
+   if(!manual||typeof manual.deviceId!=='string')continue;
+   const p=positions.get(manual.deviceId);
+   if(p&&(p.railIndex!==manual.railIndex||p.startModule!==manual.startModule))
+    add('OUTPUT_MANUAL_PLACEMENT_STALE',manual.deviceId);
+  }
+ }
+ if(!bom||!Array.isArray(bom.items)||!Array.isArray(bom.devices)){
+  add('OUTPUT_BOM_DEVICE_MAP_UNAVAILABLE');
+ }else{
+  const mapped=new Set();
+  for(const d of bom.devices){
+   if(!d||typeof d.id!=='string'){add('OUTPUT_BOM_DEVICE_INVALID');continue;}
+   if(mapped.has(d.id))add('OUTPUT_BOM_DEVICE_DUPLICATE',d.id);
+   mapped.add(d.id);
+   const expected=expectedDevices.get(d.id);
+   if(!expected){add('OUTPUT_BOM_DEVICE_ORPHAN',d.id);continue;}
+   if(d.owner!==expected.owner)add('OUTPUT_BOM_OWNER_STALE',expected.owner);
+   if(d.kind!==expected.kind)add('OUTPUT_BOM_KIND_STALE',expected.owner);
+   if(d.sku!==expected.sku)add('OUTPUT_BOM_SKU_STALE',expected.owner);
+  }
+  for(const expected of expectedDevices.values())
+   if(!mapped.has(expected.id))add('OUTPUT_BOM_DEVICE_MISSING',expected.owner);
+  if(bom.expectedDevices!==undefined&&bom.expectedDevices!==project.lines.length+project.sharedDevices.length)
+   add('OUTPUT_BOM_EXPECTED_COUNT_STALE');
+  if(bom.totalCataloguedDevices!==undefined&&
+     bom.totalCataloguedDevices!==bom.items.reduce((n,x)=>n+(Number.isFinite(x?.quantity)?x.quantity:0),0))
+   add('OUTPUT_BOM_TOTAL_COUNT_STALE');
+  if(bom.distinctArticles!==undefined&&bom.distinctArticles!==bom.items.length)
+   add('OUTPUT_BOM_DISTINCT_COUNT_STALE');
+  const seen=new Set();
+  for(const item of bom.items){
+   if(!item||typeof item.key!=='string'||!item.key)continue;
+   if(seen.has(item.key))continue;
+   seen.add(item.key);
+   const actual=auditCatalogue(item.key);
+   if(!actual){add('OUTPUT_BOM_ARTICLE_UNRESOLVED',item.key);continue;}
+   for(const [field,code] of [
+    ['sku','MANUFACTURER_SKU_STALE'],['maker','MAKER_STALE'],['series','SERIES_STALE'],
+    ['label','LABEL_STALE'],['kind','KIND_STALE'],['modules','MODULES_STALE'],
+    ['widthMm','WIDTH_STALE'],['source','SOURCE_STALE']
+   ])if((item[field]??null)!==(actual[field]??null))add('OUTPUT_BOM_'+code,item.key);
+  }
+ }
+ return {status:issues.length?'BLOCKED':'UNKNOWN',issues,engineeringApproved:false};
+}
+
+if(typeof module!=='undefined'&&module.exports)module.exports={epCrossViewAuditV1,epSchematicCrossViewV1,epCatalogOutputCrossViewV1};
