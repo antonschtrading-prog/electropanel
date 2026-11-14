@@ -37,6 +37,10 @@ function epDraftBomV1(project,lookupSku){
   if(!items.has(key))items.set(key,{key,sku:article.sku||sku,maker:article.maker||null,
    series:article.series||null,label:article.label||null,kind:article.kind||null,
    modules:article.modules,widthMm:article.widthMm??null,source:article.source||null,
+   poleConfiguration:article.poleConfiguration??null,
+   icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
+   productSource:article.productSource??null,
+   sourceType:article.sourceType??null,sourceReviewedAt:article.sourceReviewedAt??null,
    residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
    quantity:0,owners:[],draft:true});
   const item=items.get(key);item.quantity++;item.owners.push(owner);
