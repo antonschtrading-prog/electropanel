@@ -7,7 +7,11 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const family=maker.includes('schneider')?'schneider':maker.includes('abb')?'abb':maker.includes('iek')?'iek':'neutral';
  const palette={schneider:{brand:'#16814c',label:'#e7f5e9',stripe:'#2c985d'},abb:{brand:'#cf252d',label:'#fff0f0',stripe:'#cf252d'},iek:{brand:'#1671ad',label:'#e7f1fc',stripe:'#eab92f'},neutral:{brand:'#546577',label:'#eef1f4',stripe:'#546577'}}[family];
  const poles=Number.isInteger(device?.poles)&&device.poles>0?Math.min(device.poles,8):1;
- const width=Math.max(92,Math.min(480,Math.round((Number(device?.widthMm)||18)*5.1)));
+ const modules=Number.isInteger(device?.modules)&&device.modules>0?Math.min(device.modules,24):poles;
+ const geometryKnown=Number.isFinite(device?.widthMm)&&device.widthMm>0&&device.widthMm<=modules*18+0.001;
+ const evidenceVerified=device?.verificationStatus==='VERIFIED'&&geometryKnown;
+ const visualNote=evidenceVerified?'Эскиз, не официальный фасад':'Условный эскиз · геометрия/паспорт не подтверждены';
+ const width=Math.max(92,Math.min(480,Math.round((geometryKnown?device.widthMm:modules*18)*5.1)));
  const height=240;
  const gradientId='ep-body-'+family+'-'+Array.from(String(deviceId||device?.sku||'device')).reduce((h,ch)=>((h*33+ch.charCodeAt(0))>>>0),5381).toString(36);
  const inA=Number.isFinite(device?.inA)?String(device.inA):'—';
@@ -27,7 +31,9 @@ function epCatalogFrontSvgV1(device,deviceId=''){
    '<rect x="'+(cx-7)+'" y="222" width="14" height="12" rx="2" fill="#6f7c86"/>';
  }).join('');
  const text=(y,size,fill,value,weight=500)=>'<text x="10" y="'+y+'" font-family="Arial,sans-serif" font-size="'+size+'" font-weight="'+weight+'" fill="'+fill+'">'+esc(value)+'</text>';
- return '<svg class="ep-manufacturer-front" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+esc('Иллюстрация '+(device?.maker||'')+' '+series+' '+(device?.sku||deviceId))+'">'+
+ const note=esc(visualNote);
+ const legend=esc('Иллюстрация '+(device?.maker||'')+' '+series+' '+(device?.sku||deviceId)+'. '+visualNote);
+ return '<svg class="ep-manufacturer-front" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+legend+'">'+
  '<defs><linearGradient id="ep-body-'+gradientId+'" x1="0" x2="1"><stop stop-color="#e7e9eb"/><stop offset=".18" stop-color="#fff"/><stop offset=".83" stop-color="#f7f8f9"/><stop offset="1" stop-color="#d7dade"/></linearGradient></defs>'+
  '<rect x="1" y="1" width="'+(width-2)+'" height="238" rx="7" fill="url(#ep-body-'+gradientId+')" stroke="#b9c1c7" stroke-width="2"/>'+
  terminal+'<rect x="5" y="25" width="'+(width-10)+'" height="86" rx="3" fill="'+palette.label+'"/>'+
