@@ -59,9 +59,16 @@ function projectCatalogEntries(project=state){return typeof epProjectCatalogV1==
 function catalogDevice(sku){if(typeof epProjectCatalogV1==='function'){const c=epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{});return c.lookup(sku);}return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
 // UI filters are temporary preferences, never electrical or catalogue data.
 let catalogMakerFilter='',catalogSeriesFilter='';
+function catalogBranchPolesCompatible(phase,device){
+ if(!device||!['MCB','RCBO'].includes(device.kind))return false;
+ if(['L1','L2','L3'].includes(phase))
+  return device.poles===1||(device.kind==='RCBO'&&device.poles===2);
+ if(phase==='3Ф')return device.poles===3||device.poles===4;
+ return false;
+}
 function catalogChoices(selected,phase=''){
  const entries=typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles):[];
- const items=entries.filter(([id,d])=>(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||(['L1','L2','L3'].includes(phase)?d.poles===1:phase==='3Ф'&&(d.poles===3||d.poles===4))));
+ const items=entries.filter(([id,d])=>(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||catalogBranchPolesCompatible(phase,d)));
  const current=catalogDevice(selected);
  if(current&&!items.some(([id])=>id===selected))items.unshift([selected,current]);
  const unknown=selected&&!current;
@@ -108,7 +115,7 @@ function applyCatalogueSku(project,circuitId,sku){
  const dev=projectCatalogEntries(project).find(([id])=>id===sku)?.[1],line=project.lines.find(l=>l.id===circuitId);
  if(!dev||!line)throw Error('Не найдена цепь или артикул');
  if(!['MCB','RCBO'].includes(dev.kind))throw Error('Для защиты отходящей линии требуется автоматический выключатель или дифавтомат');
- if(!((['L1','L2','L3'].includes(line.phase)&&dev.poles===1)||(line.phase==='3Ф'&&(dev.poles===3||dev.poles===4))))throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
+ if(!catalogBranchPolesCompatible(line.phase,dev))throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
  if(line.catalogSku!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
  updateBranchApparatus(project,circuitId,{label:dev.label,modules:dev.modules,templateId:null});
  line.catalogSku=sku;
@@ -122,7 +129,7 @@ function catalogAudit(project){
   if(!l.catalogSku)continue;
   const dev=typeof projectCatalogEntries==='function'?projectCatalogEntries(project).find(([id])=>id===l.catalogSku)?.[1]:catalogDevice(l.catalogSku);
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
-  if(!((['L1','L2','L3'].includes(l.phase)&&dev.poles===1)||(l.phase==='3Ф'&&(dev.poles===3||dev.poles===4)))||l.modules!==dev.modules||l.device!==dev.label)
+  if(!catalogBranchPolesCompatible(l.phase,dev)||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
   for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput,dev))
    issues.push({circuitId:l.id,...issue});
