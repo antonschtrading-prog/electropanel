@@ -139,6 +139,24 @@ function applyCatalogueSku(project,circuitId,sku){
     !Number.isFinite(dev.inA)||dev.inA<=0||
     typeof dev.label!=='string'||!dev.label.trim()||dev.label.length>25)
   throw Error('Артикул содержит недопустимые габариты, обозначение или номинальный ток');
+ // A locked manual DIN location may be invalidated by a wider apparatus.
+ // Preflight the exact updated draft before any changes to the user's project.
+ if(Array.isArray(project.manualLayoutV1)&&project.manualLayoutV1.length&&
+    dev.modules!==line.modules){
+  if(typeof epDraftBoardPlanV1!=='function')
+   throw Error('Проверка размещения DIN недоступна; замена отменена');
+  const candidate=structuredCloneCompat(project);
+  const proposedLine=candidate.lines.find(x=>x.id===circuitId);
+  const proposedBranch=(candidate.branchDevices||[]).find(x=>x.circuitId===circuitId);
+  if(!proposedLine||!proposedBranch)
+   throw Error('Отсутствует связанный отходящий аппарат; замена отменена');
+  proposedLine.modules=dev.modules;proposedLine.device=dev.label;proposedLine.catalogSku=sku;
+  proposedBranch.modules=dev.modules;proposedBranch.label=dev.label;
+  const entries=projectCatalogEntries(candidate);
+  const report=epDraftBoardPlanV1(candidate,key=>entries.find(([id])=>id===key)?.[1]||null);
+  if(report.status==='BLOCKED')
+   throw Error('Замена не помещается в текущую DIN-компоновку; скорректируйте размещение');
+ }
  const current=line.catalogSku;
  if(current!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
  updateBranchApparatus(project,circuitId,{label:dev.label,modules:dev.modules,templateId:null});
