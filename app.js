@@ -2166,7 +2166,7 @@ $('projectCatalogWorkbench').addEventListener('input',e=>{
  for(const row of $('projectCatalogWorkbench').querySelectorAll('[data-catalog-row]'))row.hidden=!row.textContent.toLocaleLowerCase('ru').includes(query);
 });
 document.addEventListener('submit',e=>{
- if(e.target.id!=='catalogArticleForm')return;e.preventDefault();
+ if(e.target.getAttribute('id')!=='catalogArticleForm')return;e.preventDefault();
  const form=e.target,record={};
  for(const key of ['id','maker','series','sku','label','modules','widthMm','poles','inA','curve','icnKa','source','kind']){
   const value=form.elements.namedItem(key).value.trim();
