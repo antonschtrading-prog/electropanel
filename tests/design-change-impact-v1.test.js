@@ -90,3 +90,14 @@ test('pending replacement provenance alone invalidates dependent device evidence
  assert.deepEqual(impact.affected,['device','topology','enclosure']);
  assert.equal(impact.engineeringApproved,false);
 });
+
+test('new declared max fault R/X input invalidates dependent protective design evidence',()=>{
+ const p=base(),q=structuredClone(p);
+ q.lines[0].maximumFaultInput={model:'THREE_PHASE_POSITIVE_SEQUENCE',cmax:1.1,uLLV:400,
+  sourceROhm:0.1,sourceXOhm:0.01};
+ const r=a(p,q);
+ assert.ok(r.changed.includes('network'));
+ assert.ok(r.affected.includes('device'));
+ assert.ok(r.affected.includes('topology'));
+ assert.equal(r.engineeringApproved,false);
+});
