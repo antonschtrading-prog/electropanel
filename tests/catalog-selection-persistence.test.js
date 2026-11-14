@@ -112,6 +112,7 @@ test('locked DIN layout permits fit-safe width increase and retains positions',(
  const c=environment();
  run(c,`state.railCount=1;state.railCapacity=12;
   state.lines=state.lines.slice(0,2);state.branchDevices=state.branchDevices.slice(0,2);
+  state.loads=(state.loads||[]).filter(x=>state.lines.some(l=>l.id===x.circuitId));
   state.manualLayoutV1=state.branchDevices.map((b,i)=>({deviceId:b.id,railIndex:0,startModule:i*4}));
   projectCatalogEntries=()=>Object.entries(EP_CATALOG).concat([['WIDE-CUSTOM',{maker:'Declared',series:'Custom',sku:'WIDE',kind:'MCB',label:'Wide C16',poles:1,modules:2,widthMm:36,inA:16,icnKa:6,source:'https://example.org/device'}]]);
  `);
