@@ -314,3 +314,13 @@ test("project duplicate branch owner",()=>{
  const issues=epSchematicCrossViewV1(p,v,lookup).issues;
  assert.ok(issues.some(x=>x.code==="SCHEMATIC_BRANCH_DUPLICATE"),JSON.stringify(issues));
 });
+
+
+test('circuit kind changes are detected as stale schematic projection',()=>{
+ const {p,v,articles,lookup}=fixture();articles.MCB16.kind='RCBO';
+ assert.ok(epSchematicCrossViewV1(p,v,lookup).issues.some(x=>x.code==='SCHEMATIC_CIRCUIT_KIND_STALE'));
+});
+test('shared RCD kind changes are detected as stale schematic projection',()=>{
+ const {p,v,articles,lookup}=fixture();articles.RCD40.kind='RCBO';
+ assert.ok(epSchematicCrossViewV1(p,v,lookup).issues.some(x=>x.code==='SCHEMATIC_GROUP_KIND_STALE'));
+});
