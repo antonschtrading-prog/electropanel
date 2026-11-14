@@ -74,7 +74,8 @@ const server=http.createServer((req,res)=>{
  const editor=page.locator('#catalogArticleForm');
  for(const [name,value] of Object.entries({id:'USER-25',maker:'Test maker',series:'Declared',sku:'U25',label:'User C25',modules:'1',widthMm:'18',poles:'1',inA:'25',curve:'C',icnKa:'6',source:'https://example.org/u25'}))await editor.locator('[name="'+name+'"]').fill(value);
  await editor.locator('button[type="submit"]').click();
- assert.equal(await page.evaluate(()=>state.catalogArticles.length),2);
+ const catalogAfterSubmit=await page.evaluate(()=>({stateDefined:typeof state!=='undefined',count:typeof state!=='undefined'?state.catalogArticles?.length:null,url:location.href}));
+ assert.deepEqual(catalogAfterSubmit,{stateDefined:true,count:2,url:'http://127.0.0.1:'+server.address().port+'/'},'Catalog submit diagnostics: '+JSON.stringify({catalogAfterSubmit,errors}));
  await page.locator('#catalogSearchInput').fill('U25');
  assert.equal(await page.locator('[data-catalog-row]:visible').count(),1);
  await page.locator('#catalogSearchInput').fill('');
