@@ -3,8 +3,9 @@
 function epProtectionInputsV1(project,lineId,raw){
  if(!project||!Array.isArray(project.lines)||typeof lineId!=='string'||!raw||typeof raw!=='object')
   return {status:'BLOCKED',code:'INPUT_INVALID',project:null};
- const line=project.lines.find(x=>x?.id===lineId);
- if(!line)return {status:'BLOCKED',code:'LINE_NOT_FOUND',project:null};
+ const matches=project.lines.filter(x=>x?.id===lineId);
+ if(!matches.length)return {status:'BLOCKED',code:'LINE_NOT_FOUND',project:null};
+ if(matches.length!==1)return {status:'BLOCKED',code:'LINE_NOT_UNIQUE',project:null};
  const parse=(value,max)=>{
   if(value===null||value===undefined||typeof value==='boolean'||typeof value==='object')return null;
   const s=String(value).trim().replace(',','.');
@@ -44,7 +45,7 @@ function epProtectionInputsV1(project,lineId,raw){
  target.protectionInputSource='manual_declaration';
  return {status:'UNKNOWN',code:'MANUAL_INPUTS_RECORDED_REVIEW_REQUIRED',
   project:copy,lineId,values:{ibA:ib,izA:iz,ikKa:ik},
-  manualIbOverride:!!manualIbOverride,affectedViews:['protection','singleLine','bom','engineeringReview'],
+  manualIbOverride:!!manualIbOverride,affectedViews:['protection','singleLine','engineeringReview','loadCurrent'],
   engineeringApproved:false,ready_for_installation:false};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epProtectionInputsV1};
