@@ -96,9 +96,11 @@ function epReconcileProjectV2(project,lookup){
   if(!line||typeof line!=='object')continue;
   let article=null;try{article=line.catalogSku&&lookup?.(line.catalogSku);}catch(_){add('CATALOG_LOOKUP_FAILED',line.id,'BLOCKED');}
   const branch=project.branchDevices?.find(x=>x.circuitId===line.id);
-  const placement=plan?.placements.find(x=>x.deviceId===(branch?.id||line.id));
+  const placement=plan?.placements?.find(x=>x.deviceId===(branch?.id||line.id));
+  if(plan&&branch&&!placement)add('BRANCH_DEVICE_NOT_PLACED',line.id,'BLOCKED');
   if(!article)add('ARTICLE_NOT_SELECTED_OR_UNKNOWN',line.id);
   if(article&&(!Number.isFinite(article.widthMm)||article.widthMm<=0||!Number.isInteger(line.modules)||line.modules<=0||article.widthMm>line.modules*18))add('ARTICLE_ENVELOPE_CONFLICT',line.id,'BLOCKED');
+  if(article&&Number.isInteger(article.modules)&&article.modules>0&&article.modules!==line.modules)add('CATALOG_LINE_MODULE_MISMATCH',line.id,'BLOCKED');
   rows.push({lineId:line.id,name:line.name||'',powerKw:line.power??null,
    article:article?{id:line.catalogSku,maker:article.maker,series:article.series,sku:article.sku,widthMm:article.widthMm,source:article.source}:null,
    calculation:review?.rows.find(x=>x.lineId===line.id)||null,placement:placement||null});
