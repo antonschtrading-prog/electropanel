@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.join(__dirname,'..');
 function environment(){
  const ctx=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt,URL});
- for(const file of ['overload-v30.js','protection.js','catalog.js']){
+ for(const file of ['overload-v30.js','protection.js','catalog.js','project-catalog-workbench-v1.js']){
   vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
  }
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
