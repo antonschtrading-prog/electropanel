@@ -1,0 +1,55 @@
+'use strict';
+// Deterministic cross-domain reconciliation. This is a design consistency check,
+// not an electrical safety approval or substitute for verified manufacturer data.
+function epReconcileDesign(project) {
+ const issues=[], rows=[], placements=[];
+ const issue=(code,scope,id,detail)=>issues.push({code,scope,id,detail});
+ if(!project||typeof project!=='object'||Array.isArray(project))return {status:'BLOCKED',issues:[{code:'INVALID_PROJECT',scope:'project',id:'',detail:'Expected object'}],rows:[],placements:[],engineeringApproved:false};
+ const lines=Array.isArray(project.lines)?project.lines:[];
+ const catalog=Array.isArray(project.catalogArticles)?project.catalogArticles:[];
+ const devices=Array.isArray(project.dinEvidence?.devices)?project.dinEvidence.devices:[];
+ const ids=new Set(), articles=new Map(), seenDevices=new Set();
+ for(const [i,a] of catalog.entries()){
+  const key=typeof a?.manufacturer==='string'&&typeof a?.article==='string'?a.manufacturer.trim().toLowerCase()+'|'+a.article.trim().toLowerCase():'';
+  if(!key||key==='|')issue('CATALOG_KEY_MISSING','catalog',String(i),'Manufacturer and article required');
+  else if(articles.has(key))issue('CATALOG_DUPLICATE','catalog',String(i),key);
+  else articles.set(key,a);
+ }
+ for(const [i,l] of lines.entries()){
+  const id=typeof l?.id==='string'?l.id.trim():'';
+  if(!id){issue('LINE_ID_MISSING','line',String(i),'Circuit ID required');continue;}
+  if(ids.has(id)){issue('LINE_DUPLICATE','line',id,'Duplicate circuit ID');continue;}
+  ids.add(id);
+  const key=typeof l.catalogManufacturer==='string'&&typeof l.catalogArticle==='string'?l.catalogManufacturer.trim().toLowerCase()+'|'+l.catalogArticle.trim().toLowerCase():'';
+  const a=key?articles.get(key):undefined;
+  if(!key||key==='|')issue('ARTICLE_NOT_ASSIGNED','line',id,'Select an exact catalog article');
+  else if(!a)issue('ARTICLE_NOT_FOUND','line',id,key);
+  const width=Number(a?.widthMm), modules=Number(a?.modules), chosen=Number(l.modules);
+  if(a&&(!Number.isFinite(width)||width<=0||!Number.isFinite(modules)||modules<=0))issue('ARTICLE_DIMENSIONS_UNKNOWN','line',id,'Positive width and modules required');
+  if(a&&Number.isFinite(chosen)&&chosen>0&&Number.isFinite(modules)&&modules>0&&chosen!==modules)issue('MODULE_MISMATCH','line',id,'Line and catalog modules differ');
+  if(a&&a.verified!==true)issue('ARTICLE_UNVERIFIED','line',id,'Catalog evidence not verified');
+  rows.push({lineId:id,articleKey:key||null,articleFound:!!a,widthMm:a&&Number.isFinite(width)&&width>0?width:null,modules:a&&Number.isFinite(modules)&&modules>0?modules:null});
+ }
+ const railWidth=Number(project.dinEvidence?.railWidthMm);
+ if(!Number.isFinite(railWidth)||railWidth<=0)issue('RAIL_WIDTH_UNKNOWN','din','board','Positive rail width required');
+ const sorted=devices.map((d,i)=>({d,i})).sort((a,b)=>Number(a.d?.xMm)-Number(b.d?.xMm));
+ let previousEnd=0;
+ for(const {d,i} of sorted){
+  const id=typeof d?.lineId==='string'?d.lineId:'';
+  const x=Number(d?.xMm),w=Number(d?.widthMm);
+  if(!id||!ids.has(id))issue('ORPHAN_PLACEMENT','din',String(i),'Unknown circuit reference');
+  if(id&&seenDevices.has(id))issue('DUPLICATE_PLACEMENT','din',id,'Circuit placed more than once');
+  seenDevices.add(id);
+  if(!Number.isFinite(x)||x<0||!Number.isFinite(w)||w<=0){issue('PLACEMENT_INVALID','din',id||String(i),'Positive width and nonnegative offset required');continue;}
+  if(x<previousEnd)issue('PLACEMENT_OVERLAP','din',id,'Devices overlap');
+  if(Number.isFinite(railWidth)&&railWidth>0&&x+w>railWidth+1e-7)issue('PLACEMENT_OUT_OF_RAIL','din',id,'Device exceeds rail');
+  previousEnd=Math.max(previousEnd,x+w);
+  const row=rows.find(r=>r.lineId===id);
+  if(row?.widthMm!==null&&row?.widthMm!==undefined&&Math.abs(row.widthMm-w)>0.1)issue('PLACEMENT_WIDTH_MISMATCH','din',id,'Catalog and placed widths differ');
+  placements.push({lineId:id,xMm:x,widthMm:w});
+ }
+ for(const r of rows)if(!seenDevices.has(r.lineId))issue('LINE_NOT_PLACED','din',r.lineId,'No placement');
+ if(!lines.length)issue('NO_LINES','project','','At least one circuit required');
+ return {status:issues.length?'BLOCKED':'CONSISTENT_UNVERIFIED',issues,rows,placements,engineeringApproved:false,readyForInstallation:false};
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epReconcileDesign};
