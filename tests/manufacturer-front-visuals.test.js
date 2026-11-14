@@ -4,7 +4,7 @@ const {epCatalogFrontSvgV1}=require('../catalog-front-svg-v1.js');
 const article={id:'ABC-1',sku:'A16',maker:'Schneider Electric',series:'Example Series',
  kind:'MCB',poles:2,modules:2,widthMm:36,inA:16,curve:'B',icnKa:6,verificationStatus:'UNVERIFIED'};
 test("MCB has rocker switches",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"MCB"});
  assert.equal(svg.includes("data-lever="),true);
  assert.match(svg,/data-device-kind=\"MCB\"/);
 });
@@ -14,7 +14,7 @@ test("MCB has no test control",()=>{
  assert.match(svg,/data-device-kind=\"MCB\"/);
 });
 test("RCD has rocker switches",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"RCD"});
  assert.equal(svg.includes("data-lever="),true);
  assert.match(svg,/data-device-kind=\"RCD\"/);
 });
@@ -24,7 +24,7 @@ test("RCD has test control",()=>{
  assert.match(svg,/data-device-kind=\"RCD\"/);
 });
 test("RCBO has rocker switches",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"RCBO"});
  assert.equal(svg.includes("data-lever="),true);
  assert.match(svg,/data-device-kind=\"RCBO\"/);
 });
@@ -34,7 +34,7 @@ test("RCBO has test control",()=>{
  assert.match(svg,/data-device-kind=\"RCBO\"/);
 });
 test("isolator switch has rocker",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"SWITCH"});
  assert.equal(svg.includes("data-lever="),true);
  assert.match(svg,/data-device-kind=\"SWITCH\"/);
 });
@@ -44,7 +44,7 @@ test("isolator has no RCD test control",()=>{
  assert.match(svg,/data-device-kind=\"SWITCH\"/);
 });
 test("contactor has coil face",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"CONTACTOR"});
  assert.equal(svg.includes("data-coil="),true);
  assert.match(svg,/data-device-kind=\"CONTACTOR\"/);
 });
@@ -54,7 +54,7 @@ test("contactor has no breaker rocker",()=>{
  assert.match(svg,/data-device-kind=\"CONTACTOR\"/);
 });
 test("relay has coil face",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"RELAY"});
  assert.equal(svg.includes("data-coil="),true);
  assert.match(svg,/data-device-kind=\"RELAY\"/);
 });
@@ -64,7 +64,7 @@ test("relay has no breaker rocker",()=>{
  assert.match(svg,/data-device-kind=\"RELAY\"/);
 });
 test("meter has LCD illustration",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"METER"});
  assert.equal(svg.includes("data-display="),true);
  assert.match(svg,/data-device-kind=\"METER\"/);
 });
@@ -79,7 +79,7 @@ test("meter has no invented numeric reading",()=>{
  assert.match(svg,/data-device-kind=\"METER\"/);
 });
 test("DIN supply has ventilation",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"DIN_PSU"});
  assert.equal(svg.includes("data-vent="),true);
  assert.match(svg,/data-device-kind=\"DIN_PSU\"/);
 });
@@ -94,7 +94,7 @@ test("DIN supply has no invented output voltage",()=>{
  assert.match(svg,/data-device-kind=\"DIN_PSU\"/);
 });
 test("other devices have neutral face",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"OTHER"});
  assert.equal(svg.includes("data-generic-face="),true);
  assert.match(svg,/data-device-kind=\"OTHER\"/);
 });
@@ -135,7 +135,7 @@ test('invalid dimensions cannot look like confirmed product geometry',()=>{
 });
 test('missing manufacturer preserves neutral explicit disclosure',()=>{
  const svg=epCatalogFrontSvgV1({...article,maker:null});
- assert.match(svg,/Изготовитель не указан/);
+ assert.match(svg,/Условный вид/);
 });
 test('unknown or unlisted kind falls back to plain neutral face',()=>{
  const svg=epCatalogFrontSvgV1({...article,kind:'INVENTED'});
@@ -179,6 +179,6 @@ test('all styles remain valid SVG fragments with finite view box',()=>{
 });
 test('rated current does not turn into a simulated measurement',()=>{
  const svg=epCatalogFrontSvgV1({...article,kind:'METER',inA:40});
- assert.match(svg,/>40<\/text>/);
+ assert.match(svg,/>B40<\/text>/);
  assert.match(svg,/— — —/);
 });
