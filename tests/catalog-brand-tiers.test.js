@@ -15,10 +15,10 @@ test('coverage reports empty manufacturers without inventing products',()=>{
  const coverage=c.epBrandCoverage();
  assert.equal(coverage.reduce((n,g)=>n+g.makers.length,0),14);
  const chint=coverage.flatMap(g=>g.makers).find(m=>m.maker==='CHINT');
- assert.equal(chint.articles,0);assert.equal(chint.series,0);
+ assert.equal(chint.articles,1);assert.equal(chint.series,1);
  const abb=coverage.flatMap(g=>g.makers).find(m=>m.maker==='ABB');
  assert.ok(abb.articles>0);
- assert.equal(Object.keys(c.EP_CATALOG).length,9);
+ assert.equal(Object.keys(c.EP_CATALOG).length,11);
 });
 test('project records counted by manufacturer with no cross-tier inference',()=>{
  const groups=c.epBrandCoverage({x:{maker:'CHINT',series:'Test declaration'},y:{maker:'Custom',series:'X'}});
