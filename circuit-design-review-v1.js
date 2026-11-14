@@ -49,6 +49,16 @@ function epCircuitDesignReviewV1(project,lookupSku){
    {status:'UNKNOWN',issues:['VOLTAGE_DROP_MODULE_UNAVAILABLE']};
   for(const code of drop.issues||[])reasons.push({code:'DROP_'+code,level:drop.status==='FAIL'?'BLOCKED':'UNKNOWN'});
   if(line.loadCurrentCalculation?.stale)reasons.push({code:'LOAD_CURRENT_STALE',level:'UNKNOWN'});
+  if(line.articleReplacementReview?.required){
+   reasons.push({code:'ARTICLE_REPLACEMENT_REVIEW_REQUIRED',level:'UNKNOWN'});
+   if(line.articleReplacementReview.to!==line.catalogSku)
+    reasons.push({code:'ARTICLE_REPLACEMENT_SELECTION_STALE',level:'BLOCKED'});
+   for(const warning of Array.isArray(line.articleReplacementReview.warnings)?
+     line.articleReplacementReview.warnings:[])
+    if(['ICU_IS_NOT_ICN','ICN_UNDECLARED','BODY_GEOMETRY_INCOMPLETE',
+      'PASSPORT_NOT_INDEPENDENTLY_VERIFIED'].includes(warning))
+     reasons.push({code:'ARTICLE_REPLACEMENT_'+warning,level:'UNKNOWN'});
+  }
   if(line.calculationReview?.required){
    reasons.push({code:'CALCULATION_REVIEW_REQUIRED',level:'UNKNOWN'});
    const pending=Array.isArray(line.calculationReview.pending)?line.calculationReview.pending:[];
