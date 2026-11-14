@@ -36,10 +36,23 @@ function epProjectCatalogV1(project,seed={},options={}){
   if(r.label!=null&&r.label!==''&&!bounded(r.label)){issues.push({index,code:'CATALOG_LABEL_INVALID',status:'BLOCKED'});continue;}
   if(r.curve!=null&&r.curve!==''&&(typeof r.curve!=='string'||r.curve.length>50||/[\u0000-\u001f\u007f]/.test(r.curve))){issues.push({index,code:'CATALOG_CURVE_INVALID',status:'BLOCKED'});continue;}
   if(r.icnKa!=null&&r.icnKa!==''&&!num(r.icnKa)){issues.push({index,code:'CATALOG_ICN_INVALID',status:'BLOCKED'});continue;}
+  const hasResidualCurrent=r.residualCurrentMa!==undefined&&r.residualCurrentMa!==null&&r.residualCurrentMa!=='';
+  const hasResidualType=r.residualType!==undefined&&r.residualType!==null&&r.residualType!=='';
+  if(hasResidualCurrent&&(!num(r.residualCurrentMa)||r.residualCurrentMa>3000)){
+   issues.push({index,code:'CATALOG_RESIDUAL_CURRENT_INVALID',status:'BLOCKED'});continue;
+  }
+  if(hasResidualType&&!['AC','A','F','B','B+'].includes(r.residualType)){
+   issues.push({index,code:'CATALOG_RESIDUAL_TYPE_INVALID',status:'BLOCKED'});continue;
+  }
+  if((hasResidualCurrent||hasResidualType)&&!['RCD','RCBO'].includes(r.kind)){
+   issues.push({index,code:'CATALOG_RESIDUAL_KIND_CONFLICT',status:'BLOCKED'});continue;
+  }
   const article={id:key,sku:r.sku,maker:r.maker,series:r.series,kind:r.kind,label:r.label||r.sku,
    modules:r.modules,widthMm:r.widthMm,poles:r.poles,inA:r.inA,
    curve:typeof r.curve==='string'?r.curve:null,
    icnKa:num(r.icnKa)?r.icnKa:null,
+   residualCurrentMa:hasResidualCurrent?r.residualCurrentMa:null,
+   residualType:hasResidualType?r.residualType:null,
    appearance:'generic',source:r.source,verificationStatus:'UNVERIFIED',sourceType:'PROJECT_DECLARATION'};
   articles[key]=article;
  }
@@ -53,13 +66,15 @@ function epProjectCatalogHtmlV1(project,seed={}){
   const custom=Object.hasOwn(c.customArticles,id);
   const source=typeof a.source==='string'&&/^https:\/\/[^\s]+$/i.test(a.source)?'<a href="'+esc(a.source)+'" target="_blank" rel="noopener noreferrer">Источник</a>':'Нет ссылки';
   const provenance=custom?'Декларация пользователя · не проверено':esc(a.sourceType||'Встроенный каталог');
-  return '<tr data-catalog-row><td>'+esc(a.maker)+'</td><td>'+esc(a.series)+'</td><td>'+esc(a.sku)+'</td><td>'+esc(a.inA)+' A</td><td>'+esc(a.modules)+' M / '+esc(a.widthMm)+' мм</td><td>'+source+'</td><td>'+provenance+'</td><td>'+(custom?'<button type="button" class="btn tiny" data-edit-article="'+esc(id)+'">Изменить</button> <button type="button" class="btn tiny" data-delete-article="'+esc(id)+'">Удалить</button>':'Встроенный')+'</td></tr>';
+  const residual=['RCD','RCBO'].includes(a.kind)?
+   (a.residualCurrentMa??'—')+' мА / '+(a.residualType||'—'):'—';
+  return '<tr data-catalog-row><td>'+esc(a.maker)+'</td><td>'+esc(a.series)+'</td><td>'+esc(a.sku)+'</td><td>'+esc(a.inA)+' A</td><td>'+esc(residual)+'</td><td>'+esc(a.modules)+' M / '+esc(a.widthMm)+' мм</td><td>'+source+'</td><td>'+provenance+'</td><td>'+(custom?'<button type="button" class="btn tiny" data-edit-article="'+esc(id)+'">Изменить</button> <button type="button" class="btn tiny" data-delete-article="'+esc(id)+'">Удалить</button>':'Встроенный')+'</td></tr>';
  }).join('');
  const issues=c.issues.length?'<details><summary>Ошибки каталога ('+c.issues.length+')</summary><ul>'+c.issues.map(i=>'<li>Запись '+(i.index+1)+': '+esc(i.code)+' · '+esc(i.status)+'</li>').join('')+'</ul></details>':'';
  return '<section class="panel compact ep-catalog-workbench"><h3>Каталог оборудования · проект</h3>'+
  '<p>Записей: '+Object.keys(c.articles).length+' (пользовательских: '+Object.keys(c.customArticles).length+'). Пользовательские данные не подтверждены производителем автоматически. Замечаний: '+c.issues.length+'.</p>'+
  '<label>Поиск по производителю, серии и артикулу<input id="catalogSearchInput" type="search" placeholder="Например: ABB или C16"></label>'+
- issues+'<div class="table-scroll"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th><th>In</th><th>Ширина</th><th>Документ</th><th>Статус</th><th>Действия</th></tr></thead><tbody>'+items+'</tbody></table></div>'+
+ issues+'<div class="table-scroll"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th><th>In</th><th>IΔn / тип</th><th>Ширина</th><th>Документ</th><th>Статус</th><th>Действия</th></tr></thead><tbody>'+items+'</tbody></table></div>'+
  epCatalogEditorHtmlV2()+
  '<details><summary>Импорт и экспорт JSON</summary><p>Добавление: JSON-массив записей с id, sku, maker, series, kind, modules, widthMm, poles, inA, source. '+
  'Сначала проверяется формат, затем данные сохраняются вместе с проектом.</p>'+
@@ -71,8 +86,8 @@ function epProjectCatalogHtmlV1(project,seed={}){
 if(typeof module!=='undefined'&&module.exports)module.exports={epProjectCatalogV1,epProjectCatalogHtmlV1};
 
 function epCatalogEditorHtmlV2(){
- const fields=[['id','ID записи'],['maker','Производитель'],['series','Серия'],['sku','Артикул'],['label','Обозначение'],['modules','Модули DIN'],['widthMm','Ширина, мм'],['poles','Полюса'],['inA','Номинальный ток, А'],['curve','Характеристика'],['icnKa','Icn, кА'],['source','Ссылка на источник HTTPS']];
- return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label'].includes(name)?'':'required')+' '+(name==='source'?'type="url" pattern="https://.*"':(['modules','widthMm','poles','inA','icnKa'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
+ const fields=[['id','ID записи'],['maker','Производитель'],['series','Серия'],['sku','Артикул'],['label','Обозначение'],['modules','Модули DIN'],['widthMm','Ширина, мм'],['poles','Полюса'],['inA','Номинальный ток, А'],['curve','Характеристика'],['icnKa','Icn, кА'],['residualCurrentMa','IΔn, мА (только УЗО/RCBO)'],['residualType','Тип дифзащиты: AC, A, F, B, B+'],['source','Ссылка на источник HTTPS']];
+ return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label','residualCurrentMa','residualType'].includes(name)?'':'required')+' '+(name==='source'?'type="url" pattern="https://.*"':(['modules','widthMm','poles','inA','icnKa','residualCurrentMa'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
 }
 function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
  if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'PROJECT_OR_RECORD_INVALID'};
