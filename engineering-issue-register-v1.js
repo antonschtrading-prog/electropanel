@@ -1,7 +1,8 @@
 'use strict';
 // Aggregate all draft engineering issues without claiming regulatory compliance.
-function epEngineeringIssueRegisterV1(bundle){
+function epEngineeringIssueRegisterV1(bundle,project){
  const sections=bundle?.sections||{},entries=[],counts={BLOCKED:0,UNKNOWN:0};
+ const knownLines=Array.isArray(project?.lines)?new Set(project.lines.map(x=>x?.id).filter(x=>typeof x==='string')):null;
  const sectionNames=['designWorkQueue','designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering'];
  if(sections.catalogueIntegrity)sectionNames.unshift('catalogueIntegrity');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
@@ -18,8 +19,11 @@ function epEngineeringIssueRegisterV1(bundle){
    }
    const level=issue.level==='BLOCKED'||issue.status==='BLOCKED'?'BLOCKED':'UNKNOWN';
    const circuitId=issue.lineId??issue.circuitId??issue.owner??null;
-   entries.push({section:name,level,code:issue.code,circuitId:
-    typeof circuitId==='string'?circuitId:null,recordIndex:Number.isInteger(issue.recordIndex)?issue.recordIndex:null});
+   const id=typeof circuitId==='string'?circuitId:null;
+   entries.push({section:name,level,code:issue.code,
+    circuitId:knownLines&&!knownLines.has(id)?null:id,
+    objectId:knownLines&&id&&!knownLines.has(id)?id:null,
+    recordIndex:Number.isInteger(issue.recordIndex)?issue.recordIndex:null});
   }
  }
  for(const x of entries)counts[x.level]++;
@@ -35,20 +39,20 @@ function epEngineeringIssueRegisterHtmlV1(report,selectedId=null){
   return '<tr'+(x.circuitId===selectedId?' class="ep-circuit-active"':'')+'>'+
    '<td>'+esc(x.level)+'</td><td>'+esc(x.section)+'</td><td>'+esc(guide.title)+' <small>('+esc(x.code)+')</small></td>'+
    '<td>'+esc(guide.action)+'</td>'+
-   '<td>'+(x.circuitId?'<button class="btn tiny" type="button" data-issue-focus="'+esc(x.circuitId)+'">'+esc(x.circuitId)+'</button>':'Проект')+'</td></tr>';
+   '<td>'+(x.circuitId?'<button class="btn tiny" type="button" data-issue-focus="'+esc(x.circuitId)+'">'+esc(x.circuitId)+'</button>':x.objectId?esc(x.objectId):'Проект')+'</td></tr>';
  }).join('');
  return '<details class="ep-issue-register"><summary>Сводный реестр замечаний · блокирующих '+
   report.counts.BLOCKED+', неопределённостей '+report.counts.UNKNOWN+'</summary>'+
   '<p>Замечания могут повторяться в разных инженерных разделах. Это журнал проверки, не допуск.</p>'+
-  '<div style="overflow-x:auto"><table><thead><tr><th>Уровень</th><th>Раздел</th><th>Проблема</th><th>Что проверить</th><th>Цепь</th></tr></thead><tbody>'+
+  '<div style="overflow-x:auto"><table><thead><tr><th>Уровень</th><th>Раздел</th><th>Проблема</th><th>Что проверить</th><th>Цепь / объект</th></tr></thead><tbody>'+
   (items||'<tr><td colspan="5">Замечания не перечислены; подтверждение монтажа отсутствует.</td></tr>')+
   '</tbody></table></div></details>';
 }
 function epEngineeringIssueRegisterCsvV1(report){
  const q=v=>{let s=String(v??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(s))s="'"+s;
   return '"'+s.replace(/"/g,'""')+'"';};
- return '\uFEFF'+[['Раздел','Уровень','Код','Цепь'],
-  ...(report?.entries||[]).map(x=>[x.section,x.level,x.code,x.circuitId])]
+ return '\uFEFF'+[['Раздел','Уровень','Код','Цепь','Объект'],
+  ...(report?.entries||[]).map(x=>[x.section,x.level,x.code,x.circuitId,x.objectId])]
   .map(row=>row.map(q).join(';')).join('\r\n')+'\r\n';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
