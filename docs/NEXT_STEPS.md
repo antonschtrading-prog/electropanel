@@ -94,3 +94,11 @@ This queue is deliberately based on the current PR #12, not a fresh implementati
 - Change-impact detection includes the pending manufacturer replacement review, so modified evidence cannot be silently overlooked even when the SKU has not changed.
 - Added regression tests for auto-layout overflow, unchanged source on failed swap, replacement export/markup escaping, stale substitution and downstream invalidation.
 - The software still does not establish normative safety or manufacturer geometry approval. Verify exact-head JS, validation and browser CI before marking the cycle complete.
+
+## 2026-11-15 — focused engineering-core stage: prospective maximum short-circuit current
+- Extended the existing `fault-route-design-v2.js`; did not introduce a competing unrelated calculation engine.
+- Added explicit declared maximum-current models for a three-phase positive-sequence source+line network and a single-phase L–N path, with R/X sums, independent voltage and cmax, and no reuse of L–PE minimum-loop impedance.
+- Added source and conductor temperature provenance gates, 3-phase/1-phase pole applicability checks, Icn-rated-voltage/standard checks, and separate numerical comparison versus evidence-limited threshold status. Icu is not Icn.
+- Surfaced results under the existing engineering bundle's faultRoutes section and in the printable report; added project JSON restoration for maximumFaultInput and independent reference/regression tests.
+- Scope limitation: these models are restricted arithmetic on engineer-supplied positive-sequence or line-neutral impedances, not a full IEC 60909 study. No default fault levels, equipment certification, selectivity or normative approval.
+- Verify CI (Node, validation, Chromium) on this exact branch HEAD before marking complete.
