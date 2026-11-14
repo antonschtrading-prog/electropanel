@@ -20,6 +20,10 @@ function epSingleLineDraftV1(project,lookupSku){
   if(group.catalogSku&&!groupArticle)add('SINGLE_LINE_SHARED_ARTICLE_UNKNOWN','BLOCKED',group.id);
   if(!group.catalogSku)add('SINGLE_LINE_SHARED_ARTICLE_MISSING','UNKNOWN',group.id);
   if(groupArticle){
+   if(!Number.isFinite(groupArticle.residualCurrentMa)||groupArticle.residualCurrentMa<=0)
+    add('SINGLE_LINE_SHARED_RESIDUAL_CURRENT_UNDECLARED','UNKNOWN',group.id);
+   if(!['AC','A','F','B','B+'].includes(groupArticle.residualType))
+    add('SINGLE_LINE_SHARED_RESIDUAL_TYPE_UNDECLARED','UNKNOWN',group.id);
    if(groupArticle.modules!==group.modules)add('SINGLE_LINE_SHARED_WIDTH_MISMATCH','BLOCKED',group.id);
    if(groupArticle.kind!=='RCD')add('SINGLE_LINE_SHARED_KIND_MISMATCH','BLOCKED',group.id);
    if(group.templateId==='RCD_2P'&&groupArticle.poles!==2||
@@ -29,7 +33,9 @@ function epSingleLineDraftV1(project,lookupSku){
   nodes.push({id,type:'rcd',name:group.label||group.id,phase:null,sku:group.catalogSku||null,
    article:groupArticle?{maker:groupArticle.maker||null,series:groupArticle.series||null,
     label:groupArticle.label||null,kind:groupArticle.kind||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
-    poles:groupArticle.poles??null,modules:groupArticle.modules??null}:null,
+    poles:groupArticle.poles??null,modules:groupArticle.modules??null,
+    residualCurrentMa:groupArticle.residualCurrentMa??null,
+    residualType:groupArticle.residualType??null}:null,
    templateId:group.templateId||null});
   edges.push({from:'SOURCE:MAIN',to:id,kind:'declared_group_association'});
   for(const lineId of group.circuitIds){
@@ -69,7 +75,9 @@ function epSingleLineDraftV1(project,lookupSku){
   nodes.push({id,type:'circuit',lineId:line.id,name:line.name||line.id,phase:line.phase||null,
    sku:line.catalogSku||null,article:article?{maker:article.maker||null,series:article.series||null,
     label:article.label||null,kind:article.kind||null,inA:article.inA??null,icnKa:article.icnKa??null,
-    poles:article.poles??null,modules:article.modules??null}:null,
+    poles:article.poles??null,modules:article.modules??null,
+    residualCurrentMa:article.residualCurrentMa??null,
+    residualType:article.residualType??null}:null,
    branchId:branch?.id||null,design});
   edges.push({from:groupId||'SOURCE:MAIN',to:id,kind:'declared_group_association'});
  }
