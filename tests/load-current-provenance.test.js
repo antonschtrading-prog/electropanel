@@ -210,3 +210,19 @@ test('verified arithmetic remains invalid if phase or source attribution is inco
  assert.ok(r.issues.some(x=>x.code==='LOAD_CURRENT_PHASE_MODE_MISMATCH'));
  assert.ok(r.issues.some(x=>x.code==='LOAD_CURRENT_LINKED_POWER_MISMATCH'));
 });
+
+test('bundle routes load evidence into arithmetic calculator rather than SKU lookup',()=>{
+ global.epLoadCurrentEvidenceV1=epLoadCurrentEvidenceV1;
+ const {epEngineeringBundleV1}=require('../engineering-bundle-v1.js');
+ const p=fixture(),report=epEngineeringBundleV1(p,()=>{throw Error('SKU lookup was never a formula calculator');});
+ assert.equal(report.sections.loadCurrent.rows[0].source,'CIRCUIT_LINKED');
+ assert.equal(report.sections.loadCurrent.status,'UNKNOWN');
+ assert.equal(report.sections.loadCurrent.issues.some(x=>x.code==='LOAD_CURRENT_INPUTS_INVALID'),false);
+ delete global.epLoadCurrentEvidenceV1;
+});
+test('manual declared Ib needing renewed review is included in issue register',()=>{
+ const p=p0();p.lines[0].overloadInput.ibA=10;
+ p.lines[0].calculationReview={required:true,reason:'INPUT_CHANGED',pending:['overloadInput']};
+ const report=epLoadCurrentEvidenceV1(p);
+ assert.ok(report.issues.some(x=>x.code==='LOAD_CURRENT_REVIEW_REQUIRED'&&x.level==='UNKNOWN'));
+});
