@@ -42,3 +42,25 @@ test('catalog edit preserves pending review fields and updates linked DIN device
 
 test('restored catalogue over 500 records is blocked',()=>{const records=Array.from({length:501},(_,i)=>({...base,id:'R-'+i,sku:'S-'+i}));assert.ok(epProjectCatalogV1({catalogArticles:records}).issues.some(x=>x.code==='CATALOG_TOO_LARGE'));});
 test('control characters in catalogue ID are blocked',()=>{assert.equal(epProjectCatalogV1({catalogArticles:[{...base,id:'BAD'+String.fromCharCode(10)+'ID'}]}).issues[0].code,'IDENTITY_INCOMPLETE');});
+
+test('editing shared RCD propagates catalogue width and label',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={lines:[],catalogArticles:[record],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,label:'Old RCD',circuitIds:[]}]};
+ const result=epUpsertProjectArticleV2(project,{...record,modules:3,widthMm:54,label:'Updated RCD'}, {},'RCD-A');
+ assert.ok(result.project);assert.equal(result.project.sharedDevices[0].modules,3);
+ assert.equal(result.project.sharedDevices[0].label,'Updated RCD');
+ assert.deepEqual(result.affected,['G1']);
+ assert.equal(project.sharedDevices[0].modules,2);
+});
+test('shared RCD cannot be silently converted to MCB',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={lines:[],catalogArticles:[record],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,label:'Old RCD',circuitIds:[]}]};
+ assert.equal(epUpsertProjectArticleV2(project,{...record,kind:'MCB'}, {},'RCD-A').code,'SHARED_ARTICLE_KIND_CONFLICT');
+ assert.equal(project.catalogArticles[0].kind,'RCD');
+});
+test('shared RCD pole mismatch is blocked transactionally',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={lines:[],catalogArticles:[record],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,label:'Old RCD',circuitIds:[]}]};
+ assert.equal(epUpsertProjectArticleV2(project,{...record,poles:4}, {},'RCD-A').code,'SHARED_ARTICLE_TEMPLATE_CONFLICT');
+ assert.equal(project.sharedDevices[0].modules,2);
+});
