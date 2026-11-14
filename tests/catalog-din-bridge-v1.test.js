@@ -13,7 +13,7 @@ test('catalogue seeds remain unverified and never approved',()=>{
 });
 test('every seed can be reviewed without invented dimensions',()=>{
  const a=epCatalogDinBridgeAuditV1(EP_CATALOG);
- assert.equal(a.records.length,6);
+ assert.equal(a.records.length,Object.keys(EP_CATALOG).length);
  for(const r of a.records){assert.equal(r.record.geometry.depthMm,EP_CATALOG[r.key].depthMm??null);assert.equal(r.record.ready_for_installation,false);}
 });
 test('reject invalid widths and module envelopes',()=>{
