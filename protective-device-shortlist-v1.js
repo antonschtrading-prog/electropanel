@@ -38,6 +38,9 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   if(ik!==null&&d.icnKa<ik)reasons.push('ICN_LT_DECLARED_IK');
   const caution=[];
   if(d.modules===undefined)caution.push('CATALOG_MODULES_UNDECLARED');
+  if(!d.poleConfiguration&&d.poles>=2)caution.push('POLE_CONFIGURATION_UNDECLARED');
+  if(!Number.isFinite(d.icnVoltageV))caution.push('ICN_RATED_VOLTAGE_UNDECLARED');
+  if(!d.icnStandard)caution.push('ICN_STANDARD_UNDECLARED');
   if(!d.source)caution.push('DATASHEET_SOURCE_MISSING');
   if(d.verificationStatus!=='VERIFIED')caution.push('CATALOG_DATA_UNVERIFIED');
   if(d.kind==='RCBO'){
@@ -54,6 +57,8 @@ function epProtectiveDeviceShortlistV1(line,catalog){
    caution.push('IB_DIFFERS_FROM_CALCULATION');
   candidates.push({sku,manufacturerSku:d.sku??null,maker:d.maker??null,series:d.series??null,
    label:d.label??null,kind:d.kind,inA:d.inA,icnKa:d.icnKa,poles:d.poles,modules:d.modules,
+   poleConfiguration:d.poleConfiguration??null,
+   icnVoltageV:d.icnVoltageV??null,icnStandard:d.icnStandard??null,
    residualCurrentMa:d.residualCurrentMa??null,residualType:d.residualType??null,
    source:d.source??null,verificationStatus:d.verificationStatus??'UNKNOWN',
    status:reasons.length?'REJECTED':(ib===null||iz===null||ik===null?'INCOMPLETE':'POTENTIAL'),
