@@ -133,3 +133,20 @@ test('live catalogue audit distinguishes Icu-only article and voltage conflicts'
  assert.ok(run(c,"catalogAudit(state).issues.some(x=>x.code==='CATALOG_ICN_VOLTAGE_INSUFFICIENT')"));
  assert.equal(run(c,"catalogAudit(state).engineeringApproved"),false);
 });
+
+test('automatic DIN placement refuses wider SKU when rail is at capacity',()=>{
+ const c=environment();
+ run(c,`state.railCount=1;state.railCapacity=2;
+  state.lines=state.lines.slice(0,2);
+  state.branchDevices=state.branchDevices.slice(0,2);
+  state.loads=(state.loads||[]).filter(x=>state.lines.some(l=>l.id===x.circuitId));
+  state.sharedDevices=[];delete state.manualLayoutV1;
+  state.lines[0].modules=1;state.lines[0].device='iC60N C16';state.lines[0].catalogSku='SE-A9F74116';
+  state.lines[1].modules=1;state.lines[1].device='ВА47-29 C16';state.lines[1].catalogSku='IEK-MVA20-1-016-C';
+  for(let i=0;i<2;i++){state.branchDevices[i].modules=1;state.branchDevices[i].label=state.lines[i].device;}
+  projectCatalogEntries=()=>Object.entries(EP_CATALOG).concat([['WIDE-CUSTOM',{maker:'Declared',series:'Custom',sku:'WIDE',kind:'MCB',label:'Wide C16',poles:1,modules:2,widthMm:36,inA:16,icnKa:6,source:'https://example.org/device'}]]);
+ `);
+ const before=run(c,'JSON.stringify(state)');
+ assert.throws(()=>run(c,"applyCatalogueSku(state,'L1','WIDE-CUSTOM')"),/DIN-компоновку/);
+ assert.equal(run(c,'JSON.stringify(state)'),before);
+});
