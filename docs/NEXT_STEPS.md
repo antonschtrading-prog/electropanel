@@ -60,3 +60,10 @@ This queue is deliberately based on the current PR #12, not a fresh implementati
 10. [ ] Improve source-backed manufacturer-specific device front geometry and integrated cabinet visual.
 
 **Validation constraint:** GitHub workflow runs were not visible for the latest commit at the time of this update. Entries 1–5 describe committed changes and regression additions, **not a confirmed green test run**. Tasks 6–10 remain open.
+
+## 2026-11-14 — linked TN fault-route evidence block
+- Extended existing `fault-route-design-v2.js` rather than creating a competing calculator. Numerical Ik,min and loop impedance remain separate from the maximum fault-current input.
+- The Ia comparison now fails closed unless the declared device is an MCB, required network/conductor/temperature/trip-time sources are present, and the bounded single-phase applicability assumptions are satisfied. A 3-phase line or incompatible poles yields UNKNOWN instead of an unjustified PASS.
+- Added input/source-length guards, malformed project handling, UI diagnostics and focused regression cases in `tests/fault-route-v2.test.js`.
+- This is a **bounded evidence review**, not normative certification. Verification of device time-current characteristics, actual disconnection-time applicability and full three-phase/TT/IT fault studies remain open.
+- GitHub workflow success on this HEAD has **not been observed**. Do not mark CI complete until confirmed.
