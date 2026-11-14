@@ -26,7 +26,9 @@ function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(
    if(calculated&&Number.isFinite(Number(calculated.roundedIbA))&&
       Number(calculated.roundedIbA)!==Number(line.overloadInput?.ibA)){
     calculated.stale=true;
-    epMarkCalculationReviewV1(line,'IB_DIFFERS_FROM_CALCULATED_CURRENT',['overloadInput'],true);
+    if(typeof epMarkCalculationReviewV1==='function')
+     epMarkCalculationReviewV1(line,'IB_DIFFERS_FROM_CALCULATED_CURRENT',['overloadInput'],true);
+    else markCalculationReview(line,'IB_DIFFERS_FROM_CALCULATED_CURRENT');
    }
   }
  }
@@ -79,11 +81,26 @@ function catalogFilterControls(){
 }
 const REVIEW_FIELDS=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
 function markCalculationReview(line,reason){
- return epMarkCalculationReviewV1(line,reason);
+ if(typeof epMarkCalculationReviewV1==='function')return epMarkCalculationReviewV1(line,reason);
+ const existing=REVIEW_FIELDS.filter(key=>!!line[key]);
+ if(!existing.length&&!line.calculationReview?.required)return;
+ const pending=new Set(line.calculationReview?.pending||existing);
+ for(const key of existing)pending.add(key);
+ line.calculationReview={required:true,reason,pending:[...pending]};
+ return line.calculationReview;
 }
 // Acknowledging one check must never clear an unrelated stale calculation.
 function acknowledgeCalculationReview(line,key){
- return epAcknowledgeCalculationReviewV1(line,key);
+ if(typeof epAcknowledgeCalculationReviewV1==='function')return epAcknowledgeCalculationReviewV1(line,key);
+ if(!line.calculationReview?.required)return false;
+ const pending=Array.isArray(line.calculationReview.pending)?
+  line.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)):
+  REVIEW_FIELDS.filter(k=>!!line[k]);
+ if(!pending.includes(key))return false;
+ const remaining=pending.filter(k=>k!==key);
+ if(remaining.length)line.calculationReview={...line.calculationReview,pending:remaining};
+ else delete line.calculationReview;
+ return true;
 }
 // Retained for explicit internal reset/test only. UI uses acknowledge per field.
 function clearCalculationReview(line){delete line.calculationReview;}
