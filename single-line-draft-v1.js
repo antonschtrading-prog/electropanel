@@ -21,14 +21,14 @@ function epSingleLineDraftV1(project,lookupSku){
   if(!group.catalogSku)add('SINGLE_LINE_SHARED_ARTICLE_MISSING','UNKNOWN',group.id);
   if(groupArticle){
    if(groupArticle.modules!==group.modules)add('SINGLE_LINE_SHARED_WIDTH_MISMATCH','BLOCKED',group.id);
-   if(!['RCD','RCBO'].includes(groupArticle.kind))add('SINGLE_LINE_SHARED_KIND_MISMATCH','BLOCKED',group.id);
+   if(groupArticle.kind!=='RCD')add('SINGLE_LINE_SHARED_KIND_MISMATCH','BLOCKED',group.id);
    if(group.templateId==='RCD_2P'&&groupArticle.poles!==2||
       group.templateId==='RCD_4P'&&groupArticle.poles!==4)
     add('SINGLE_LINE_SHARED_POLE_MISMATCH','BLOCKED',group.id);
   }
   nodes.push({id,type:'rcd',name:group.label||group.id,phase:null,sku:group.catalogSku||null,
    article:groupArticle?{maker:groupArticle.maker||null,series:groupArticle.series||null,
-    label:groupArticle.label||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
+    label:groupArticle.label||null,kind:groupArticle.kind||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
     poles:groupArticle.poles??null,modules:groupArticle.modules??null}:null,
    templateId:group.templateId||null});
   edges.push({from:'SOURCE:MAIN',to:id,kind:'declared_group_association'});
@@ -59,7 +59,7 @@ function epSingleLineDraftV1(project,lookupSku){
   if(!['L1','L2','L3','3Ф'].includes(line.phase))add('SINGLE_LINE_PHASE_UNKNOWN','UNKNOWN',line.id);
   nodes.push({id,type:'circuit',lineId:line.id,name:line.name||line.id,phase:line.phase||null,
    sku:line.catalogSku||null,article:article?{maker:article.maker||null,series:article.series||null,
-    label:article.label||null,inA:article.inA??null,icnKa:article.icnKa??null,
+    label:article.label||null,kind:article.kind||null,inA:article.inA??null,icnKa:article.icnKa??null,
     poles:article.poles??null}:null,branchId:branch?.id||null});
   edges.push({from:groupId||'SOURCE:MAIN',to:id,kind:'declared_group_association'});
  }
