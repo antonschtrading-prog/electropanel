@@ -7,3 +7,15 @@ test('seed cannot be overwritten',()=>{const r=epProjectCatalogV1({catalogArticl
 test('invalid electrical values are rejected',()=>{const a=article();a.widthMm=-1;const r=epProjectCatalogV1({catalogArticles:[a]});assert.equal(r.lookup('M-001'),null);});
 test('source required and does not silently verify',()=>{const a=article();a.source='';const r=epProjectCatalogV1({catalogArticles:[a]});assert.equal(r.lookup('M-001'),null);assert.equal(r.status,'UNKNOWN');});
 test('HTML escapes source fields',()=>{const a=article();a.maker='<script>alert(1)</script>';const html=epProjectCatalogHtmlV1({catalogArticles:[a]});assert.doesNotMatch(html,/<script>/);});
+
+test('source URL must be HTTPS without embedded credentials',()=>{
+ for(const source of ['javascript:alert(1)','https://user:pass@example.org/a','http://example.org/a','https://']){
+  const a=article();a.source=source;const r=epProjectCatalogV1({catalogArticles:[a]});assert.equal(r.lookup('M-001'),null,source);
+ }
+});
+test('manufacturer SKU is unique across distinct catalogue IDs',()=>{
+ const a=article(),b={...article(),id:'M-002'};
+ const r=epProjectCatalogV1({catalogArticles:[a,b]});
+ assert.equal(r.lookup('M-001').sku,'001');assert.equal(r.lookup('M-002'),null);
+ assert.equal(r.issues[0].code,'DUPLICATE_MANUFACTURER_SKU');
+});
