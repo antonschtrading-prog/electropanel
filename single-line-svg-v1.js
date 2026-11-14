@@ -50,7 +50,7 @@ function epSingleLineSvgV1(report,selectedId=null){
      'Характеристики защиты не подтверждены';
     const measured=l.design||{};
     const declared='Заявлено: Ib '+(measured.ibA??'—')+' А · Iz '+(measured.izA??'—')+
-     ' А · Ik '+(measured.ikKa??'—')+' кА'+
+     ' А · Ik '+(measured.ikKa??'—')+' кА · U заявл. '+(measured.voltageV??'—')+' В'+
      (measured.calculationReviewRequired||measured.loadCurrentStale?' · ПЕРЕПРОВЕРИТЬ':'');
     content+='<path d="M 502 '+cy+' H 518" stroke="#708399" stroke-width="2" stroke-dasharray="5 5"/>'+
      '<g class="ep-single-line-circuit'+(active?' ep-circuit-active':'')+'" data-single-line-focus="'+esc(l.lineId)+'" role="button" tabindex="0" aria-label="Выбрать цепь '+esc(l.lineId)+'">'+
