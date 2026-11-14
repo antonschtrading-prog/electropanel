@@ -7,9 +7,9 @@ function epEngineeringGateV1(project, lookupSku){
   try{
    const r=fn();
    components[name]={status:r?.status??'UNKNOWN',engineeringApproved:false};
-   for(const issue of r?.issues||[]){
-    const code=typeof issue==='string'?issue:issue.code||'UNSPECIFIED';
-    const level=typeof issue==='string'?'UNKNOWN':issue.level||'UNKNOWN';
+   for(const issue of (Array.isArray(r?.issues)?r.issues:[])){
+    const code=typeof issue==='string'?issue:issue?.code||'UNSPECIFIED';
+    const level=typeof issue==='string'?'UNKNOWN':issue?.level||'UNKNOWN';
     add(name,code,level);
    }
    if(r?.status==='BLOCKED'&&!issues.some(i=>i.origin===name&&i.level==='BLOCKED'))
