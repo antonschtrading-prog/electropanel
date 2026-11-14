@@ -2174,7 +2174,7 @@ document.addEventListener('submit',e=>{
  }
  const result=epUpsertProjectArticleV2(state,record,EP_CATALOG,form.elements.originalId.value);
  if(!result.project)return notify('Аппарат не сохранён: '+result.code,true);
- checkpoint();state=result.project;changed();notify('Аппарат сохранён. Связанных цепей: '+result.affected.length);
+ checkpoint();state=result.project;changed();notify('Аппарат сохранён. Затронуто цепей: '+result.affectedCircuits.length+', общих аппаратов: '+result.affectedShared.length+'. Зависимые расчёты требуют проверки.');
 });
 $('projectCatalogWorkbench').addEventListener('click',e=>{
  const edit=e.target.closest('[data-edit-article]'),del=e.target.closest('[data-delete-article]');
@@ -2198,7 +2198,7 @@ $('projectCatalogWorkbench')?.addEventListener('click',e=>{
   if(!Array.isArray(records)||records.length>500||records.length===0)throw Error('Ожидается массив от 1 до 500 артикулов');
   const result=epImportProjectArticlesV2(state,records,typeof EP_CATALOG==='object'?EP_CATALOG:{});
   if(!result.project)throw Error('Импорт отклонён: '+result.code+(Number.isInteger(result.index)?' (запись '+(result.index+1)+')':''));
-  checkpoint();state=result.project;changed();notify('Добавлено артикулов: '+result.imported+'. Характеристики требуют проверки по документации');
+  checkpoint();state=result.project;changed();notify('Добавлено артикулов: '+result.imported+'. Затронуто цепей: '+result.affectedCircuits.length+', общих аппаратов: '+result.affectedShared.length+'. Данные требуют проверки по документации');
  }catch(error){notify(error.message,true);}
 });
 try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}lastDesignSnapshot=structuredCloneCompat(state);render();
