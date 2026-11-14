@@ -89,21 +89,22 @@ function epReconcileProjectV2(project,lookup){
  }
  const plan=typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1(project,lookup):null;
  if(!plan)add('BOARD_MODEL_UNAVAILABLE',null,'BLOCKED');
- for(const i of plan?.issues||[])add(i.code,i.id,i.level);
+ else if(!Array.isArray(plan.placements))add('BOARD_PLACEMENTS_UNAVAILABLE',null,'BLOCKED');
+ for(const i of (Array.isArray(plan?.issues)?plan.issues:[]))add(i?.code||'BOARD_ISSUE_INVALID',i?.id,i?.level||'UNKNOWN');
  const review=typeof epCircuitDesignReviewV1==='function'?epCircuitDesignReviewV1(project,lookup):null;
- for(const i of review?.issues||[])issues.push(i);
+ for(const i of (Array.isArray(review?.issues)?review.issues:[]))issues.push(i);
  for(const line of project.lines){
   if(!line||typeof line!=='object')continue;
   let article=null;try{article=line.catalogSku&&lookup?.(line.catalogSku);}catch(_){add('CATALOG_LOOKUP_FAILED',line.id,'BLOCKED');}
-  const branch=project.branchDevices?.find(x=>x.circuitId===line.id);
-  const placement=plan?.placements?.find(x=>x.deviceId===(branch?.id||line.id));
+  const branch=Array.isArray(project.branchDevices)?project.branchDevices.find(x=>x?.circuitId===line.id):null;
+  const placement=Array.isArray(plan?.placements)?plan.placements.find(x=>x?.deviceId===(branch?.id||line.id)):null;
   if(plan&&branch&&!placement)add('BRANCH_DEVICE_NOT_PLACED',line.id,'BLOCKED');
   if(!article)add('ARTICLE_NOT_SELECTED_OR_UNKNOWN',line.id);
   if(article&&(!Number.isFinite(article.widthMm)||article.widthMm<=0||!Number.isInteger(line.modules)||line.modules<=0||article.widthMm>line.modules*18))add('ARTICLE_ENVELOPE_CONFLICT',line.id,'BLOCKED');
   if(article&&Number.isInteger(article.modules)&&article.modules>0&&article.modules!==line.modules)add('CATALOG_LINE_MODULE_MISMATCH',line.id,'BLOCKED');
   rows.push({lineId:line.id,name:line.name||'',powerKw:line.power??null,
    article:article?{id:line.catalogSku,maker:article.maker,series:article.series,sku:article.sku,widthMm:article.widthMm,source:article.source}:null,
-   calculation:review?.rows.find(x=>x.lineId===line.id)||null,placement:placement||null});
+   calculation:(Array.isArray(review?.rows)?review.rows.find(x=>x?.lineId===line.id):null)||null,placement:placement||null});
  }
  return {schema:'electropanel.reconciled.project.2',status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
   rows,issues,board:plan,engineeringApproved:false,ready_for_installation:false};
