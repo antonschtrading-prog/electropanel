@@ -45,3 +45,25 @@ test('comma decimals are supported, project report carries circuit IDs',()=>{
  assert.equal(projectReview(p,lookup).rows[0].loopROhm,0.5);
  const blank=projectReview(project(),lookup);assert.equal(blank.issues[0].lineId,'L1');
 });
+
+test('three-phase circuit requires explicit applicability review before threshold PASS',()=>{
+ const p=project();p.lines[0].phase='3Ф';const out=apply(p,'L1',input(),lookup);
+ assert.ok(out.project);assert.equal(out.report.thresholdStatus,'UNKNOWN');
+ assert.ok(out.report.issues.some(x=>x.code==='FAULT_ROUTE_SINGLE_PHASE_SCOPE_UNCONFIRMED'));
+});
+test('unsupported protective device and invalid ratings cannot produce PASS',()=>{
+ for(const variant of [{kind:'RCD'},{inA:0},{poles:2}]){
+  const out=apply(project(),'L1',input(),()=>({...article,...variant}));
+  assert.ok(out.project);assert.equal(out.report.thresholdStatus,'UNKNOWN');
+ }
+});
+test('unreasonably long evidence is rejected without changing the project',()=>{
+ const p=project(),before=JSON.stringify(p),x=input();x.tripSource='x'.repeat(2001);
+ const out=apply(p,'L1',x,lookup);assert.equal(out.project,null);
+ assert.equal(out.code,'FAULT_ROUTE_EVIDENCE_SOURCE_TOO_LONG');assert.equal(JSON.stringify(p),before);
+});
+test('malformed route input is rejected and project-level review tolerates malformed lines',()=>{
+ assert.equal(apply(project(),'L1',null,lookup).code,'FAULT_ROUTE_INPUT_INVALID');
+ assert.equal(apply({lines:{}},'L1',input(),lookup).code,'LINE_NOT_UNIQUE');
+ assert.equal(projectReview({lines:[null,{id:'L1'}]},lookup).rows.length,1);
+});
