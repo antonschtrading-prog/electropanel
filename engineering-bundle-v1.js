@@ -16,7 +16,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const engineering=section('GATE',typeof epEngineeringGateV1==='function'?epEngineeringGateV1:null);
  const protection=section('PROTECTION',typeof epProtectionWorkbenchV1==='function'?
   (p,lookup)=>epProtectionWorkbenchV1(p,lookup,
-   typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(p,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles).map(([id,device])=>({id,device})):
+   catalog?Object.entries(catalog.articles).map(([id,device])=>({id,device})):
    typeof EP_CATALOG==='object'?Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[],null):null);
  const layoutAlternatives=section('LAYOUT_ALTERNATIVES',typeof epDraftLayoutAlternativesV1==='function'?epDraftLayoutAlternativesV1:null);
  const singleLine=section('SINGLE_LINE',typeof epSingleLineDraftV1==='function'?
