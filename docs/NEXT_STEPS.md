@@ -86,3 +86,11 @@ This queue is deliberately based on the current PR #12, not a fresh implementati
 - Article replacement validates geometry, label and nominal data before mutation and records a circuit-level re-review trail, without rewriting Ib, Iz or Ik.
 - New comparison helper preserves field-by-field previous/new article values and flags missing Icn, unknown enclosure body dimensions, and unresolved source verification.
 - Complete CI and browser run must be checked on the final head; no normative clearance is claimed.
+
+## 2026-11-15 — catalogue replacement / DIN and report integration
+- The live editor preflights manufacturer width changes in both manually fixed and automatically allocated rail layouts. A failed layout preserves the original circuit and project rather than partially updating the article.
+- The engineering bundle now includes a separate replacementReview section listing old article ID, chosen article ID, current selection and unresolved warnings; mismatched current selection is explicitly BLOCKED.
+- The printable engineering report includes the same substitution review with HTML escaping.
+- Change-impact detection includes the pending manufacturer replacement review, so modified evidence cannot be silently overlooked even when the SKU has not changed.
+- Added regression tests for auto-layout overflow, unchanged source on failed swap, replacement export/markup escaping, stale substitution and downstream invalidation.
+- The software still does not establish normative safety or manufacturer geometry approval. Verify exact-head JS, validation and browser CI before marking the cycle complete.
