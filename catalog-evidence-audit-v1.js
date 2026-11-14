@@ -65,6 +65,7 @@ function epCatalogEvidenceAuditV1(project,lookup){
    sourceType:d.sourceType??'UNCLASSIFIED',sourceReviewedAt:d.sourceReviewedAt??null,
    verificationStatus:d.verificationStatus??'UNVERIFIED',
    icnKa:d.icnKa??null,icnVoltageV:d.icnVoltageV??null,icnStandard:d.icnStandard??null,
+   icuKa:d.icuKa??null,icuVoltageV:d.icuVoltageV??null,
    residualCurrentMa:d.residualCurrentMa??null,residualType:d.residualType??null,
    poleConfiguration:d.poleConfiguration??null
   };
@@ -90,8 +91,11 @@ function epCatalogEvidenceAuditV1(project,lookup){
   if(['MCB','RCBO'].includes(d.kind)){
    if(typeof d.curve!=='string'||!d.curve.trim())
     add('CATALOG_TRIP_CURVE_UNDECLARED','UNKNOWN',o);
-   if(typeof d.icnKa!=='number'||!Number.isFinite(d.icnKa)||d.icnKa<=0)
+   if(typeof d.icnKa!=='number'||!Number.isFinite(d.icnKa)||d.icnKa<=0){
     add('CATALOG_BREAKING_CAPACITY_UNDECLARED','UNKNOWN',o);
+    if(typeof d.icuKa==='number'&&Number.isFinite(d.icuKa)&&d.icuKa>0)
+     add('CATALOG_ICU_NOT_ICN','UNKNOWN',o);
+   }
    if(typeof d.icnVoltageV!=='number'||!Number.isFinite(d.icnVoltageV)||d.icnVoltageV<=0)
     add('CATALOG_BREAKING_VOLTAGE_UNDECLARED','UNKNOWN',o);
    if(typeof d.icnStandard!=='string'||!d.icnStandard.trim())
