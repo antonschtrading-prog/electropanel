@@ -375,3 +375,10 @@ test('engineering bundle uses project-local catalogue for every projection',()=>
  assert.match(bundle,/catalogueIntegrity/);
  assert.match(bundle,/recordIndex:x\.index/);
 });
+
+test('issue register includes catalogue and integrated evidence defects',()=>{
+ const register=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
+ assert.match(register,/sectionNames\.unshift\('catalogueIntegrity'\)/);
+ assert.match(register,/sectionNames\.push\('integratedEvidence'\)/);
+ assert.match(register,/issue\.status==='BLOCKED'/);
+});
