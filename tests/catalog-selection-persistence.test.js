@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.join(__dirname,'..');
 function environment(){
  const ctx=vm.createContext({console,Date,Number,String,Array,Set,Map,Math,JSON,Object,BigInt,URL});
- for(const file of ['overload-v30.js','protection.js','catalog.js','project-catalog-workbench-v1.js']){
+ for(const file of ['overload-v30.js','protection.js','catalog.js','project-catalog-workbench-v1.js','draft-board-plan-v1.js']){
   vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
  }
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
@@ -90,4 +90,36 @@ test('engineering design review exports replacement uncertainty and blocks stale
  const stale=epCircuitDesignReviewV1(p,sku=>EP_CATALOG[sku]);
  assert.ok(stale.issues.some(x=>x.code==='ARTICLE_REPLACEMENT_SELECTION_STALE'&&x.level==='BLOCKED'));
  assert.equal(stale.status,'BLOCKED');
+});
+
+test('locked DIN layout rejects wider replacement atomically',()=>{
+ const c=environment();
+ run(c,`state.railCount=1;state.railCapacity=12;
+  state.lines=state.lines.slice(0,2);
+  state.lines[0].catalogSku='SE-A9F74116';state.lines[0].device='iC60N C16';state.lines[0].modules=1;
+  state.lines[1].catalogSku='IEK-MVA20-1-016-C';state.lines[1].device='ВА47-29 C16';state.lines[1].modules=1;
+  state.branchDevices=state.branchDevices.slice(0,2);
+  state.branchDevices[0].label=state.lines[0].device;state.branchDevices[0].modules=1;
+  state.branchDevices[1].label=state.lines[1].device;state.branchDevices[1].modules=1;
+  state.manualLayoutV1=state.branchDevices.map((b,i)=>({deviceId:b.id,railIndex:0,startModule:i}));
+ `);
+ const before=run(c,'JSON.stringify(state)');
+ run(c,`projectCatalogEntries=(project)=>Object.entries(EP_CATALOG).concat([['WIDE-CUSTOM',{maker:'Declared',series:'Custom',sku:'WIDE',kind:'MCB',label:'Wide C16',poles:1,modules:2,widthMm:36,inA:16,icnKa:6,source:'https://example.org/device'}]])`);
+ assert.throws(()=>run(c,"applyCatalogueSku(state,'L1','WIDE-CUSTOM')"),/DIN-компоновку/);
+ assert.equal(run(c,'JSON.stringify(state)'),before);
+});
+test('locked DIN layout permits fit-safe width increase and retains positions',()=>{
+ const c=environment();
+ run(c,`state.railCount=1;state.railCapacity=12;
+  state.lines=state.lines.slice(0,2);state.branchDevices=state.branchDevices.slice(0,2);
+  state.manualLayoutV1=state.branchDevices.map((b,i)=>({deviceId:b.id,railIndex:0,startModule:i*4}));
+  projectCatalogEntries=()=>Object.entries(EP_CATALOG).concat([['WIDE-CUSTOM',{maker:'Declared',series:'Custom',sku:'WIDE',kind:'MCB',label:'Wide C16',poles:1,modules:2,widthMm:36,inA:16,icnKa:6,source:'https://example.org/device'}]]);
+ `);
+ run(c,"applyCatalogueSku(state,'L1','WIDE-CUSTOM')");
+ const out=JSON.parse(run(c,'JSON.stringify(state)'));
+ assert.equal(out.lines[0].modules,2);
+ assert.equal(out.lines[0].catalogSku,'WIDE-CUSTOM');
+ assert.equal(out.manualLayoutV1[0].startModule,0);
+ assert.equal(out.manualLayoutV1[1].startModule,4);
+ assert.equal(out.lines[0].articleReplacementReview.engineeringApproved,false);
 });
