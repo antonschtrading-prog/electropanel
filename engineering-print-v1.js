@@ -41,8 +41,10 @@ function epEngineeringPrintV1(bundle){
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
  const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
  const issueTable=rows(['Раздел','Уровень','Код','Цепь'],allIssues.map(x=>[x.section,x.level,x.code,x.circuitId||'Проект']));
- const singleLineTable=rows(['Элемент','ID','Назначение','Фаза','Артикул','Группа/аппарат'],
-  singleLine.map(x=>[x.type,x.lineId||x.id,x.name,x.phase,x.sku,x.branchId||x.templateId]));
+ const singleLineTable=rows(['Элемент','ID','Назначение','Фаза','Артикул','Тип','Группа/аппарат','Ib A','Iz A','Ik кА','Повторная проверка'],
+  singleLine.map(x=>[x.type,x.lineId||x.id,x.name,x.phase,x.sku,x.article?.kind||'',
+   x.branchId||x.templateId,x.design?.ibA??'',x.design?.izA??'',x.design?.ikKa??'',
+   x.design?.calculationReviewRequired||x.design?.loadCurrentStale?'Требуется':'Не заявлена']));
  const neutralPairTable=rows(['N-шина 1','N-шина 2','Статус','Путь по модели'],
   neutralPairs.map(x=>[x.fromBus,x.toBus,x.status,(x.path||[]).join(' → ')]));
  const neutralTable=rows(['Цепь','Группа УЗО','Ожидаемая N','Заявленная N','PE','Статус'],
