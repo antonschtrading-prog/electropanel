@@ -342,3 +342,19 @@ test('manual cable section and current-provenance invalidation are connected',()
  assert.match(app,/IB_DIFFERS_FROM_CALCULATED_CURRENT/);
  assert.match(fs.readFileSync(path.join(root,'cable-reference-ui-v1.js'),'utf8'),/data-cable-section-form/);
 });
+
+test('project catalogue, engineering evidence and vector facade are loaded in application',()=>{
+ for(const name of ['project-catalog-workbench-v1.js','catalog-front-svg-v1.js','integrated-evidence-review-v1.js','integrated-evidence-ui-v1.js'])
+  assert.ok(scripts.includes(name),name);
+ assert.ok(scripts.indexOf('project-catalog-workbench-v1.js')<scripts.indexOf('app.js'));
+ assert.ok(scripts.indexOf('catalog-front-svg-v1.js')<scripts.indexOf('draft-board-preview-v1.js'));
+ for(const id of ['projectCatalogWorkbench','integratedEvidencePanel'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(app,/renderProjectCatalogWorkbenchV1\(\)/);
+ assert.match(app,/epIntegratedEvidenceReview\(state\)/);
+});
+test('catalogue imports are transactional and undoable',()=>{
+ assert.match(app,/draft\.catalogArticles=/);
+ assert.match(app,/audit\.issues\.length/);
+ assert.match(app,/checkpoint\(\);state=draft;changed\(\)/);
+});
