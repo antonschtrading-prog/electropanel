@@ -88,7 +88,7 @@ test("invalid residual input blocked",()=>{
  assert.equal(c.lookup('RCD-LOCAL'),null);
 });
 test("nonfinite residual value blocked",()=>{
- const c=catalogue(project(record('RCD',{residualCurrentMa:null})));
+ const c=catalogue(project(record('RCD',{residualCurrentMa:Infinity})));
  assert.ok(c.issues.some(x=>x.code==="CATALOG_RESIDUAL_CURRENT_INVALID"));
  assert.equal(c.lookup('RCD-LOCAL'),null);
 });
