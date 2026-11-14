@@ -179,6 +179,22 @@ test('all styles remain valid SVG fragments with finite view box',()=>{
 });
 test('rated current does not turn into a simulated measurement',()=>{
  const svg=epCatalogFrontSvgV1({...article,kind:'METER',inA:40});
- assert.match(svg,/>B40<\/text>/);
+ assert.doesNotMatch(svg,/>B40<\/text>/);
  assert.match(svg,/— — —/);
+});
+
+test('MCB uses nominal curve designation, not a meter display',()=>{
+ const svg=epCatalogFrontSvgV1({...article,kind:'MCB'});
+ assert.match(svg,/>B16<\/text>/);
+ assert.doesNotMatch(svg,/data-display=/);
+});
+test('RCD shows nominal current without borrowed MCB trip curve',()=>{
+ const svg=epCatalogFrontSvgV1({...article,kind:'RCD'});
+ assert.match(svg,/>In 16 A<\/text>/);
+ assert.doesNotMatch(svg,/>B16<\/text>/);
+});
+test('HTML metacharacters in nominal curve are escaped exactly once',()=>{
+ const svg=epCatalogFrontSvgV1({...article,curve:'<&'});
+ assert.match(svg,/&lt;&amp;16/);
+ assert.doesNotMatch(svg,/&amp;lt;&amp;amp;16/);
 });
