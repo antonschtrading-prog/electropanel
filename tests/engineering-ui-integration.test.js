@@ -382,3 +382,11 @@ test('issue register includes catalogue and integrated evidence defects',()=>{
  assert.match(register,/sectionNames\.push\('integratedEvidence'\)/);
  assert.match(register,/issue\.status==='BLOCKED'/);
 });
+
+test('engineering bundle uses one catalogue snapshot and fails closed when audit missing',()=>{
+ const bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
+ const register=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
+ assert.match(bundle,/catalog\?Object\.entries\(catalog\.articles\)/);
+ assert.match(bundle,/PROJECT_CATALOGUE_AUDIT_UNAVAILABLE/);
+ assert.match(register,/recordIndex:Number\.isInteger\(issue\.recordIndex\)/);
+});
