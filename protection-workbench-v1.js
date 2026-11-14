@@ -30,26 +30,57 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   const reasons=[];
   if(!sku)reasons.push('ARTICLE_NOT_SELECTED');
   else if(!article)reasons.push('ARTICLE_UNKNOWN');
-  else if(article.kind!=='MCB')reasons.push('SELECTED_ARTICLE_NOT_MCB');
+  else if(!['MCB','RCBO'].includes(article.kind))reasons.push('SELECTED_ARTICLE_NOT_MCB');
   else if(!selectedCandidate)reasons.push('ARTICLE_NOT_IN_SHORTLIST');
   else reasons.push(...selectedCandidate.reasons);
+  if(article&&article.verificationStatus!=='VERIFIED')reasons.push('CATALOG_DATA_UNVERIFIED');
+  if(article&&!article.source)reasons.push('DATASHEET_SOURCE_MISSING');
+  if(line.loadCurrentCalculation?.stale)reasons.push('LOAD_CURRENT_STALE');
+  const derivedIb=safePositive(line.loadCurrentCalculation?.roundedIbA);
+  if(derivedIb!==null&&ib!==derivedIb)reasons.push('IB_DIFFERS_FROM_CALCULATION');
+  if(article&&article.kind==='RCBO')reasons.push('RCBO_RESIDUAL_PROTECTION_UNVERIFIED');
+  if(article&&article.kind==='MCB')reasons.push('MCB_DISCONNECTION_UNVERIFIED');
   if(ib===null)reasons.push('IB_MISSING_OR_INVALID');
   if(iz===null)reasons.push('IZ_MISSING_OR_INVALID');
   if(ik===null)reasons.push('IK_MISSING_OR_INVALID');
   if(line.calculationReview?.required)reasons.push('CALCULATION_REVIEW_STALE');
   if(article&&Number.isInteger(article.modules)&&line.modules!==article.modules)
    reasons.push('ARTICLE_MODULE_WIDTH_MISMATCH');
+  if(article&&article.label&&line.device&&line.device!==article.label)
+   reasons.push('ARTICLE_LABEL_MISMATCH');
+  if(article&&article.modules!==undefined&&(!Number.isInteger(article.modules)||article.modules<1||article.modules>12))
+   reasons.push('ARTICLE_MODULES_INVALID');
+  if(article&&article.widthMm!==undefined&&
+    (!Number.isFinite(article.widthMm)||article.widthMm<=0||article.widthMm>article.modules*18))
+   reasons.push('ARTICLE_GEOMETRY_INVALID');
+  if(article&&(['L1','L2','L3'].includes(line.phase)?article.poles!==1:
+     line.phase==='3Ф'?![3,4].includes(article.poles):false))
+   reasons.push('ARTICLE_POLES_MISMATCH');
+  if(article&&Array.isArray(project.branchDevices)){
+   const branches=project.branchDevices.filter(b=>b?.circuitId===line.id);
+   if(branches.length>1)reasons.push('BRANCH_ASSIGNMENT_DUPLICATE');
+   if(!branches.length)reasons.push('BRANCH_ASSIGNMENT_MISSING');
+   for(const b of branches){
+    if(Number.isInteger(article.modules)&&b.modules!==article.modules)reasons.push('BRANCH_WIDTH_MISMATCH');
+    if(article.label&&b.label!==article.label)reasons.push('BRANCH_LABEL_MISMATCH');
+   }
+  }
   if(article&&!article.source)reasons.push('ARTICLE_SOURCE_MISSING');
   const blocking=new Set(['ARTICLE_UNKNOWN','SELECTED_ARTICLE_NOT_MCB','ARTICLE_NOT_IN_SHORTLIST',
    'IN_LT_IB','IN_GT_IZ','ICN_LT_DECLARED_IK','POLES_INCOMPATIBLE','CATALOG_SPEC_INVALID',
-   'ARTICLE_MODULE_WIDTH_MISMATCH']);
+   'ARTICLE_MODULE_WIDTH_MISMATCH','ARTICLE_LABEL_MISMATCH','ARTICLE_MODULES_INVALID',
+   'ARTICLE_GEOMETRY_INVALID','ARTICLE_POLES_MISMATCH','BRANCH_ASSIGNMENT_DUPLICATE',
+   'BRANCH_ASSIGNMENT_MISSING','BRANCH_WIDTH_MISMATCH','BRANCH_LABEL_MISMATCH',
+   'IB_DIFFERS_FROM_CALCULATION']);
   const status=reasons.some(x=>blocking.has(x))?'BLOCKED':'UNKNOWN';
   for(const code of reasons)issues.push({code,lineId:line.id,level:blocking.has(code)?'BLOCKED':'UNKNOWN'});
   rows.push({lineId:line.id,name:line.name||line.device||'',phase:line.phase||null,
    ibA:ib,izA:iz,ikKa:ik,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
+    kind:article.kind||null,label:article.label||null,
     inA:article.inA??null,icnKa:article.icnKa??null,poles:article.poles??null,
-    modules:article.modules??null,source:article.source||null}:null,
+    modules:article.modules??null,source:article.source||null,
+    verificationStatus:article.verificationStatus||'UNKNOWN'}:null,
    status,reasons,candidates:raw.candidates,engineeringApproved:false});
  }
  const selected=rows.find(x=>x.lineId===selectedId)||rows[0]||null;
@@ -66,9 +97,10 @@ function epProtectionWorkbenchHtmlV1(report){
  const x=report.selected,fmt=v=>v===null||v===undefined?'Не задано':esc(v);
  const article=x.selectedArticle;
  const rows=x.candidates.map(c=>{
-  const reasons=c.reasons.length?c.reasons.join(', '):'Арифметических противоречий не выявлено';
+  const reasons=(c.reasons.length?c.reasons.join(', '):'Арифметических противоречий не выявлено')+
+   (c.caution?.length?' · требуют проверки: '+c.caution.join(', '):'');
   return '<tr><td>'+esc(c.maker||'—')+'</td><td>'+esc(c.series||'—')+'</td><td>'+
-   esc(c.sku)+'</td><td>'+fmt(c.inA)+'</td><td>'+fmt(c.icnKa)+'</td><td>'+
+   esc(c.sku)+' ('+esc(c.kind||'MCB')+')</td><td>'+fmt(c.inA)+'</td><td>'+fmt(c.icnKa)+'</td><td>'+
    esc(c.status)+'</td><td>'+esc(reasons)+'</td><td>'+
    '<button type="button" class="btn tiny" data-protection-sku="'+esc(c.sku)+'" data-protection-line="'+esc(x.lineId)+'"'+
    (c.status==='REJECTED'?' disabled title="Кандидат не проходит заявленные проверки"':'')+
