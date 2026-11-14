@@ -163,7 +163,8 @@ function epSchematicCrossViewV1(project,singleLine,lookupSku){
   for(const [field,code] of [
    ['maker','MAKER_STALE'],['series','SERIES_STALE'],['label','LABEL_STALE'],
    ['kind','KIND_STALE'],['inA','RATING_STALE'],['icnKa','BREAKING_CAPACITY_STALE'],['poles','POLES_STALE'],
-   ['modules','MODULES_STALE']
+   ['modules','MODULES_STALE'],['residualCurrentMa','RESIDUAL_CURRENT_STALE'],
+   ['residualType','RESIDUAL_TYPE_STALE']
   ]){
    // Each component declares only the manufacturer fields that its rendering supports.
    if(Object.prototype.hasOwnProperty.call(declared,field)&&
@@ -340,7 +341,8 @@ function epCatalogOutputCrossViewV1(project,board,bom,lookupSku){
    for(const [field,code] of [
     ['sku','MANUFACTURER_SKU_STALE'],['maker','MAKER_STALE'],['series','SERIES_STALE'],
     ['label','LABEL_STALE'],['kind','KIND_STALE'],['modules','MODULES_STALE'],
-    ['widthMm','WIDTH_STALE'],['source','SOURCE_STALE']
+    ['widthMm','WIDTH_STALE'],['source','SOURCE_STALE'],
+    ['residualCurrentMa','RESIDUAL_CURRENT_STALE'],['residualType','RESIDUAL_TYPE_STALE']
    ])if((item[field]??null)!==(actual[field]??null))add('OUTPUT_BOM_'+code,item.key);
   }
  }
@@ -410,6 +412,7 @@ function epProtectionProjectionAuditV1(project,protection,lookupSku){
    ['series','SERIES_STALE'],['label','LABEL_STALE'],['inA','NOMINAL_STALE'],
    ['icnKa','BREAKING_CAPACITY_STALE'],['poles','POLES_STALE'],
    ['modules','MODULES_STALE'],['source','SOURCE_STALE'],
+   ['residualCurrentMa','RESIDUAL_CURRENT_STALE'],['residualType','RESIDUAL_TYPE_STALE'],
    ['verificationStatus','EVIDENCE_STALE']
   ]){
    const expected=article[field]??(field==='sku'?line.catalogSku:
