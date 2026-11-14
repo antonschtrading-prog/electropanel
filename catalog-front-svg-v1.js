@@ -8,7 +8,10 @@ function epCatalogFrontSvgV1(device,deviceId=''){
   maker.includes('iek')?'iek':maker.includes('legrand')?'legrand':
   maker.includes('hager')?'hager':maker.includes('ekf')?'ekf':
   maker.includes('chint')?'chint':maker.includes('siemens')?'siemens':
-  maker.includes('dekraft')?'dekraft':'neutral';
+  maker.includes('dekraft')?'dekraft':maker.includes('eaton')?'eaton':
+  maker.includes('systeme')?'systeme':maker.includes('himel')?'himel':
+  maker.includes('panasonic')?'panasonic':maker.includes('schrack')?'schrack':
+  maker.includes('кэаз')?'keaz':'neutral';
  // These are original catalogue-navigation color families, NOT certified factory skins.
  const palette={
   schneider:{brand:'#16814c',label:'#e7f5e9',stripe:'#2c985d'},
@@ -20,6 +23,12 @@ function epCatalogFrontSvgV1(device,deviceId=''){
   chint:{brand:'#24678d',label:'#e9f5fb',stripe:'#2989ba'},
   siemens:{brand:'#167873',label:'#e7f7f4',stripe:'#188c88'},
   dekraft:{brand:'#aa6540',label:'#fff3e9',stripe:'#bd7645'},
+  eaton:{brand:'#1763aa',label:'#e8f2fc',stripe:'#196bb4'},
+  systeme:{brand:'#36966e',label:'#e8f7ee',stripe:'#3d9d6d'},
+  himel:{brand:'#c52f3d',label:'#fff0f1',stripe:'#bb2935'},
+  panasonic:{brand:'#25568b',label:'#eef4fc',stripe:'#25568b'},
+  schrack:{brand:'#b3223e',label:'#fff0f1',stripe:'#bc2a46'},
+  keaz:{brand:'#275fb8',label:'#ebf1fc',stripe:'#2964c7'},
   neutral:{brand:'#546577',label:'#eef1f4',stripe:'#546577'}
  }[family];
  const poles=Number.isInteger(device?.poles)&&device.poles>0?Math.min(device.poles,8):1;
