@@ -280,6 +280,61 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>epProjectCatalogV1({...state,catalogArticles:[...state.catalogArticles,{id:'TOO-WIDE',maker:'Width maker',series:'W',sku:'W1',kind:'MCB',modules:1,widthMm:36,poles:1,inA:16,source:'https://example.org/w1'}]},EP_CATALOG).issues.some(x=>x.code==='ARTICLE_WIDTH_EXCEEDS_MODULES')),true);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('electropanel_web_preview')).catalogArticles.length),3);
 
+
+ // Browser-level integration: user-declared RCBO -> branch -> draft scheme -> DIN -> BOM -> print.
+ const rcboWorkflow=await page.evaluate(()=>{
+  const p=structuredCloneCompat(state);
+  const line=p.lines.find(l=>['L1','L2','L3'].includes(l.phase))||p.lines[0];
+  if(!line)return {error:'No circuit'};
+  line.phase='L1';line.overloadInput={ibA:10,izA:25};
+  line.faultInput={ikKa:'3',source:'design-stage Ik input'};
+  p.catalogArticles=[...(p.catalogArticles||[]),{
+   id:'RCBO-INTEGRATION',sku:'D16-1PN',maker:'Declared Manufacturer',
+   series:'Proposed RCBO',label:'RCBO B16',kind:'RCBO',poles:1,
+   modules:2,widthMm:36,inA:16,icnKa:6,
+   source:'https://example.org/rcbo-product'
+  }];
+  try{applyCatalogueSku(p,line.id,'RCBO-INTEGRATION');}
+  catch(error){return {error:error.message};}
+  const bundle=epEngineeringBundleV1(p,catalogDevice);
+  const schematic=bundle.sections.singleLine.nodes.find(x=>x.lineId===line.id);
+  const selection=bundle.sections.protectionSelection.results.find(x=>x.lineId===line.id);
+  const protective=bundle.sections.protection.rows.find(x=>x.lineId===line.id);
+  const actualBranch=p.branchDevices.find(x=>x.circuitId===line.id);
+  const board=bundle.sections.board.placements.find(x=>x.deviceId===actualBranch?.id);
+  const bom=bundle.sections.bom.items.find(x=>x.key==='RCBO-INTEGRATION');
+  const registry=bundle.sections.issueRegister.entries.filter(x=>x.circuitId===line.id);
+  const report=epEngineeringPrintV1(bundle);
+  return {error:null,circuit:line.id,selectedSku:line.catalogSku,
+   selectedKind:protective?.selectedArticle?.kind,
+   candidateKind:protective?.candidates?.find(x=>x.sku==='RCBO-INTEGRATION')?.kind,
+   selectionPotential:selection?.potential?.includes('RCBO-INTEGRATION'),
+   branchWidth:actualBranch?.modules,boardWidth:board?.modules,
+   boardArticle:board?.article,bomWidth:bom?.modules,bomKind:bom?.kind,
+   schematicKind:schematic?.article?.kind,
+   schematicIb:schematic?.design?.ibA,
+   schematicReview:schematic?.design?.calculationReviewRequired,
+   reportHasRcbo:report.includes('RCBO-INTEGRATION')&&report.includes('RCBO'),
+   issueCodeCount:registry.length,
+   globalCatalogUntouched:catalogDevice('RCBO-INTEGRATION')===null
+  };
+ });
+ assert.equal(rcboWorkflow.error,null,JSON.stringify(rcboWorkflow));
+ assert.equal(rcboWorkflow.selectedSku,'RCBO-INTEGRATION');
+ assert.equal(rcboWorkflow.selectedKind,'RCBO');
+ assert.equal(rcboWorkflow.candidateKind,'RCBO');
+ assert.equal(rcboWorkflow.selectionPotential,true);
+ assert.equal(rcboWorkflow.branchWidth,2);
+ assert.equal(rcboWorkflow.boardWidth,2);
+ assert.equal(rcboWorkflow.boardArticle,'RCBO-INTEGRATION');
+ assert.equal(rcboWorkflow.bomWidth,2);
+ assert.equal(rcboWorkflow.bomKind,'RCBO');
+ assert.equal(rcboWorkflow.schematicKind,'RCBO');
+ assert.equal(rcboWorkflow.schematicIb,10);
+ assert.equal(rcboWorkflow.schematicReview,true);
+ assert.equal(rcboWorkflow.reportHasRcbo,true);
+ assert.equal(rcboWorkflow.globalCatalogUntouched,true);
+
  assert.ok(await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.faultRoutes.rows[0].ikMinA>400));
  await page.locator('#faultRoutePanel summary').click();
  await page.locator('#faultRoutePanel').screenshot({path:'browser-fault-route.png'});
