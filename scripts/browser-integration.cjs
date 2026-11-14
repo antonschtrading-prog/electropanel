@@ -17,6 +17,35 @@ const server=http.createServer((req,res)=>{
  await page.locator('#loadDemo').click();
  await page.evaluate(()=>{selectedLine='L1';switchView('board');});
  assert.equal(await page.locator('#boardCanvas [data-line]').count(),6);
+
+ // A catalogue article type must govern both protection selection and its board facade.
+ const faceSelection=await page.evaluate(()=>{
+  const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
+  p.catalogArticles=[{id:'METER-AS-BREAKER',sku:'MTR-1',maker:'Declared maker',series:'Test',
+   kind:'METER',label:'Meter',modules:2,widthMm:36,poles:2,inA:40,source:'https://example.org/meter'}];
+  const original=JSON.stringify(p);
+  let rejected=false;
+  try{applyCatalogueSku(p,id,'METER-AS-BREAKER');}catch(error){rejected=/автоматический выключатель|дифавтомат/.test(error.message);}
+  const types=['MCB','RCD','RCBO','CONTACTOR','METER','DIN_PSU'].map(kind=>{
+   const host=document.createElement('div');
+   host.innerHTML=epCatalogFrontSvgV1({maker:'ABB',series:'Illustrative',kind,
+    sku:'DEMO',modules:2,widthMm:36,poles:2,inA:16},kind);
+   const svg=host.querySelector('svg');
+   return {kind:svg.getAttribute('data-device-kind'),levers:svg.querySelectorAll('[data-lever]').length,
+    test:svg.querySelectorAll('[data-test-control]').length,
+    display:svg.querySelectorAll('[data-display]').length,
+    vents:svg.querySelectorAll('[data-vent]').length};
+  });
+  return {rejected,unchanged:JSON.stringify(p)===original,types};
+ });
+ assert.equal(faceSelection.rejected,true,'meter must not be selectable as branch protection');
+ assert.equal(faceSelection.unchanged,true,'blocked selection must preserve the project');
+ assert.deepEqual(faceSelection.types.map(x=>[x.kind,x.levers>0,x.test>0,x.display>0,x.vents>0]),[
+  ['MCB',true,false,false,false],['RCD',true,true,false,false],
+  ['RCBO',true,true,false,false],['CONTACTOR',false,false,false,false],
+  ['METER',false,false,true,false],['DIN_PSU',false,false,false,true]
+ ]);
+
  // A project audit must resolve devices from the project argument, not the open editor.
  const auditIsolation=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state));
