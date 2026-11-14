@@ -1750,7 +1750,7 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
   if(!Array.isArray(x.loads)||!Array.isArray(x.sharedDevices))throw Error('Файл новой версии не содержит модель потребителей или аппаратов');
   p.schema=PROJECT_SCHEMA;
   p.loads=x.loads.map(l=>({id:l.id,circuitId:l.circuitId,name:l.name,powerKw:l.powerKw,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120)}));
-  p.sharedDevices=x.sharedDevices.map(d=>({id:d.id,templateId:d.templateId,label:d.label,modules:d.modules,circuitIds:d.circuitIds}));
+  p.sharedDevices=x.sharedDevices.map(d=>({id:d.id,templateId:d.templateId,label:d.label,modules:d.modules,circuitIds:d.circuitIds,...(typeof d.catalogSku==='string'&&d.catalogSku.trim()&&d.catalogSku.length<=100?{catalogSku:d.catalogSku}:{})}));
   if(x.groupInputVersion===undefined&&Array.isArray(x.groupInputLinks)&&x.groupInputLinks.length)throw Error('Не указана версия вводов групповых УЗО');
   if(x.groupInputVersion!==undefined){if(x.groupInputVersion!==1||!Array.isArray(x.groupInputLinks))throw Error('Неподдерживаемая версия вводов групповых УЗО');p.groupInputLinks=x.groupInputLinks.map(f=>({id:f.id,groupId:f.groupId,kind:f.kind,from:f.from,to:f.to,origin:f.origin}));p.groupInputVersion=1;}
   if(x.wiringVersion===undefined&&Array.isArray(x.conductorRoutes)&&x.conductorRoutes.length)throw Error('У маршрутов проводников отсутствует номер версии');
