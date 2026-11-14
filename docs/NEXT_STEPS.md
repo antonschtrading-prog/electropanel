@@ -39,3 +39,9 @@
 - Extend verified source/method coverage for max prospective fault current, selectivity and thermal calculations; preserve the distinction between numeric comparison and applicable normative design.
 - Expand catalogue categories and genuine manufacturer CAD/visual data; current additions support single- and three-phase MCB workflows only.
 - Improve workspace navigation and explicit conductor cross-section/temperature provenance across multi-segment routes; current segment R/X is declared directly.
+
+## 2026-11-14 — native reconciliation integrity hardening
+- Added fail-closed validation for duplicate/missing circuit and branch-device identifiers, orphan branch devices, multiple devices bound to one circuit, and mismatched/invalid module counts in `epReconcileProjectV2`.
+- Reconciliation now flags missing board placement and catalogue-vs-line module drift, rather than relying on a width-only check. Added dedicated native integrity regression cases.
+- Changes are committed in PR #12; CI on the exact final commit is **not yet independently confirmed**. Do not treat this section as evidence of a successful test run.
+- Next substantial work: verify browser workflow on the final HEAD; connect engineering status to export gates; expand verified manufacturer records and genuine frontplate geometry; complete bounded fault-current and protection evidence.
