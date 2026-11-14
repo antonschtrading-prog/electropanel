@@ -30,7 +30,7 @@ test('tier filter is applied to actual catalogue SKU choices, not invented produ
 test('atomic selection refuses invalid catalogue geometry before modifying the circuit',()=>{
  const c=environment();
  const before=run(c,'JSON.stringify(state)');
- run(c,"EP_CATALOG.BROKEN={maker:'Test',series:'X',sku:'BROKEN',kind:'MCB',poles:1,modules:1,widthMm:50,inA:16,label:'X'}");
+ run(c,"projectCatalogEntries=()=>[['BROKEN',{maker:'Test',series:'X',sku:'BROKEN',kind:'MCB',poles:1,modules:1,widthMm:50,inA:16,label:'X'}]]");
  assert.throws(()=>run(c,"applyCatalogueSku(state,'L1','BROKEN')"),/габариты|номинальный/i);
  assert.equal(run(c,'JSON.stringify(state)'),before);
 });
