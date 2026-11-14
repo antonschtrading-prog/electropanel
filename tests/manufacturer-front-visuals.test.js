@@ -9,7 +9,7 @@ test("MCB has rocker switches",()=>{
  assert.match(svg,/data-device-kind=\"MCB\"/);
 });
 test("MCB has no test control",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"MCB"});
  assert.equal(svg.includes("data-test-control="),false);
  assert.match(svg,/data-device-kind=\"MCB\"/);
 });
@@ -19,7 +19,7 @@ test("RCD has rocker switches",()=>{
  assert.match(svg,/data-device-kind=\"RCD\"/);
 });
 test("RCD has test control",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"RCD"});
  assert.equal(svg.includes("data-test-control="),true);
  assert.match(svg,/data-device-kind=\"RCD\"/);
 });
@@ -29,7 +29,7 @@ test("RCBO has rocker switches",()=>{
  assert.match(svg,/data-device-kind=\"RCBO\"/);
 });
 test("RCBO has test control",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"RCBO"});
  assert.equal(svg.includes("data-test-control="),true);
  assert.match(svg,/data-device-kind=\"RCBO\"/);
 });
@@ -39,7 +39,7 @@ test("isolator switch has rocker",()=>{
  assert.match(svg,/data-device-kind=\"SWITCH\"/);
 });
 test("isolator has no RCD test control",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"SWITCH"});
  assert.equal(svg.includes("data-test-control="),false);
  assert.match(svg,/data-device-kind=\"SWITCH\"/);
 });
@@ -49,7 +49,7 @@ test("contactor has coil face",()=>{
  assert.match(svg,/data-device-kind=\"CONTACTOR\"/);
 });
 test("contactor has no breaker rocker",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"CONTACTOR"});
  assert.equal(svg.includes("data-lever="),false);
  assert.match(svg,/data-device-kind=\"CONTACTOR\"/);
 });
@@ -59,7 +59,7 @@ test("relay has coil face",()=>{
  assert.match(svg,/data-device-kind=\"RELAY\"/);
 });
 test("relay has no breaker rocker",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"RELAY"});
  assert.equal(svg.includes("data-lever="),false);
  assert.match(svg,/data-device-kind=\"RELAY\"/);
 });
@@ -69,12 +69,12 @@ test("meter has LCD illustration",()=>{
  assert.match(svg,/data-device-kind=\"METER\"/);
 });
 test("meter has no breaker rocker",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"METER"});
  assert.equal(svg.includes("data-lever="),false);
  assert.match(svg,/data-device-kind=\"METER\"/);
 });
 test("meter has no invented numeric reading",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"METER"});
  assert.equal(svg.includes("— — —"),true);
  assert.match(svg,/data-device-kind=\"METER\"/);
 });
@@ -84,12 +84,12 @@ test("DIN supply has ventilation",()=>{
  assert.match(svg,/data-device-kind=\"DIN_PSU\"/);
 });
 test("DIN supply has no breaker rocker",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"DIN_PSU"});
  assert.equal(svg.includes("data-lever="),false);
  assert.match(svg,/data-device-kind=\"DIN_PSU\"/);
 });
 test("DIN supply has no invented output voltage",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"DIN_PSU"});
  assert.equal(svg.includes("DC OUT · not rated"),true);
  assert.match(svg,/data-device-kind=\"DIN_PSU\"/);
 });
@@ -99,7 +99,7 @@ test("other devices have neutral face",()=>{
  assert.match(svg,/data-device-kind=\"OTHER\"/);
 });
 test("other devices have no breaker rocker",()=>{
- const svg=epCatalogFrontSvgV1({...article,kind});
+ const svg=epCatalogFrontSvgV1({...article,kind:"OTHER"});
  assert.equal(svg.includes("data-lever="),false);
  assert.match(svg,/data-device-kind=\"OTHER\"/);
 });
