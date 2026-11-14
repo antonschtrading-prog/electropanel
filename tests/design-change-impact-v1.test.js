@@ -80,3 +80,13 @@ test('circuit article edit only invalidates device and dependent topology',()=>{
  const p=base(),q=structuredClone(p);q.lines[0].catalogSku='ABB-S201';
  assert.deepEqual(a(p,q).affected,['device','topology','enclosure']);
 });
+
+test('pending replacement provenance alone invalidates dependent device evidence',()=>{
+ const p=base(),q=structuredClone(p);
+ q.lines[0].articleReplacementReview={required:true,from:'A',to:'B',
+  warnings:['ICU_IS_NOT_ICN'],engineeringApproved:false};
+ const impact=a(p,q);
+ assert.deepEqual(impact.changed,['device']);
+ assert.deepEqual(impact.affected,['device','topology','enclosure']);
+ assert.equal(impact.engineeringApproved,false);
+});
