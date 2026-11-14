@@ -12,7 +12,7 @@ const server=http.createServer((req,res)=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const browser=await chromium.launch({headless:true,...(process.env.EP_CHROMIUM?{executablePath:process.env.EP_CHROMIUM}:{})});
  try{
- const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
  await page.evaluate(()=>{selectedLine='L1';switchView('board');});
@@ -42,6 +42,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>epReconcileProjectV2(state,catalogDevice).rows[0].placement.railIndex),1);
  // Import a project-specific catalogue record, exercise its protection shortlist.
  await page.evaluate(()=>{state.catalogArticles=[{id:'USER-16',sku:'user16',maker:'User maker',series:'Declared',kind:'MCB',poles:1,modules:1,widthMm:18,inA:16,icnKa:6,curve:'C',source:'https://example.org/datasheet'}];changed();});
+ assert.equal(await page.evaluate(()=>normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview'))).lines.length),6);
  await page.reload();
  assert.equal(await page.evaluate(()=>state.lines[0].loadCurrentCalculation.roundedIbA),10);
  assert.equal(await page.evaluate(()=>state.lines[0].cableDesignInput.sectionMm2),2.5);
@@ -82,6 +83,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.lines[0].faultInput?.ikKa??null),null);
  await page.locator('#catalogSku').selectOption('SE-A9F74116');
  assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).thresholdStatus),'UNKNOWN');
+ assert.equal(await page.evaluate(()=>normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview'))).lines.length),6);
  await page.reload();
  assert.equal(await page.evaluate(()=>state.lines[0].faultRouteInput.segments.length),1);
  assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).stale),true);
