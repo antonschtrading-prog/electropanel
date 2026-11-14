@@ -32,7 +32,7 @@ function epProtectiveDeviceShortlistV1(line,catalog){
    reasons.push('CATALOG_WIDTH_INVALID');
   if(typeof sku!=='string'||!sku.trim())reasons.push('CATALOG_IDENTITY_MISSING');
   if(!['L1','L2','L3','3Ф'].includes(line.phase))reasons.push('PHASE_UNDECLARED');
-  else if(line.phase==='3Ф'?![3,4].includes(d.poles):!(d.poles===1||d.kind==='RCBO'&&d.poles===2))reasons.push('POLES_INCOMPATIBLE');
+  else if(line.phase==='3Ф'?![3,4].includes(d.poles):!(d.poles===1||d.poles===2&&(d.kind==='RCBO'||['1P+N','2P'].includes(d.poleConfiguration))))reasons.push('POLES_INCOMPATIBLE');
   if(ib!==null&&d.inA<ib)reasons.push('IN_LT_IB');
   if(iz!==null&&d.inA>iz)reasons.push('IN_GT_IZ');
   if(ik!==null&&d.icnKa<ik)reasons.push('ICN_LT_DECLARED_IK');
