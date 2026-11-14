@@ -110,6 +110,7 @@ function clearCalculationReview(line){delete line.calculationReview;}
 function applyCatalogueSku(project,circuitId,sku){
  const dev=projectCatalogEntries(project).find(([id])=>id===sku)?.[1],line=project.lines.find(l=>l.id===circuitId);
  if(!dev||!line)throw Error('Не найдена цепь или артикул');
+ if(!['MCB','RCBO'].includes(dev.kind))throw Error('Для защиты отходящей линии требуется автоматический выключатель или дифавтомат');
  if(!((['L1','L2','L3'].includes(line.phase)&&dev.poles===1)||(line.phase==='3Ф'&&(dev.poles===3||dev.poles===4))))throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
  if(line.catalogSku!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
  updateBranchApparatus(project,circuitId,{label:dev.label,modules:dev.modules,templateId:null});
