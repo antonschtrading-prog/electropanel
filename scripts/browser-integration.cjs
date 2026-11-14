@@ -137,6 +137,8 @@ const server=http.createServer((req,res)=>{
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.catalogArticles.length),3,'Redo must restore accepted import');
  assert.equal(await page.evaluate(()=>catalogDevice('BATCH-OK').verificationStatus),'UNVERIFIED');
+ assert.match(await page.locator('#projectCatalogWorkbench').innerText(),/пользовательских: 3/);
+ assert.equal(await page.evaluate(()=>epProjectCatalogV1({...state,catalogArticles:[...state.catalogArticles,{id:'TOO-WIDE',maker:'Width maker',series:'W',sku:'W1',kind:'MCB',modules:1,widthMm:36,poles:1,inA:16,source:'https://example.org/w1'}]},EP_CATALOG).issues.some(x=>x.code==='ARTICLE_WIDTH_EXCEEDS_MODULES')),true);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('electropanel_web_preview')).catalogArticles.length),3);
 
  assert.ok(await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.faultRoutes.rows[0].ikMinA>400));
