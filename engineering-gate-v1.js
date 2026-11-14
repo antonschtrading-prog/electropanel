@@ -54,6 +54,12 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof epProjectCalculationCoverageV1==='function')
   inspect('calculation_coverage',()=>epProjectCalculationCoverageV1(project,lookupSku));
  else add('calculation_coverage','CALCULATION_COVERAGE_UNAVAILABLE','UNKNOWN');
+ if(typeof epReconcileProjectV2==='function')
+  inspect('native_reconciliation',()=>epReconcileProjectV2(project,lookupSku));
+ else add('native_reconciliation','RECONCILIATION_UNAVAILABLE','UNKNOWN');
+ if(typeof epDraftBomV1==='function')
+  inspect('draft_bom',()=>epDraftBomV1(project,lookupSku));
+ else add('draft_bom','BOM_UNAVAILABLE','UNKNOWN');
  if(typeof epDraftBoardPlanV1==='function')
   inspect('draft_board_plan',()=>epDraftBoardPlanV1(project,lookupSku));
  else add('draft_board_plan','DRAFT_BOARD_PLAN_UNAVAILABLE','UNKNOWN');
