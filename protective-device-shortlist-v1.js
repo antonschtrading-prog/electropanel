@@ -13,6 +13,7 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   candidates:[],engineeringApproved:false,ready_for_installation:false};
  const ib=epProtectionPositiveV1(line.overloadInput?.ibA),iz=epProtectionPositiveV1(line.overloadInput?.izA);
  const ik=epProtectionPositiveV1(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa);
+ const ratedVoltage=epProtectionPositiveV1(line.faultInput?.voltageV);
  if(ib===null)add('DESIGN_CURRENT_MISSING');
  if(iz===null)add('CABLE_CAPACITY_MISSING');
  if(ik===null)add('FAULT_CURRENT_MISSING');
@@ -36,10 +37,13 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   if(ib!==null&&d.inA<ib)reasons.push('IN_LT_IB');
   if(iz!==null&&d.inA>iz)reasons.push('IN_GT_IZ');
   if(ik!==null&&d.icnKa<ik)reasons.push('ICN_LT_DECLARED_IK');
+  if(ratedVoltage!==null&&Number.isFinite(d.icnVoltageV)&&d.icnVoltageV<ratedVoltage)
+   reasons.push('ICN_VOLTAGE_LT_DECLARED');
   const caution=[];
   if(d.modules===undefined)caution.push('CATALOG_MODULES_UNDECLARED');
   if(!d.poleConfiguration&&d.poles>=2)caution.push('POLE_CONFIGURATION_UNDECLARED');
   if(!Number.isFinite(d.icnVoltageV))caution.push('ICN_RATED_VOLTAGE_UNDECLARED');
+  if(ratedVoltage===null)caution.push('FAULT_VOLTAGE_UNDECLARED');
   if(!d.icnStandard)caution.push('ICN_STANDARD_UNDECLARED');
   if(!d.source)caution.push('DATASHEET_SOURCE_MISSING');
   if(d.verificationStatus!=='VERIFIED')caution.push('CATALOG_DATA_UNVERIFIED');
