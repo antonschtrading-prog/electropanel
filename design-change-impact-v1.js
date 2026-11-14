@@ -15,7 +15,8 @@ function epDesignChangeImpactV1(before,after){
  const lines=(project,keys)=>Array.isArray(project.lines)?project.lines.map(x=>Object.fromEntries(['id',...keys].map(k=>[k,x?.[k]??null]))).sort((a,b)=>String(a.id).localeCompare(String(b.id))):null;
  const areas={
   load:[lines(before,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),lines(after,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),before.loads,after.loads],
-  network:[before.network,after.network,before.earthing,after.earthing,before.voltage,after.voltage],
+  network:[before.network,after.network,before.earthing,after.earthing,before.voltage,after.voltage,
+   lines(before,['maximumFaultInput','faultRouteInput','faultInput']),lines(after,['maximumFaultInput','faultRouteInput','faultInput'])],
   cable:[lines(before,['cableReferenceInput','cableDesignInput','voltageDropDesignInput','faultRouteInput']),lines(after,['cableReferenceInput','cableDesignInput','voltageDropDesignInput','faultRouteInput']),before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],
   device:[before.catalogArticles,after.catalogArticles,lines(before,['catalogSku','device','modules','templateId','articleReplacementReview']),lines(after,['catalogSku','device','modules','templateId','articleReplacementReview']),before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
   topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1,before.terminalLinks,after.terminalLinks,before.feedLinks,after.feedLinks,before.groupInputLinks,after.groupInputLinks],
