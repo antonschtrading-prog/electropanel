@@ -149,4 +149,25 @@ function epBrandCoverage(articles=EP_CATALOG){
  }));
 }
 
-if(typeof module!=='undefined'&&module.exports)module.exports={EP_CATALOG,epCatalogSku,epCatalogMakers,epCatalogSeries,epCatalogCompatible,epCatalogFilter,epCatalogDeclaredCurrentIssues,epCatalogDeviceSummary,EP_BRAND_TIERS,epBrandTier,epBrandCoverage};
+// A source-aware replacement preview. Never overwrites declared circuit data.
+function epCatalogueReplacementImpactV1(previous,next){
+ const numeric=x=>typeof x==='number'&&Number.isFinite(x)&&x>0?x:null;
+ if(!next||typeof next!=='object'||Array.isArray(next))
+  return {status:'BLOCKED',warnings:['ARTICLE_INVALID'],changes:[],engineeringApproved:false};
+ const properties=['maker','series','sku','kind','poles','poleConfiguration','modules','widthMm','heightMm','depthMm','inA','curve','icnKa','icnVoltageV','icnStandard','icuKa','icuVoltageV','residualCurrentMa','residualType'];
+ const changes=properties.filter(k=>(previous?.[k]??null)!==(next[k]??null))
+  .map(field=>({field,from:previous?.[field]??null,to:next[field]??null}));
+ const warnings=[];
+ if(!previous)warnings.push('PREVIOUS_ARTICLE_NOT_VERIFIED');
+ if(numeric(next.icnKa)===null&&['MCB','RCBO'].includes(next.kind))
+  warnings.push('ICN_UNDECLARED');
+ if(numeric(next.icuKa)!==null&&numeric(next.icnKa)===null)
+  warnings.push('ICU_IS_NOT_ICN');
+ if(numeric(next.heightMm)===null||numeric(next.depthMm)===null)
+  warnings.push('BODY_GEOMETRY_INCOMPLETE');
+ if(next.verificationStatus!=='VERIFIED')warnings.push('PASSPORT_NOT_INDEPENDENTLY_VERIFIED');
+ if(changes.length)warnings.push('RECHECK_PROTECTION_BOARD_SCHEMATIC_BOM');
+ return {status:'REVIEW_REQUIRED',changes,warnings,engineeringApproved:false,ready_for_installation:false};
+}
+
+if(typeof module!=='undefined'&&module.exports)module.exports={EP_CATALOG,epCatalogSku,epCatalogMakers,epCatalogSeries,epCatalogCompatible,epCatalogFilter,epCatalogDeclaredCurrentIssues,epCatalogDeviceSummary,EP_BRAND_TIERS,epBrandTier,epBrandCoverage,epCatalogueReplacementImpactV1};
