@@ -106,6 +106,19 @@ function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
   if(branch){branch.modules=article.modules;branch.label=article.label;branch.templateId=null;}
   affected.push(line.id);
  }
+ // Shared protective apparatus is a separate entity. Updating its catalogue
+ // article must also update the board width and trigger a layout recheck.
+ for(const shared of Array.isArray(draft.sharedDevices)?draft.sharedDevices:[]){
+  if(shared?.catalogSku!==record.id)continue;
+  if(article.kind!=='RCD'&&article.kind!=='RCBO')return {project:null,code:'SHARED_ARTICLE_KIND_CONFLICT'};
+  if(![2,4].includes(article.poles))return {project:null,code:'SHARED_ARTICLE_POLE_CONFLICT'};
+  if(shared.templateId==='RCD_2P'&&article.poles!==2||
+     shared.templateId==='RCD_4P'&&article.poles!==4)
+   return {project:null,code:'SHARED_ARTICLE_TEMPLATE_CONFLICT'};
+  shared.modules=article.modules;
+  shared.label=article.label;
+  affected.push(shared.id);
+ }
  if(affected.length&&typeof epDraftBoardPlanV1==='function'){
   const layout=epDraftBoardPlanV1(draft,audit.lookup);
   const invalid=layout.issues.find(x=>x.level==='BLOCKED');
