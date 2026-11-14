@@ -175,6 +175,83 @@ const server=http.createServer((req,res)=>{
   },'User-declared RCBO residual parameters must survive form -> storage -> selection -> schematic -> protection -> BOM -> print');
  }finally{await residualContext.close();}
 
+
+ // Complete browser path: engineer records manufacturer source and Icn rating
+ // before assigning an explicitly configured 1P+N protective apparatus.
+ const sourceContext=await browser.newContext();
+ try{
+  const sourcePage=await sourceContext.newPage();
+  await sourcePage.goto('http://127.0.0.1:'+server.address().port);
+  await sourcePage.locator('#loadDemo').click();
+  const sourceFlow=await sourcePage.evaluate(()=>{
+   const form=document.getElementById('catalogArticleForm');
+   if(!form)return {error:'Catalog form unavailable'};
+   const fields={id:'BROWSER-MCB-1PN',maker:'Illustrative Maker',series:'Declared 1P+N',
+    sku:'B16-1PN-TEST',label:'MCB B16 1P+N',modules:'2',widthMm:'36',poles:'2',
+    poleConfiguration:'1P+N',inA:'16',curve:'B',icnKa:'6',
+    icnVoltageV:'230',icnStandard:'IEC/EN 60898-1',kind:'MCB',
+    source:'https://example.org/technical-sheet',
+    productSource:'https://example.org/manufacturer-product',
+    sourceReviewedAt:'2026-11-14'};
+   for(const [key,value] of Object.entries(fields)){
+    const input=form.elements.namedItem(key);
+    if(!input)return {error:'Missing catalog field '+key};
+    input.value=value;
+   }
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+   const saved=state.catalogArticles.find(a=>a.id===fields.id);
+   if(!saved)return {error:'Manufacturer article did not save'};
+   const reopened=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+   const restored=reopened.catalogArticles?.find(a=>a.id===fields.id);
+   const p=structuredCloneCompat(state),line=p.lines.find(l=>['L1','L2','L3'].includes(l.phase))||p.lines[0];
+   if(!line)return {error:'No demo circuit'};
+   line.phase='L1';
+   try{applyCatalogueSku(p,line.id,fields.id);}
+   catch(err){return {error:'Cannot assign 1P+N MCB: '+err.message};}
+   const lookup=epProjectCatalogV1(p,EP_CATALOG).lookup,selected=lookup(fields.id);
+   const assigned=p.lines.find(l=>l.id===line.id);
+   assigned.faultInput={ikKa:3,voltageV:400,source:'Engineer declaration'};
+   assigned.overloadInput={ibA:10,izA:25};
+   const candidateHigh=epProtectiveDeviceShortlistV1(assigned,[{id:fields.id,device:selected}]).candidates[0];
+   const workHigh=epProtectionWorkbenchV1(p,lookup,[{id:fields.id,device:selected}],line.id);
+   const highReasons=workHigh.selected?.reasons||[];
+   const printHigh=epEngineeringPrintV1(epEngineeringBundleV1(p,lookup));
+   assigned.faultInput.voltageV=230;
+   const candidateLow=epProtectiveDeviceShortlistV1(assigned,[{id:fields.id,device:selected}]).candidates[0];
+   const workLow=epProtectionWorkbenchV1(p,lookup,[{id:fields.id,device:selected}],line.id);
+   const schematic=epSingleLineDraftV1(p,lookup);
+   const evidence=epCatalogEvidenceAuditV1(p,lookup);
+   const html=epEngineeringPrintV1(epEngineeringBundleV1(p,lookup));
+   const node=schematic.nodes.find(n=>n.id==='CIRCUIT:'+line.id);
+   return {savedPoles:saved.poleConfiguration,savedIcnVoltage:saved.icnVoltageV,
+    restoredPoles:restored?.poleConfiguration,restoredDate:restored?.sourceReviewedAt,
+    restoredProductUrl:restored?.productSource,assignedModules:assigned.modules,
+    candidateHigh:candidateHigh?.status,
+    blockedHigh:highReasons.includes('ARTICLE_ICN_VOLTAGE_LT_DECLARED'),
+    reportHighVoltage:printHigh.includes('400'),
+    candidateLow:candidateLow?.status,blockedLow:workLow.selected?.status==='BLOCKED',
+    schematicPoleConfiguration:node?.article?.poleConfiguration,
+    schematicVoltage:node?.design?.voltageV,
+    evidenceDate:evidence.items.some(x=>x.articleId===fields.id&&x.sourceReviewedAt==='2026-11-14'),
+    evidenceUnverified:evidence.items.some(x=>x.articleId===fields.id&&x.verificationStatus==='UNVERIFIED'),
+    printHasProduct:html.includes('https://example.org/manufacturer-product'),
+    printHasPoleConfiguration:html.includes('1P+N'),
+    seedCatalogUnaffected:epCatalogSku(fields.id)===null,
+    sourceApproved:epEngineeringBundleV1(p,lookup).engineeringApproved===true};
+  });
+  assert.deepEqual(sourceFlow,{
+   savedPoles:'1P+N',savedIcnVoltage:230,
+   restoredPoles:'1P+N',restoredDate:'2026-11-14',
+   restoredProductUrl:'https://example.org/manufacturer-product',
+   assignedModules:2,candidateHigh:'REJECTED',blockedHigh:true,
+   reportHighVoltage:true,candidateLow:'POTENTIAL',blockedLow:false,
+   schematicPoleConfiguration:'1P+N',schematicVoltage:230,
+   evidenceDate:true,evidenceUnverified:true,
+   printHasProduct:true,printHasPoleConfiguration:true,
+   seedCatalogUnaffected:true,sourceApproved:false
+  },'Source-backed 1P+N article must remain unverified and block insufficient Icn rated voltage');
+ }finally{await sourceContext.close();}
+
  // End-to-end RCD catalogue edit: original project -> review -> scheme -> DIN -> BOM -> cross-view.
  const rcdEdit=await page.evaluate(()=>{
   const breaker={id:'E2E-B',sku:'B16',maker:'E2E Maker',series:'M',kind:'MCB',
