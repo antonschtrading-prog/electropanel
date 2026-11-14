@@ -255,3 +255,10 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-design-queue summary{cursor:pointer;font-weight:700}
 .ep-design-queue table{border-collapse:collapse;width:100%;font-size:12px}
 .ep-design-queue th,.ep-design-queue td{padding:8px;border-bottom:1px solid #d1d9e2;text-align:left}
+
+/* Original vector manufacturer-family fronts, distinct from official product photographs. */
+.ep-din-device-face:has(.ep-manufacturer-front){display:block;overflow:hidden;background:transparent;padding:0;border:0;box-shadow:none;min-height:0}
+.ep-manufacturer-front{display:block;width:100%;height:auto;max-height:180px;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(12,25,34,.16))}
+.ep-din-block:has(.ep-manufacturer-front){min-height:230px}
+.ep-din-block:has(.ep-manufacturer-front) .ep-din-device-face{flex:1;display:flex;align-items:center;justify-content:center}
+@media(max-width:800px){.ep-din-block:has(.ep-manufacturer-front){min-height:190px}.ep-manufacturer-front{max-height:125px}}
