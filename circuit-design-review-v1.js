@@ -54,7 +54,8 @@ function epCircuitDesignReviewV1(project,lookupSku){
   else{
    if(!['MCB','RCBO'].includes(article.kind))
     reasons.push({code:'CATALOG_PROTECTION_KIND_UNSUPPORTED',level:'BLOCKED'});
-   const correctPoles=['L1','L2','L3'].includes(line.phase)?(article.poles===1||article.kind==='RCBO'&&article.poles===2):
+   const correctPoles=['L1','L2','L3'].includes(line.phase)?(article.poles===1||article.poles===2&&
+    (article.kind==='RCBO'||['1P+N','2P'].includes(article.poleConfiguration))):
     line.phase==='3Ф'?[3,4].includes(article.poles):null;
    if(correctPoles===false)reasons.push({code:'CATALOG_PHASE_POLES_MISMATCH',level:'BLOCKED'});
    if(line.modules!==article.modules)reasons.push({code:'CATALOG_MODULES_STALE',level:'BLOCKED'});
