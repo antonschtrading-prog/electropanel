@@ -115,6 +115,62 @@ const server=http.createServer((req,res)=>{
  }finally{await reviewPage.close();}
 
 
+
+ // Exercise the actual form and an isolated browser storage context, not a synthetic record.
+ const residualContext=await browser.newContext();
+ try{
+  const residualPage=await residualContext.newPage();
+  await residualPage.goto('http://127.0.0.1:'+server.address().port);
+  const result=await residualPage.evaluate(()=>{
+   const form=document.getElementById('catalogArticleForm');
+   if(!form)return {error:'Catalogue form missing'};
+   const data={id:'BROWSER-RCBO-RCD-30',maker:'Declared manufacturer',series:'Declared DIN series',
+    sku:'D16-30',label:'D16 30mA',modules:'2',widthMm:'36',poles:'1',inA:'16',
+    kind:'RCBO',icnKa:'6',curve:'C',residualCurrentMa:'30',residualType:'A',
+    source:'https://example.org/rcbo-datasheet'};
+   for(const [key,value] of Object.entries(data)){
+    const input=form.elements.namedItem(key);
+    if(!input)return {error:'Missing input '+key};
+    input.value=value;
+   }
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+   const stored=state.catalogArticles.find(x=>x.id===data.id);
+   if(!stored)return {error:'Form submission did not persist RCBO'};
+   const restored=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+   const restoredArticle=restored.catalogArticles.find(x=>x.id===data.id);
+   const p=structuredCloneCompat(state);
+   const line=p.lines[0];if(!line)return {error:'Demo has no circuit'};
+   line.phase='L1';
+   try{applyCatalogueSku(p,line.id,data.id);}
+   catch(error){return {error:'Selected RCBO not applied: '+error.message};}
+   const catalogue=epProjectCatalogV1(p,EP_CATALOG),lookup=catalogue.lookup;
+   const scheme=epSingleLineDraftV1(p,lookup);
+   const protection=epProtectionWorkbenchV1(p,lookup,
+    Object.entries(catalogue.articles).map(([id,device])=>({id,device})),line.id);
+   const b=epDraftBomV1(p,lookup);
+   const bundle=epEngineeringBundleV1(p,lookup);
+   const report=epEngineeringPrintV1(bundle);
+   const circuit=scheme.nodes.find(x=>x.lineId===line.id);
+   const bomArticle=b.items.find(x=>x.key===data.id);
+   return {storedCurrent:stored.residualCurrentMa,storedType:stored.residualType,
+    restoredCurrent:restoredArticle?.residualCurrentMa,restoredType:restoredArticle?.residualType,
+    projectCurrent:lookup(data.id)?.residualCurrentMa,
+    schematicCurrent:circuit?.article?.residualCurrentMa,
+    schematicType:circuit?.article?.residualType,
+    protectionCurrent:protection.selected?.selectedArticle?.residualCurrentMa,
+    protectionType:protection.selected?.selectedArticle?.residualType,
+    bomCurrent:bomArticle?.residualCurrentMa,bomType:bomArticle?.residualType,
+    printResidual:report.includes('IΔn, мА')&&report.includes('Тип дифзащиты')&&report.includes('30'),
+    catalogueStatus:lookup(data.id)?.verificationStatus};
+  });
+  assert.deepEqual(result,{
+   storedCurrent:30,storedType:'A',restoredCurrent:30,restoredType:'A',
+   projectCurrent:30,schematicCurrent:30,schematicType:'A',
+   protectionCurrent:30,protectionType:'A',bomCurrent:30,bomType:'A',
+   printResidual:true,catalogueStatus:'UNVERIFIED'
+  },'User-declared RCBO residual parameters must survive form -> storage -> selection -> schematic -> protection -> BOM -> print');
+ }finally{await residualContext.close();}
+
  // End-to-end RCD catalogue edit: original project -> review -> scheme -> DIN -> BOM -> cross-view.
  const rcdEdit=await page.evaluate(()=>{
   const breaker={id:'E2E-B',sku:'B16',maker:'E2E Maker',series:'M',kind:'MCB',
