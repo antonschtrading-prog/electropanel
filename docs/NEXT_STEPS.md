@@ -80,3 +80,9 @@ This queue is deliberately based on the current PR #12, not a fresh implementati
 - Both the native one-line projection and protective workbench keep the separate Icu fields, while no safety/installation approval is inferred.
 - Regression cases cover CHINT Icu-only rejection, Eaton Icn-only retention, one-line output and HTML evidence.
 - Latest commit-specific CI must be checked before marking this cycle verified.
+
+## 2026-11-15 — catalogue replacement integrity and 14-brand picker
+- Board apparatus picker now offers the approved three tiers, including unavailable names marked as having no article; only actual records are selectable.
+- Article replacement validates geometry, label and nominal data before mutation and records a circuit-level re-review trail, without rewriting Ib, Iz or Ik.
+- New comparison helper preserves field-by-field previous/new article values and flags missing Icn, unknown enclosure body dimensions, and unresolved source verification.
+- Complete CI and browser run must be checked on the final head; no normative clearance is claimed.
