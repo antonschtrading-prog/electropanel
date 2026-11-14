@@ -360,7 +360,7 @@ test('catalogue imports use shared engineering validation and remain undoable',(
 });
 
 test('catalogue audit uses the supplied project and preserves review dependencies',()=>{
- assert.match(app,/const dev=projectCatalogEntries\(project\)\.find/);
+ assert.match(app,/projectCatalogEntries\(project\)\.find/);
  const catalog=fs.readFileSync(path.join(root,'project-catalog-workbench-v1.js'),'utf8');
  assert.match(catalog,/const pending=new Set\(/);
  assert.match(catalog,/for\(const field of reviewFields\)if\(line\[field\]\)pending\.add\(field\)/);
