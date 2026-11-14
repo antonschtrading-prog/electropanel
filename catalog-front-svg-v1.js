@@ -16,9 +16,13 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const gradientId='ep-body-'+family+'-'+Array.from(String(deviceId||device?.sku||'device')).reduce((h,ch)=>((h*33+ch.charCodeAt(0))>>>0),5381).toString(36);
  const inA=Number.isFinite(device?.inA)?String(device.inA):'—';
  const curve=String(device?.curve||'');
- const rated=esc(curve+inA);
  const labels=[String(device?.maker||'Условный вид'),series];
  const breaker=String(device?.kind||'OTHER').toUpperCase();
+ // Nominal label is not a live meter reading or a PSU output rating.
+ // Escape once in the text helper; do not double-escape manufacturer fields.
+ const rated=['MCB','RCBO'].includes(breaker)?curve+inA:
+  ['RCD','SWITCH','CONTACTOR','RELAY'].includes(breaker)?
+   (inA==='—'?'—':'In '+inA+' A'):'—';
  const levers=Array.from({length:poles},(_,i)=>{
   const cx=width*(i+.5)/poles,leverWidth=Math.min(18,width/poles*.65);
   return '<rect data-lever="true" x="'+(cx-leverWidth/2)+'" y="127" width="'+leverWidth+'" height="45" rx="3" fill="#252d35"/>'+
