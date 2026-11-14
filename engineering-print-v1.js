@@ -29,20 +29,23 @@ function epEngineeringPrintV1(bundle){
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
    x.placement?'DIN '+x.placement.rail+' · '+x.placement.from+'–'+x.placement.to:'Не размещено',
    x.calculationReviewRequired?'Требуется перепроверка':'Не подтверждено']));
- const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Артикул','Тип','Изготовитель','In, A','Icn, кА','Источник','Статус','Причины'],
+ const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Артикул','Тип','Изготовитель','In, A','Icn, кА','IΔn, мА','Тип дифзащиты','Источник','Статус','Причины'],
   protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.selectedSku,x.selectedArticle?.kind,
    x.selectedArticle?.maker,x.selectedArticle?.inA,x.selectedArticle?.icnKa,
+   x.selectedArticle?.residualCurrentMa??'—',x.selectedArticle?.residualType||'—',
    x.selectedArticle?.source||'Не подтверждён',x.status,(x.reasons||[]).join(', ')]));
  const selectionTable=rows(['Цепь','Арифметически возможные артикулы','Количество'],
   (sections.protectionSelection?.results||[]).map(x=>[x.lineId,(x.potential||[]).join(', '),(x.potential||[]).length]));
- const bomTable=rows(['Артикул','Производитель','Серия','Количество','Модули','Источник'],
-  bom.map(x=>[x.sku,x.maker,x.series,x.quantity,x.modules,x.source||'Не указан']));
+ const bomTable=rows(['Артикул','Производитель','Серия','Количество','Модули','IΔn, мА','Тип дифзащиты','Источник'],
+  bom.map(x=>[x.sku,x.maker,x.series,x.quantity,x.modules,x.residualCurrentMa??'—',
+   x.residualType||'—',x.source||'Не указан']));
  const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
  const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
  const issueTable=rows(['Раздел','Уровень','Код','Цепь'],allIssues.map(x=>[x.section,x.level,x.code,x.circuitId||'Проект']));
- const singleLineTable=rows(['Элемент','ID','Назначение','Фаза','Артикул','Тип','Группа/аппарат','Ib A','Iz A','Ik кА','Повторная проверка'],
+ const singleLineTable=rows(['Элемент','ID','Назначение','Фаза','Артикул','Тип','IΔn, мА','Тип дифзащиты','Группа/аппарат','Ib A','Iz A','Ik кА','Повторная проверка'],
   singleLine.map(x=>[x.type,x.lineId||x.id,x.name,x.phase,x.sku,x.article?.kind||'',
+   x.article?.residualCurrentMa??'—',x.article?.residualType||'—',
    x.branchId||x.templateId,x.design?.ibA??'',x.design?.izA??'',x.design?.ikKa??'',
    x.design?.calculationReviewRequired||x.design?.loadCurrentStale?'Требуется':'Не заявлена']));
  const neutralPairTable=rows(['N-шина 1','N-шина 2','Статус','Путь по модели'],
