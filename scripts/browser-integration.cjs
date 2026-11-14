@@ -22,7 +22,7 @@ const server=http.createServer((req,res)=>{
  await page.locator('#boardCanvas [data-line="L1"]').click();
  assert.equal(await page.locator('#catalogTier').count(),1);
  await page.locator('#catalogTier').selectOption('comfort');
- assert.equal(await page.locator('#catalogMaker option[value="Panasonic"]').isDisabled(),true);
+ assert.equal(await page.locator('#catalogMaker option[value="Panasonic"]').getAttribute('disabled'),'');
  assert.equal(await page.locator('#catalogMaker option[value="Schneider Electric"]').isDisabled(),false);
  await page.locator('#catalogTier').selectOption('premium');
  assert.equal(await page.locator('#catalogMaker option[value="Eaton"]').count(),1);
