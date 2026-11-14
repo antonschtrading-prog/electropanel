@@ -73,3 +73,10 @@ This queue is deliberately based on the current PR #12, not a fresh implementati
 - Collect actual manufacturer CAD/STEP or legally usable product photography for exact articles and series, with explicit provenance and licence review; the current SVG remains an original schematic illustration.
 - Bind declared height/depth to a verified enclosure-clearance model only after collecting inner-case, cover and wiring-space geometry. Width in 18 mm modules is **not** a 3D fit verification.
 - Continue bounded short-circuit, cable and disconnection source verification, cross-view N/PE graph integrity and migration parity with the legacy source; keep status UNKNOWN where evidence is absent.
+
+## 2026-11-15 — chained selection/schematic/evidence consistency (PR #12)
+- Shortlist preserves Icu separately from Icn; Icu-only candidates are rejected for Icn-based arithmetic instead of receiving an inferred Icn.
+- Selected protection workbench emits explicit missing-Icn and non-substitutability diagnostics, rather than displaying an unidentified breaking rating as suitable.
+- Both the native one-line projection and protective workbench keep the separate Icu fields, while no safety/installation approval is inferred.
+- Regression cases cover CHINT Icu-only rejection, Eaton Icn-only retention, one-line output and HTML evidence.
+- Latest commit-specific CI must be checked before marking this cycle verified.
