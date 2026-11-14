@@ -201,6 +201,21 @@ function epSchematicCrossViewV1(project,singleLine,lookupSku){
   const branch=branches.get(id);
   if((n.branchId||null)!==(branch?.id||null))add('SCHEMATIC_CIRCUIT_BRANCH_STALE',id);
   compareArticle('SCHEMATIC_CIRCUIT',id,n.article,l.catalogSku);
+  const expectDesign={
+   ibA:l.overloadInput?.ibA??null,izA:l.overloadInput?.izA??null,
+   ikKa:l.faultInput?.ikKa??null,
+   calculationReviewRequired:l.calculationReview?.required===true,
+   loadCurrentStale:l.loadCurrentCalculation?.stale===true,
+   inputSource:l.protectionInputSource||null
+  };
+  if(!n.design||typeof n.design!=='object')add('SCHEMATIC_DESIGN_EVIDENCE_MISSING',id);
+  else for(const [key,code] of [
+   ['ibA','IB_STALE'],['izA','IZ_STALE'],['ikKa','IK_STALE'],
+   ['calculationReviewRequired','REVIEW_FLAG_STALE'],
+   ['loadCurrentStale','CALCULATED_CURRENT_STATUS_STALE'],
+   ['inputSource','CURRENT_PROVENANCE_STALE']
+  ])if((n.design[key]??null)!==(expectDesign[key]??null))
+   add('SCHEMATIC_DESIGN_'+code,id);
   expectedEdges.add((membership.get(id)||'SOURCE:MAIN')+'|'+nodeId);
  }
  for(const [id,n] of nodes){
