@@ -126,7 +126,7 @@ const server=http.createServer((req,res)=>{
    const form=document.getElementById('catalogArticleForm');
    if(!form)return {error:'Catalogue form missing'};
    const data={id:'BROWSER-RCBO-RCD-30',maker:'Declared manufacturer',series:'Declared DIN series',
-    sku:'D16-30',label:'D16 30mA',modules:'2',widthMm:'36',poles:'1',inA:'16',
+    sku:'D16-30',label:'D16 30mA',modules:'2',widthMm:'36',poles:'2',inA:'16',
     kind:'RCBO',icnKa:'6',curve:'C',residualCurrentMa:'30',residualType:'A',
     source:'https://example.org/rcbo-datasheet'};
    for(const [key,value] of Object.entries(data)){
@@ -155,7 +155,9 @@ const server=http.createServer((req,res)=>{
    const bomArticle=b.items.find(x=>x.key===data.id);
    return {storedCurrent:stored.residualCurrentMa,storedType:stored.residualType,
     restoredCurrent:restoredArticle?.residualCurrentMa,restoredType:restoredArticle?.residualType,
-    projectCurrent:lookup(data.id)?.residualCurrentMa,
+    projectCurrent:lookup(data.id)?.residualCurrentMa,selectedPoles:lookup(data.id)?.poles,
+    filterAccepts:catalogBranchPolesCompatible('L1',lookup(data.id)),
+    rejectsTwoPoleMCB:!catalogBranchPolesCompatible('L1',{...lookup(data.id),kind:'MCB'}),
     schematicCurrent:circuit?.article?.residualCurrentMa,
     schematicType:circuit?.article?.residualType,
     protectionCurrent:protection.selected?.selectedArticle?.residualCurrentMa,
@@ -166,7 +168,8 @@ const server=http.createServer((req,res)=>{
   });
   assert.deepEqual(result,{
    storedCurrent:30,storedType:'A',restoredCurrent:30,restoredType:'A',
-   projectCurrent:30,schematicCurrent:30,schematicType:'A',
+   projectCurrent:30,selectedPoles:2,filterAccepts:true,rejectsTwoPoleMCB:true,
+   schematicCurrent:30,schematicType:'A',
    protectionCurrent:30,protectionType:'A',bomCurrent:30,bomType:'A',
    printResidual:true,catalogueStatus:'UNVERIFIED'
   },'User-declared RCBO residual parameters must survive form -> storage -> selection -> schematic -> protection -> BOM -> print');
