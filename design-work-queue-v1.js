@@ -17,7 +17,33 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.sectionMm2===null)add(row.lineId,2,'SECTION_REQUIRED','Указать проектное сечение проводника','cable');
   if(row.voltageDrop.status==='UNKNOWN')add(row.lineId,2,'VOLTAGE_DROP_REQUIRED','Заполнить расчёт падения напряжения','voltage');
   if(row.reasons.some(x=>x.code==='LOAD_CURRENT_STALE'))add(row.lineId,2,'LOAD_CURRENT_STALE','Пересчитать ток после изменения нагрузки','load');
-  if(row.reasons.some(x=>x.code==='CALCULATION_REVIEW_REQUIRED'))
+  // Engineering gate reasons become actionable tasks, never silent flags.
+  const guided={
+   CATALOG_LOOKUP_FAILED:[1,'Повторить проверку каталога: источник данных недоступен','catalogue'],
+   CATALOG_ARTICLE_UNKNOWN:[1,'Найти или заменить отсутствующий артикул защитного аппарата','catalogue'],
+   CATALOG_PROTECTION_KIND_UNSUPPORTED:[1,'Выбрать автоматический выключатель или дифавтомат вместо неподходящего типа','protection'],
+   CATALOG_PHASE_POLES_MISMATCH:[1,'Согласовать число полюсов защитного аппарата с фазностью цепи','protection'],
+   CATALOG_MODULES_STALE:[1,'Синхронизировать ширину линии с каталожным аппаратом','layout'],
+   CATALOG_LABEL_STALE:[1,'Обновить обозначение аппарата по выбранному артикулу','catalogue'],
+   CATALOG_BRANCH_DUPLICATED:[1,'Устранить повторное назначение отходящего аппарата','layout'],
+   CATALOG_BRANCH_MODULES_STALE:[1,'Согласовать ширину отходящего аппарата со спецификацией','layout'],
+   CATALOG_BRANCH_LABEL_STALE:[1,'Согласовать обозначение отходящего аппарата с каталогом','catalogue'],
+   CATALOG_EVIDENCE_NOT_VERIFIED:[2,'Подтвердить характеристики аппарата паспортом производителя','catalogue'],
+   CALCULATION_REVIEW_overloadInput:[3,'Повторно проверить Ib и Iz после изменения оборудования','protection'],
+   CALCULATION_REVIEW_faultInput:[3,'Повторно проверить ток короткого замыкания и отключающую способность','protection'],
+   CALCULATION_REVIEW_overloadV30:[3,'Повторно проверить расчёт защиты от перегрузки','protection'],
+   CALCULATION_REVIEW_lv43Input:[3,'Повторно проверить исходные данные расчёта LV 4.3','protection'],
+   CALCULATION_REVIEW_route44Input:[3,'Повторно проверить параметры трассы и цепи повреждения','fault_route']
+  };
+  const seen=new Set();
+  for(const reason of row.reasons){
+   const config=guided[reason.code];
+   if(!config||seen.has(reason.code))continue;
+   seen.add(reason.code);
+   add(row.lineId,config[0],reason.code,config[1],config[2]);
+  }
+  if(row.reasons.some(x=>x.code==='CALCULATION_REVIEW_REQUIRED')&&
+     !row.reasons.some(x=>x.code.startsWith('CALCULATION_REVIEW_')&&x.code!=='CALCULATION_REVIEW_REQUIRED'))
    add(row.lineId,3,'REVIEW_REQUIRED','Проверить актуальность расчётных данных','review');
  }
  if(typeof epFaultRouteProjectV2==='function')for(const row of epFaultRouteProjectV2(project,lookupSku).rows){
