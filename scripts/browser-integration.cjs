@@ -55,6 +55,66 @@ const server=http.createServer((req,res)=>{
  });
  assert.deepEqual(auditIsolation,{globalMissing:true,unknown:false});
 
+ // Real app change() must preserve manual fault checks while recomputing linked Ib.
+ const reviewPage=await browser.newPage({viewport:{width:1180,height:900}});
+ try{
+  await reviewPage.goto('http://127.0.0.1:'+server.address().port);
+  await reviewPage.locator('#loadDemo').click();
+  const dependencyFlow=await reviewPage.evaluate(()=>{
+   const id=state.lines[0].id;
+   let consumer=state.loads.find(x=>x.circuitId===id);
+   if(!consumer)consumer=addConsumerTo(state,id,'Lighting 1',1.5);
+   const input={mode:state.lines[0].phase==='3Ф'?'three_phase':'single_phase',
+    powerSource:'circuit',voltageV:state.lines[0].phase==='3Ф'?400:230,
+    powerFactor:1,efficiency:1,demandFactor:1};
+   const result=epApplyLoadCurrentV1(state,id,input);
+   if(!result.project)return {error:'calculation '+result.code};
+   state=result.project;
+   const line=state.lines.find(l=>l.id===id);
+   line.faultInput={ikKa:3,source:'design input'};
+   line.calculationReview={required:true,pending:['faultInput'],reason:'AWAITING_FAULT_REVIEW'};
+   lastDesignSnapshot=structuredCloneCompat(state);
+   const oldIb=line.loadCurrentCalculation.roundedIbA;
+   const record=state.loads.find(x=>x.circuitId===id);
+   editConsumerIn(state,record.id,record.name,record.powerKw+0.5);
+   changed();
+   const updated=state.lines.find(l=>l.id===id);
+   const saved=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+   return {oldIb,newIb:updated.loadCurrentCalculation.roundedIbA,
+    pending:updated.calculationReview?.pending||[],
+    reviewed:updated.calculationReview?.required,
+    stale:updated.loadCurrentCalculation.stale===true,
+    powerSource:updated.loadCurrentCalculation.powerSource,
+    savedPending:saved.lines.find(l=>l.id===id)?.calculationReview?.pending||[],
+    impacts:lastDesignImpact?.changed||[]};
+  });
+  assert.ok(!dependencyFlow.error,JSON.stringify(dependencyFlow));
+  assert.ok(dependencyFlow.newIb>dependencyFlow.oldIb,JSON.stringify(dependencyFlow));
+  assert.deepEqual(dependencyFlow.pending.slice().sort(),['faultInput','overloadInput']);
+  assert.deepEqual(dependencyFlow.savedPending.slice().sort(),['faultInput','overloadInput']);
+  assert.equal(dependencyFlow.reviewed,true);
+  assert.equal(dependencyFlow.stale,false);
+  assert.equal(dependencyFlow.powerSource,'circuit');
+  assert.ok(dependencyFlow.impacts.includes('load'));
+  const persistedRcd=await reviewPage.evaluate(()=>{
+   const p=JSON.parse(JSON.stringify(state));
+   p.sharedDevices=[{id:'RCD-TEST',templateId:'RCD_2P',label:'Custom RCD',
+    modules:3,circuitIds:[p.lines[0].id],catalogSku:'RCD-CUSTOM'}];
+   p.groupInputLinks=[];
+   p.catalogArticles=[{id:'RCD-CUSTOM',maker:'Declared manufacturer',series:'RCD S',
+    sku:'RCD-CUSTOM',kind:'RCD',label:'Custom RCD',modules:3,widthMm:54,
+    poles:2,inA:40,source:'https://example.org/rcd'}];
+   const restored=normalizeImport(p);
+   const article=epProjectCatalogV1(restored,EP_CATALOG).lookup('RCD-CUSTOM');
+   return {sku:restored.sharedDevices[0].catalogSku,modules:restored.sharedDevices[0].modules,
+    articleKind:article?.kind||null,articleWidth:article?.widthMm||null};
+  });
+  assert.deepEqual(persistedRcd,{
+   sku:'RCD-CUSTOM',modules:3,articleKind:'RCD',articleWidth:54
+  },'Shared RCD must keep project-specific manufacturer linkage after normalization');
+ }finally{await reviewPage.close();}
+
+
  // End-to-end RCD catalogue edit: original project -> review -> scheme -> DIN -> BOM -> cross-view.
  const rcdEdit=await page.evaluate(()=>{
   const breaker={id:'E2E-B',sku:'B16',maker:'E2E Maker',series:'M',kind:'MCB',
