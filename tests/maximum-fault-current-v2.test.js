@@ -94,3 +94,11 @@ test('maximumFaultInput is preserved by versioned project restore',()=>{
  assert.equal(restored.lines[0].maximumFaultInput.segments.length,1);
  assert.equal(restored.lines[0].maximumFaultInput.networkSource,source.lines[0].maximumFaultInput.networkSource);
 });
+
+test('numeric short-circuit overrun is never hidden by unverified manufacturer evidence',()=>{
+ const p=project(),r=maximum(p,p.lines[0],()=>({...verified(),icnKa:4,verificationStatus:'UNVERIFIED'}));
+ assert.equal(r.thresholdStatus,'FAIL');
+ assert.equal(r.status,'BLOCKED');
+ assert.ok(r.issues.some(x=>x.code==='MAX_FAULT_EXCEEDS_ICN'&&x.level==='BLOCKED'));
+ assert.ok(r.issues.some(x=>x.code==='MAX_FAULT_ARTICLE_VERIFICATION_PENDING'));
+});
