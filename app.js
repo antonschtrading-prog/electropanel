@@ -23,27 +23,17 @@ function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(
  if(Array.isArray(state.lines)){
   for(const line of state.lines){
    const calculated=line?.loadCurrentCalculation;
-   if(calculated&&Number(calculated.roundedIbA)!==Number(line.overloadInput?.ibA)){
+   if(calculated&&Number.isFinite(Number(calculated.roundedIbA))&&
+      Number(calculated.roundedIbA)!==Number(line.overloadInput?.ibA)){
     calculated.stale=true;
-    line.calculationReview={required:true,reason:'IB_DIFFERS_FROM_CALCULATED_CURRENT'};
+    epMarkCalculationReviewV1(line,'IB_DIFFERS_FROM_CALCULATED_CURRENT',['overloadInput'],true);
    }
   }
  }
  if(lastDesignSnapshot&&typeof epDesignChangeImpactV1==='function'){
   lastDesignImpact=epDesignChangeImpactV1(lastDesignSnapshot,state);
-  if(lastDesignImpact.changed.includes('load')){
-   for(const line of state.lines){
-    const previous=lastDesignSnapshot.lines?.find(x=>x?.id===line?.id);
-    if(!previous||!line?.loadCurrentCalculation)continue;
-    const keys=['power','powerKw','phase'];
-    if(keys.some(k=>JSON.stringify(previous[k]??null)!==JSON.stringify(line[k]??null))||
-       JSON.stringify(lastDesignSnapshot.loads?.filter(x=>x?.circuitId===line.id)||[])!==
-       JSON.stringify(state.loads?.filter(x=>x?.circuitId===line.id)||[])){
-      line.calculationReview={required:true,reason:'LOAD_CHANGED_RECALCULATE_IB'};
-      line.loadCurrentCalculation.stale=true;
-    }
-   }
-  }
+  if(typeof epApplyCircuitDependencyReviewV1==='function')
+   epApplyCircuitDependencyReviewV1(lastDesignSnapshot,state);
   if(typeof epInvalidateDesignEvidenceV1==='function')
    state=epInvalidateDesignEvidenceV1(state,lastDesignImpact);
  }
@@ -89,21 +79,11 @@ function catalogFilterControls(){
 }
 const REVIEW_FIELDS=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
 function markCalculationReview(line,reason){
- const existing=REVIEW_FIELDS.filter(key=>!!line[key]);
- if(!existing.length&&!line.calculationReview?.required)return;
- const pending=new Set(line.calculationReview?.pending||existing);
- for(const key of existing)pending.add(key);
- line.calculationReview={required:true,reason,pending:[...pending]};
+ return epMarkCalculationReviewV1(line,reason);
 }
 // Acknowledging one check must never clear an unrelated stale calculation.
 function acknowledgeCalculationReview(line,key){
- if(!line.calculationReview?.required)return;
- const pending=Array.isArray(line.calculationReview.pending)?
-  line.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)):
-  REVIEW_FIELDS.filter(k=>!!line[k]);
- const remaining=pending.filter(k=>k!==key);
- if(remaining.length)line.calculationReview={...line.calculationReview,pending:remaining};
- else delete line.calculationReview;
+ return epAcknowledgeCalculationReviewV1(line,key);
 }
 // Retained for explicit internal reset/test only. UI uses acknowledge per field.
 function clearCalculationReview(line){delete line.calculationReview;}
