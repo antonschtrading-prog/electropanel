@@ -38,6 +38,20 @@ function epRestoreProjectExtensionsV2(raw,project){
    if(!object(source[key]))throw Error(key+': ожидается объект');
    line[key]=clone(source[key],key,20000);
   }
+  if(source.articleReplacementReview!==undefined){
+   const review=source.articleReplacementReview;
+   if(!object(review)||review.required!==true||
+      !(review.from===null||typeof review.from==='string')||
+      typeof review.to!=='string'||review.to.length>100||
+      !Array.isArray(review.warnings)||review.warnings.length>30||
+      review.warnings.some(x=>typeof x!=='string'||x.length>100))
+    throw Error('articleReplacementReview: некорректный журнал замены');
+   // A serialized approval flag may never acknowledge a replacement.
+   line.articleReplacementReview={required:true,from:review.from,to:review.to,
+    warnings:review.warnings.slice(),engineeringApproved:false};
+   if(line.catalogSku!==review.to)
+    line.articleReplacementReview.warnings.push('ARTICLE_SELECTION_CHANGED_SINCE_REVIEW');
+  }
   if(typeof source.protectionInputSource==='string')line.protectionInputSource=source.protectionInputSource.slice(0,100);
   const saved=line.loadCurrentCalculation;
   if(saved){
