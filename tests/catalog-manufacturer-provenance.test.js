@@ -257,7 +257,7 @@ test("provenance: missing article category",()=>{
 });
 test("provenance: RCD residual current missing",()=>{
  const {p,a}=fixture();let d={...a},owners='circuit',lookupException=false;
- owners='shared';delete d.residualCurrentMa;
+ owners='shared';d.kind='RCD';delete d.residualCurrentMa;
  const source=owners==='shared'?{...p,lines:[],sharedDevices:[{id:'G1',catalogSku:a.id}]}:p;
  const result=audit(source,()=>{if(lookupException)throw Error('offline');return d;});
  assert.ok(result.issues.some(x=>x.code==="CATALOG_RESIDUAL_CURRENT_UNDECLARED"&&x.level==="UNKNOWN"),JSON.stringify(result.issues));
@@ -265,7 +265,7 @@ test("provenance: RCD residual current missing",()=>{
 });
 test("provenance: RCD residual detection type missing",()=>{
  const {p,a}=fixture();let d={...a},owners='circuit',lookupException=false;
- owners='shared';delete d.residualType;
+ owners='shared';d.kind='RCD';delete d.residualType;
  const source=owners==='shared'?{...p,lines:[],sharedDevices:[{id:'G1',catalogSku:a.id}]}:p;
  const result=audit(source,()=>{if(lookupException)throw Error('offline');return d;});
  assert.ok(result.issues.some(x=>x.code==="CATALOG_RESIDUAL_TYPE_UNDECLARED"&&x.level==="UNKNOWN"),JSON.stringify(result.issues));
