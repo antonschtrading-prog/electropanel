@@ -135,3 +135,17 @@ test('shared RCD label must fit the shared apparatus entity model',()=>{
  const p={catalogArticles:[],lines:[],sharedDevices:[{id:'R1',catalogSku:'RCD-L',templateId:'RCD_2P',modules:2,circuitIds:[]}]};
  assert.equal(epUpsertProjectArticleV2(p,record).code,'SHARED_ARTICLE_LABEL_TOO_LONG');
 });
+
+test('used circuit cannot change its selected breaker to an RCD',()=>{
+ const rcd={...base,id:'BR-1',sku:'BR-1',kind:'RCD',poles:1};
+ const project={catalogArticles:[{...rcd,kind:'MCB'}],lines:[{id:'L1',phase:'L1',catalogSku:'BR-1',modules:1,device:'A16'}]};
+ const result=epUpsertProjectArticleV2(project,rcd,{},'BR-1');
+ assert.equal(result.project,null);
+ assert.equal(result.code,'USED_ARTICLE_KIND_CONFLICT');
+ assert.equal(project.catalogArticles[0].kind,'MCB');
+});
+test('used circuit cannot change its breaker to a DIN power supply',()=>{
+ const psu={...base,id:'BR-1',sku:'BR-1',kind:'DIN_PSU',poles:1};
+ const project={catalogArticles:[{...psu,kind:'MCB'}],lines:[{id:'L1',phase:'L1',catalogSku:'BR-1',modules:1,device:'A16'}]};
+ assert.equal(epUpsertProjectArticleV2(project,psu,{},'BR-1').code,'USED_ARTICLE_KIND_CONFLICT');
+});
