@@ -80,10 +80,11 @@ function epDraftBomV1(project,lookupSku){
 }
 function epDraftBomCsvV1(report){
  const columns=['Артикул (ключ)','Артикул производителя','Производитель','Серия','Название','Тип',
-  'Количество','Модули на аппарат','Ширина мм','Высота мм','Глубина мм','Источник','Привязки'];
+  'Количество','Модули на аппарат','Ширина мм','Высота мм','Глубина мм','Icn кА','Icn В','Стандарт Icn','Icu кА','Icu В','Источник','Привязки'];
  const safe=x=>{let v=String(x??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';};
  const rows=[columns,...(report?.items||[]).map(x=>[x.key,x.sku,x.maker,x.series,x.label,x.kind,
-  x.quantity,x.modules,x.widthMm,x.heightMm,x.depthMm,x.source,x.owners.join(', ')])];
+  x.quantity,x.modules,x.widthMm,x.heightMm,x.depthMm,x.icnKa,x.icnVoltageV,x.icnStandard,
+  x.icuKa,x.icuVoltageV,x.source,x.owners.join(', ')])];
  return '\uFEFF'+rows.map(row=>row.map(safe).join(';')).join('\r\n')+'\r\n';
 }
 function epDraftBomHtmlV1(report){
@@ -91,13 +92,13 @@ function epDraftBomHtmlV1(report){
  const rows=report.items.map(x=>'<tr><td>'+esc(x.maker)+'</td><td>'+esc(x.series)+'</td><td>'+
  esc(x.sku)+'</td><td>'+esc(x.quantity)+'</td><td>'+esc(x.modules)+'</td><td>'+
  [x.widthMm,x.heightMm,x.depthMm].map(v=>esc(v??'—')).join(' × ')+'</td><td>'+esc(x.owners.join(', '))+
- '</td><td>'+esc(x.source||'Не указан')+'</td></tr>').join('');
+ '</td><td>'+esc(x.icnKa??'—')+'</td><td>'+esc(x.icuKa??'—')+'</td><td>'+esc(x.source||'Не указан')+'</td></tr>').join('');
  return '<section aria-label="Предварительная спецификация"><h3>Спецификация оборудования · черновик</h3>'+
  '<p>Артикулов: '+report.distinctArticles+'; аппаратов с артикулами: '+report.totalCataloguedDevices+
  '; без подтверждённого артикула: '+report.missingDevices+'; замечаний: '+report.issues.length+'. Цены, совместимость и полнота спецификации не подтверждены.</p>'+
  '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
- '<th>Шт.</th><th>Мод.</th><th>Ш×В×Г, мм</th><th>Цепи</th><th>Источник</th></tr></thead><tbody>'+
- (rows||'<tr><td colspan="8">Нет подтверждённых записей каталога</td></tr>')+
+ '<th>Шт.</th><th>Мод.</th><th>Ш×В×Г, мм</th><th>Цепи</th><th>Icn, кА</th><th>Icu, кА</th><th>Источник</th></tr></thead><tbody>'+
+ (rows||'<tr><td colspan="10">Нет подтверждённых записей каталога</td></tr>')+
  '</tbody></table></div><details><summary>Замечания спецификации ('+report.issues.length+')</summary><ul>'+
  report.issues.slice(0,100).map(i=>'<li>'+esc(i.level)+' · '+esc(i.code)+' · '+esc(i.owner||i.deviceId||i.sku||'проект')+'</li>').join('')+
  '</ul></details></section>';
