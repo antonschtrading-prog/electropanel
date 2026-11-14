@@ -4,8 +4,24 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const maker=String(device?.maker||'').toLowerCase();
  const series=String(device?.series||'');
- const family=maker.includes('schneider')?'schneider':maker.includes('abb')?'abb':maker.includes('iek')?'iek':'neutral';
- const palette={schneider:{brand:'#16814c',label:'#e7f5e9',stripe:'#2c985d'},abb:{brand:'#cf252d',label:'#fff0f0',stripe:'#cf252d'},iek:{brand:'#1671ad',label:'#e7f1fc',stripe:'#eab92f'},neutral:{brand:'#546577',label:'#eef1f4',stripe:'#546577'}}[family];
+ const family=maker.includes('schneider')?'schneider':maker.includes('abb')?'abb':
+  maker.includes('iek')?'iek':maker.includes('legrand')?'legrand':
+  maker.includes('hager')?'hager':maker.includes('ekf')?'ekf':
+  maker.includes('chint')?'chint':maker.includes('siemens')?'siemens':
+  maker.includes('dekraft')?'dekraft':'neutral';
+ // These are original catalogue-navigation color families, NOT certified factory skins.
+ const palette={
+  schneider:{brand:'#16814c',label:'#e7f5e9',stripe:'#2c985d'},
+  abb:{brand:'#cf252d',label:'#fff0f0',stripe:'#cf252d'},
+  iek:{brand:'#1671ad',label:'#e7f1fc',stripe:'#eab92f'},
+  legrand:{brand:'#a12d42',label:'#fcecf0',stripe:'#c73b52'},
+  hager:{brand:'#395d96',label:'#eaf0f8',stripe:'#4477b3'},
+  ekf:{brand:'#a84b37',label:'#fff1e9',stripe:'#d06547'},
+  chint:{brand:'#24678d',label:'#e9f5fb',stripe:'#2989ba'},
+  siemens:{brand:'#167873',label:'#e7f7f4',stripe:'#188c88'},
+  dekraft:{brand:'#aa6540',label:'#fff3e9',stripe:'#bd7645'},
+  neutral:{brand:'#546577',label:'#eef1f4',stripe:'#546577'}
+ }[family];
  const poles=Number.isInteger(device?.poles)&&device.poles>0?Math.min(device.poles,8):1;
  const modules=Number.isInteger(device?.modules)&&device.modules>0?Math.min(device.modules,24):poles;
  const geometryKnown=Number.isFinite(device?.widthMm)&&device.widthMm>0&&device.widthMm<=modules*18+0.001;
