@@ -26,6 +26,17 @@ function epRestoreProjectExtensionsV2(raw,project){
  const arrays=['catalogArticles','dinPlacementsV1','manualLayoutV1','cables','manufacturerEvidenceRecords'];
  for(const key of objects)if(raw[key]!==undefined){if(!object(raw[key]))throw Error(key+': ожидается объект');project[key]=clone(raw[key],key);}
  for(const key of arrays)if(raw[key]!==undefined){if(!Array.isArray(raw[key])||raw[key].length>500)throw Error(key+': ожидается массив до 500 записей');project[key]=clone(raw[key],key,250000);}
+ if(raw.protectionLinksVersion!==undefined&&raw.protectionLinksVersion!==1)
+  throw Error('Неподдерживаемая версия иерархии защиты');
+ if(raw.protectionLinks!==undefined){
+  if(raw.protectionLinksVersion!==1)throw Error('У иерархии защиты отсутствует номер версии');
+  if(typeof epProtectionLinksValidateV1!=='function')
+   throw Error('Модуль проверки иерархии недоступен');
+  project.protectionLinks=epProtectionLinksValidateV1(project,raw.protectionLinks);
+  project.protectionLinksVersion=1;
+ }else if(raw.protectionLinksVersion===1){
+  throw Error('Отсутствует список иерархии защиты');
+ }
  if(project.catalogArticles!==undefined){
   if(typeof epProjectCatalogV1!=='function')throw Error('Модуль каталога недоступен');
   const audit=epProjectCatalogV1(project,typeof EP_CATALOG==='object'?EP_CATALOG:{});
