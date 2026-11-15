@@ -490,6 +490,32 @@ const server=http.createServer((req,res)=>{
  assert.equal(tripState.source,'Test declared upper trip-time limit');
  assert.equal(tripState.numeric,'PRELIMINARY_WITHIN_ENVELOPE');
  assert.equal(tripState.approved,false);
+ // Real browser: the engineer declares ADS applicability explicitly, and
+ // a too-long requested clearing time remains a correctable BLOCKED review.
+ await page.locator('#faultRoutePanel > details > summary').click();
+ await route.locator('[data-disconnection-context-panel] > summary').click();
+ await route.locator('[name="adsCircuitClass"]').selectOption('FINAL_CIRCUIT');
+ for(const [name,value] of Object.entries({
+  adsMaxAllowedTimeS:'0.2',adsU0V:'230',
+  adsStandardReference:'Engineer selected standard edition and clause',
+  adsTimeBasisSource:'Declared time from applicable context',
+  adsCircuitClassSource:'Documented final circuit classification'
+ }))await route.locator('[name="'+name+'"]').fill(value);
+ await route.locator('[name="adsApplicabilityReviewed"]').check();
+ await route.locator('[name="adsContextEnabled"]').check();
+ await route.locator('button[type="submit"]').click();
+ const ads=await page.evaluate(()=>{
+  const line=state.lines.find(l=>l.id==='L1');
+  const report=epFaultRouteReviewV2(state,line,catalogDevice);
+  const stored=JSON.parse(localStorage.getItem('electropanel_web_preview')).lines.find(l=>l.id==='L1');
+  return {limit:stored.faultRouteInput?.disconnectionContext?.maxAllowedTimeS,
+   failure:report.disconnectionContext?.numericalStatus,route:report.status,
+   approved:report.engineeringApproved};
+ });
+ assert.equal(ads.limit,'0.2');
+ assert.equal(ads.failure,'FAIL');
+ assert.equal(ads.route,'BLOCKED');
+ assert.equal(ads.approved,false);
  await page.locator('#catalogSku').selectOption('SE-A9F74116');
  assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).thresholdStatus),'UNKNOWN');
  assert.equal(await page.evaluate(()=>normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview'))).lines.length),6);
