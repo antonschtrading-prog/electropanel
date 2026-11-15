@@ -30,8 +30,8 @@ function epFaultSegmentHtmlV2(s={},index=0){
 function epTripEnvelopePointHtmlV1(point={},index=0){
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  return '<fieldset data-trip-envelope-point><legend>Паспортная точка '+(index+1)+'</legend>'+
- '<label>Ток, А<input required data-trip-point-field="currentA" value="'+esc(point.currentA??'')+'"></label>'+
- '<label>Гарантированное максимальное время, с<input required data-trip-point-field="maxTimeS" value="'+esc(point.maxTimeS??'')+'"></label> '+
+ '<label>Ток, А<input data-trip-point-field="currentA" value="'+esc(point.currentA??'')+'"></label>'+
+ '<label>Гарантированное максимальное время, с<input data-trip-point-field="maxTimeS" value="'+esc(point.maxTimeS??'')+'"></label> '+
  '<button type="button" class="btn tiny" data-remove-trip-point>Удалить</button></fieldset>';
 }
 function epTripEnvelopeFieldsV1(input){
