@@ -102,3 +102,15 @@ This queue is deliberately based on the current PR #12, not a fresh implementati
 - Surfaced results under the existing engineering bundle's faultRoutes section and in the printable report; added project JSON restoration for maximumFaultInput and independent reference/regression tests.
 - Scope limitation: these models are restricted arithmetic on engineer-supplied positive-sequence or line-neutral impedances, not a full IEC 60909 study. No default fault levels, equipment certification, selectivity or normative approval.
 - Verify CI (Node, validation, Chromium) on this exact branch HEAD before marking complete.
+
+## 2026-11-15 — focused engineering-core multi-chapter cycle
+This cycle prioritises one short-circuit calculation chain rather than isolated styling tasks.
+
+1. **Maximum-fault provenance:** `epMaximumFaultBasisV2` stores the relevant line, earthing, cable-section and article characteristics; `epApplyMaximumFaultV2` atomically updates a project and rejects malformed inputs without mutating the original. Changed dependencies produce `MAX_FAULT_BASIS_STALE` and prohibit a preliminary positive comparison.
+2. **Minimum L-PE fail-closed evidence:** a known numerical `Ik,min < Ia` is now BLOCKED even if another source or time-current basis is incomplete. Missing evidence cannot turn a known failure into UNKNOWN. Passing still requires full bounded inputs.
+3. **One circuit review:** maximum prospective short-circuit results are exposed separately from independent manual Ik declarations in `epCircuitDesignReviewV1`. Each result maintains its own uncertainty and does not overwrite the other.
+4. **Usable editor input:** two separate engineering forms (3-phase positive-sequence and single-phase L-N) in `maximum-fault-ui-v2.js`, with declared R/X network + segments and temperature/source fields; wired to the original project UI, undo/edit and persistence.
+5. **Action queue:** distinct urgent `MAX_FAULT_EXCEEDS_ICN` action and missing/uncertain maximum-fault input tasks, separate from minimum L-PE fault-loop issues.
+6. **Coverage:** numeric reference tests, invalid input, project fingerprint invalidation, design review, report and UI/browser integration. CI must be checked on the final head before describing it as verified.
+
+**Boundary:** restricted arithmetic from engineer-declared source and cable impedances; not a validated IEC 60909 implementation. Never infer Icu from Icn, conductor properties from catalogue logos, verified protection time, selectivity or normative suitability.
