@@ -2262,6 +2262,7 @@ $('breakerLetThroughPanel').addEventListener('submit',e=>{
   faultModel:get('letModel'),comparisonPoint:get('letPoint'),
   currentBasis,conductorRole:get('letRole'),conductorMaterial:get('letMaterial'),
   sectionMm2:get('letSection'),kA_SqrtS_PerMm2:get('letK'),
+  evidenceRecordId:get('letEvidenceId'),
   manufacturerSource:get('letManufacturerSource'),testConditionSource:get('letConditionSource'),
   cableSource:get('letCableSource'),kSource:get('letKSource'),
   manufacturerEnvelopeConfirmed:form.elements.namedItem('letEnvelopeConfirmed').checked,
