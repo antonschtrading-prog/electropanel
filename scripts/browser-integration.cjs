@@ -120,6 +120,50 @@ const server=http.createServer((req,res)=>{
  assert.equal(coreDecision.count,6,JSON.stringify(coreDecision));
  assert.notEqual(coreDecision.approved,true);
  assert.equal(coreDecision.printIncludes,true);
+ // Real browser: cable capacity with correction factors and conventional I2
+ // must be editable, persisted and reflected in the unified protection decision.
+ const cablePage=await browser.newPage({viewport:{width:1280,height:900}});
+ try{
+  await cablePage.goto('http://127.0.0.1:'+server.address().port);
+  await cablePage.locator('#loadDemo').click();
+  await cablePage.evaluate(()=>{selectedLine='L1';switchView('board');});
+  const meta=await cablePage.evaluate(()=>{
+   const l=state.lines.find(x=>x.id==='L1'),a=catalogDevice(l.catalogSku);
+   return {sku:l.catalogSku,inA:a?.inA};
+  });
+  assert.ok(meta.sku&&meta.inA,JSON.stringify(meta));
+  await cablePage.locator('#cableOverloadPanel [data-cable-overload-input] > summary').click();
+  const form=cablePage.locator('#cableOverloadPanel [data-cable-overload]');
+  const fields={overloadBaseIz:'30',overloadBaseSource:'Test manufacturer Iz reference',
+   overloadI2:'35',overloadI2Source:'Test manufacturer I2 guarantee',
+   overloadI2Standard:'Test IEC device standard edition',
+   overloadApplicability:'Test confirmed installation factors',overloadSku:meta.sku};
+  for(const [name,value] of Object.entries(fields))
+   await form.locator('[name="'+name+'"]').fill(value);
+  await form.locator('[data-overload-key="id"]').fill('ambient');
+  await form.locator('[data-overload-key="value"]').fill('0.8');
+  await form.locator('[data-overload-key="source"]').fill('Test temperature coefficient');
+  await form.locator('[name="overloadApplicable"]').check();
+  await form.locator('[name="overloadEnable"]').check();
+  await form.locator('[data-overload-save]').click();
+  const cableProof=await cablePage.evaluate(()=>{
+   const line=state.lines.find(x=>x.id==='L1');
+   const saved=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+   const stored=saved.lines.find(x=>x.id==='L1').overloadCoordinationInput;
+   const result=epCableOverloadCoordinationV1(state,line,catalogDevice(line.catalogSku));
+   const decision=epProtectionDecisionV1(state,catalogDevice).rows.find(x=>x.lineId==='L1');
+   return {base:stored?.baseIzA,factor:stored?.factors?.[0]?.value,
+    source:stored?.i2Source,check:result.i2IzStatus,
+    decision:decision.overloadCoordination?.i2IzStatus,approved:decision.engineeringApproved};
+  });
+  assert.equal(cableProof.base,'30');
+  assert.equal(cableProof.factor,'0.8');
+  assert.equal(cableProof.source,'Test manufacturer I2 guarantee');
+  assert.equal(cableProof.check,'FAIL');
+  assert.equal(cableProof.decision,'FAIL');
+  assert.equal(cableProof.approved,false);
+ }finally{await cablePage.close();}
+
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
