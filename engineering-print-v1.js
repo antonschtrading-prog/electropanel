@@ -107,7 +107,7 @@ function epEngineeringPrintV1(bundle){
      t.loadLossW??'—',t.transformerROhm??'—',t.transformerXOhm??'—',
      t.upstreamROhm??'—',t.upstreamXOhm??'—',t.source??'Не указан',
      t.upstreamSource??'Не указан',
-     t.lossBasisConfirmed?'Заявлено':'Не подтверждено']))+
+     t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
