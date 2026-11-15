@@ -50,6 +50,15 @@ function epProtectionDecisionV1(project,lookup){
   if(currentChecks.inVsIz==='FAIL')add(rowIssues,lineId,'PROTECTION_IN_EXCEEDS_IZ','BLOCKED');
   if(currentChecks.ibVsIn==='UNKNOWN'||currentChecks.inVsIz==='UNKNOWN')
    add(rowIssues,lineId,'PROTECTION_THERMAL_INPUTS_INCOMPLETE','UNKNOWN');
+  let overloadCoordination=null;
+  if(line.overloadCoordinationInput){
+   if(typeof epCableOverloadCoordinationV1==='function'){
+    try{overloadCoordination=epCableOverloadCoordinationV1(project,line,article);}
+    catch(_){add(rowIssues,lineId,'PROTECTION_OVERLOAD_COORDINATION_FAILED','BLOCKED');}
+   }else add(rowIssues,lineId,'PROTECTION_OVERLOAD_MODULE_UNAVAILABLE','BLOCKED');
+   for(const issue of overloadCoordination?.issues||[])
+    add(rowIssues,lineId,issue.code,issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN');
+  }else add(rowIssues,lineId,'PROTECTION_OVERLOAD_I2_EVIDENCE_MISSING','UNKNOWN');
   let maximum=null,minimum=null;
   if(typeof epMaximumFaultCurrentV2==='function'){
    try{maximum=epMaximumFaultCurrentV2(project,line,lookup);}catch(_){
@@ -85,7 +94,7 @@ function epProtectionDecisionV1(project,lookup){
   const unique=[...new Map(rowIssues.map(x=>[x.code,x])).values()];
   const status=unique.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId,sku:line.catalogSku??null,deviceKind:article?.kind??null,
-   status,currentChecks,breaking:{status:breakingStatus,ikMaxKa:imax,icnKa:icn},
+   status,currentChecks,overloadCoordination,breaking:{status:breakingStatus,ikMaxKa:imax,icnKa:icn},
    minimum:{status:loopStatus,ikMinA:minimum?.ikMinA??null,
     tripTimeStatus:trip?.numericalStatus??'UNKNOWN',
     requiredTimeS:minimum?.requiredTimeS??null,
