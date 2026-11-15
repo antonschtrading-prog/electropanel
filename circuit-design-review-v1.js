@@ -1,5 +1,41 @@
 'use strict';
 // Coordinated design review, never infer missing conductor or protection data.
+// Compare independent manual Ik and computed maximum Ik only when the
+// engineer explicitly declares the SAME point, fault model and purpose.
+// Without that declaration these are different evidences, not contradictory.
+function epFaultCurrentConsistencyV1(line,maximum){
+ const manual=line?.faultInput,derived=line?.maximumFaultInput;
+ const result={status:'UNKNOWN',scope:'UNRELATED_OR_UNDECLARED',differenceKa:null,
+  differencePercent:null,manualIkKa:null,computedIkKa:maximum?.ikMaxKa??null,
+  issues:[],engineeringApproved:false};
+ const parse=v=>{
+  if(typeof v!=='number'&&typeof v!=='string')return null;
+  const str=String(v).trim().replace(',','.');
+  if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(str))return null;
+  const n=Number(str);return Number.isFinite(n)&&n>0?n:null;
+ };
+ const declared=parse(manual?.ikKa),computed=parse(maximum?.ikMaxKa);
+ result.manualIkKa=declared;
+ if(declared===null||computed===null)return result;
+ const point=typeof manual?.comparisonPoint==='string'?manual.comparisonPoint.trim():'';
+ const derivedPoint=typeof derived?.comparisonPoint==='string'?derived.comparisonPoint.trim():'';
+ if(manual?.purpose!=='MAX_PROSPECTIVE'||!point||point!==derivedPoint||
+    manual?.faultModel!==derived?.model)return result;
+ result.scope='SAME_POINT_SAME_FAULT_MODEL';
+ const difference=derivedPoint?computed-declared:null;
+ result.differenceKa=difference;
+ result.differencePercent=difference/declared*100;
+ const tolerance=1e-9*Math.max(computed,declared);
+ if(difference>tolerance){
+  result.status='BLOCKED';
+  result.issues.push({code:'MANUAL_IK_UNDERSTATES_SAME_POINT_MAX',level:'BLOCKED'});
+ }else if(difference< -tolerance){
+  result.issues.push({code:'MANUAL_IK_GREATER_THAN_CALCULATED_MAX',level:'UNKNOWN'});
+ }else{
+  result.issues.push({code:'MANUAL_IK_NUMERICALLY_MATCHES_UNVERIFIED',level:'UNKNOWN'});
+ }
+ return result;
+}
 function epCircuitDesignReviewV1(project,lookupSku){
  const issues=[],rows=[],ids=new Set();
  if(!project||!Array.isArray(project.lines)||project.lines.length>1000)
@@ -40,10 +76,14 @@ function epCircuitDesignReviewV1(project,lookupSku){
   // substitute the minimum L-PE current or silently overwrite manual Ik.
   const maximumFault=line.maximumFaultInput&&typeof epMaximumFaultCurrentV2==='function'?
    epMaximumFaultCurrentV2(project,line,lookupSku):null;
+  const faultCurrentComparison=maximumFault?
+   epFaultCurrentConsistencyV1(line,maximumFault):null;
   if(maximumFault){
    for(const issue of maximumFault.issues||[])
     reasons.push({code:issue.code,level:issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN'});
-   if(line.faultInput?.ikKa!==undefined&&line.faultInput?.ikKa!==null)
+   for(const issue of faultCurrentComparison.issues)reasons.push(issue);
+   if(line.faultInput?.ikKa!==undefined&&line.faultInput?.ikKa!==null&&
+      faultCurrentComparison.scope!=='SAME_POINT_SAME_FAULT_MODEL')
     reasons.push({code:'MAX_FAULT_AND_MANUAL_IK_INDEPENDENT',level:'UNKNOWN'});
   }
   const reference=typeof epCableReferenceForCircuitV1==='function'?
@@ -101,7 +141,7 @@ function epCircuitDesignReviewV1(project,lookupSku){
   const status=reasons.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId:line.id,name:line.name||'',phase:line.phase||null,sku:line.catalogSku||null,
    ibA:ib,inA,izA:iz,ikKa:ik,voltageV,icnKa,sectionMm2:section,current,cable,breaking,referenceStatus,
-   referenceIzA:candidate?.izA??null,voltageDrop:drop,maximumFault,status,reasons});
+   referenceIzA:candidate?.izA??null,voltageDrop:drop,maximumFault,faultCurrentComparison,status,reasons});
  }
  return {schema:'electropanel.design.review.1',
   status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
@@ -109,4 +149,4 @@ function epCircuitDesignReviewV1(project,lookupSku){
   summary:{circuits:rows.length,blocked:rows.filter(x=>x.status==='BLOCKED').length,
    pending:rows.filter(x=>x.status!=='BLOCKED').length}};
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epCircuitDesignReviewV1};
+if(typeof module!=='undefined'&&module.exports)module.exports={epCircuitDesignReviewV1,epFaultCurrentConsistencyV1};
