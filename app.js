@@ -2272,7 +2272,7 @@ $('breakerLetThroughPanel').addEventListener('submit',e=>{
     [el.dataset.letThroughBandField,el.value])))};
  if(currentBasis==='DECLARED_SCENARIO'){
   input.prospectiveCurrentA=get('letCurrent');
-  input.prospectiveSource=get('letManufacturerSource');
+  input.prospectiveSource=get('letProspectiveSource');
  }
  const candidate=JSON.parse(JSON.stringify(state));
  const target=candidate.lines.find(x=>x.id===line.id);target.letThroughInput=input;
