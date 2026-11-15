@@ -8,6 +8,12 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.current==='FAIL')add(row.lineId,1,'IB_EXCEEDS_IN','Изменить номинал аппарата или расчётные исходные данные','protection');
   if(row.cable==='FAIL')add(row.lineId,1,'IN_EXCEEDS_IZ','Проверить сечение и допустимый ток проводника','cable');
   if(row.breaking==='FAIL')add(row.lineId,1,'ICN_BELOW_IK','Подобрать аппарат с достаточной отключающей способностью','protection');
+  if(row.faultCurrentComparison?.status==='BLOCKED')
+   add(row.lineId,1,'MANUAL_IK_UNDERSTATES_SAME_POINT_MAX',
+    'Проверить заниженный ручной Ik относительно расчёта в той же точке и при том же виде КЗ','fault_max');
+  else if(row.faultCurrentComparison?.scope==='SAME_POINT_SAME_FAULT_MODEL')
+   add(row.lineId,2,'FAULT_CURRENT_SOURCE_RECONCILIATION_REQUIRED',
+    'Сверить два независимых расчёта максимального тока КЗ и основания их применения','fault_max');
   if(row.referenceStatus==='FAIL')add(row.lineId,1,'REFERENCE_SECTION_UNDERSIZED','Проверить выбранное сечение в заявленных условиях','cable');
   if(row.voltageDrop.status==='FAIL')add(row.lineId,1,'VOLTAGE_DROP_EXCEEDED','Пересмотреть длину, сечение или расчётный режим','voltage');
   if(row.ibA===null)add(row.lineId,2,'IB_REQUIRED','Рассчитать или ввести расчётный ток Ib','load');
