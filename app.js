@@ -2244,9 +2244,17 @@ $('maximumFaultPanel').addEventListener('submit',e=>{
  const form=e.target.closest('[data-max-fault]');if(!form)return;
  e.preventDefault();
  const model=form.dataset.maxFaultModel;
- const keys=[model==='THREE_PHASE_POSITIVE_SEQUENCE'?'uLLV':'u0V',
-  'cmax','sourceROhm','sourceXOhm','networkSource'];
- const input={model,...Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value]))};
+ const sourceModel=form.dataset.maxFaultSourceModel||'DECLARED_RX';
+ const keys=[model==='THREE_PHASE_POSITIVE_SEQUENCE'?'uLLV':'u0V','cmax'];
+ if(sourceModel==='DECLARED_RX')keys.push('sourceROhm','sourceXOhm','networkSource');
+ const input={model,sourceModel,
+  ...Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value]))};
+ if(sourceModel==='TRANSFORMER_WITH_UPSTREAM'){
+  const transformerKeys=['ratedPowerKva','ratedVoltageV','ukPercent','loadLossW',
+   'upstreamROhm','upstreamXOhm','source','upstreamSource'];
+  input.transformer={...Object.fromEntries(transformerKeys.map(k=>[k,form.elements.namedItem(k).value])),
+   lossBasisConfirmed:form.elements.namedItem('lossBasisConfirmed').checked};
+ }
  input.segments=[...form.querySelectorAll('[data-max-segment]')].map(row=>({
   ...Object.fromEntries([...row.querySelectorAll('[data-max-segment-field]')].map(el=>[
    el.dataset.maxSegmentField,el.value])),
