@@ -25,6 +25,14 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.reasons.some(x=>x.code==='LOAD_CURRENT_STALE'))add(row.lineId,2,'LOAD_CURRENT_STALE','Пересчитать ток после изменения нагрузки','load');
   // Engineering gate reasons become actionable tasks, never silent flags.
   const guided={
+   CABLE_OVERLOAD_I2_EXCEEDS_1_45_IZ:[1,'Проверить I2 по паспорту или увеличить допустимый ток кабеля Iz','cable'],
+   CABLE_OVERLOAD_IN_EXCEEDS_IZ:[1,'Увеличить Iz либо изменить настройку/номинал аппарата','cable'],
+   CABLE_OVERLOAD_DECLARED_IZ_EXCEEDS_CORRECTED:[1,'Согласовать заявленный Iz с поправками условий прокладки','cable'],
+   CABLE_OVERLOAD_IB_EXCEEDS_IN:[1,'Увеличить номинал защиты или пересмотреть расчётную нагрузку','protection'],
+   CABLE_OVERLOAD_I2_EVIDENCE_REQUIRED:[2,'Задать и подтвердить паспортный I2 для проверки защиты проводника от перегрузки','cable'],
+   CABLE_OVERLOAD_I2_SOURCE_MISSING:[2,'Указать паспортный источник гарантированного тока I2','catalogue'],
+   CABLE_OVERLOAD_BASE_IZ_SOURCE_MISSING:[2,'Подтвердить табличный Iz и условия его применения','cable'],
+   CABLE_OVERLOAD_FACTOR_SOURCE_MISSING:[2,'Подтвердить поправочные коэффициенты и методику','cable'],
    CATALOG_LOOKUP_FAILED:[1,'Повторить проверку каталога: источник данных недоступен','catalogue'],
    CATALOG_ARTICLE_UNKNOWN:[1,'Найти или заменить отсутствующий артикул защитного аппарата','catalogue'],
    CATALOG_PROTECTION_KIND_UNSUPPORTED:[1,'Выбрать автоматический выключатель или дифавтомат вместо неподходящего типа','protection'],
