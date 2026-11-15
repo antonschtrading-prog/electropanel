@@ -164,7 +164,7 @@ function epDeviceFaultHtmlV1(project,lookup){
 function epDeviceFaultCsvV1(report){
  const cell=value=>{
   let v=String(value??'');
-  if(/^\\s*[=+\\-@]/.test(v))v="'"+v;
+  if(/^\s*[=+\-@]/.test(v))v="'"+v;
   return '"'+v.replace(/"/g,'""')+'"';
  };
  const entries=[['Apparatus','Ik max kA','Study voltage V','Selected SKU','Icn kA',
@@ -173,7 +173,7 @@ function epDeviceFaultCsvV1(report){
  for(const r of report?.rows||[])entries.push([r.deviceNodeId,r.ikMaxKa,r.voltageV,
   r.sku,r.icnKa,r.icnVoltageV,r.numericalComparison,r.supplyPathStale,
   r.articleStale,r.sourceDocument,r.sourceRevision,(r.issues||[]).map(x=>x.code).join(', ')]);
- return '\\uFEFF'+entries.map(row=>row.map(cell).join(';')).join('\\r\\n');
+ return '\uFEFF'+entries.map(row=>row.map(cell).join(';')).join('\r\n');
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epDeviceFaultNodeV1,epDeviceFaultSupplyFingerprintV1,epDeviceFaultScenarioV1,
