@@ -64,6 +64,11 @@ function epEngineeringPrintV1(bundle){
   (sections.incomingMaximum?.rows||[]).map(x=>[x.deviceNodeId,x.model,x.ikMaxKa??'—',
    x.voltageV??'—',x.icnKa??'—',x.thresholdStatus,x.sourcePathStale?'ДА':'нет',
    x.transformer?.transformerZOhm??'—']));
+ const evidenceMatrixTable=rows(['Аппарат','Назначение','Артикул','Питание заявлено','Расчётный Ik,max, кА',
+  'Ручной Ik,max, кА','Документов пары','Устарело','Статус','Что проверить'],
+  (sections.protectionEvidenceMatrix?.rows||[]).map(x=>[x.deviceNodeId,x.kind,x.sku??'—',
+   x.declaredSupply?'ДА':'нет',x.calculatedIkMaxKa??'—',x.manualIkMaxKa??'—',
+   x.coordinationRecords,x.evidenceStale?'ДА':'нет',x.status,(x.actions||[]).join(', ')]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -271,6 +276,7 @@ function epEngineeringPrintV1(bundle){
      t.upstreamSource??'Не указан',
      t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
+  '<h2>Матрица недостающих инженерных данных по аппаратам</h2>'+evidenceMatrixTable+
   '<h2>Ток КЗ на вводных аппаратах из R/X и трансформатора</h2>'+incomingMaxTable+
   '<p>Область расчёта: точка вводного аппарата с явно приведённым импедансом источника. Истинность исходных данных и паспортов требует инженерного подтверждения.</p>'+
   '<h2>Расчётные точки аппаратов: существующий движок R/X</h2>'+calculatedFaultTable+
