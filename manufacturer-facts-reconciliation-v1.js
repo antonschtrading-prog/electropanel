@@ -17,6 +17,32 @@ const EP_MANUFACTURER_FACT_REFERENCES_V1=Object.freeze([
    'ICN_APPLICATION_VOLTAGE','CABLE_IZ','SELECTIVITY']),
  }),
  Object.freeze({
+  id:'SOURCE-SCHNEIDER-A9F74116-2026',catalogKey:'SE-A9F74116',
+  manufacturer:'Schneider Electric',sku:'A9F74116',
+  title:'Acti9 iC60N 1P C16, manufacturer product specification',
+  sourceUrl:'https://eshop.se.com/sg/ic60n-miniature-circuit-breaker-1p-16a-c-curve-a9f74116.html',
+  sourceKind:'OFFICIAL_MANUFACTURER_PRODUCT_LISTING',
+  sourceLocation:'Product specifications: 1P, C16, Icn 6000 A at 230 V',
+  observedAt:'2026-11-15',
+  fields:Object.freeze({kind:'MCB',inA:16,poles:1,curve:'C',icnKa:6,
+   icnVoltageV:230,icnStandard:'IEC/EN 60898-1'}),
+  absentEvidence:Object.freeze(['I2T_LET_THROUGH_BANDS','OPERATING_I2',
+   'TRIP_UPPER_ENVELOPE','SELECTIVITY','CABLE_IZ'])
+ }),
+ Object.freeze({
+  id:'SOURCE-SCHNEIDER-A9F74316-2026',catalogKey:'SE-A9F74316',
+  manufacturer:'Schneider Electric',sku:'A9F74316',
+  title:'Acti9 iC60N 3P C16, manufacturer product specification',
+  sourceUrl:'https://eshop.se.com/sg/ic60n-miniature-circuit-breaker-3p-16a-c-curve-a9f74316.html',
+  sourceKind:'OFFICIAL_MANUFACTURER_PRODUCT_LISTING',
+  sourceLocation:'Product specifications: 3P, C16, Icn 6000 A at 400 V',
+  observedAt:'2026-11-15',
+  fields:Object.freeze({kind:'MCB',inA:16,poles:3,curve:'C',icnKa:6,
+   icnVoltageV:400,icnStandard:'IEC/EN 60898-1'}),
+  absentEvidence:Object.freeze(['I2T_LET_THROUGH_BANDS','OPERATING_I2',
+   'TRIP_UPPER_ENVELOPE','SELECTIVITY','CABLE_IZ'])
+ }),
+ Object.freeze({
   id:'SOURCE-ABB-S201-C16-2020',catalogKey:'ABB-2CDS251001R0164',
   manufacturer:'ABB',sku:'2CDS251001R0164',
   title:'Electrical Installation Solutions for Buildings, S200 C characteristic (2020)',
