@@ -125,7 +125,7 @@ test('evidence form shows selected document requirements and HTML escapes string
  const p=project(),s=ui(p,'L1',()=>article());
  assert.match(s,/name="evidenceUrl"/);
  assert.match(s,/name="evidenceLocation"/);
- assert.match(s,/Неизменяем/);
+ assert.match(s,/неизменяемая/);
  assert.match(s,/A9F73110/);
  p.lines[0].letThroughInput.evidenceRecordId='<svg onload=alert(1)>';
  const html=ui(p,'L1',()=>article());
