@@ -25,3 +25,12 @@
 4. Extend Chromium coverage to importing a JSON file and deleting a linked circuit, and verify results on the exact final HEAD.
 
 No local or GitHub Actions test outcome has yet been established for this current cycle.
+
+## 2026-11-16 — Device identity reconciliation
+
+- Added `protection-device-chain-v1.js`: a read-only projection of declared protection hierarchy edges onto stable `branchDevices[].id` mappings (version 1) and selected catalogue article IDs. Device IDs are not inferred from DIN position.
+- The module detects missing or repeated apparatus identities, catalogue lookup errors, non-overcurrent articles, missing manufacturer verification and unresolved physical path evidence. If an upstream In is below a downstream In, this is only a review issue, not a certified selectivity failure.
+- Both the engineering bundle and issue register now carry these findings. The printable HTML report and board workspace show explicit pair identities, selected articles and `NOT_ASSESSED` selectivity.
+- Added focused regressions and Chromium UI scenario assertions. Source code inspection alone is not acceptance; confirm CI on this exact final commit.
+
+**Current scope:** it reconciles two declared circuit protection-device identities, not a power-supply topology. An incoming breaker outside `lines`, shared protection devices, upstream power sources, and terminal/wire continuity require a separate stable device graph before physical or selective coordination can be tested.
