@@ -989,7 +989,9 @@ function renderEngineeringDiagnosticsV1(){
   epProtectionLinksHtmlV1(state)+
    (typeof epProtectionDeviceChainV1==='function'&&
     typeof epProtectionDeviceChainHtmlV1==='function'?
-    epProtectionDeviceChainHtmlV1(epProtectionDeviceChainV1(state,catalogDevice)):''):
+    epProtectionDeviceChainHtmlV1(epProtectionDeviceChainV1(state,catalogDevice)):'')+
+   (typeof epSupplyDeviceGraphV1==='function'&&typeof epSupplyDeviceGraphHtmlV1==='function'?
+    epSupplyDeviceGraphHtmlV1(epSupplyDeviceGraphV1(state)):''):
   'Модуль иерархии защиты недоступен.';
  const chain=$('projectChainPanel');
  if(chain&&typeof epReconcileProjectV2==='function')chain.innerHTML=epReconcileProjectHtmlV2(epReconcileProjectV2(state,catalogDevice));
