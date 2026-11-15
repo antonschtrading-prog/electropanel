@@ -108,3 +108,17 @@ test('HTML metadata is escaped; never treat record label as code',()=>{
  assert.ok(!h.includes('<img src=x onerror=alert(1)>'));
  assert.equal(api.epCoordAuditV1(p,()=>null).engineeringApproved,false);
 });
+
+test('cross-brand pairs, mismatched rating voltage and mixed standards request review',()=>{
+ const p=withStudy(project());p.deviceCoordinationEvidenceV1=declare(p);
+ const first={kind:'MCB',verificationStatus:'VERIFIED',maker:'Maker A',
+  icnVoltageV:230,icnStandard:'IEC 60898-1'};
+ const second={kind:'MCB',verificationStatus:'VERIFIED',maker:'Maker B',
+  icnVoltageV:400,icnStandard:'IEC 60947-2'};
+ const a=api.epCoordAuditV1(p,sku=>sku==='SKU-A'?first:second);
+ for(const code of ['COORD_CROSS_MANUFACTURER_PAIR_SOURCE_REVIEW_REQUIRED',
+  'COORD_ARTICLE_VOLTAGE_SCOPE_REVIEW_REQUIRED',
+  'COORD_MIXED_ARTICLE_STANDARDS_REVIEW_REQUIRED'])
+  assert.ok(a.issues.some(x=>x.code===code),code);
+ assert.equal(a.selectivityStatus,'NOT_ASSESSED');
+});
