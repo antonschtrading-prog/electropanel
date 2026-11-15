@@ -38,17 +38,24 @@ function epTransformerSourceV1(input){
  if(!Number.isFinite(z)||z<=0||!Number.isFinite(r)||r<0){
   add('TRANSFORMER_IMPEDANCE_INVALID');return out();
  }
- const tolerance=1e-10*Math.max(z,1);
+ // Relative tolerance only: an absolute 1e-10 Ω tolerance is large for
+ // low-impedance transformers and can conceal physically impossible losses.
+ const tolerance=32*Number.EPSILON*z;
  if(r>z+tolerance){
   add('TRANSFORMER_LOSS_EXCEEDS_IMPEDANCE');return out();
  }
- const x=Math.sqrt(Math.max(0,z*z-r*r));
+ const normalizedR=Math.min(r,z);
+ const x=Math.sqrt(Math.max(0,(z-normalizedR)*(z+normalizedR)));
  if(!Number.isFinite(x)){add('TRANSFORMER_REACTANCE_INVALID');return out();}
  if(input.lossBasisConfirmed!==true)
   add('TRANSFORMER_LOSS_BASIS_UNCONFIRMED','UNKNOWN');
  return out({transformerROhm:r,transformerXOhm:x,transformerZOhm:z,
   sourceROhm:r+upR,sourceXOhm:x+upX,ratedVoltageV:voltage,
   ratedPowerKva:powerKva,ukPercent:uk,loadLossW:loss,
+  ratedCurrentA:s/(Math.sqrt(3)*u),
+  resistivePercent:100*normalizedR*s/(u*u),
+  reactivePercent:100*x*s/(u*u),
+  impedanceRatio:normalizedR/z,
   upstreamROhm:upR,upstreamXOhm:upX,
   source:typeof input.source==='string'?input.source:null,
   upstreamSource:typeof input.upstreamSource==='string'?input.upstreamSource:null,
