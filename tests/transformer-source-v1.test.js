@@ -105,3 +105,22 @@ test('untrusted transformer provenance is escaped by the printed dossier',()=>{
  assert.doesNotMatch(h,/<script>/);
  assert.match(h,/&lt;script&gt;/);
 });
+
+test('very low impedance source cannot hide impossible load losses behind absolute tolerance',()=>{
+ const x=transformer();
+ x.ratedPowerKva=1000000;x.ratedVoltageV=1;x.ukPercent=0.001;
+ x.loadLossW=10001;
+ const z=x.ukPercent/100*x.ratedVoltageV*x.ratedVoltageV/(x.ratedPowerKva*1000);
+ const r=x.loadLossW*x.ratedVoltageV*x.ratedVoltageV/(x.ratedPowerKva*1000)**2;
+ assert.ok(z<1e-10&&r>z);
+ const result=epTransformerSourceV1(x);
+ assert.equal(result.status,'BLOCKED');
+ assert.ok(result.issues.some(y=>y.code==='TRANSFORMER_LOSS_EXCEEDS_IMPEDANCE'));
+});
+test('transformer rated current and resistive/reactive voltage percentages preserve uk',()=>{
+ const r=epTransformerSourceV1(transformer());
+ assert.ok(Math.abs(r.ratedCurrentA-1000000/(Math.sqrt(3)*400))<1e-10);
+ assert.ok(Math.abs(Math.hypot(r.resistivePercent,r.reactivePercent)-6)<1e-10);
+ assert.ok(Math.abs(r.impedanceRatio-0.15)<1e-12);
+ assert.equal(r.engineeringApproved,false);
+});
