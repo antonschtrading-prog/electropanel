@@ -114,3 +114,11 @@ This cycle prioritises one short-circuit calculation chain rather than isolated 
 6. **Coverage:** numeric reference tests, invalid input, project fingerprint invalidation, design review, report and UI/browser integration. CI must be checked on the final head before describing it as verified.
 
 **Boundary:** restricted arithmetic from engineer-declared source and cable impedances; not a validated IEC 60909 implementation. Never infer Icu from Icn, conductor properties from catalogue logos, verified protection time, selectivity or normative suitability.
+
+## 2026-11-15 — focused engineering-core: LV transformer source equivalent
+- Added `transformer-source-v1.js` for a **declared three-phase LV transformer equivalent**, deriving R and X at LV terminals from rated apparent power, rated LV ULL, uk% and rated short-circuit load loss. The upstream network R/X is explicitly supplied *referred to the LV base* and added separately.
+- The existing maximum fault-current model supports `sourceModel: TRANSFORMER_WITH_UPSTREAM` only in its three-phase positive-sequence scope. Other models retain explicit impedance input; transformer source cannot be silently applied to L–N calculations.
+- Guarded incompatible voltage base, physically inconsistent active resistance versus impedance magnitude, missing provenance and loss-basis declarations. Comparison to Icn remains provisional, a numeric overrun remains blocking, and no numeric defaults are inferred.
+- Exposed transformer nameplate and upstream source inputs in the circuit engineering UI, persisted through the existing maximum-fault workflow, and included transformer impedance/source provenance in the printed report.
+- Added reference examples, malformed-input and nonmutation tests, documentation checks, HTML escaping tests and a real-browser entry/persistence scenario.
+- **Boundaries:** R/X transformer equivalence is an explicitly declared algebraic engineering model, not validated IEC 60909, not a certified short-circuit study and not a substitute for network topology, correction factors, upstream network evaluation, or manufacturer evidence. CI must be verified on the final exact commit.
