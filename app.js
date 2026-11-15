@@ -16,7 +16,7 @@ function snapshot(){ensureV2(state);return JSON.stringify(state);}
 function checkpoint(){historyUndo.push(snapshot());if(historyUndo.length>MAX_HISTORY)historyUndo.shift();historyRedo.length=0;}
 function restoreHistory(from,to){if(!from.length)return;to.push(snapshot());const next=normalizeImport(JSON.parse(from.pop()));if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=next;selectedLine=null;changed();notify('История изменений восстановлена');}
 function reorderLine(sourceId,targetId){const from=state.lines.findIndex(l=>l.id===sourceId),to=state.lines.findIndex(l=>l.id===targetId);if(from<0||to<0||from===to)return false;checkpoint();const [moved]=state.lines.splice(from,1);state.lines.splice(to,0,moved);changed();return true;}
-function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x.deviceId!==removed&&x.deviceId!==id);}state.lines=state.lines.filter(x=>x.id!==id);if(Array.isArray(state.protectionLinks))state.protectionLinks=state.protectionLinks.filter(x=>x.downstreamLineId!==id&&x.upstreamLineId!==id);if(Array.isArray(state.deviceFaultScenariosV1)){const removedNode='BRANCH:'+state.branchDevices?.find(x=>x.circuitId===id)?.id;state.deviceFaultScenariosV1=state.deviceFaultScenariosV1.filter(x=>x.deviceNodeId!==removedNode);}if(state.deviceSupplyV1){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.deviceSupplyV1.links=state.deviceSupplyV1.links.filter(x=>x.from!=='BRANCH:'+removed&&x.to!=='BRANCH:'+removed);}if(selectedLine===id)selectedLine=null;changed();return true;}
+function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x.deviceId!==removed&&x.deviceId!==id);}state.lines=state.lines.filter(x=>x.id!==id);if(Array.isArray(state.protectionLinks))state.protectionLinks=state.protectionLinks.filter(x=>x.downstreamLineId!==id&&x.upstreamLineId!==id);if(Array.isArray(state.deviceFaultScenariosV1)){const removedNode='BRANCH:'+state.branchDevices?.find(x=>x.circuitId===id)?.id;state.deviceFaultScenariosV1=state.deviceFaultScenariosV1.filter(x=>x.deviceNodeId!==removedNode);if(Array.isArray(state.deviceCoordinationEvidenceV1))state.deviceCoordinationEvidenceV1=state.deviceCoordinationEvidenceV1.filter(x=>x.from!==removedNode&&x.to!==removedNode);}if(state.deviceSupplyV1){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.deviceSupplyV1.links=state.deviceSupplyV1.links.filter(x=>x.from!=='BRANCH:'+removed&&x.to!=='BRANCH:'+removed);}if(selectedLine===id)selectedLine=null;changed();return true;}
 function safeText(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,error=false){const t=document.createElement('div');t.className='toast'+(error?' error':'');t.textContent=message;document.body.appendChild(t);setTimeout(()=>t.remove(),3800);}
 function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
@@ -2065,6 +2065,11 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
   if(JSON.stringify(state.deviceSupplyV1)===JSON.stringify(next))return;
   checkpoint();
   state.deviceSupplyV1=next;
+  if(del&&Array.isArray(state.deviceCoordinationEvidenceV1)){
+   const removedNode='INCOMING:'+del.dataset.deviceSupplyRemoveIncoming;
+   state.deviceCoordinationEvidenceV1=state.deviceCoordinationEvidenceV1.filter(x=>
+    x.from!==removedNode&&x.to!==removedNode);
+  }
   if(del&&Array.isArray(state.deviceFaultScenariosV1))
    state.deviceFaultScenariosV1=state.deviceFaultScenariosV1.filter(x=>
     x.deviceNodeId!=='INCOMING:'+del.dataset.deviceSupplyRemoveIncoming);
@@ -2111,6 +2116,31 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
   checkpoint();state.deviceFaultScenariosV1=next;changed();
   notify('Расчётная точка сохранена. Паспортная применимость требует проверки.');
  }catch(error){notify('Исследование точки КЗ не сохранено: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const save=e.target.closest('#coordSave');
+ const clear=e.target.closest('[data-coord-clear]');
+ if(!save&&!clear)return;
+ try{
+  const parts=clear?clear.dataset.coordClear.split('|'):$('coordPair').value.split('|');
+  if(parts.length<(clear?3:2)||!parts[0]||!parts[1])
+   throw Error('Выберите пару защитных аппаратов');
+  const number=v=>{
+   const s=String(v||'').trim().replace(',','.');
+   if(!/^(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)$/.test(s))
+    throw Error('Напряжение и заявленный предел должны быть числами');
+   return Number(s);
+  };
+  const next=clear?epCoordClearV1(state,parts[0],parts[1],parts[2]):
+   epCoordDeclareV1(state,parts[0],parts[1],$('coordType').value,
+    number($('coordVoltage').value),number($('coordLimit').value),
+    $('coordMaker').value.trim(),$('coordDocument').value.trim(),
+    $('coordRevision').value.trim(),$('coordPage').value.trim(),
+    $('coordUrl').value.trim());
+  if(JSON.stringify(state.deviceCoordinationEvidenceV1||[])===JSON.stringify(next))return;
+  checkpoint();state.deviceCoordinationEvidenceV1=next;changed();
+  notify('Документированное заявление сохранено. Требуется инженерная проверка.');
+ }catch(error){notify('Данные изготовителя не сохранены: '+error.message,true);}
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
