@@ -65,6 +65,46 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),1);
  await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
  assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),0);
+ // Enter prospective maximum Ik for an incoming breaker using existing R/X engine.
+ await page.locator('#deviceSupplyFrom').selectOption('SOURCE:MAIN');
+ await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
+ await page.locator('#deviceSupplyLinkSave').click();
+ assert.equal(await page.locator('.ep-incoming-maximum').count(),1);
+ await page.locator('.ep-incoming-maximum summary').click();
+ await page.locator('#incomingMaxNode').selectOption('INCOMING:QF0');
+ await page.locator('#incomingMaxSourceModel').selectOption('DECLARED_RX');
+ await page.locator('#incomingMaxU').fill('400');
+ await page.locator('#incomingMaxC').fill('1,1');
+ await page.locator('#incomingMaxR').fill('0,04');
+ await page.locator('#incomingMaxX').fill('0,03');
+ await page.locator('#incomingMaxNet').fill('Input node R/X source calculation 2026');
+ await page.locator('#incomingMaxSave').click();
+ const calculatedIncoming=await page.evaluate(()=>{
+  const report=epIncomingMaximumAuditV1(state,catalogDevice);
+  const restored=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+  const b=epEngineeringBundleV1(state,catalogDevice);
+  return {rows:report.rows.length,ik:report.rows[0]?.ikMaxKa,
+   imported:restored.incomingMaximumStudiesV1?.length,
+   section:b.sections.incomingMaximum.rows.length,
+   status:report.status,approved:report.engineeringApproved};
+ });
+ assert.equal(calculatedIncoming.rows,1,JSON.stringify(calculatedIncoming));
+ assert.ok(calculatedIncoming.ik>0);
+ assert.equal(calculatedIncoming.imported,1);
+ assert.equal(calculatedIncoming.section,1);
+ assert.equal(calculatedIncoming.approved,false);
+ assert.equal(await page.locator('.ep-protection-evidence-matrix').count(),1);
+ await page.locator('.ep-incoming-maximum summary').click();
+ await page.locator('[data-incoming-max-clear="INCOMING:QF0"]').click();
+ assert.equal(await page.evaluate(()=>(state.incomingMaximumStudiesV1||[]).length),0);
+ await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
+ assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),0);
+ // A missing line-location calculation must be rejected rather than inferred.
+ await page.locator('.ep-calculated-device-fault summary').click();
+ const probeBranch=await page.evaluate(()=>state.branchDevices[0].id);
+ await page.locator('#calculatedFaultBranch').selectOption('BRANCH:'+probeBranch);
+ await page.locator('#calculatedFaultBind').click();
+ assert.equal(await page.evaluate(()=>(state.calculatedDeviceFaultBindingsV1||[]).length),0);
  // A local short-circuit study must bind to a selected device AND its actual supply path.
  await page.locator('#deviceSupplyFrom').selectOption('SOURCE:MAIN');
  await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
