@@ -82,3 +82,26 @@ test('valid transformer assumptions survive project update without granting appr
  assert.equal(out.report.engineeringApproved,false);
  assert.equal(out.project.lines[0].calculationReview.required,true);
 });
+
+test('engineering print preserves transformer upstream provenance and numeric equivalent',()=>{
+ const {epFaultRouteProjectV2}=require('../fault-route-design-v2.js');
+ const {epEngineeringPrintV1}=require('../engineering-print-v1.js');
+ const p=project(),r=epFaultRouteProjectV2(p,()=>device());
+ const t=r.rows[0].maximum.transformer;
+ assert.equal(t.source,'transformer manufacturer short-circuit losses');
+ assert.equal(t.upstreamSource,'network study referred to LV');
+ assert.equal(t.lossBasisConfirmed,true);
+ const h=epEngineeringPrintV1({overallStatus:'UNKNOWN',sections:{faultRoutes:r}});
+ assert.match(h,/Эквивалент трансформатора/);
+ assert.match(h,/transformer manufacturer short-circuit losses/);
+ assert.match(h,/network study referred to LV/);
+ assert.match(h,/9000/);
+});
+test('untrusted transformer provenance is escaped by the printed dossier',()=>{
+ const {epFaultRouteProjectV2}=require('../fault-route-design-v2.js');
+ const {epEngineeringPrintV1}=require('../engineering-print-v1.js');
+ const p=project();p.lines[0].maximumFaultInput.transformer.source='<script>alert(1)</script>';
+ const h=epEngineeringPrintV1({sections:{faultRoutes:epFaultRouteProjectV2(p,()=>device())}});
+ assert.doesNotMatch(h,/<script>/);
+ assert.match(h,/&lt;script&gt;/);
+});
