@@ -1034,6 +1034,9 @@ function renderEngineeringDiagnosticsV1(){
  }
  const faultPanel=$('faultRoutePanel');
  if(faultPanel)faultPanel.innerHTML=epFaultRouteHtmlV2(state,selectedLine,catalogDevice);
+ const maxFaultPanel=$('maximumFaultPanel');
+ if(maxFaultPanel&&typeof epMaximumFaultHtmlV2==='function')
+  maxFaultPanel.innerHTML=epMaximumFaultHtmlV2(state,selectedLine,catalogDevice);
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
@@ -2225,6 +2228,34 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('maximumFaultPanel').addEventListener('click',e=>{
+ const add=e.target.closest('[data-add-max-segment]');
+ const remove=e.target.closest('[data-remove-max-segment]');
+ if(add){
+  const form=add.closest('form'),holder=form.querySelector('[data-max-segments]');
+  if(holder.children.length>=50)return notify('Максимум 50 участков',true);
+  holder.insertAdjacentHTML('beforeend',
+   epMaximumFaultSegmentHtmlV2({},form.dataset.maxFaultModel==='THREE_PHASE_POSITIVE_SEQUENCE',holder.children.length));
+ }
+ if(remove)remove.closest('[data-max-segment]').remove();
+});
+$('maximumFaultPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-max-fault]');if(!form)return;
+ e.preventDefault();
+ const model=form.dataset.maxFaultModel;
+ const keys=[model==='THREE_PHASE_POSITIVE_SEQUENCE'?'uLLV':'u0V',
+  'cmax','sourceROhm','sourceXOhm','networkSource'];
+ const input={model,...Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value]))};
+ input.segments=[...form.querySelectorAll('[data-max-segment]')].map(row=>({
+  ...Object.fromEntries([...row.querySelectorAll('[data-max-segment-field]')].map(el=>[
+   el.dataset.maxSegmentField,el.value])),
+  temperatureBasisConfirmed:row.querySelector('[data-max-segment-temperature]').checked
+ }));
+ const result=epApplyMaximumFaultV2(state,form.dataset.maxFault,input,catalogDevice);
+ if(!result.project)return notify('Расчёт Ik,max не сохранён: '+result.code,true);
+ checkpoint();state=result.project;changed();
+ notify('Исходные данные Ik,max сохранены. Сравнение Icn: '+result.report.thresholdStatus);
 });
 $('faultRoutePanel').addEventListener('click',e=>{
  const add=e.target.closest('[data-add-route-segment]'),remove=e.target.closest('[data-remove-route-segment]');
