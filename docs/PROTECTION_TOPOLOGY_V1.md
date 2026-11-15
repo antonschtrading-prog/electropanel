@@ -34,3 +34,13 @@ No local or GitHub Actions test outcome has yet been established for this curren
 - Added focused regressions and Chromium UI scenario assertions. Source code inspection alone is not acceptance; confirm CI on this exact final commit.
 
 **Current scope:** it reconciles two declared circuit protection-device identities, not a power-supply topology. An incoming breaker outside `lines`, shared protection devices, upstream power sources, and terminal/wire continuity require a separate stable device graph before physical or selective coordination can be tested.
+
+## 2026-11-16 — Supply source / shared RCD / outgoing apparatus evidence graph
+
+- Introduced `supply-device-graph-v1.js`, which reads existing `branchDevices`, `sharedDevices`, `feedLinks` and `groupInputLinks` instead of inventing additional physical wiring or changing the saved project schema.
+- Distinguishes source, shared-RCD and branch apparatus nodes. Keeps L1/L2/L3/N declarations with their saved source IDs, and checks missing, duplicate, extra or contradictory feeds. Reports impossible overlapping RCD memberships.
+- Reconciles declared upstream line-protection relationships as **unrepresented physical connections** because the existing symbolic feed model cannot encode BRANCH→BRANCH power paths. Such pairs are never labelled as proven or selective.
+- Added evidence to engineering bundle, issue register, printable report, board UI and the real Chromium scenario, with focused and integration regressions.
+- All results remain DRAFT / NOT_VERIFIED; neither the graph nor a larger upstream breaker rating demonstrates electrical continuity, trip coordination, manufacturer applicability or compliance.
+
+Next: add a versioned device-to-device supply model able to express incoming breakers and branch-to-branch feeds without silently converting symbolic declarations to physical facts; reconcile device and terminal identities, ratings, and manufacturer evidence.
