@@ -65,6 +65,39 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),1);
  await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
  assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),0);
+ // A local short-circuit study must bind to a selected device AND its actual supply path.
+ await page.locator('#deviceSupplyFrom').selectOption('SOURCE:MAIN');
+ await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
+ await page.locator('#deviceSupplyLinkSave').click();
+ await page.locator('.ep-device-fault summary').click();
+ await page.locator('#deviceFaultNode').selectOption('INCOMING:QF0');
+ await page.locator('#deviceFaultIk').fill('6,5');
+ await page.locator('#deviceFaultVoltage').fill('230');
+ await page.locator('#deviceFaultSource').fill('Documented maximum fault study F-100');
+ await page.locator('#deviceFaultRevision').fill('revision A');
+ await page.locator('#deviceFaultSave').click();
+ const locationStudy=await page.evaluate(()=>{
+  const report=epDeviceFaultAuditV1(state,catalogDevice);
+  const original=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+  const restored=normalizeImport(original);
+  const engineering=epEngineeringBundleV1(state,catalogDevice);
+  return {count:report.rows.length,ik:report.rows[0]?.ikMaxKa,
+   source:report.rows[0]?.sourceDocument,
+   imported:restored.deviceFaultScenariosV1?.length,
+   section:engineering.sections.deviceFaultScenarios.rows.length,
+   selectivity:report.selectivityStatus,approved:report.engineeringApproved};
+ });
+ assert.equal(locationStudy.count,1,JSON.stringify(locationStudy));
+ assert.equal(locationStudy.ik,6.5);
+ assert.equal(locationStudy.imported,1);
+ assert.equal(locationStudy.section,1);
+ assert.equal(locationStudy.selectivity,'NOT_ASSESSED');
+ assert.equal(locationStudy.approved,false);
+ await page.locator('[data-device-fault-clear="INCOMING:QF0"]').click();
+ assert.equal(await page.evaluate(()=>(state.deviceFaultScenariosV1||[]).length),0);
+ await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
+ assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),0);
+
 
  
  // Engineer edits declared upstream protection hierarchy using the shipped UI.
