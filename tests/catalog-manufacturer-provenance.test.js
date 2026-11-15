@@ -474,6 +474,6 @@ test('issue register and bundle source contain provenance section wiring',()=>{
  const root=path.join(__dirname,'..'),bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
  const registry=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
  assert.match(bundle,/epCatalogEvidenceAuditV1/);
- assert.match(bundle,/const sections=\{manufacturerEvidence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence/);
+ assert.match(bundle,/const sections=\{manufacturerFacts,manufacturerEvidence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence/);
  assert.match(registry,/sections\.catalogEvidence/);
 });
