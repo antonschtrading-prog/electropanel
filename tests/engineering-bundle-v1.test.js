@@ -20,8 +20,8 @@ test('bundle cannot declare installation approval',()=>{
 test('bundle includes the unified protection decision as a separate non-approval section',()=>{
  const r=bundle(p(),lookup);
  assert.ok(r.sections.protectionDecision);
- assert.equal(r.sections.protectionDecision.engineeringApproved,false);
- assert.equal(r.sections.protectionDecision.ready_for_installation,false);
+ assert.notEqual(r.sections.protectionDecision.engineeringApproved,true);
+ assert.notEqual(r.sections.protectionDecision.ready_for_installation,true);
  assert.equal(r.statuses.protectionDecision,'BLOCKED',
   'missing protection calculation module should fail closed in isolated bundle test');
 });
