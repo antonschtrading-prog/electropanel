@@ -25,6 +25,13 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.reasons.some(x=>x.code==='LOAD_CURRENT_STALE'))add(row.lineId,2,'LOAD_CURRENT_STALE','Пересчитать ток после изменения нагрузки','load');
   // Engineering gate reasons become actionable tasks, never silent flags.
   const guided={
+   LET_THROUGH_CABLE_CAPACITY_EXCEEDED:[1,'Увеличить термическую стойкость проводника либо выбрать аппарат с подтверждённым меньшим I²t','cable'],
+   LET_THROUGH_INPUT_MISSING:[2,'Получить паспортную верхнюю границу энергии пропускания I²t для выбранного аппарата','catalogue'],
+   LET_THROUGH_NO_GUARANTEED_BAND:[2,'Получить паспортное подтверждение I²t для диапазона ожидаемого тока КЗ','catalogue'],
+   LET_THROUGH_ARTICLE_MISMATCH:[1,'Согласовать артикул, паспорт I²t и выбранный аппарат','catalogue'],
+   LET_THROUGH_FAULT_SCENARIO_MISMATCH:[1,'Проверить соответствие вида и точки КЗ источнику I²t','fault_max'],
+   LET_THROUGH_MANUFACTURER_SOURCE_MISSING:[2,'Указать официальный источник I²t изготовителя','catalogue'],
+   LET_THROUGH_ENVELOPE_GUARANTEE_UNCONFIRMED:[2,'Подтвердить гарантированную границу энергии для всего диапазона','catalogue'],
    THERMAL_SHORT_CIRCUIT_ENERGY_EXCEEDS_CAPACITY:[1,'Повысить термическую стойкость проводника или обоснованно снизить энергию отключения I²t','cable'],
    THERMAL_PHASE_SECTION_MISMATCH:[1,'Согласовать сечение проверяемой фазы с выбранным кабелем','cable'],
    THERMAL_MATERIAL_MISMATCH:[1,'Согласовать материал проводника с исходными данными кабеля','cable'],
