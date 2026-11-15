@@ -50,6 +50,9 @@ function epTransformerSourceV1(input){
   sourceROhm:r+upR,sourceXOhm:x+upX,ratedVoltageV:voltage,
   ratedPowerKva:powerKva,ukPercent:uk,loadLossW:loss,
   upstreamROhm:upR,upstreamXOhm:upX,
+  source:typeof input.source==='string'?input.source:null,
+  upstreamSource:typeof input.upstreamSource==='string'?input.upstreamSource:null,
+  lossBasisConfirmed:input.lossBasisConfirmed===true,
   formula:'|Zt|=(uk%/100)*Ull^2/S; Rt=Pcu*Ull^2/S^2; Xt=sqrt(|Zt|^2-Rt^2)',
   notice:'A declared LV three-phase transformer equivalent plus explicitly declared upstream R/X. No impedance tolerances, tap-changer, correction factor, source network model or normative approval.'});
 }
