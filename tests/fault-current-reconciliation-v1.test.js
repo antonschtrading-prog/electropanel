@@ -48,7 +48,7 @@ test('different points, fault models, or purpose must not be compared',()=>{
 });
 test('missing or malformed numbers cannot produce numeric success',()=>{
  for(const ik of [null,undefined,'abc',0,-3,true,{},'1e6']){
-  const x=line(ik);
+  const x=line();x.faultInput.ikKa=ik;
   const r=compare(x,maximum(10));
   assert.equal(r.status,'UNKNOWN');
   assert.equal(r.differenceKa,null);
