@@ -22,6 +22,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.calculatedDeviceFault)sectionNames.push('calculatedDeviceFault');
  if(sections.incomingMaximum)sectionNames.push('incomingMaximum');
  if(sections.protectionEvidenceMatrix)sectionNames.push('protectionEvidenceMatrix');
+ if(sections.faultSourceConvergence)sectionNames.push('faultSourceConvergence');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
