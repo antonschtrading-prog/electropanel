@@ -41,6 +41,7 @@ function epBreakerLetThroughHtmlV1(project,lineId,lookup){
   select('letMaterial',[['','Материал'],['Cu','Медь'],['Al','Алюминий']],d.conductorMaterial)+
   field('letSection','Сечение проводника, мм²',d.sectionMm2)+
   field('letK','Коэффициент k, А√с/мм²',d.kA_SqrtS_PerMm2)+
+  field('letEvidenceId','ID записи реестра паспорта',d.evidenceRecordId)+
   field('letManufacturerSource','Источник огибающей изготовителя',d.manufacturerSource)+
   field('letConditionSource','Источник условий испытания',d.testConditionSource)+
   field('letCableSource','Источник характеристик проводника',d.cableSource)+
