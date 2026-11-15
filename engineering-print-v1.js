@@ -99,6 +99,16 @@ function epEngineeringPrintV1(bundle){
     x.maximum?.xOhm??'—',x.maximum?.impedanceOhm??'—',
     x.maximum?.ikMaxKa??'—',x.maximum?.icnKa??'—',
     x.maximum?.numericComparison??'Не проверено',x.maximum?.thresholdStatus??'UNKNOWN']))+
+  '<h3>Эквивалент трансформатора · исходные параметры и происхождение</h3>'+
+  rows(['Цепь','S, кВА','ULL, В','uk, %','Потери КЗ, Вт','Rt, Ом','Xt, Ом','R сети до Т, Ом','X сети до Т, Ом','Источник трансформатора','Источник сети','Основание потерь'],
+   (sections.faultRoutes?.rows||[]).filter(x=>x.maximum?.sourceModel==='TRANSFORMER_WITH_UPSTREAM').map(x=>{
+    const t=x.maximum.transformer||{};
+    const source=Array.isArray(bundle?.sourceTransformerRows)?bundle.sourceTransformerRows.find(y=>y.lineId===x.lineId):null;
+    return [x.lineId,t.ratedPowerKva??'—',t.ratedVoltageV??'—',t.ukPercent??'—',
+     t.loadLossW??'—',t.transformerROhm??'—',t.transformerXOhm??'—',
+     t.upstreamROhm??'—',t.upstreamXOhm??'—',source?.source??'См. исходный проект',
+     source?.upstreamSource??'См. исходный проект',
+     t.issues?.some(i=>i.code==='TRANSFORMER_LOSS_BASIS_UNCONFIRMED')?'Не подтверждено':'Заявлено']))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
