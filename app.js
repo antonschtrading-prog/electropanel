@@ -1040,6 +1040,9 @@ function renderEngineeringDiagnosticsV1(){
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
+ const evidencePanel=$('manufacturerEvidencePanel');
+ if(evidencePanel&&typeof epManufacturerEvidenceHtmlV1==='function')
+  evidencePanel.innerHTML=epManufacturerEvidenceHtmlV1(state,selectedLine,catalogDevice);
  const letThroughPanel=$('breakerLetThroughPanel');
  if(letThroughPanel&&typeof epBreakerLetThroughHtmlV1==='function')
   letThroughPanel.innerHTML=epBreakerLetThroughHtmlV1(state,selectedLine,catalogDevice);
@@ -2237,6 +2240,41 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('manufacturerEvidencePanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-evidence-record]');if(!form)return;
+ e.preventDefault();
+ const l=state.lines.find(x=>x.id===form.dataset.evidenceRecord);
+ if(!l?.letThroughInput)return notify('Сначала сохраните исходный расчёт I²t',true);
+ const input=l.letThroughInput,a=catalogDevice(l.catalogSku);
+ if(!a)return notify('Аппарат не найден в каталоге',true);
+ const get=k=>form.elements.namedItem(k)?.value;
+ const numeric=k=>Number(String(input[k]??'').replace(',','.'));
+ const scope={deviceStandard:input.deviceStandard,nominalCurrentA:numeric('articleInA'),
+  poles:input.protectionPoles,testVoltageV:numeric('testVoltageV'),
+  testFrequencyHz:numeric('testFrequencyHz'),faultModel:input.faultModel};
+ const record={id:get('evidenceId').trim(),kind:'LET_THROUGH_I2T',
+  catalogKey:l.catalogSku,manufacturerSku:a.sku,manufacturerName:get('evidenceManufacturer'),
+  series:get('evidenceSeries'),documentTitle:get('evidenceTitle'),
+  documentUrl:get('evidenceUrl'),documentRevision:get('evidenceRevision'),
+  documentLocation:get('evidenceLocation'),reviewedAt:get('evidenceDate'),
+  reviewedBy:get('evidenceReviewer'),sourceType:get('evidenceSourceType'),
+  documentChecked:form.elements.namedItem('evidenceChecked').checked,
+  scope,bands:input.bands.map(b=>({minProspectiveA:Number(String(b.minProspectiveA).replace(',','.')),
+   maxProspectiveA:Number(String(b.maxProspectiveA).replace(',','.')),
+   maxLetThroughA2s:Number(String(b.maxLetThroughA2s).replace(',','.'))}))};
+ const created=epAddManufacturerEvidenceRecordV1(state,record);
+ if(!created.project)return notify('Паспортная запись не добавлена: '+created.code,true);
+ const draft=created.project;
+ const target=draft.lines.find(x=>x.id===l.id);
+ target.letThroughInput.evidenceRecordId=record.id;
+ const report=epBreakerLetThroughV1(draft,target,catalogDevice(target.catalogSku));
+ if(report.evidenceBinding?.issues?.some(i=>i.level==='BLOCKED'))
+  return notify('Документ не соответствует расчету: '+report.evidenceBinding.issues[0].code,true);
+ target.calculationReview={...target.calculationReview,required:true,
+  reason:'MANUFACTURER_EVIDENCE_LINKED'};
+ checkpoint();state=draft;changed();
+ notify('Паспортный источник добавлен; нормативное подтверждение требует инженерной проверки');
 });
 $('breakerLetThroughPanel').addEventListener('click',e=>{
  const add=e.target.closest('[data-add-let-through-band]');
