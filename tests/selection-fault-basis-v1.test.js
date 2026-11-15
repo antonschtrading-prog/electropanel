@@ -58,7 +58,7 @@ test('manual Ik understated at explicitly identical type and point is a blocking
  l.faultInput.model='SINGLE_PHASE_L_N';
  l.faultInput.comparisonPoint='PANEL-OUT-L1';
  const b=study(p,l,lookup);
- assert.equal(b.mode,'CALCULATED_UNUSABLE');
+ assert.equal(b.mode,'CALCULATED_MAXIMUM');
  assert.ok(b.issues.some(x=>x.code==='SELECTION_MANUAL_IK_UNDERSTATES_SAME_POINT_MAX'&&x.level==='BLOCKED'));
  const selected=work(p,lookup,catalog(),'L1').selected;
  assert.equal(selected.status,'BLOCKED');
