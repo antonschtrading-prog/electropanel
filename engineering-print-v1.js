@@ -54,6 +54,11 @@ function epEngineeringPrintV1(bundle){
   'Ik,max, кА','Напряжение, В','Производитель','Документ','Редакция','Страница','Численный статус'],
   (sections.deviceCoordinationEvidence?.rows||[]).map(x=>[x.from,x.to,x.evidenceType,
   x.limitKa,x.ikMaxKa??'—',x.voltageV,x.manufacturer,x.documentId,x.revision,x.page,x.numeric]));
+ const calculatedFaultTable=rows(['Аппарат','Точка','Модель КЗ','Ik,max, кА','Напряжение, В',
+  'Icn, кА','Метод источника','Расчётный статус','Устарел'],
+  (sections.calculatedDeviceFault?.rows||[]).map(x=>[x.deviceNodeId,x.comparisonPoint,x.model,
+   x.ikMaxKa??'—',x.voltageV??'—',x.icnKa??'—',x.sourceModel??'—',
+   x.calculationThreshold,x.stale?'ДА':'нет']));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -261,6 +266,8 @@ function epEngineeringPrintV1(bundle){
      t.upstreamSource??'Не указан',
      t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
+  '<h2>Расчётные точки аппаратов: существующий движок R/X</h2>'+calculatedFaultTable+
+  '<p>Расчётные точки должны соответствовать заданным местам установки аппаратов. Селективность и нормативная пригодность не подтверждаются автоматически.</p>'+
   '<h2>Изготовитель: документированные пары селективности и резервной защиты</h2>'+coordinationTable+
   '<p>Ни один документ сам по себе не превращает предварительную проверку в нормативный допуск. Типы данных не взаимозаменяемы.</p>'+
   '<h2>Исследования максимального тока КЗ в точках защитных аппаратов</h2>'+deviceFaultTable+
