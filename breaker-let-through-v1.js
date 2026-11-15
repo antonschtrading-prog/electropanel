@@ -27,8 +27,11 @@ function epBreakerLetThroughV1(project,line,article){
  if(!article||!['MCB','RCBO'].includes(article.kind)){
   add('LET_THROUGH_KIND_UNSUPPORTED','BLOCKED');return end();
  }
+ if(typeof input.catalogKey!=='string'||!input.catalogKey.trim()||
+    input.catalogKey!==line?.catalogSku)
+  add('LET_THROUGH_CATALOG_KEY_MISMATCH','BLOCKED');
  if(typeof input.articleSku!=='string'||!input.articleSku.trim()||
-   input.articleSku!==line?.catalogSku||input.articleSku!==article.sku)
+    input.articleSku!==article.sku)
   add('LET_THROUGH_ARTICLE_MISMATCH','BLOCKED');
  if(article.verificationStatus!=='VERIFIED')
   add('LET_THROUGH_ARTICLE_VERIFICATION_PENDING');
