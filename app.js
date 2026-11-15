@@ -2104,7 +2104,7 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
   if(!id)throw Error('Выберите защитный аппарат');
   const amount=v=>{
    const s=String(v||'').trim().replace(',','.');
-   if(!/^(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)$/.test(s))
+   if(!/^(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)$/.test(s))
     throw Error('Укажите положительное число для Ik и напряжения');
    return Number(s);
   };
@@ -2127,7 +2127,7 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
    throw Error('Выберите пару защитных аппаратов');
   const number=v=>{
    const s=String(v||'').trim().replace(',','.');
-   if(!/^(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)$/.test(s))
+   if(!/^(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)$/.test(s))
     throw Error('Напряжение и заявленный предел должны быть числами');
    return Number(s);
   };
