@@ -21,6 +21,16 @@ function epEngineeringPrintV1(bundle){
  const workQueueTable=rows(['Приоритет','Цепь','Задача','Раздел'],workQueue.map(x=>[x.priority,x.lineId,x.action,x.section]));
  const designReview=sections.designReview?.rows||[];
  const designReviewTable=rows(['Цепь','Ib A','In A','Iz A','Icn kA','Ik kA','Сечение мм²','ΔU %','Статус'],designReview.map(x=>[x.lineId,x.ibA,x.inA,x.izA,x.icnKa,x.ikKa,x.sectionMm2,x.voltageDrop?.dropPercent,x.status]));
+ const protectionDecisionRows=sections.protectionDecision?.rows||[];
+ const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
+  'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
+  'Ограничение времени ADS','Общий статус','Незакрытые замечания'],
+  protectionDecisionRows.map(x=>[x.lineId,x.sku??'—',x.currentChecks?.ibVsIn??'UNKNOWN',
+   x.currentChecks?.inVsIz??'UNKNOWN',x.breaking?.status??'UNKNOWN',
+   x.breaking?.ikMaxKa??'—',x.breaking?.icnKa??'—',
+   x.minimum?.ikMinA??'—',x.minimum?.tripTimeStatus??'UNKNOWN',
+   x.minimum?.allowedTimeStatus??'UNKNOWN',x.status,
+   (x.issues||[]).map(i=>i.code).join('; ')]));
  const faultReconciliationTable=rows(['Цепь','Общий расчётный пункт','Ручной Ik, кА','Расчётный Ik,max, кА','Разность, кА','Разность, %','Статус сверки'],
   designReview.filter(x=>x.faultCurrentComparison).map(x=>{
    const c=x.faultCurrentComparison;
@@ -96,6 +106,8 @@ function epEngineeringPrintV1(bundle){
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
+  '<h2>Единая проверка защиты · числовые нарушения и неполные данные</h2>'+protectionDecisionTable+
+  '<p>Проверки не подтверждают соответствие требованиям и не заменяют проверку паспортов, температурных условий, тока КЗ, норм и селективности.</p>'+
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
   '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
