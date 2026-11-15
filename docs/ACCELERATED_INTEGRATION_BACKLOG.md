@@ -1,0 +1,52 @@
+# Electropanel — accelerated integrated delivery backlog
+
+This is the **implementation and acceptance backlog**, not a claim that the listed work is completed.
+Work in coherent 12–25 task groups per development session, preserving existing modules; every final HEAD needs validation, full Node tests and real Chromium smoke tests.
+
+## P0 — Integrity of the engineering core
+
+1. [x] Versioned incoming-device inventory and directed supply graph with cycle/parent validation.
+2. [x] Device graph persistence with import, autosave and undo/redo.
+3. [x] Reconcile symbolic source, shared RCD and outgoing branch feeds against phase/N declarations.
+4. [x] Reconcile apparatus-to-apparatus supply against independent terminal and wire models, without physical approval.
+5. [x] Explicit incoming-to-terminal-model binding with identity snapshot and invalidation.
+6. [x] Block the same model device being assigned both incoming and outgoing board identities in UI, with audit checks.
+7. [x] Cross-compare device supply, legacy feed origins and declared conductor route phases.
+8. [ ] Generalize incoming device selection to real manufacturer article/series, with canonical catalogue matching and immutable revision provenance.
+9. [ ] Validate upstream breaking capacity using a fault scenario at the **actual protective device location**, not another circuit's Ik,max.
+10. [ ] Map source/transformer and network impedance inputs to each incoming branch, preserving explicit connection points.
+11. [ ] Detect stale fault scenarios after upstream feed change, article substitution or voltage/phase changes.
+12. [ ] Compare upstream/downstream overload constraints only when Ib/In/Iz, apparatus types and verified settings are available.
+13. [ ] Add a device graph consistency matrix covering 1P, 1P+N, 2P, 3P, 3P+N, 4P: no inference from DIN module width.
+14. [ ] Ensure every neutral zone is tied to declared RCD topology; PE must never pass through switchable contacts.
+15. [ ] Implement explicit terminal ownership of incoming apparatus with model snapshot and manufacturer identification distinct from drawn-wire verification.
+
+## P1 — Traceable selection and engineering outputs
+
+16. [ ] Manufacturer selectivity records: exact upstream/downstream product pair, revision, voltage, current range, setting and source page; no default PASS.
+17. [ ] Manufacturer back-up protection/cascading records kept separate from full selectivity.
+18. [ ] Per-device scope checking for Icn/Icu/Ics and applicable standards; refuse cross-standard substitution.
+19. [ ] Cross-view projection of graph onto GOST-oriented one-line draft with explicit incomplete/unknown states.
+20. [ ] Generate a searchable apparatus-to-terminal reference matrix in engineering PDF/HTML and CSV.
+21. [ ] Track article replacement impact on bindings, snapshots, BOM, conductor paths, fault studies and printed plans.
+22. [ ] Build a realistic manufacturer/series device front renderer tied to catalogue physical dimensions and article ID.
+23. [ ] Allow safe manufacturer/style changes with all affected calculations and model bindings marked for review.
+24. [ ] Add an engineering issue work queue with explicit severity, affected device, required source and owner action.
+
+## P2 — Shipping quality and migration
+
+25. [ ] Chromium: full JSON upload for device-supply and incoming-binding snapshots, including tampered import rejection.
+26. [ ] Chromium: add, bind, change, delete and undo an incoming apparatus; verify identical export/import state.
+27. [ ] Chromium: route contradiction, terminal mismatch, and shared-RCD membership changes.
+28. [ ] Stress tests for 400 branches, 50 incoming devices, 100 shared apparatuses and graph cycles.
+29. [ ] Security tests for malicious labels, links, prototype-key payloads and oversized snapshots.
+30. [ ] Reference projects: apartment TN-S, three-phase commercial panel, several grouped RCDs and explicit incomplete supply.
+31. [ ] Document catalogue data ownership, safe import format and model incompatibility recovery.
+32. [ ] CI on each final HEAD: JS syntax, complete Node tests, Chromium and Pages packaging. Never claim green without exact SHA.
+33. [ ] Provide the engineer with a review-first UI: show unresolved sources and graph contradictions before visually convincing outputs.
+
+**Engineering boundary:** this project produces design calculations, declared electrical models, diagrams, BOMs and documentation; it does not perform physical panel tests or certify installation. An explicit source/path or matched terminal remains *declared*, not physically proven. Engineering approval never follows from a graph alone.
+
+## Cycle selection
+
+Next large batch should combine items 8–15 and 19–21 when dependencies allow, with 25–29 running as acceptance tasks. Prefer finishing one complete user workflow (input → identity → calculation → warning → export → UI test) rather than adding disconnected partial modules.
