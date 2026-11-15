@@ -26,6 +26,9 @@ function epRestoreProjectExtensionsV2(raw,project){
  const arrays=['catalogArticles','dinPlacementsV1','manualLayoutV1','cables','manufacturerEvidenceRecords'];
  for(const key of objects)if(raw[key]!==undefined){if(!object(raw[key]))throw Error(key+': ожидается объект');project[key]=clone(raw[key],key);}
  for(const key of arrays)if(raw[key]!==undefined){if(!Array.isArray(raw[key])||raw[key].length>500)throw Error(key+': ожидается массив до 500 записей');project[key]=clone(raw[key],key,250000);}
+ if(raw.deviceCoordinationEvidenceV1!==undefined){
+  if(typeof epCoordNormalizeV1!=='function')throw Error('Модуль доказательств селективности недоступен');
+ }
  if(raw.deviceFaultScenariosV1!==undefined){
   if(typeof epDeviceFaultNormalizeV1!=='function')
    throw Error('Модуль проверки токов КЗ в точках аппаратов недоступен');
@@ -43,6 +46,8 @@ function epRestoreProjectExtensionsV2(raw,project){
  }
  if(raw.deviceFaultScenariosV1!==undefined)
   project.deviceFaultScenariosV1=epDeviceFaultNormalizeV1(project,raw.deviceFaultScenariosV1);
+ if(raw.deviceCoordinationEvidenceV1!==undefined)
+  project.deviceCoordinationEvidenceV1=epCoordNormalizeV1(project,raw.deviceCoordinationEvidenceV1);
  if(raw.protectionLinksVersion!==undefined&&raw.protectionLinksVersion!==1)
   throw Error('Неподдерживаемая версия иерархии защиты');
  if(raw.protectionLinks!==undefined){
