@@ -21,6 +21,8 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   const raw=typeof epProtectiveDeviceShortlistV1==='function'?
    epProtectiveDeviceShortlistV1(line,catalogue):
    {candidates:[],issues:[{code:'SHORTLIST_UNAVAILABLE',level:'BLOCKED'}]};
+  const ranking=typeof epProtectiveCandidateRankingV1==='function'?
+   epProtectiveCandidateRankingV1(line,raw):null;
   const ib=safePositive(line.overloadInput?.ibA),iz=safePositive(line.overloadInput?.izA),
    ik=safePositive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa),
    voltageV=safePositive(line.faultInput?.voltageV);
@@ -104,7 +106,7 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
     icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
     modules:article.modules??null,source:article.source||null,
     verificationStatus:article.verificationStatus||'UNKNOWN'}:null,
-   status,reasons,candidates:raw.candidates,engineeringApproved:false});
+   status,reasons,candidates:raw.candidates,ranking,engineeringApproved:false});
  }
  const selected=rows.find(x=>x.lineId===selectedId)||rows[0]||null;
  return {schema:'electropanel.protection.workbench.draft.1',
@@ -119,6 +121,16 @@ function epProtectionWorkbenchHtmlV1(report){
  if(!report?.selected)return '<p>Добавьте отходящую цепь, чтобы проверить подбор защиты.</p>';
  const x=report.selected,fmt=v=>v===null||v===undefined?'Не задано':esc(v);
  const article=x.selectedArticle;
+ const ranked=x.ranking?.rows||[];
+ const rankingHtml='<h4>Порядок инженерной проверки кандидатов (не допуск)</h4>'+
+  '<table><thead><tr><th>Артикул</th><th>Оценка</th><th>Запас In−Ib, А</th>'+
+  '<th>Запас Iz−In, А</th><th>Запас Icn−Ik, кА</th><th>Запас Uном−Uсети, В</th>'+
+  '<th>Неподтверждённые данные</th></tr></thead><tbody>'+
+  ranked.map(c=>'<tr><td>'+esc(c.catalogKey)+'</td><td>'+esc(c.classification)+
+   '</td><td>'+fmt(c.currentHeadroomA)+'</td><td>'+fmt(c.cableHeadroomA)+
+   '</td><td>'+fmt(c.breakingHeadroomKa)+'</td><td>'+fmt(c.voltageHeadroomV)+
+   '</td><td>'+esc(c.openEvidence.join('; '))+'</td></tr>').join('')+'</tbody></table>'+
+  '<p>Ранжирование — порядок просмотра, не автоматическое разрешение на установку.</p>';
  const rows=x.candidates.map(c=>{
   const reasons=(c.reasons.length?c.reasons.join(', '):'Арифметических противоречий не выявлено')+
    (c.caution?.length?' · требуют проверки: '+c.caution.join(', '):'');
@@ -140,6 +152,7 @@ function epProtectionWorkbenchHtmlV1(report){
    ' · In '+fmt(article.inA)+' А · Icn '+fmt(article.icnKa)+' кА · Icu '+fmt(article.icuKa)+' кА · '+fmt(article.poles)+' пол.':
    'Артикул не выбран или отсутствует в каталоге')+'</p>'+
   '<p>Замечания: '+(x.reasons.length?x.reasons.map(esc).join('; '):'Нет по проверяемым входным данным')+'</p>'+
+  rankingHtml+
   '<form data-protection-input-form="'+esc(x.lineId)+'" class="ep-protection-inputs">'+
   '<fieldset><legend>Исходные токи (ввод инженером, без автоматического расчёта)</legend>'+
   '<label>Ib, А <input name="ibA" type="text" inputmode="decimal" required value="'+(x.ibA===null?'':esc(x.ibA))+'"></label>'+
