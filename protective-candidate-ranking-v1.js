@@ -2,7 +2,7 @@
 // Explanatory ranking of already screened candidate breakers. This is NOT
 // electrical approval: no penalty weighting is allowed to override rejection.
 // Ranking does not invent missing manufacturer ratings or short-circuit values.
-function epProtectiveCandidateRankingV1(line,shortlist){
+function epProtectiveCandidateRankingV1(line,shortlist,faultBasis=null){
  const raw=Array.isArray(shortlist?.candidates)?shortlist.candidates:[];
  const num=v=>typeof v==='number'&&Number.isFinite(v)&&v>0?v:null;
  const parse=v=>{
@@ -17,6 +17,14 @@ function epProtectiveCandidateRankingV1(line,shortlist){
  const rows=[];
  for(const c of raw){
   const reasons=[...(c.reasons||[])],warnings=[...(c.caution||[])];
+  if(faultBasis?.mode==='CALCULATED_UNUSABLE')
+   warnings.push('SELECTION_MAXIMUM_CURRENT_UNUSABLE');
+  if(faultBasis?.mode==='MANUAL_ONLY')
+   warnings.push('SELECTION_ONLY_MANUAL_IK');
+  for(const issue of faultBasis?.issues||[]){
+   if(issue.level==='BLOCKED')reasons.push(issue.code);
+   else warnings.push(issue.code);
+  }
   const rated=num(c.inA),icn=num(c.icnKa),ratedVolts=num(c.icnVoltageV);
   const eligible=c.status==='POTENTIAL'&&reasons.length===0;
   const missing=[];
@@ -49,12 +57,19 @@ function epProtectiveCandidateRankingV1(line,shortlist){
   // This is an inspection order only: first numerical suitability,
   // then fewer documentary gaps, then deterministic catalogue attributes.
   const essentialMissing=ib===null||iz===null||ik===null||volts===null||
-   ratedVolts===null||!c.icnStandard;
+   ratedVolts===null||!c.icnStandard||
+   faultBasis?.mode==='CALCULATED_UNUSABLE';
   const classification=contradiction?'EXCLUDED':
    !eligible||essentialMissing?'INCOMPLETE':'PRELIMINARY_CANDIDATE';
   rows.push({catalogKey:c.sku,manufacturerSku:c.manufacturerSku??null,
    maker:c.maker??null,series:c.series??null,inA:rated,icnKa:icn,
    classification,originalStatus:c.status,
+   ikComparisonSource:faultBasis?.mode==='CALCULATED_MAXIMUM'?
+    'CALCULATED_MAXIMUM':'MANUAL_OR_MISSING',
+   calculatedFaultPoint:faultBasis?.comparisonPoint??null,
+   calculatedFaultModel:faultBasis?.model??null,
+   ikComparedKa:ik,
+   manualIkKa:faultBasis?.manualIkKa??null,
    currentHeadroomA,cableHeadroomA,breakingHeadroomKa,voltageHeadroomV,
    blockingReasons:[...new Set(reasons)],
    openEvidence:[...new Set([...missing,...warnings])],
