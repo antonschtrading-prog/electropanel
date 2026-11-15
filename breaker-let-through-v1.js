@@ -135,9 +135,14 @@ function epBreakerLetThroughV1(project,line,article){
  if(![conductorCapacityA2s,energyMarginA2s,minimumSectionMm2].every(Number.isFinite)){
   add('LET_THROUGH_ENERGY_OVERFLOW','BLOCKED');return end();
  }
+ // A manufacturer's UPPER bound exceeding conductor capacity does not
+ // establish that actual fault let-through energy exceeds capacity.
+ // It only fails to demonstrate withstand. Conversely an upper bound at or
+ // below capacity is a conservative preliminary arithmetic demonstration.
  const numericalStatus=energyMarginA2s< -1e-12*conductorCapacityA2s?
-  'FAIL':'PRELIMINARY_PASS';
- if(numericalStatus==='FAIL')add('LET_THROUGH_CABLE_CAPACITY_EXCEEDED','BLOCKED');
+  'NOT_DEMONSTRATED':'PRELIMINARY_PASS';
+ if(numericalStatus==='NOT_DEMONSTRATED')
+  add('LET_THROUGH_WITHSTAND_NOT_DEMONSTRATED','UNKNOWN');
  return end({prospectiveCurrentA:current,letThroughUpperBoundA2s,
   conductorCapacityA2s,energyMarginA2s,minimumSectionMm2,
   sectionMm2:section,kA_SqrtS_PerMm2:k,conductorRole:input.conductorRole,
