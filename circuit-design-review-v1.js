@@ -36,6 +36,16 @@ function epCircuitDesignReviewV1(project,lookupSku){
    else if(article.icnVoltageV<voltageV)
     reasons.push({code:'CATALOG_ICN_VOLTAGE_LT_DECLARED',level:'BLOCKED'});
   }
+  // Independent maximum prospective short-circuit calculation. Never
+  // substitute the minimum L-PE current or silently overwrite manual Ik.
+  const maximumFault=line.maximumFaultInput&&typeof epMaximumFaultCurrentV2==='function'?
+   epMaximumFaultCurrentV2(project,line,lookupSku):null;
+  if(maximumFault){
+   for(const issue of maximumFault.issues||[])
+    reasons.push({code:issue.code,level:issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN'});
+   if(line.faultInput?.ikKa!==undefined&&line.faultInput?.ikKa!==null)
+    reasons.push({code:'MAX_FAULT_AND_MANUAL_IK_INDEPENDENT',level:'UNKNOWN'});
+  }
   const reference=typeof epCableReferenceForCircuitV1==='function'?
    epCableReferenceForCircuitV1(project,line,lookupSku):null;
   const section=finite(line.cableDesignInput?.sectionMm2);
@@ -91,7 +101,7 @@ function epCircuitDesignReviewV1(project,lookupSku){
   const status=reasons.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId:line.id,name:line.name||'',phase:line.phase||null,sku:line.catalogSku||null,
    ibA:ib,inA,izA:iz,ikKa:ik,voltageV,icnKa,sectionMm2:section,current,cable,breaking,referenceStatus,
-   referenceIzA:candidate?.izA??null,voltageDrop:drop,status,reasons});
+   referenceIzA:candidate?.izA??null,voltageDrop:drop,maximumFault,status,reasons});
  }
  return {schema:'electropanel.design.review.1',
   status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
