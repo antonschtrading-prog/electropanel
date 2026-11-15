@@ -42,7 +42,7 @@ test('wrong factory article or rated current is blocking regardless of catalogue
  }
 });
 test('unknown maker articles remain unindexed and do not borrow adjacent series facts',()=>{
- const r=check({lines:[{id:'X',catalogSku:'SE-A9F74116'}]},lookup);
+ const r=check({lines:[{id:'X',catalogSku:'IEK-MVA20-1-016-C'}]},lookup);
  assert.equal(r.rows[0].status,'NOT_INDEXED');
  assert.equal(r.rows[0].sourceUrl,null);
  assert.ok(r.issues.some(x=>x.code==='MANUFACTURER_FACTS_REFERENCE_NOT_INDEXED'));
