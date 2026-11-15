@@ -26,6 +26,10 @@ function epRestoreProjectExtensionsV2(raw,project){
  const arrays=['catalogArticles','dinPlacementsV1','manualLayoutV1','cables','manufacturerEvidenceRecords'];
  for(const key of objects)if(raw[key]!==undefined){if(!object(raw[key]))throw Error(key+': ожидается объект');project[key]=clone(raw[key],key);}
  for(const key of arrays)if(raw[key]!==undefined){if(!Array.isArray(raw[key])||raw[key].length>500)throw Error(key+': ожидается массив до 500 записей');project[key]=clone(raw[key],key,250000);}
+ if(raw.deviceSupplyV1!==undefined){
+  if(typeof epDeviceSupplyValidateV1!=='function')throw Error('Модуль питания устройств недоступен');
+  project.deviceSupplyV1=epDeviceSupplyValidateV1(project,raw.deviceSupplyV1);
+ }
  if(raw.protectionLinksVersion!==undefined&&raw.protectionLinksVersion!==1)
   throw Error('Неподдерживаемая версия иерархии защиты');
  if(raw.protectionLinks!==undefined){
