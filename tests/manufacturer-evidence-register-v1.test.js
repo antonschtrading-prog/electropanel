@@ -132,3 +132,32 @@ test('evidence form shows selected document requirements and HTML escapes string
  assert.doesNotMatch(html,/<svg /);
  assert.match(html,/&lt;svg /);
 });
+
+test('print links factory article, document revision and exact graph page with bounded I2t',()=>{
+ const {epEngineeringPrintV1}=require('../engineering-print-v1.js');
+ const p=project();p.manufacturerEvidenceRecords=[record()];
+ p.lines[0].letThroughInput.evidenceRecordId='DOC-1';
+ global.epManufacturerEvidenceRegisterV1=audit;
+ global.epLetThroughEvidenceBindingV1=bind;
+ const report=calc(p,p.lines[0],article());
+ const html=epEngineeringPrintV1({sections:{
+  manufacturerEvidence:audit(p),
+  protectionDecision:{rows:[{lineId:'L1',sku:p.lines[0].catalogSku,
+    breakerLetThrough:report}]}}});
+ assert.match(html,/Реестр паспортных документов/);
+ assert.match(html,/page 5, graph 2/);
+ assert.match(html,/edition 1/);
+ assert.match(html,/DOC-1/);
+ assert.match(html,/NOT_ESTABLISHED/);
+});
+test('evidence registry is visible in production app and bundle only as draft',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+ const bundle=fs.readFileSync(path.join(__dirname,'..','engineering-bundle-v1.js'),'utf8');
+ const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+ assert.match(html,/id="manufacturerEvidencePanel"/);
+ assert.ok(html.indexOf('manufacturer-evidence-register-v1.js')<
+  html.indexOf('breaker-let-through-v1.js'));
+ assert.match(bundle,/manufacturerEvidence=section/);
+ assert.match(app,/epAddManufacturerEvidenceRecordV1/);
+});
