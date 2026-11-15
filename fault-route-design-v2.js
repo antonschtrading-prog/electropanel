@@ -115,13 +115,32 @@ function epMaximumFaultCurrentV2(project,line,lookup){
   return Number.isFinite(n)&&n<=1e7&&(allowZero?n>=0:n>0)?n:null;
  };
  const u=parse(three?input.uLLV:input.u0V),c=parse(input.cmax);
- const sr=parse(input.sourceROhm,true),sx=parse(input.sourceXOhm,true);
+ let sr=parse(input.sourceROhm,true),sx=parse(input.sourceXOhm,true);
+ let transformer=null;
+ if(input.sourceModel!==undefined&&input.sourceModel!=='DECLARED_RX'&&
+    input.sourceModel!=='TRANSFORMER_WITH_UPSTREAM'){
+  add('MAX_FAULT_SOURCE_MODEL_UNSUPPORTED','BLOCKED');return end();
+ }
+ if(input.sourceModel==='TRANSFORMER_WITH_UPSTREAM'){
+  if(!three){add('MAX_FAULT_TRANSFORMER_THREE_PHASE_ONLY','BLOCKED');return end();}
+  if(typeof epTransformerSourceV1!=='function'){
+   add('MAX_FAULT_TRANSFORMER_MODULE_UNAVAILABLE','BLOCKED');return end();
+  }
+  transformer=epTransformerSourceV1(input.transformer);
+  for(const issue of transformer.issues)add('MAX_FAULT_'+issue.code,issue.level);
+  sr=transformer.sourceROhm;sx=transformer.sourceXOhm;
+  if(transformer.ratedVoltageV!==u){
+   add('MAX_FAULT_TRANSFORMER_VOLTAGE_MISMATCH','BLOCKED');return end();
+  }
+ }
  if(u===null||u>1000||c===null||c<1||c>1.2||sr===null||sx===null){
   add('MAX_FAULT_NETWORK_INVALID','BLOCKED');return end();
  }
- if(typeof input.networkSource!=='string'||!input.networkSource.trim())
-  add('MAX_FAULT_NETWORK_SOURCE_MISSING');
- else if(input.networkSource.length>2000)add('MAX_FAULT_NETWORK_SOURCE_TOO_LONG','BLOCKED');
+ if(input.sourceModel!=='TRANSFORMER_WITH_UPSTREAM'){
+  if(typeof input.networkSource!=='string'||!input.networkSource.trim())
+   add('MAX_FAULT_NETWORK_SOURCE_MISSING');
+  else if(input.networkSource.length>2000)add('MAX_FAULT_NETWORK_SOURCE_TOO_LONG','BLOCKED');
+ }
  if(!Array.isArray(input.segments)||input.segments.length>50){
   add('MAX_FAULT_SEGMENTS_INVALID','BLOCKED');return end();
  }
@@ -188,7 +207,8 @@ function epMaximumFaultCurrentV2(project,line,lookup){
  }
  return end({ikMaxKa:ikKa,ikMaxA:ikA,impedanceOhm:z,rOhm:r,xOhm:x,segments,
   numericComparison:article&&parse(article.icnKa)!==null?(ikKa>article.icnKa?'EXCEEDS_ICN':'BELOW_OR_EQUAL_ICN'):'UNAVAILABLE',
-  cmax:c,voltageV:u,model:input.model,icnKa:article?.icnKa??null,
+  cmax:c,voltageV:u,model:input.model,sourceModel:input.sourceModel??'DECLARED_RX',
+  transformer,icnKa:article?.icnKa??null,
   thresholdStatus,formula:three?
    'Ik3,max = cmax × ULL / (sqrt(3) × |Z1|)':
    'IkLN,max = cmax × U0 / |ZL+ZN|',
@@ -215,7 +235,13 @@ function epApplyMaximumFaultV2(project,lineId,input,lookup){
   'MAX_FAULT_INPUT_INVALID','MAX_FAULT_MODEL_UNSUPPORTED','MAX_FAULT_NETWORK_INVALID',
   'MAX_FAULT_NETWORK_SOURCE_TOO_LONG','MAX_FAULT_SEGMENTS_INVALID',
   'MAX_FAULT_SEGMENT_INVALID','MAX_FAULT_SEGMENT_SOURCE_TOO_LONG',
-  'MAX_FAULT_ZERO_OR_INVALID_IMPEDANCE','MAX_FAULT_RESULT_INVALID'
+  'MAX_FAULT_ZERO_OR_INVALID_IMPEDANCE','MAX_FAULT_RESULT_INVALID',
+  'MAX_FAULT_SOURCE_MODEL_UNSUPPORTED','MAX_FAULT_TRANSFORMER_THREE_PHASE_ONLY',
+  'MAX_FAULT_TRANSFORMER_MODULE_UNAVAILABLE','MAX_FAULT_TRANSFORMER_VOLTAGE_MISMATCH',
+  'MAX_FAULT_TRANSFORMER_INPUT_INVALID','MAX_FAULT_TRANSFORMER_VALUES_INVALID',
+  'MAX_FAULT_TRANSFORMER_SOURCE_TOO_LONG','MAX_FAULT_TRANSFORMER_UPSTREAM_SOURCE_TOO_LONG',
+  'MAX_FAULT_TRANSFORMER_IMPEDANCE_INVALID','MAX_FAULT_TRANSFORMER_REACTANCE_INVALID',
+  'MAX_FAULT_TRANSFORMER_LOSS_EXCEEDS_IMPEDANCE'
  ].includes(issue.code));
  if(malformed)return {project:null,code:malformed.code,report};
  line.calculationReview={...line.calculationReview,required:true,reason:'MAX_FAULT_INPUT_UPDATED'};
