@@ -21,6 +21,13 @@ function epEngineeringPrintV1(bundle){
  const workQueueTable=rows(['Приоритет','Цепь','Задача','Раздел'],workQueue.map(x=>[x.priority,x.lineId,x.action,x.section]));
  const designReview=sections.designReview?.rows||[];
  const designReviewTable=rows(['Цепь','Ib A','In A','Iz A','Icn kA','Ik kA','Сечение мм²','ΔU %','Статус'],designReview.map(x=>[x.lineId,x.ibA,x.inA,x.izA,x.icnKa,x.ikKa,x.sectionMm2,x.voltageDrop?.dropPercent,x.status]));
+ const faultReconciliationTable=rows(['Цепь','Общий расчётный пункт','Ручной Ik, кА','Расчётный Ik,max, кА','Разность, кА','Разность, %','Статус сверки'],
+  designReview.filter(x=>x.faultCurrentComparison).map(x=>{
+   const c=x.faultCurrentComparison;
+   return [x.lineId,c.scope==='SAME_POINT_SAME_FAULT_MODEL'?'Заявлено совпадение':'Не установлено',
+    c.manualIkKa??'—',c.computedIkKa??'—',c.differenceKa??'—',
+    c.differencePercent??'—',c.status];
+  }));
  const cableReference=sections.cableReference?.rows||[];
  const cableReferenceTable=rows(['Цепь','Ib, A','In, A','Способ','Справочное сечение, мм²','Статус'],cableReference.map(x=>[x.lineId,x.report?.ibA,x.report?.inA,x.report?.installationMethod,x.report?.smallestReferenceCandidate?.sectionMm2,x.report?.status]));
  const loadCurrent=sections.loadCurrent?.rows||[];
@@ -113,6 +120,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Спецификация оборудования</h2>'+bomTable+
   '<h2>Паспортные данные выбранного оборудования · источники и ограничения</h2>'+catalogueEvidenceTable+
   '<h2>Очередь инженерных задач</h2>'+workQueueTable+
+  '<h2>Сверка исходных токов КЗ · только при явно совпадающем сценарии</h2>'+faultReconciliationTable+
   '<h2>Матрица проектных расчётов</h2>'+designReviewTable+
   '<h2>Справочные сечения проводников</h2>'+cableReferenceTable+
   '<h2>Расчёт тока нагрузки</h2>'+loadCurrentTable+
