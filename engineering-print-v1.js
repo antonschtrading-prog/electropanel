@@ -31,6 +31,17 @@ function epEngineeringPrintV1(bundle){
    x.minimum?.ikMinA??'—',x.minimum?.tripTimeStatus??'UNKNOWN',
    x.minimum?.allowedTimeStatus??'UNKNOWN',x.status,
    (x.issues||[]).map(i=>i.code).join('; ')]));
+ const cableOverloadTable=rows(['Цепь','Артикул','Ib, A','In, A','Iz исходный, A','Коэффициенты','Iz скорр., A',
+  'Iz для проверки, A','I2, A','1,45 Iz, A','Запас I2, A','Ib≤In','In≤Iz','I2≤1,45Iz','Источники и замечания'],
+  protectionDecisionRows.map(x=>{
+   const d=x.overloadCoordination||{},f=(d.factors||[]).map(t=>t.id+'='+t.value+' ('+(t.source??'без источника')+')').join('; ');
+   return [x.lineId,x.sku??'—',d.ibA??'—',d.inA??'—',d.baseIzA??'—',f,
+    d.correctedIzA??'—',d.comparisonIzA??'—',d.i2A??'—',d.i2LimitA??'—',
+    d.marginA??'—',d.ibInStatus??'UNKNOWN',d.inIzStatus??'UNKNOWN',
+    d.i2IzStatus??'UNKNOWN',
+    [d.baseIzSource,d.i2Source,d.i2Standard,d.applicabilitySource,
+      ...(d.issues||[]).map(z=>z.code)].filter(Boolean).join('; ')];
+  }));
  const faultReconciliationTable=rows(['Цепь','Общий расчётный пункт','Ручной Ik, кА','Расчётный Ik,max, кА','Разность, кА','Разность, %','Статус сверки'],
   designReview.filter(x=>x.faultCurrentComparison).map(x=>{
    const c=x.faultCurrentComparison;
@@ -107,6 +118,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
   '<h2>Единая проверка защиты · числовые нарушения и неполные данные</h2>'+protectionDecisionTable+
+  '<h3>Защита кабеля от перегрузки · подтверждение I2 и поправок Iz</h3>'+cableOverloadTable+
   '<p>Проверки не подтверждают соответствие требованиям и не заменяют проверку паспортов, температурных условий, тока КЗ, норм и селективности.</p>'+
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
