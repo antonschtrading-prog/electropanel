@@ -1040,6 +1040,9 @@ function renderEngineeringDiagnosticsV1(){
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
+ const letThroughPanel=$('breakerLetThroughPanel');
+ if(letThroughPanel&&typeof epBreakerLetThroughHtmlV1==='function')
+  letThroughPanel.innerHTML=epBreakerLetThroughHtmlV1(state,selectedLine,catalogDevice);
  const thermalPanel=$('cableThermalPanel');
  if(thermalPanel&&typeof epCableShortCircuitThermalHtmlV1==='function')
   thermalPanel.innerHTML=epCableShortCircuitThermalHtmlV1(state,selectedLine,catalogDevice);
@@ -2234,6 +2237,65 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('breakerLetThroughPanel').addEventListener('click',e=>{
+ const add=e.target.closest('[data-add-let-through-band]');
+ const remove=e.target.closest('[data-remove-let-through-band]');
+ if(add){
+  const holder=add.closest('[data-let-through-editor]').querySelector('[data-let-through-bands]');
+  if(holder.children.length>=30)return notify('Максимум 30 диапазонов энергии',true);
+  holder.insertAdjacentHTML('beforeend',epBreakerLetThroughBandHtmlV1({},holder.children.length));
+ }
+ if(remove)remove.closest('[data-let-through-band]').remove();
+});
+$('breakerLetThroughPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-let-through]');if(!form)return;
+ e.preventDefault();
+ const line=state.lines.find(x=>x.id===form.dataset.letThrough);
+ if(!line)return notify('Цепь не выбрана',true);
+ const get=k=>form.elements.namedItem(k)?.value;
+ const currentBasis=get('letCurrentBasis');
+ const input={articleSku:get('letArticleSku'),articleInA:get('letArticleInA'),
+  deviceStandard:get('letStandard'),testVoltageV:get('letVoltage'),
+  testFrequencyHz:get('letFrequency'),applicationVoltageV:get('letApplicationVoltage'),
+  applicationFrequencyHz:get('letApplicationFrequency'),protectionPoles:Number(get('letPoles')),
+  faultModel:get('letModel'),comparisonPoint:get('letPoint'),
+  currentBasis,conductorRole:get('letRole'),conductorMaterial:get('letMaterial'),
+  sectionMm2:get('letSection'),kA_SqrtS_PerMm2:get('letK'),
+  manufacturerSource:get('letManufacturerSource'),testConditionSource:get('letConditionSource'),
+  cableSource:get('letCableSource'),kSource:get('letKSource'),
+  manufacturerEnvelopeConfirmed:form.elements.namedItem('letEnvelopeConfirmed').checked,
+  conductorApplicationReviewed:form.elements.namedItem('letCableReviewed').checked,
+  temperatureBasisConfirmed:form.elements.namedItem('letTemperatureConfirmed').checked,
+  bands:[...form.querySelectorAll('[data-let-through-band]')].map(group=>
+   Object.fromEntries([...group.querySelectorAll('[data-let-through-band-field]')].map(el=>
+    [el.dataset.letThroughBandField,el.value])))};
+ if(currentBasis==='DECLARED_SCENARIO'){
+  input.prospectiveCurrentA=get('letCurrent');
+  input.prospectiveSource=get('letManufacturerSource');
+ }
+ const candidate=JSON.parse(JSON.stringify(state));
+ const target=candidate.lines.find(x=>x.id===line.id);target.letThroughInput=input;
+ const report=epBreakerLetThroughV1(candidate,target,catalogDevice(target.catalogSku));
+ const malformed=report.issues.find(x=>x.level==='BLOCKED'&&[
+  'LET_THROUGH_INPUT_INVALID','LET_THROUGH_ARTICLE_MISMATCH',
+  'LET_THROUGH_ARTICLE_RATING_MISMATCH','LET_THROUGH_DEVICE_STANDARD_MISMATCH',
+  'LET_THROUGH_TEST_CONDITIONS_MISMATCH','LET_THROUGH_ARTICLE_VOLTAGE_UNCONFIRMED',
+  'LET_THROUGH_POLE_CONFIGURATION_MISMATCH','LET_THROUGH_FAULT_MODEL_UNSUPPORTED',
+  'LET_THROUGH_FAULT_POINT_MISSING','LET_THROUGH_SOURCE_TOO_LONG',
+  'LET_THROUGH_CURRENT_INVALID','LET_THROUGH_CURRENT_BASIS_UNSUPPORTED',
+  'LET_THROUGH_CONDUCTOR_INVALID','LET_THROUGH_CONDUCTOR_ROLE_UNSUPPORTED',
+  'LET_THROUGH_MATERIAL_UNSUPPORTED','LET_THROUGH_MATERIAL_MISMATCH',
+  'LET_THROUGH_CONDUCTOR_SECTION_MISMATCH','LET_THROUGH_BANDS_INVALID',
+  'LET_THROUGH_BAND_INVALID','LET_THROUGH_BAND_SOURCE_TOO_LONG',
+  'LET_THROUGH_FAULT_SCENARIO_MISMATCH','LET_THROUGH_FAULT_VOLTAGE_MISMATCH'
+ ].includes(x.code));
+ if(malformed)return notify('Входные данные не сохранены: '+malformed.code,true);
+ target.calculationReview={...target.calculationReview,required:true,
+  reason:'BREAKER_LET_THROUGH_UPDATED'};
+ checkpoint();state=candidate;changed();
+ notify('Энергия пропускания I²t: '+report.numericalStatus+
+  ' · обязательная инженерная перепроверка');
 });
 $('cableThermalPanel').addEventListener('submit',e=>{
  const form=e.target.closest('[data-cable-thermal]');if(!form)return;
