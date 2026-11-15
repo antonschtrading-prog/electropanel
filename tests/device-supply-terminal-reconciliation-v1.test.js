@@ -45,7 +45,7 @@ test('incoming devices are not silently assigned a fictitious terminal model',()
  {from:'INCOMING:QF0',to:'BRANCH:BR1',conductors:['L1','N']}]};
  const r=audit(project);
  assert.equal(r.rows.length,2);assert.equal(r.rows[1].fromModelDeviceId,null);
- assert.ok(r.issues.some(x=>x.code==='SUPPLY_TERMINAL_INCOMING_BINDING_UNSUPPORTED'));
+ assert.ok(r.issues.some(x=>x.code==='SUPPLY_TERMINAL_INCOMING_BINDING_REQUIRED'));
  assert.equal(r.physicalContinuity,'NOT_VERIFIED');
 });
 test('identical declared roles do not yield a successful normative verdict',()=>{
@@ -75,4 +75,35 @@ test('changed wiring terminal role or device identity is a blocking mismatch',()
   assert.equal(r.status,'BLOCKED');
   assert.ok(r.issues.some(x=>x.code==='SUPPLY_TERMINAL_WIRING_IDENTITY_MISMATCH'));
  }
+});
+
+test('an explicitly bound incoming model identity can be reconciled with outgoing device',()=>{
+ const {epIncomingTerminalBindingSetV1:set,epIncomingTerminalBindingsAuditV1:auditBindings}=
+  require('../incoming-terminal-bindings-v1.js');
+ global.epIncomingTerminalBindingsAuditV1=auditBindings;
+ const project=p();
+ project.deviceSupplyV1={version:1,incomingDevices:[{id:'QF0',label:'Ввод'}],links:[
+  {from:'SOURCE:MAIN',to:'INCOMING:QF0',conductors:['L1','N']},
+  {from:'INCOMING:QF0',to:'BRANCH:BR1',conductors:['L1','N']}]};
+ project.deviceModelV19.devices.push({id:'D0',kind:'MCB',poles:2});
+ project.deviceModelV19.terminals.push(
+  {id:'Q0-L',device_id:'D0',conductor:'L1'},
+  {id:'Q0-N',device_id:'D0',conductor:'N'});
+ project.wiringModelV18.terminals.push(
+  {id:'Q0-L',device_id:'D0',conductor:'L1'},
+  {id:'Q0-N',device_id:'D0',conductor:'N'});
+ project.wiringModelV18.wires.push({from:'Q0-L',to:'T1'});
+ project.incomingTerminalBindingsV1=set(project,'QF0','D0');
+ const result=audit(project);
+ assert.equal(result.rows.length,2);
+ assert.equal(result.rows[0].toModelDeviceId,'D0');
+ assert.equal(result.rows[1].fromModelDeviceId,'D0');
+ assert.equal(result.rows[1].declaredDirectWires,1);
+ assert.equal(result.physicalContinuity,'NOT_VERIFIED');
+ assert.equal(result.engineeringApproved,false);
+ project.deviceModelV19.terminals.find(t=>t.id==='Q0-L').conductor='L2';
+ const stale=audit(project);
+ assert.equal(stale.status,'BLOCKED');
+ assert.ok(stale.issues.some(x=>x.code==='SUPPLY_TERMINAL_INCOMING_BINDING_AUDIT_BLOCKED'));
+ delete global.epIncomingTerminalBindingsAuditV1;
 });
