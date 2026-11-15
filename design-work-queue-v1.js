@@ -25,6 +25,14 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.reasons.some(x=>x.code==='LOAD_CURRENT_STALE'))add(row.lineId,2,'LOAD_CURRENT_STALE','Пересчитать ток после изменения нагрузки','load');
   // Engineering gate reasons become actionable tasks, never silent flags.
   const guided={
+   THERMAL_SHORT_CIRCUIT_ENERGY_EXCEEDS_CAPACITY:[1,'Повысить термическую стойкость проводника или обоснованно снизить энергию отключения I²t','cable'],
+   THERMAL_PHASE_SECTION_MISMATCH:[1,'Согласовать сечение проверяемой фазы с выбранным кабелем','cable'],
+   THERMAL_MATERIAL_MISMATCH:[1,'Согласовать материал проводника с исходными данными кабеля','cable'],
+   THERMAL_SHORT_CIRCUIT_EVIDENCE_REQUIRED:[2,'Задать сценарий КЗ, k, сечение и гарантированное время отключения','cable'],
+   THERMAL_K_SOURCE_MISSING:[2,'Подтвердить k с материалом, изоляцией и температурными пределами','cable'],
+   THERMAL_TIME_SOURCE_MISSING:[2,'Подтвердить верхнюю границу времени отключения для заявленного КЗ','protection'],
+   THERMAL_TEMPERATURE_BASIS_UNCONFIRMED:[2,'Проверить начальную и конечную температуру для выбранного k','cable'],
+   THERMAL_CLEARING_TIME_GUARANTEE_UNCONFIRMED:[2,'Проверить паспортное основание времени отключения для сценария КЗ','protection'],
    CABLE_OVERLOAD_I2_EXCEEDS_1_45_IZ:[1,'Проверить I2 по паспорту или увеличить допустимый ток кабеля Iz','cable'],
    CABLE_OVERLOAD_IN_EXCEEDS_IZ:[1,'Увеличить Iz либо изменить настройку/номинал аппарата','cable'],
    CABLE_OVERLOAD_DECLARED_IZ_EXCEEDS_CORRECTED:[1,'Согласовать заявленный Iz с поправками условий прокладки','cable'],
