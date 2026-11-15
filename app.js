@@ -1040,6 +1040,9 @@ function renderEngineeringDiagnosticsV1(){
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
+ const thermalPanel=$('cableThermalPanel');
+ if(thermalPanel&&typeof epCableShortCircuitThermalHtmlV1==='function')
+  thermalPanel.innerHTML=epCableShortCircuitThermalHtmlV1(state,selectedLine,catalogDevice);
  const overloadPanel=$('cableOverloadPanel');
  if(overloadPanel&&typeof epCableOverloadHtmlV1==='function')
   overloadPanel.innerHTML=epCableOverloadHtmlV1(state,selectedLine,catalogDevice);
@@ -2231,6 +2234,50 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('cableThermalPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-cable-thermal]');if(!form)return;
+ e.preventDefault();
+ const id=form.dataset.cableThermal,line=state.lines.find(x=>x.id===id);
+ if(!line)return notify('Выбранная цепь недоступна',true);
+ const value=k=>form.elements.namedItem(k)?.value;
+ const currentBasis=value('thermalCurrentBasis');
+ const input={method:'ADIABATIC_K2S2',currentBasis,
+  conductorRole:value('thermalRole'),conductorMaterial:value('thermalMaterial'),
+  insulationType:value('thermalInsulation'),sectionMm2:value('thermalSection'),
+  kA_SqrtS_PerMm2:value('thermalK'),faultModel:value('thermalFaultModel'),
+  comparisonPoint:value('thermalPoint'),clearingTimeS:value('thermalClearingTime'),
+  timeModel:'DECLARED_MAX_CLEARING_TIME',
+  kSource:value('thermalKSource'),timeSource:value('thermalTimeSource'),
+  conductorSource:value('thermalConductorSource'),methodSource:value('thermalMethodSource'),
+  temperatureBasisConfirmed:form.elements.namedItem('thermalTemperatureConfirmed').checked,
+  adiabaticApplicabilityConfirmed:form.elements.namedItem('thermalMethodConfirmed').checked,
+  clearingTimeGuaranteeConfirmed:form.elements.namedItem('thermalGuaranteeConfirmed').checked};
+ if(currentBasis==='DECLARED_SCENARIO'){
+  input.faultCurrentA=value('thermalFaultCurrent');
+  input.faultCurrentSource=value('thermalCurrentSource');
+ }
+ const candidate=JSON.parse(JSON.stringify(state));
+ const next=candidate.lines.find(x=>x.id===id);
+ next.shortCircuitThermalInput=input;
+ const report=epCableShortCircuitThermalV1(candidate,next,catalogDevice(next.catalogSku));
+ const malformed=new Set(['THERMAL_INPUT_INVALID','THERMAL_VALUES_INVALID',
+  'THERMAL_METHOD_UNSUPPORTED','THERMAL_CONDUCTOR_ROLE_UNSUPPORTED',
+  'THERMAL_CONDUCTOR_MATERIAL_UNSUPPORTED','THERMAL_SOURCE_TOO_LONG',
+  'THERMAL_PHASE_SECTION_MISMATCH','THERMAL_MATERIAL_MISMATCH',
+  'THERMAL_FAULT_CURRENT_INVALID','THERMAL_FAULT_MODEL_UNSUPPORTED',
+  'THERMAL_CURRENT_BASIS_UNSUPPORTED','THERMAL_FAULT_MODEL_MISMATCH',
+  'THERMAL_COMPARISON_POINT_MISMATCH','THERMAL_PE_REQUIRES_L_PE_SCENARIO',
+  'THERMAL_LINKED_MAXIMUM_PE_SCOPE_UNSUPPORTED',
+  'THERMAL_NEUTRAL_NOT_IN_THREE_PHASE_SYMMETRIC_PATH',
+  'THERMAL_LINKED_SCOPE_INVALID','THERMAL_CLEARING_TIME_MODEL_UNSUPPORTED']);
+ if(report.issues.some(x=>x.level==='BLOCKED'&&malformed.has(x.code)))
+  return notify('Исходные данные стойкости КЗ не сохранены: '+report.issues.find(x=>x.level==='BLOCKED').code,true);
+ next.calculationReview={...next.calculationReview,required:true,
+  reason:'SHORT_CIRCUIT_THERMAL_UPDATED'};
+ checkpoint();state=candidate;changed();
+ notify('Термическая стойкость КЗ: '+report.numericalStatus+
+  ' · Требуется инженерная перепроверка');
 });
 $('cableOverloadPanel').addEventListener('click',e=>{
  const add=e.target.closest('[data-add-overload-factor]');
