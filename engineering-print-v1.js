@@ -78,6 +78,15 @@ function epEngineeringPrintV1(bundle){
    r.documentTitle??'—',r.documentRevision??'—',r.documentUrl??'—',
    r.documentLocation??'—',r.reviewedAt??'—',r.reviewedBy??'—',
    r.sourceType??'—',r.approval??'NOT_ESTABLISHED']));
+ const manufacturerFactTable=rows(['Цепь','Аппарат в каталоге','Изготовитель','Артикул',
+  'Источник','Место в источнике','Проверенные поля','Отсутствуют в каталоге',
+  'Противоречия','Не подтверждено данным источником','Статус'],
+  (sections.manufacturerFacts?.rows||[]).map(x=>[
+   x.lineId,x.catalogKey??'—',x.manufacturer??'—',x.sku??'—',
+   x.sourceUrl??'Нет источника',x.sourceLocation??'—',
+   (x.matchedFields||[]).join(', '),(x.missingFields||[]).join(', '),
+   (x.conflictingFields||[]).join(', '),(x.unavailableClaims||[]).join(', '),
+   x.status]));
  const faultReconciliationTable=rows(['Цепь','Общий расчётный пункт','Ручной Ik, кА','Расчётный Ik,max, кА','Разность, кА','Разность, %','Статус сверки'],
   designReview.filter(x=>x.faultCurrentComparison).map(x=>{
    const c=x.faultCurrentComparison;
@@ -157,6 +166,9 @@ function epEngineeringPrintV1(bundle){
   '<h3>Защита кабеля от перегрузки · подтверждение I2 и поправок Iz</h3>'+cableOverloadTable+
   '<h3>Термическая стойкость проводника при КЗ · адиабатическая проверка</h3>'+cableThermalTable+
   '<h3>Энергия пропускания аппарата · подтверждённый диапазон изготовителя</h3>'+letThroughTable+
+  '<h3>Сверка каталога с опубликованными первичными характеристиками</h3>'+
+  manufacturerFactTable+
+  '<p>Совпадение опубликованных характеристик не подтверждает I²t, I2, время отключения, условия применения или соответствие проекта. Источники требуют проверки редакции и актуальности.</p>'+
   '<h3>Реестр паспортных документов и границ их применения</h3>'+manufacturerEvidenceTable+
   '<p>Реестр подтверждает факт документирования входных данных, а не подлинность документа или соответствие оборудования нормам.</p>'+
   '<p>Огибающая I²t используется только в заявленных пределах испытаний и не интерполируется. Источники и применимость требуют независимого подтверждения.</p>'+
