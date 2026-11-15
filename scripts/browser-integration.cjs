@@ -21,6 +21,7 @@ const server=http.createServer((req,res)=>{
  await page.locator('#deviceSupplyIncomingLabel').fill('Главный ввод');
  await page.locator('#deviceSupplyIncomingSave').click();
  assert.equal(await page.locator('.ep-incoming-terminal-bindings').count(),1);
+ await page.locator('.ep-incoming-terminal-bindings summary').click();
  await page.locator('#incomingBindingIncoming').selectOption('QF0');
  await page.locator('#incomingBindingSave').click();
  assert.equal(await page.evaluate(()=>(state.incomingTerminalBindingsV1||[]).length),0,
