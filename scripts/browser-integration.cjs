@@ -98,8 +98,54 @@ const server=http.createServer((req,res)=>{
  await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
  assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),0);
 
+ // Manufacturer exact-pair evidence is entered only after the upstream power path is declared.
+ const branch1=await page.evaluate(()=>state.branchDevices.find(x=>x.circuitId==='L1').id);
+ await page.locator('#deviceSupplyFrom').selectOption('SOURCE:MAIN');
+ await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
+ await page.locator('#deviceSupplyLinkSave').click();
+ await page.locator('#deviceSupplyFrom').selectOption('INCOMING:QF0');
+ await page.locator('#deviceSupplyTo').selectOption('BRANCH:'+branch1);
+ await page.locator('#deviceSupplyConductors').selectOption('L1,N');
+ await page.locator('#deviceSupplyLinkSave').click();
+ await page.locator('.ep-device-fault summary').click();
+ await page.locator('#deviceFaultNode').selectOption('BRANCH:'+branch1);
+ await page.locator('#deviceFaultIk').fill('5');
+ await page.locator('#deviceFaultVoltage').fill('230');
+ await page.locator('#deviceFaultSource').fill('Location fault study L1');
+ await page.locator('#deviceFaultRevision').fill('A');
+ await page.locator('#deviceFaultSave').click();
+ await page.locator('.ep-coordination-evidence summary').click();
+ await page.locator('#coordPair').selectOption('INCOMING:QF0|BRANCH:'+branch1);
+ await page.locator('#coordType').selectOption('SELECTIVITY_LIMIT');
+ await page.locator('#coordVoltage').fill('230');
+ await page.locator('#coordLimit').fill('8');
+ await page.locator('#coordMaker').fill('Manufacturer declared example');
+ await page.locator('#coordDocument').fill('Example application table');
+ await page.locator('#coordRevision').fill('revision A');
+ await page.locator('#coordPage').fill('table 2');
+ await page.locator('#coordUrl').fill('https://example.org/product.pdf');
+ await page.locator('#coordSave').click();
+ const pairStudy=await page.evaluate(()=>{
+  const r=epCoordAuditV1(state,catalogDevice);
+  const project=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+  const b=epEngineeringBundleV1(state,catalogDevice);
+  return {records:r.rows.length,imported:project.deviceCoordinationEvidenceV1?.length,
+   pair:b.sections.deviceCoordinationEvidence.rows.length,
+   selectivity:r.selectivityStatus,backup:r.backupStatus,approved:r.engineeringApproved};
+ });
+ assert.equal(pairStudy.records,1,JSON.stringify(pairStudy));
+ assert.equal(pairStudy.imported,1);
+ assert.equal(pairStudy.pair,1);
+ assert.equal(pairStudy.selectivity,'NOT_ASSESSED');
+ assert.equal(pairStudy.backup,'NOT_ASSESSED');
+ assert.equal(pairStudy.approved,false);
+ await page.locator('[data-coord-clear="INCOMING:QF0|BRANCH:'+branch1+'|SELECTIVITY_LIMIT"]').click();
+ assert.equal(await page.evaluate(()=>(state.deviceCoordinationEvidenceV1||[]).length),0);
+ await page.locator('[data-device-fault-clear="BRANCH:'+branch1+'"]').click();
+ await page.locator('[data-device-supply-unlink="BRANCH:'+branch1+'"]').click();
+ await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
+ assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),0);
 
- 
  // Engineer edits declared upstream protection hierarchy using the shipped UI.
  await page.evaluate(()=>switchView('board'));
  await page.locator('#protectionDownstream').selectOption('L2');
