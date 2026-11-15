@@ -455,7 +455,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.lines.find(x=>x.id==='L6').modules),3);
  await page.locator('#boardCanvas [data-line="L1"]').click();
  // Real route form, not direct invocation of the numerical function.
- await page.locator('#faultRoutePanel summary').click();
+ await page.locator('#faultRoutePanel > details > summary').click();
  const route=page.locator('[data-fault-route="L1"]');
  for(const [name,value] of Object.entries({u0V:'230',cmin:'0.95',sourceROhm:'0.1',sourceXOhm:'0.05',networkSource:'Test network study',iaA:'160',requiredTimeS:'0.4',tripSource:'Test curve reference',timeSource:'Test project scope'}))await route.locator('[name="'+name+'"]').fill(value);
  for(const [key,value] of Object.entries({lengthM:'25',phaseROhmKm:'8',peROhmKm:'8',phaseXOhmKm:'0.08',peXOhmKm:'0.08',source:'Test conductor datasheet at design temperature'}))await route.locator('[data-segment-field="'+key+'"]').fill(value);
