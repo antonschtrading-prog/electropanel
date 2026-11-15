@@ -22,6 +22,12 @@ function epProtectiveCandidateRankingV1(line,shortlist,faultBasis=null){
   if(faultBasis?.mode==='MANUAL_ONLY')
    warnings.push('SELECTION_ONLY_MANUAL_IK');
   for(const issue of faultBasis?.issues||[]){
+   // These issues describe the originally selected apparatus, not every
+   // alternative candidate. Re-evaluate Icn and voltage per candidate below.
+   if(['SELECTION_MAX_FAULT_EXCEEDS_ICN',
+        'SELECTION_MAX_FAULT_ICN_VOLTAGE_INSUFFICIENT'].includes(issue.code)){
+    warnings.push('ORIGINAL_SELECTED_ARTICLE_'+issue.code);continue;
+   }
    if(issue.level==='BLOCKED')reasons.push(issue.code);
    else warnings.push(issue.code);
   }
