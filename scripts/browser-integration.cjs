@@ -20,6 +20,13 @@ const server=http.createServer((req,res)=>{
  await page.locator('#deviceSupplyIncomingId').fill('QF0');
  await page.locator('#deviceSupplyIncomingLabel').fill('Главный ввод');
  await page.locator('#deviceSupplyIncomingSave').click();
+ assert.equal(await page.locator('.ep-incoming-terminal-bindings').count(),1);
+ await page.locator('#incomingBindingIncoming').selectOption('QF0');
+ await page.locator('#incomingBindingSave').click();
+ assert.equal(await page.evaluate(()=>(state.incomingTerminalBindingsV1||[]).length),0,
+  'Unknown terminal-model device must not create an incoming binding');
+ assert.equal(await page.locator('.ep-device-supply-cross').count(),1);
+
  await page.locator('#deviceSupplyFrom').selectOption('SOURCE:MAIN');
  await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
  await page.locator('#deviceSupplyLinkSave').click();
