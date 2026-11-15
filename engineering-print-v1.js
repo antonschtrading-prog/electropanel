@@ -46,6 +46,10 @@ function epEngineeringPrintV1(bundle){
  const crossFeedTable=rows(['Цепь','Питающий аппарат','Объявленные проводники','Прежних связей','Маршрут объявлен'],
   (sections.supplyCrossEvidence?.rows||[]).map(x=>[
    x.circuitId,x.upstream??'—',(x.deviceConductors||[]).join(', '),x.legacyCount,x.routeDeclared?'Да':'Нет']));
+ const deviceFaultTable=rows(['Аппарат','Ik,max, кА','Напряжение, В','Icn, кА','U Icn, В','Артикул','Сравнение','Изменён маршрут','Замечания'],
+  (sections.deviceFaultScenarios?.rows||[]).map(x=>[x.deviceNodeId,x.ikMaxKa,x.voltageV,
+   x.icnKa??'—',x.icnVoltageV??'—',x.sku??'—',x.numericalComparison,
+   x.supplyPathStale?'ДА':'нет',(x.issues||[]).map(i=>i.code).join('; ')]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -253,6 +257,8 @@ function epEngineeringPrintV1(bundle){
      t.upstreamSource??'Не указан',
      t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
+  '<h2>Исследования максимального тока КЗ в точках защитных аппаратов</h2>'+deviceFaultTable+
+  '<p>Только заявленные точки, источники и редакции. Даже положительное численное сравнение не доказывает нормативную пригодность или селективность.</p>'+
   '<h2>Питание между конкретными аппаратами · версия 1</h2>'+deviceSupplyTable+
   '<h3>Сверка питания с прежними схемами проводников</h3>'+crossFeedTable+
   '<h3>Привязки вводных аппаратов к терминальной модели</h3>'+incomingBindingsTable+
