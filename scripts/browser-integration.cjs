@@ -165,6 +165,53 @@ const server=http.createServer((req,res)=>{
   assert.equal(cableProof.approved,false);
  }finally{await cablePage.close();}
 
+ // Real browser: thermal short-circuit withstand is entered and persisted
+ // as a declared scenario and remains a blocking numerical failure.
+ const thermalPage=await browser.newPage({viewport:{width:1280,height:900}});
+ try{
+  await thermalPage.goto('http://127.0.0.1:'+server.address().port);
+  await thermalPage.locator('#loadDemo').click();
+  await thermalPage.evaluate(()=>{selectedLine='L1';switchView('board');});
+  await thermalPage.locator('#catalogSku').selectOption('SE-A9F74116');
+  const form=thermalPage.locator('#cableThermalPanel [data-cable-thermal]');
+  await form.locator('[data-cable-thermal-editor] > summary').click();
+  for(const [name,value] of Object.entries({
+   thermalInsulation:'PVC insulation',thermalSection:'6',thermalK:'115',
+   thermalPoint:'CIRCUIT-L1-END',thermalFaultCurrent:'5000',
+   thermalClearingTime:'0.1',thermalKSource:'Declared temperature basis',
+   thermalTimeSource:'Declared source of maximum clearing time',
+   thermalCurrentSource:'Declared source of fault current',
+   thermalConductorSource:'Cu cable 6 mm2 source',
+   thermalMethodSource:'Engineer reviewed adiabatic application'
+  }))await form.locator('[name="'+name+'"]').fill(value);
+  await form.locator('[name="thermalRole"]').selectOption('PHASE');
+  await form.locator('[name="thermalMaterial"]').selectOption('Cu');
+  await form.locator('[name="thermalCurrentBasis"]').selectOption('DECLARED_SCENARIO');
+  await form.locator('[name="thermalFaultModel"]').selectOption('SINGLE_PHASE_L_N');
+  for(const key of ['thermalTemperatureConfirmed','thermalMethodConfirmed','thermalGuaranteeConfirmed'])
+   await form.locator('[name="'+key+'"]').check();
+  await form.locator('button[type="submit"]').click();
+  const thermalResult=await thermalPage.evaluate(()=>{
+   const l=state.lines.find(x=>x.id==='L1');
+   const stored=JSON.parse(localStorage.getItem('electropanel_web_preview'))
+    .lines.find(x=>x.id==='L1').shortCircuitThermalInput;
+   const r=epCableShortCircuitThermalV1(state,l,catalogDevice(l.catalogSku));
+   const combined=epProtectionDecisionV1(state,catalogDevice).rows.find(x=>x.lineId==='L1');
+   return {k:stored?.kA_SqrtS_PerMm2,time:stored?.clearingTimeS,
+    source:stored?.kSource,current:r.faultCurrentA,energy:r.faultEnergyA2s,
+    status:r.numericalStatus,combined:combined.shortCircuitThermal?.numericalStatus,
+    approved:combined.engineeringApproved};
+  });
+  assert.equal(thermalResult.k,'115');
+  assert.equal(thermalResult.time,'0.1');
+  assert.equal(thermalResult.source,'Declared temperature basis');
+  assert.equal(thermalResult.current,5000);
+  assert.equal(thermalResult.energy,2500000);
+  assert.equal(thermalResult.status,'FAIL');
+  assert.equal(thermalResult.combined,'FAIL');
+  assert.equal(thermalResult.approved,false);
+ }finally{await thermalPage.close();}
+
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
