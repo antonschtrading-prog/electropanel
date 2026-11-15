@@ -463,6 +463,33 @@ const server=http.createServer((req,res)=>{
  await route.locator('button[type="submit"]').click();
  assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).thresholdStatus),'PRELIMINARY_PASS');
  assert.equal(await page.evaluate(()=>state.lines[0].faultInput?.ikKa??null),null);
+ // Real browser: explicitly declared trip-envelope points are optional,
+ // persisted, and never interpreted as a normative approval.
+ await page.locator('#faultRoutePanel > details > summary').click();
+ await route.locator('[data-trip-envelope-panel] > summary').click();
+ const chosen=await page.evaluate(()=>({sku:state.lines[0].catalogSku,
+  inA:catalogDevice(state.lines[0].catalogSku)?.inA}));
+ assert.ok(chosen.sku&&chosen.inA);
+ await route.locator('[name="tripArticleSku"]').fill(chosen.sku);
+ await route.locator('[name="tripArticleRatingA"]').fill(String(chosen.inA));
+ await route.locator('[name="tripSourceEvidence"]').fill('Test declared upper trip-time limit');
+ await route.locator('[data-trip-point-field="currentA"]').fill('160');
+ await route.locator('[data-trip-point-field="maxTimeS"]').fill('0.4');
+ await route.locator('[name="tripGuaranteeBasis"]').check();
+ await route.locator('[name="tripEnvelopeEnabled"]').check();
+ await route.locator('button[type="submit"]').click();
+ const tripState=await page.evaluate(()=>{
+  const l=state.lines.find(x=>x.id==='L1');
+  const r=epFaultRouteReviewV2(state,l,catalogDevice);
+  const saved=JSON.parse(localStorage.getItem('electropanel_web_preview')).lines.find(x=>x.id==='L1');
+  return {points:saved.faultRouteInput?.tripEnvelope?.points?.length,
+   source:saved.faultRouteInput?.tripEnvelope?.source,
+   numeric:r.tripEnvelope?.numericalStatus,approved:r.engineeringApproved};
+ });
+ assert.equal(tripState.points,1);
+ assert.equal(tripState.source,'Test declared upper trip-time limit');
+ assert.equal(tripState.numeric,'PRELIMINARY_WITHIN_ENVELOPE');
+ assert.equal(tripState.approved,false);
  await page.locator('#catalogSku').selectOption('SE-A9F74116');
  assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).thresholdStatus),'UNKNOWN');
  assert.equal(await page.evaluate(()=>normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview'))).lines.length),6);
