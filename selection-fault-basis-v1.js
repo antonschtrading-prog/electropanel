@@ -51,7 +51,18 @@ function epSelectionFaultBasisV1(project,line,lookup){
   add('SELECTION_MANUAL_IK_DIFFERENT_OR_UNSCOPED_POINT');
  if(manualV!==null&&voltage!==null&&manualV!==voltage)
   add('SELECTION_FAULT_VOLTAGE_CONTEXT_MISMATCH','BLOCKED');
- const forbidden=issues.some(i=>i.level==='BLOCKED'||i.code==='SELECTION_MAX_FAULT_BASIS_STALE')||
+ // A selected apparatus failing Icn must not invalidate a physically
+ // calculated Ik,max; doing so would hide the very rejection being checked.
+ // Likewise an understated manual same-point Ik is a design conflict, not
+ // a reason to suppress the larger independently calculated value.
+ const sourceFaults=new Set([
+  'MAX_FAULT_EXCEEDS_ICN','MAX_FAULT_ICN_VOLTAGE_INSUFFICIENT']);
+ const fatalSource=(calculated.issues||[]).some(i=>
+  i.level==='BLOCKED'&&!sourceFaults.has(i.code));
+ const forbidden=fatalSource||
+  issues.some(i=>i.code==='SELECTION_MAX_FAULT_BASIS_STALE'||
+   i.code==='SELECTION_FAULT_VOLTAGE_CONTEXT_MISMATCH'||
+   i.code==='SELECTION_MAX_FAULT_MODEL_UNSUPPORTED')||
   !point||ik===null||voltage===null;
  if(forbidden)return output({mode:'CALCULATED_UNUSABLE',model:input.model,
    comparisonPoint:point||null,manualIkKa:manual,manualVoltageV:manualV,
