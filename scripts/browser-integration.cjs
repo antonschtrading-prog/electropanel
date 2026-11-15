@@ -590,7 +590,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(rcboWorkflow.globalCatalogUntouched,true);
 
  assert.ok(await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.faultRoutes.rows[0].ikMinA>400));
- await page.locator('#faultRoutePanel summary').click();
+ await page.locator('#faultRoutePanel > details > summary').click();
  await page.locator('#faultRoutePanel').screenshot({path:'browser-fault-route.png'});
  await page.screenshot({path:'browser-integration.png',fullPage:true});
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
