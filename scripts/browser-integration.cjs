@@ -361,6 +361,32 @@ const server=http.createServer((req,res)=>{
  assert.equal(rankingScreen.missing,'INCOMPLETE');
  assert.equal(rankingScreen.wrong,'EXCLUDED');
  assert.equal(rankingScreen.approved,false);
+ const scopedIkScreen=await page.evaluate(()=>{
+  const key='SE-A9F74116',device=epCatalogSku(key);
+  const line={id:'L-SCOPED',catalogSku:key,phase:'L1',modules:1,
+   device:device.label,overloadInput:{ibA:10,izA:20},
+   faultInput:{ikKa:2,voltageV:230},
+   maximumFaultInput:{model:'SINGLE_PHASE_L_N',comparisonPoint:'END-L-SCOPED',
+    u0V:230,cmax:1.1,sourceROhm:.033,sourceXOhm:.008,
+    networkSource:'declared network equivalent',
+    segments:[{lengthM:20,phaseROhmKm:.05,neutralROhmKm:.05,
+     phaseXOhmKm:.02,neutralXOhmKm:.02,
+     source:'declared conductor R/X',temperatureBasisConfirmed:true}]}};
+  const project={earthing:'TN-S',lines:[line]};
+  const entries=[{id:key,device}];
+  const result=epProtectionWorkbenchV1(project,epCatalogSku,entries,'L-SCOPED');
+  const row=result.selected.ranking.rows[0],r=epProtectiveDeviceProjectAuditV1(project,epCatalogSku,entries);
+  return {source:row.ikComparisonSource,point:row.calculatedFaultPoint,
+   ik:row.ikComparedKa,classification:row.classification,
+   auditPotential:r.results[0].potential,approved:row.engineeringApproved};
+ });
+ assert.equal(scopedIkScreen.source,'CALCULATED_MAXIMUM');
+ assert.equal(scopedIkScreen.point,'END-L-SCOPED');
+ assert.ok(scopedIkScreen.ik>6);
+ assert.equal(scopedIkScreen.classification,'EXCLUDED');
+ assert.deepEqual(scopedIkScreen.auditPotential,[]);
+ assert.equal(scopedIkScreen.approved,false);
+
 
 
  // A catalogue article type must govern both protection selection and its board facade.
