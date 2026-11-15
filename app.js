@@ -996,6 +996,8 @@ function renderEngineeringDiagnosticsV1(){
  const supplyHolder=$('deviceSupplyPanel');
  if(supplyHolder)supplyHolder.innerHTML=typeof epDeviceSupplyHtmlV1==='function'?
   epDeviceSupplyHtmlV1(state)+
+   (typeof epIncomingTerminalBindingsHtmlV1==='function'?
+    epIncomingTerminalBindingsHtmlV1(state):'')+
    (typeof epDeviceSupplyTerminalReconciliationV1==='function'&&
     typeof epDeviceSupplyTerminalHtmlV1==='function'?
     epDeviceSupplyTerminalHtmlV1(epDeviceSupplyTerminalReconciliationV1(state)):''):
@@ -2052,9 +2054,29 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
     $('deviceSupplyConductors').value.split(','));
   }
   if(JSON.stringify(state.deviceSupplyV1)===JSON.stringify(next))return;
-  checkpoint();state.deviceSupplyV1=next;changed();
+  checkpoint();
+  state.deviceSupplyV1=next;
+  if(del&&Array.isArray(state.incomingTerminalBindingsV1))
+   state.incomingTerminalBindingsV1=state.incomingTerminalBindingsV1.filter(x=>
+    x.incomingId!==del.dataset.deviceSupplyRemoveIncoming);
+  changed();
   notify('Декларация питания сохранена. Соединения не подтверждены.');
  }catch(error){notify('Связь питания не сохранена: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const save=e.target.closest('#incomingBindingSave');
+ const clear=e.target.closest('#incomingBindingClear');
+ if(!save&&!clear)return;
+ try{
+  const incoming=$('incomingBindingIncoming').value,
+   model=$('incomingBindingModel').value;
+  if(!incoming||(save&&!model))throw Error('Выберите вводной и устройство модели');
+  const next=save?epIncomingTerminalBindingSetV1(state,incoming,model):
+   epIncomingTerminalBindingClearV1(state,incoming);
+  if(JSON.stringify(state.incomingTerminalBindingsV1||[])===JSON.stringify(next))return;
+  checkpoint();state.incomingTerminalBindingsV1=next;changed();
+  notify('Привязка вводного обновлена. Паспортные контакты не подтверждены.');
+ }catch(error){notify('Привязка вводного не сохранена: '+error.message,true);}
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
