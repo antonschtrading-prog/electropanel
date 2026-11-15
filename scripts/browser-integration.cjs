@@ -227,6 +227,21 @@ const server=http.createServer((req,res)=>{
   });
   assert.equal(info.sku,'A9F73110');
   assert.equal(info.voltage,230);
+  const primaryFact=await letPage.evaluate(()=>{
+   const line=state.lines.find(x=>x.id==='L1');
+   const audit=epManufacturerFactsReconciliationV1(state,catalogDevice);
+   const row=audit.rows.find(x=>x.lineId===line.id);
+   const bundle=epEngineeringBundleV1(state,catalogDevice);
+   return {status:row?.status,url:row?.sourceUrl,missingI2t:row?.unavailableClaims?.includes('I2T_LET_THROUGH_BANDS'),
+    bundleStatus:bundle.sections.manufacturerFacts?.rows?.find(x=>x.lineId===line.id)?.status};
+  });
+  assert.equal(primaryFact.status,'FACTS_MATCH');
+  assert.equal(primaryFact.bundleStatus,'FACTS_MATCH');
+  assert.equal(primaryFact.missingI2t,true);
+  assert.ok(primaryFact.url?.startsWith('https://eshop.se.com/'));
+  await letPage.locator('#manufacturerFactsPanel [data-manufacturer-facts] > summary').click();
+  assert.equal(await letPage.locator('#manufacturerFactsPanel').getByText('Открыть источник производителя').count(),1);
+
   const form=letPage.locator('#breakerLetThroughPanel [data-let-through]');
   await form.locator('[data-let-through-editor] > summary').click();
   for(const [name,value] of Object.entries({
