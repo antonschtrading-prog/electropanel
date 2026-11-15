@@ -5,6 +5,7 @@ const EP_CATALOG = Object.freeze({
   'SE-A9F74116':Object.freeze({
     maker:'Schneider Electric',series:'Acti9 iC60N',sku:'A9F74116',label:'iC60N C16',kind:'MCB',
     poles:1,modules:1,widthMm:18,inA:16,curve:'C',icnKa:6,appearance:'schneider',
+    icnVoltageV:230,icnStandard:'IEC/EN 60898-1',
     source:'https://eshop.se.com/sg/ic60n-miniature-circuit-breaker-1p-16a-c-curve-a9f74116.html'
   }),
   'SE-A9F73110':Object.freeze({
@@ -31,6 +32,8 @@ const EP_CATALOG = Object.freeze({
   'ABB-2CDS251001R0164':Object.freeze({
     maker:'ABB',series:'System pro M S200',sku:'2CDS251001R0164',label:'S201-C16',kind:'MCB',
     poles:1,modules:1,widthMm:17.5,inA:16,curve:'C',icnKa:6,appearance:'abb',
+    icnVoltageV:230,icnStandard:'IEC/EN 60898-1',
+    productSource:'https://new.abb.com/docs/librariesprovider66/huabb/elektromos-install%C3%A1ci%C3%B3s-megold%C3%A1sok-%C3%A9p%C3%BCletekhez-katal%C3%B3gus-2020_kismegszak%C3%ADt%C3%B3k.pdf',
     source:'https://nizke-napeti.cz.abb.com/jistice-1pol-s201-6-ka-charakteristika-c-16995/jistic-s200-1fazovy-2cds251001r0164'
   }),
   'IEK-MVA20-1-016-C':Object.freeze({
