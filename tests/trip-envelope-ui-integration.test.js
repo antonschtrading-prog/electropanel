@@ -25,9 +25,10 @@ test('optional envelope fields do not block ordinary TN fault-route submission',
  assert.match(html,/data-add-trip-point/);
 });
 test('TN route UI exposes declared manufacturer guarantees and protects text',()=>{
- const project=p();project.lines[0].faultRouteInput=input();
- project.lines[0].faultRouteInput.tripEnvelope.source='<svg onload="alert(1)">';
- const html=epFaultRouteHtmlV2(project,'L1',()=>article);
+ const source=input();source.tripEnvelope.source='<svg onload="alert(1)">';
+ const saved=route.epApplyFaultRouteV2(p(),'L1',source,()=>article);
+ assert.ok(saved.project);
+ const html=epFaultRouteHtmlV2(saved.project,'L1',()=>article);
  assert.doesNotMatch(html,/<svg onload/);
  assert.match(html,/&lt;svg/);
  assert.match(html,/data-trip-envelope-panel/);
