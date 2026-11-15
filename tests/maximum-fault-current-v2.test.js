@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const {epMaximumFaultCurrentV2:maximum,epFaultRouteProjectV2:projectReview}=require('../fault-route-design-v2.js');
+const {epMaximumFaultCurrentV2:maximum,epFaultRouteProjectV2:projectReview,epApplyMaximumFaultV2:applyMaximum}=require('../fault-route-design-v2.js');
 const {epEngineeringPrintV1:print}=require('../engineering-print-v1.js');
 function project(model='THREE_PHASE_POSITIVE_SEQUENCE'){
  const three=model==='THREE_PHASE_POSITIVE_SEQUENCE';
@@ -101,4 +101,46 @@ test('numeric short-circuit overrun is never hidden by unverified manufacturer e
  assert.equal(r.status,'BLOCKED');
  assert.ok(r.issues.some(x=>x.code==='MAX_FAULT_EXCEEDS_ICN'&&x.level==='BLOCKED'));
  assert.ok(r.issues.some(x=>x.code==='MAX_FAULT_ARTICLE_VERIFICATION_PENDING'));
+});
+
+test('maximum fault calculation is persisted atomically with source basis',()=>{
+ const p=project(),original=JSON.stringify(p);
+ const out=applyMaximum(p,'L1',p.lines[0].maximumFaultInput,()=>verified());
+ assert.ok(out.project);
+ assert.equal(out.report.thresholdStatus,'PRELIMINARY_PASS');
+ assert.equal(out.project.lines[0].maximumFaultInput.basis.catalogSku,'A');
+ assert.equal(out.project.lines[0].maximumFaultInput.basis.article.icnKa,6);
+ assert.equal(out.project.lines[0].calculationReview.required,true);
+ assert.equal(JSON.stringify(p),original);
+});
+test('changed article, cable or phase marks prior maximum fault result stale',()=>{
+ const changes=[
+  p=>p.lines[0].catalogSku='OTHER',
+  p=>p.lines[0].cableDesignInput={sectionMm2:4},
+  p=>p.lines[0].phase='L1',
+  p=>p.earthing='TN-C-S'
+ ];
+ for(const edit of changes){
+  const base=project(),stored=applyMaximum(base,'L1',base.lines[0].maximumFaultInput,()=>verified()).project;
+  edit(stored);
+  const r=maximum(stored,stored.lines[0],()=>verified());
+  assert.ok(r.issues.some(x=>x.code==='MAX_FAULT_BASIS_STALE'));
+  assert.notEqual(r.thresholdStatus,'PRELIMINARY_PASS');
+ }
+});
+test('changed catalogue breaker Icn invalidates input basis',()=>{
+ const p=project(),stored=applyMaximum(p,'L1',p.lines[0].maximumFaultInput,()=>verified()).project;
+ const r=maximum(stored,stored.lines[0],()=>({...verified(),icnKa:5}));
+ assert.ok(r.issues.some(x=>x.code==='MAX_FAULT_BASIS_STALE'));
+ assert.equal(r.engineeringApproved,false);
+});
+test('structural maximum fault failures do not change source project',()=>{
+ for(const mutate of [x=>x.cmax=1.5,x=>x.segments[0].r1OhmKm=-1,
+   x=>x.model='UNSUPPORTED']){
+  const p=project(),before=JSON.stringify(p),input=structuredClone(p.lines[0].maximumFaultInput);
+  mutate(input);
+  const out=applyMaximum(p,'L1',input,()=>verified());
+  assert.equal(out.project,null);
+  assert.equal(JSON.stringify(p),before);
+ }
 });
