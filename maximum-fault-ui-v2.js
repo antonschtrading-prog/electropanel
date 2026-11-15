@@ -52,7 +52,8 @@ function epMaximumFaultHtmlV2(project,lineId,lookup){
    '" data-max-fault-source-model="'+m.sourceModel+'">'+
    '<div class="ep-engineering-fields">'+
     field(m.three?'uLLV':'u0V',m.three?'ULL, В':'U0, В',current[m.three?'uLLV':'u0V'])+
-    field('cmax','cmax (1…1,2)',current.cmax)+networkFields+
+    field('cmax','cmax (1…1,2)',current.cmax)+
+    field('comparisonPoint','Точка расчёта КЗ (уникальное обозначение)',current.comparisonPoint)+networkFields+
    '</div><div data-max-segments>'+
     segments.map((segment,i)=>epMaximumFaultSegmentHtmlV2(segment,m.three,i)).join('')+
    '</div><button class="btn tiny" type="button" data-add-max-segment>Добавить участок</button> '+
