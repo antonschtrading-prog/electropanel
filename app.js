@@ -2142,6 +2142,20 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
   notify('Документированное заявление сохранено. Требуется инженерная проверка.');
  }catch(error){notify('Данные изготовителя не сохранены: '+error.message,true);}
 });
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ if(e.target.closest('#deviceFaultCsv')){
+  if(typeof epDeviceFaultCsvV1!=='function')return notify('Ведомость токов КЗ недоступна',true);
+  const report=epDeviceFaultAuditV1(state,catalogDevice);
+  return download(baseName()+'_fault_locations_DRAFT.csv',epDeviceFaultCsvV1(report),
+   'text/csv;charset=utf-8');
+ }
+ if(e.target.closest('#coordCsv')){
+  if(typeof epCoordCsvV1!=='function')return notify('Ведомость изготовителя недоступна',true);
+  const report=epCoordAuditV1(state,catalogDevice);
+  return download(baseName()+'_coordination_sources_DRAFT.csv',epCoordCsvV1(report),
+   'text/csv;charset=utf-8');
+ }
+});
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
   return notify('Ведомость защиты недоступна',true);
