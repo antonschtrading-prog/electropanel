@@ -78,6 +78,17 @@ function epApplyFaultRouteV2(project,lineId,input,lookup){
  return {project:draft,report,status:'REVIEW_REQUIRED'};
 }
 
+// Fingerprint of external project conditions used by the separately declared
+// maximum prospective current model. The R/X and cmax remain within the input.
+function epMaximumFaultBasisV2(project,line,article){
+ return {phase:line?.phase??null,earthing:project?.earthing??null,
+  cableSectionMm2:line?.cableDesignInput?.sectionMm2??null,
+  catalogSku:line?.catalogSku??null,
+  article:article?{sku:article.sku??null,kind:article.kind??null,
+   inA:article.inA??null,poles:article.poles??null,
+   icnKa:article.icnKa??null,icnVoltageV:article.icnVoltageV??null,
+   icnStandard:article.icnStandard??null}:null};
+}
 // Separate maximum prospective current assessment. Input impedance must describe
 // the declared fault topology; TN L-PE minimum-route values are NOT reused.
 function epMaximumFaultCurrentV2(project,line,lookup){
@@ -142,6 +153,12 @@ function epMaximumFaultCurrentV2(project,line,lookup){
  let article=null;
  try{article=line?.catalogSku&&lookup?.(line.catalogSku)||null;}
  catch(_){add('MAX_FAULT_CATALOG_LOOKUP_FAILED','BLOCKED');}
+ if(input.basis!==undefined){
+  const actualBasis=epMaximumFaultBasisV2(project,line,article);
+  if(!input.basis||typeof input.basis!=='object'||Array.isArray(input.basis)||
+     JSON.stringify(input.basis)!==JSON.stringify(actualBasis))
+   add('MAX_FAULT_BASIS_STALE');
+ }
  if(!article)add('MAX_FAULT_ARTICLE_UNAVAILABLE');
  else {
   if(article.kind!=='MCB'&&article.kind!=='RCBO')
@@ -176,6 +193,33 @@ function epMaximumFaultCurrentV2(project,line,lookup){
   notice:'Declared topology and R/X only; source network model, conductor temperature, Icn standard and manufacturer applicability require independent review.'});
 }
 
+// Atomic input update, including the basis which invalidates the result when
+// the protection, cable section or circuit phase changes. Numeric overrun
+// remains a valid stored failing case for design correction.
+function epApplyMaximumFaultV2(project,lineId,input,lookup){
+ if(!project||!Array.isArray(project.lines))return {project:null,code:'PROJECT_INVALID'};
+ const matches=project.lines.filter(line=>line?.id===lineId);
+ if(matches.length!==1)return {project:null,code:'LINE_NOT_UNIQUE'};
+ if(!input||typeof input!=='object'||Array.isArray(input))
+  return {project:null,code:'MAX_FAULT_INPUT_INVALID'};
+ let article=null;
+ try{article=lookup?.(matches[0].catalogSku)||null;}catch(_){}
+ const draft=JSON.parse(JSON.stringify(project));
+ const line=draft.lines.find(l=>l.id===lineId);
+ line.maximumFaultInput={...JSON.parse(JSON.stringify(input)),
+  basis:epMaximumFaultBasisV2(project,matches[0],article)};
+ const report=epMaximumFaultCurrentV2(draft,line,lookup);
+ const malformed=report.issues.find(issue=>issue.level==='BLOCKED'&&[
+  'MAX_FAULT_INPUT_INVALID','MAX_FAULT_MODEL_UNSUPPORTED','MAX_FAULT_NETWORK_INVALID',
+  'MAX_FAULT_NETWORK_SOURCE_TOO_LONG','MAX_FAULT_SEGMENTS_INVALID',
+  'MAX_FAULT_SEGMENT_INVALID','MAX_FAULT_SEGMENT_SOURCE_TOO_LONG',
+  'MAX_FAULT_ZERO_OR_INVALID_IMPEDANCE','MAX_FAULT_RESULT_INVALID'
+ ].includes(issue.code));
+ if(malformed)return {project:null,code:malformed.code,report};
+ line.calculationReview={...line.calculationReview,required:true,reason:'MAX_FAULT_INPUT_UPDATED'};
+ return {project:draft,report,status:'REVIEW_REQUIRED'};
+}
+
 function epFaultRouteProjectV2(project,lookup){
  const lines=(Array.isArray(project?.lines)?project.lines:[]).filter(line=>line&&typeof line==='object');
  const rows=lines.map(line=>({lineId:line.id,...epFaultRouteReviewV2(project,line,lookup),
@@ -183,4 +227,4 @@ function epFaultRouteProjectV2(project,lookup){
  const issues=rows.flatMap(r=>r.issues.concat(r.maximum.issues));
  return {status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN',rows,issues,engineeringApproved:false};
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epFaultRouteBasisV2,epFaultRouteReviewV2,epApplyFaultRouteV2,epFaultRouteProjectV2,epMaximumFaultCurrentV2};
+if(typeof module!=='undefined'&&module.exports)module.exports={epFaultRouteBasisV2,epFaultRouteReviewV2,epApplyFaultRouteV2,epFaultRouteProjectV2,epMaximumFaultBasisV2,epMaximumFaultCurrentV2,epApplyMaximumFaultV2};
