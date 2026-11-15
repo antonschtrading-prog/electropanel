@@ -15,6 +15,37 @@ const server=http.createServer((req,res)=>{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
+ // Device-level supply source -> incoming -> outgoing apparatus via real controls.
+ await page.evaluate(()=>switchView('board'));
+ await page.locator('#deviceSupplyIncomingId').fill('QF0');
+ await page.locator('#deviceSupplyIncomingLabel').fill('Главный ввод');
+ await page.locator('#deviceSupplyIncomingSave').click();
+ await page.locator('#deviceSupplyFrom').selectOption('SOURCE:MAIN');
+ await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
+ await page.locator('#deviceSupplyLinkSave').click();
+ const deviceGraphUI=await page.evaluate(()=>{
+  const r=epDeviceSupplyAuditV1(state),persisted=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+  const restored=normalizeImport(persisted);
+  return {edges:r.edges.length,source:r.edges[0]?.from,
+   restored:restored.deviceSupplyV1?.links.length,
+   selectivity:r.selectivityStatus,approval:r.engineeringApproved};
+ });
+ assert.equal(deviceGraphUI.edges,1,JSON.stringify(deviceGraphUI));
+ assert.equal(deviceGraphUI.source,'SOURCE:MAIN');
+ assert.equal(deviceGraphUI.restored,1);
+ assert.equal(deviceGraphUI.selectivity,'NOT_ASSESSED');
+ assert.equal(deviceGraphUI.approval,false);
+ await page.locator('#deviceSupplyFrom').selectOption('INCOMING:QF0');
+ await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
+ await page.locator('#deviceSupplyLinkSave').click();
+ assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),1,'self-feed rejected');
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.deviceSupplyV1?.links.length||0),0);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),1);
+ await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
+ assert.equal(await page.evaluate(()=>state.deviceSupplyV1.links.length),0);
+
  
  // Engineer edits declared upstream protection hierarchy using the shipped UI.
  await page.evaluate(()=>switchView('board'));
