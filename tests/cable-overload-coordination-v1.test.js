@@ -4,6 +4,10 @@ const {epCableOverloadCoordinationV1:calc}=require('../cable-overload-coordinati
 const {epProtectionDecisionV1:decide}=require('../protection-decision-v1.js');
 const {epEngineeringPrintV1:print}=require('../engineering-print-v1.js');
 const {epCableOverloadHtmlV1:form}=require('../cable-overload-ui-v1.js');
+global.epCableOverloadCoordinationV1=calc;
+const fault=require('../fault-route-design-v2.js');
+global.epMaximumFaultCurrentV2=fault.epMaximumFaultCurrentV2;
+global.epFaultRouteReviewV2=fault.epFaultRouteReviewV2;
 const article=()=>({sku:'A',inA:16,kind:'MCB',verificationStatus:'VERIFIED',label:'C16'});
 const input=()=>({model:'CABLE_DECLARED_BASE_WITH_CORRECTIONS',articleSku:'A',articleInA:16,
  baseIzA:30,baseIzSource:'Cable rating with reference installation conditions',
