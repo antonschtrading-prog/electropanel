@@ -11,7 +11,7 @@ function epFaultCurrentConsistencyV1(line,maximum){
  const parse=v=>{
   if(typeof v!=='number'&&typeof v!=='string')return null;
   const str=String(v).trim().replace(',','.');
-  if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(str))return null;
+  if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(str))return null;
   const n=Number(str);return Number.isFinite(n)&&n>0?n:null;
  };
  const declared=parse(manual?.ikKa),computed=parse(maximum?.ikMaxKa);
