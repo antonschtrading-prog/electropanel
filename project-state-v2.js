@@ -26,6 +26,10 @@ function epRestoreProjectExtensionsV2(raw,project){
  const arrays=['catalogArticles','dinPlacementsV1','manualLayoutV1','cables','manufacturerEvidenceRecords'];
  for(const key of objects)if(raw[key]!==undefined){if(!object(raw[key]))throw Error(key+': ожидается объект');project[key]=clone(raw[key],key);}
  for(const key of arrays)if(raw[key]!==undefined){if(!Array.isArray(raw[key])||raw[key].length>500)throw Error(key+': ожидается массив до 500 записей');project[key]=clone(raw[key],key,250000);}
+ if(raw.deviceFaultScenariosV1!==undefined){
+  if(typeof epDeviceFaultNormalizeV1!=='function')
+   throw Error('Модуль проверки токов КЗ в точках аппаратов недоступен');
+ }
  if(raw.deviceSupplyV1!==undefined){
   if(raw.incomingTerminalBindingsV1!==undefined&&typeof epIncomingTerminalBindingsNormalizeV1!=='function')
    throw Error('Модуль привязки вводных аппаратов недоступен');
@@ -37,6 +41,8 @@ function epRestoreProjectExtensionsV2(raw,project){
   project.incomingTerminalBindingsV1=
    epIncomingTerminalBindingsNormalizeV1(project,raw.incomingTerminalBindingsV1);
  }
+ if(raw.deviceFaultScenariosV1!==undefined)
+  project.deviceFaultScenariosV1=epDeviceFaultNormalizeV1(project,raw.deviceFaultScenariosV1);
  if(raw.protectionLinksVersion!==undefined&&raw.protectionLinksVersion!==1)
   throw Error('Неподдерживаемая версия иерархии защиты');
  if(raw.protectionLinks!==undefined){
