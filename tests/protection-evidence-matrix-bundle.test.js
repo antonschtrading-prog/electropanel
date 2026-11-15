@@ -33,7 +33,7 @@ test('matrix CSV preserves apparatus identity without fake selection approval',(
  const b=bundle(project(),()=>null);
  const report=csv(b.sections.protectionEvidenceMatrix);
  assert.ok(report.includes('INCOMING:Q0'));assert.ok(report.includes('BRANCH:BR1'));
- assert.ok(report.includes('CALCULATED'));
+ assert.ok(report.includes('Calculated Ikmax kA'));
  assert.ok(!report.includes('APPROVED'));
 });
 test('unknown project cannot become physically ready just because no user input was added',()=>{
