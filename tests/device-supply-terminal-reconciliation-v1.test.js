@@ -60,3 +60,19 @@ test('HTML escapes untrusted identifiers and does not output raw tags',()=>{
  assert.ok(x.includes('&lt;svg onload=alert(1)&gt;'));
  assert.ok(!x.includes('<svg onload=alert(1)>'));
 });
+
+test('wiring with an unknown terminal is blocked, not counted as a direct wire',()=>{
+ const project=p();project.wiringModelV18.wires=[{from:'T1',to:'MISSING'}];
+ const r=audit(project);
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.rows[0].declaredDirectWires,0);
+ assert.ok(r.issues.some(x=>x.code==='SUPPLY_TERMINAL_WIRE_ENDPOINT_UNKNOWN'));
+});
+test('changed wiring terminal role or device identity is a blocking mismatch',()=>{
+ for(const patch of [{conductor:'L2'},{device_id:'DIFFERENT'}]){
+  const project=p();Object.assign(project.wiringModelV18.terminals[0],patch);
+  const r=audit(project);
+  assert.equal(r.status,'BLOCKED');
+  assert.ok(r.issues.some(x=>x.code==='SUPPLY_TERMINAL_WIRING_IDENTITY_MISMATCH'));
+ }
+});
