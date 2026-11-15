@@ -1040,6 +1040,9 @@ function renderEngineeringDiagnosticsV1(){
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
+ const overloadPanel=$('cableOverloadPanel');
+ if(overloadPanel&&typeof epCableOverloadHtmlV1==='function')
+  overloadPanel.innerHTML=epCableOverloadHtmlV1(state,selectedLine,catalogDevice);
  const cablePanel=$('cableReferencePanel');
  if(cablePanel)cablePanel.innerHTML=typeof epCableReferenceHtmlV1==='function'?
   epCableReferenceHtmlV1(state,selectedLine,catalogDevice):'Справочник кабелей недоступен.';
@@ -2228,6 +2231,53 @@ $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
+});
+$('cableOverloadPanel').addEventListener('click',e=>{
+ const add=e.target.closest('[data-add-overload-factor]');
+ const remove=e.target.closest('[data-remove-overload-factor]');
+ if(add){
+  const holder=add.closest('[data-cable-overload-input]').querySelector('[data-overload-factor-rows]');
+  if(holder.children.length>=12)return notify('Максимум 12 поправочных коэффициентов',true);
+  holder.insertAdjacentHTML('beforeend',epCableOverloadFactorHtmlV1({},holder.children.length));
+ }
+ if(remove)remove.closest('[data-overload-factor]').remove();
+});
+$('cableOverloadPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-cable-overload]');if(!form)return;
+ e.preventDefault();
+ if(!form.elements.namedItem('overloadEnable').checked)
+  return notify('Включите сохранение параметров кабеля',true);
+ const id=form.dataset.cableOverload,line=state.lines.find(x=>x.id===id);
+ if(!line)return notify('Выбранная цепь недоступна',true);
+ const article=catalogDevice(line.catalogSku);
+ const keys=['overloadBaseIz','overloadBaseSource','overloadI2','overloadI2Source',
+  'overloadI2Standard','overloadApplicability','overloadSku'];
+ const values=Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value]));
+ const input={model:'CABLE_DECLARED_BASE_WITH_CORRECTIONS',
+  baseIzA:values.overloadBaseIz,baseIzSource:values.overloadBaseSource,
+  i2A:values.overloadI2,i2Source:values.overloadI2Source,
+  i2Standard:values.overloadI2Standard,applicabilitySource:values.overloadApplicability,
+  articleSku:values.overloadSku,articleInA:article?.inA,
+  applicationReviewed:form.elements.namedItem('overloadApplicable').checked,
+  factors:[...form.querySelectorAll('[data-overload-factor]')].map(node=>
+   Object.fromEntries([...node.querySelectorAll('[data-overload-key]')].map(el=>[el.dataset.overloadKey,el.value])))};
+ const candidate=JSON.parse(JSON.stringify(state));
+ candidate.lines.find(x=>x.id===id).overloadCoordinationInput=input;
+ const report=epCableOverloadCoordinationV1(candidate,candidate.lines.find(x=>x.id===id),article);
+ const invalid=report.issues.find(x=>x.level==='BLOCKED'&&[
+  'CABLE_OVERLOAD_INPUT_INVALID','CABLE_OVERLOAD_MODEL_UNSUPPORTED',
+  'CABLE_OVERLOAD_BASE_IZ_INVALID','CABLE_OVERLOAD_I2_INVALID',
+  'CABLE_OVERLOAD_FACTORS_INVALID','CABLE_OVERLOAD_FACTOR_INVALID',
+  'CABLE_OVERLOAD_FACTOR_SOURCE_TOO_LONG','CABLE_OVERLOAD_SOURCE_TOO_LONG',
+  'CABLE_OVERLOAD_CORRECTED_IZ_INVALID','CABLE_OVERLOAD_ARTICLE_MISMATCH',
+  'CABLE_OVERLOAD_RATING_CHANGED','CABLE_OVERLOAD_DEVICE_KIND_UNSUPPORTED'
+ ].includes(x.code));
+ if(invalid)return notify('Исходные данные не сохранены: '+invalid.code,true);
+ candidate.lines.find(x=>x.id===id).calculationReview={
+  ...candidate.lines.find(x=>x.id===id).calculationReview,
+  required:true,reason:'OVERLOAD_COORDINATION_UPDATED'};
+ checkpoint();state=candidate;changed();
+ notify('Проверка I2: '+report.i2IzStatus+' · Изменения требуют инженерной проверки');
 });
 $('maximumFaultPanel').addEventListener('click',e=>{
  const add=e.target.closest('[data-add-max-segment]');
