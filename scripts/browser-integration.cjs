@@ -68,6 +68,46 @@ const server=http.createServer((req,res)=>{
   assert.equal(maxState.approved,false);
  }finally{await maxFaultPage.close();}
 
+ // Transformer equivalent is a separate real UI path; it must save the
+ // nameplate and upstream network evidence, rather than a prefilled impedance.
+ const transformerPage=await browser.newPage({viewport:{width:1280,height:900}});
+ try{
+  await transformerPage.goto('http://127.0.0.1:'+server.address().port);
+  await transformerPage.locator('#loadDemo').click();
+  await transformerPage.evaluate(()=>{selectedLine='L1';switchView('board');});
+  await transformerPage.locator('#maximumFaultPanel > details > summary').click();
+  const form=transformerPage.locator('#maximumFaultPanel [data-max-fault-source-model="TRANSFORMER_WITH_UPSTREAM"]');
+  assert.equal(await form.count(),1);
+  await form.locator('xpath=..').locator('summary').click();
+  for(const [key,value] of Object.entries({
+   uLLV:'400',cmax:'1.1',ratedPowerKva:'1000',ratedVoltageV:'400',
+   ukPercent:'6',loadLossW:'9000',upstreamROhm:'0.001',
+   upstreamXOhm:'0.002',source:'Manufacturer short-circuit data',
+   upstreamSource:'Upstream grid impedance referred to LV'
+  }))await form.locator('[name="'+key+'"]').fill(value);
+  for(const [key,value] of Object.entries({
+   lengthM:'30',r1OhmKm:'0.4',x1OhmKm:'0.08',source:'Design cable R/X'
+  }))await form.locator('[data-max-segment-field="'+key+'"]').fill(value);
+  await form.locator('[name="lossBasisConfirmed"]').check();
+  await form.locator('[data-max-segment-temperature]').check();
+  await form.locator('button[type="submit"]').click();
+  const saved=await transformerPage.evaluate(()=>{
+   const line=state.lines.find(l=>l.id==='L1');
+   const raw=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+   const copy=raw.lines.find(l=>l.id==='L1');
+   const calc=epMaximumFaultCurrentV2(state,line,catalogDevice);
+   return {sourceModel:copy.maximumFaultInput?.sourceModel,
+    kva:copy.maximumFaultInput?.transformer?.ratedPowerKva,
+    source:copy.maximumFaultInput?.transformer?.source,
+    ikMaxKa:calc.ikMaxKa,approved:calc.engineeringApproved};
+  });
+  assert.equal(saved.sourceModel,'TRANSFORMER_WITH_UPSTREAM');
+  assert.equal(saved.kva,'1000');
+  assert.equal(saved.source,'Manufacturer short-circuit data');
+  assert.ok(saved.ikMaxKa>0,JSON.stringify(saved));
+  assert.equal(saved.approved,false);
+ }finally{await transformerPage.close();}
+
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
