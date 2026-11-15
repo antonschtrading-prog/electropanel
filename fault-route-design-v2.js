@@ -51,12 +51,14 @@ function epFaultRouteReviewV2(project,line,lookup){
  if(article&&(!Number.isFinite(article.inA)||article.inA<=0||!Number.isInteger(article.poles)||article.poles<1))add('FAULT_ROUTE_ARTICLE_RATING_UNCONFIRMED');
  if(article&&['L1','L2','L3'].includes(line.phase)&&article.poles!==1)add('FAULT_ROUTE_POLES_APPLICABILITY_UNCONFIRMED');
  let thresholdStatus='UNKNOWN';
- if(!stale&&article?.kind==='MCB'&&ia&&time&&tripDocumented&&timeDocumented&&
+ // A declared insufficient L-PE current is a numerical blocker even when
+ // sources are missing. Missing evidence may prevent PASS, not suppress FAIL.
+ if(ia&&ik<ia){
+  thresholdStatus='FAIL';add('FAULT_ROUTE_CURRENT_BELOW_IA','BLOCKED');
+ }else if(!stale&&article?.kind==='MCB'&&ia&&time&&tripDocumented&&timeDocumented&&
     !issues.some(x=>x.level==='UNKNOWN'||x.level==='BLOCKED')){
-  thresholdStatus=ik>=ia?'PASS':'FAIL';
-  if(thresholdStatus==='FAIL')add('FAULT_ROUTE_CURRENT_BELOW_IA','BLOCKED');
+  thresholdStatus='PASS';
  }
- if(issues.some(i=>i.level==='UNKNOWN'))thresholdStatus=thresholdStatus==='FAIL'?'FAIL':'UNKNOWN';
  return finish({ikMinA:ik,zsOhm:zs,loopROhm:r,loopXOhm:x,thresholdZsOhm:ia?c*u/ia:null,
   iaA:ia,requiredTimeS:time,thresholdStatus,segments,stale,
   formula:'Ik,min = cmin × U0 / hypot(Rsource + ΣRphase+PE, Xsource + ΣXphase+PE)',
