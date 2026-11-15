@@ -121,5 +121,21 @@ function epManufacturerFactsReconciliationV1(project,lookup){
  }
  return finish();
 }
+// Evaluate a candidate article without requiring it to be installed in a
+// project. FACTS_MATCH never grants approval; missing sources stay UNKNOWN.
+function epManufacturerFactsCandidateV1(catalogKey,article){
+ const project={lines:[{id:'CANDIDATE',catalogSku:catalogKey}]};
+ const result=epManufacturerFactsReconciliationV1(project,()=>article);
+ const row=result.rows[0]||null;
+ return {catalogKey,sourceId:row?.sourceId??null,sourceUrl:row?.sourceUrl??null,
+  status:row?.status??'UNKNOWN',missingFields:row?.missingFields??[],
+  conflictingFields:row?.conflictingFields??[],
+  unavailableClaims:row?.unavailableClaims??[],
+  issues:result.issues.filter(x=>![
+   'MANUFACTURER_FACTS_I2T_UNDOCUMENTED',
+   'MANUFACTURER_FACTS_MANUAL_APPLICABILITY_REVIEW'].includes(x.code)),
+  engineeringApproved:false};
+}
 if(typeof module!=='undefined'&&module.exports)
- module.exports={EP_MANUFACTURER_FACT_REFERENCES_V1,epManufacturerFactsReconciliationV1};
+ module.exports={EP_MANUFACTURER_FACT_REFERENCES_V1,
+  epManufacturerFactsReconciliationV1,epManufacturerFactsCandidateV1};
