@@ -212,6 +212,66 @@ const server=http.createServer((req,res)=>{
   assert.equal(thermalResult.approved,false);
  }finally{await thermalPage.close();}
 
+ // Real browser: manufacturer let-through I2t evidence is bound to both
+ // catalogue key and exact article and persisted in the project.
+ const letPage=await browser.newPage({viewport:{width:1280,height:900}});
+ try{
+  await letPage.goto('http://127.0.0.1:'+server.address().port);
+  await letPage.locator('#loadDemo').click();
+  await letPage.evaluate(()=>{selectedLine='L1';switchView('board');});
+  await letPage.locator('#catalogSku').selectOption('SE-A9F73110');
+  const info=await letPage.evaluate(()=>{
+   const l=state.lines.find(x=>x.id==='L1'),a=catalogDevice(l.catalogSku);
+   return {key:l.catalogSku,sku:a?.sku,inA:a?.inA,poles:a?.poles,
+    standard:a?.icnStandard,voltage:a?.icnVoltageV};
+  });
+  assert.equal(info.sku,'A9F73110');
+  assert.equal(info.voltage,230);
+  const form=letPage.locator('#breakerLetThroughPanel [data-let-through]');
+  await form.locator('[data-let-through-editor] > summary').click();
+  for(const [name,value] of Object.entries({
+   letCatalogKey:info.key,letArticleSku:info.sku,
+   letArticleInA:String(info.inA),letStandard:info.standard,
+   letVoltage:'230',letFrequency:'50',
+   letApplicationVoltage:'230',letApplicationFrequency:'50',
+   letPoles:String(info.poles),letPoint:'L1-END',
+   letCurrent:'5000',letSection:'6',letK:'115',
+   letManufacturerSource:'Declared manufacturer upper I2t curve',
+   letConditionSource:'Manufacturer test voltage/frequency',
+   letCableSource:'Declared 6mm2 copper cable',
+   letKSource:'Declared Cu/PVC temperature conditions'
+  }))await form.locator('[name="'+name+'"]').fill(value);
+  for(const [name,value] of Object.entries({
+   letModel:'SINGLE_PHASE_L_N',letCurrentBasis:'DECLARED_SCENARIO',
+   letRole:'PHASE',letMaterial:'Cu'
+  }))await form.locator('[name="'+name+'"]').selectOption(value);
+  for(const [key,value] of Object.entries({
+   minProspectiveA:'1000',maxProspectiveA:'6000',
+   maxLetThroughA2s:'700000',source:'Manufacturer guaranteed test interval'
+  }))await form.locator('[data-let-through-band-field="'+key+'"]').fill(value);
+  for(const key of ['letEnvelopeConfirmed','letCableReviewed','letTemperatureConfirmed'])
+   await form.locator('[name="'+key+'"]').check();
+  await form.locator('button[type="submit"]').click();
+  const result=await letPage.evaluate(()=>{
+   const l=state.lines.find(x=>x.id==='L1');
+   const saved=JSON.parse(localStorage.getItem('electropanel_web_preview'))
+    .lines.find(x=>x.id==='L1').letThroughInput;
+   const direct=epBreakerLetThroughV1(state,l,catalogDevice(l.catalogSku));
+   const r=epProtectionDecisionV1(state,catalogDevice).rows.find(x=>x.lineId==='L1');
+   return {key:saved?.catalogKey,sku:saved?.articleSku,
+    prospective:direct.prospectiveCurrentA,energy:direct.letThroughUpperBoundA2s,
+    numeric:direct.numericalStatus,
+    combined:r.breakerLetThrough?.numericalStatus,approved:r.engineeringApproved};
+  });
+  assert.equal(result.key,'SE-A9F73110');
+  assert.equal(result.sku,'A9F73110');
+  assert.equal(result.prospective,5000);
+  assert.equal(result.energy,700000);
+  assert.equal(result.numeric,'FAIL');
+  assert.equal(result.combined,'FAIL');
+  assert.equal(result.approved,false);
+ }finally{await letPage.close();}
+
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
