@@ -58,17 +58,26 @@ function epEngineeringPrintV1(bundle){
  const letThroughTable=rows(['Цепь','Аппарат','Точка КЗ','Модель КЗ','Ik ожидаемый, А',
   'Диапазон подтверждения, А','Гарантированный максимум I²t, А²с',
   'Допустимое k²S², А²с','Запас энергии, А²с','Минимальное сечение, мм²',
-  'Результат','Источники и замечания'],
+  'Результат','Запись паспорта','Место в источнике','Источники и замечания'],
   protectionDecisionRows.map(x=>{
-   const d=x.breakerLetThrough||{},b=d.matchedBand||{},r=d.sourceReferences||{};
+   const d=x.breakerLetThrough||{},b=d.matchedBand||{},r=d.sourceReferences||{},ev=d.evidenceBinding||{};
    return [x.lineId,x.sku??'—',d.comparisonPoint??'—',d.faultModel??'—',
     d.prospectiveCurrentA??'—',b.minProspectiveA===undefined?'—':
     b.minProspectiveA+' — '+b.maxProspectiveA,
     d.letThroughUpperBoundA2s??'—',d.conductorCapacityA2s??'—',
     d.energyMarginA2s??'—',d.minimumSectionMm2??'—',
-    d.numericalStatus??'UNKNOWN',[r.manufacturer,r.conditions,r.cable,r.k,
+    d.numericalStatus??'UNKNOWN',ev.recordId??'—',ev.documentLocation??'—',
+    [r.manufacturer,r.conditions,r.cable,r.k,
       b.source,...(d.issues||[]).map(i=>i.code)].filter(Boolean).join('; ')];
   }));
+ const manufacturerEvidenceTable=rows(['Запись','Изготовитель','Серия',
+  'Заводской артикул','Документ','Редакция','URL документа','Место в документе',
+  'Дата просмотра','Просмотрел','Тип источника','Статус'],
+  (sections.manufacturerEvidence?.records||[]).map(r=>[
+   r.id,r.manufacturerName??'—',r.series??'—',r.manufacturerSku??'—',
+   r.documentTitle??'—',r.documentRevision??'—',r.documentUrl??'—',
+   r.documentLocation??'—',r.reviewedAt??'—',r.reviewedBy??'—',
+   r.sourceType??'—',r.approval??'NOT_ESTABLISHED']));
  const faultReconciliationTable=rows(['Цепь','Общий расчётный пункт','Ручной Ik, кА','Расчётный Ik,max, кА','Разность, кА','Разность, %','Статус сверки'],
   designReview.filter(x=>x.faultCurrentComparison).map(x=>{
    const c=x.faultCurrentComparison;
@@ -148,6 +157,8 @@ function epEngineeringPrintV1(bundle){
   '<h3>Защита кабеля от перегрузки · подтверждение I2 и поправок Iz</h3>'+cableOverloadTable+
   '<h3>Термическая стойкость проводника при КЗ · адиабатическая проверка</h3>'+cableThermalTable+
   '<h3>Энергия пропускания аппарата · подтверждённый диапазон изготовителя</h3>'+letThroughTable+
+  '<h3>Реестр паспортных документов и границ их применения</h3>'+manufacturerEvidenceTable+
+  '<p>Реестр подтверждает факт документирования входных данных, а не подлинность документа или соответствие оборудования нормам.</p>'+
   '<p>Огибающая I²t используется только в заявленных пределах испытаний и не интерполируется. Источники и применимость требуют независимого подтверждения.</p>'+
   '<p>Расчёт I²t и k²S² применим только к объявленному сценарию и подтверждённому времени отключения; нормативная пригодность не установлена.</p>'+
   '<p>Проверки не подтверждают соответствие требованиям и не заменяют проверку паспортов, температурных условий, тока КЗ, норм и селективности.</p>'+
