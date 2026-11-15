@@ -122,6 +122,13 @@ function epEngineeringPrintV1(bundle){
    x.selectedArticle?.poleConfiguration||'Не указана',
    x.selectedArticle?.residualCurrentMa??'—',x.selectedArticle?.residualType||'—',
    x.selectedArticle?.source||'Не подтверждён',x.status,(x.reasons||[]).join(', ')]));
+ const candidateRankingTable=rows(['Цепь','Артикул','Класс рассмотрения',
+  'Запас In−Ib, А','Запас Iz−In, А','Запас Icn−Ik, кА','Запас Uном−Uсети, В',
+  'Источники и недостающие доказательства'],
+  protection.flatMap(p=>(p.ranking?.rows||[]).map(c=>[
+   p.lineId,c.catalogKey,c.classification,c.currentHeadroomA??'—',
+   c.cableHeadroomA??'—',c.breakingHeadroomKa??'—',c.voltageHeadroomV??'—',
+   c.openEvidence.join('; ')])));
  const selectionTable=rows(['Цепь','Арифметически возможные артикулы','Количество'],
   (sections.protectionSelection?.results||[]).map(x=>[x.lineId,(x.potential||[]).join(', '),(x.potential||[]).length]));
  const bomTable=rows(['Артикул','Производитель','Серия','Количество','Модули','Ширина, мм','Высота, мм','Глубина, мм','Полюса','Icn, кА','Icn, В','Стандарт Icn','Icu, кА','Icu, В','IΔn, мА','Тип дифзащиты','Источник','Дата сверки'],
@@ -175,6 +182,7 @@ function epEngineeringPrintV1(bundle){
   '<p>Расчёт I²t и k²S² применим только к объявленному сценарию и подтверждённому времени отключения; нормативная пригодность не установлена.</p>'+
   '<p>Проверки не подтверждают соответствие требованиям и не заменяют проверку паспортов, температурных условий, тока КЗ, норм и селективности.</p>'+
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
+  '<h3>Порядок проверки возможных защитных аппаратов · без автоматического допуска</h3>'+candidateRankingTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
   '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
   '<h2>Основание времени автоматического отключения · область применения</h2>'+
