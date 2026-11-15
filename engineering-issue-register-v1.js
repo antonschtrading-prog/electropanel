@@ -19,6 +19,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.supplyCrossEvidence)sectionNames.push('supplyCrossEvidence');
  if(sections.deviceFaultScenarios)sectionNames.push('deviceFaultScenarios');
  if(sections.deviceCoordinationEvidence)sectionNames.push('deviceCoordinationEvidence');
+ if(sections.calculatedDeviceFault)sectionNames.push('calculatedDeviceFault');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
