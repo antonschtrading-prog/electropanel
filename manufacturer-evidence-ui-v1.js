@@ -11,9 +11,10 @@ function epManufacturerEvidenceHtmlV1(project,lineId,lookup){
   epManufacturerEvidenceRegisterV1(project):{records:[],issues:[]};
  const field=(key,label,value)=>'<label>'+label+'<input name="'+key+'" value="'+esc(value??'')+'"></label>';
  return '<details data-evidence-editor><summary>Реестр паспортных источников · данные I²t</summary>'+
-  '<p>Создаётся неизменяемая запись исходного документа для введённых диапазонов I²t. Источник, страница, дата и специалист фиксируются; это документальный учёт, а не лабораторная проверка.</p>'+
+  '<p>Создаётся неизменяемая запись исходного документа для введённых диапазонов I²t. Источник, страница, дата и специалист фиксируются; это документальный учёт, без физического исследования оборудования.</p>'+
   '<form data-evidence-record="'+esc(l.id)+'">'+
   field('evidenceId','Уникальный ID записи',null)+
+  '<p>Ключ каталога: '+esc(l.catalogSku)+' · заводской артикул: '+esc(article?.sku??'не указан')+'</p>'+
   field('evidenceManufacturer','Изготовитель',article?.maker)+
   field('evidenceSeries','Серия',article?.series)+
   field('evidenceTitle','Название паспортного документа',null)+
