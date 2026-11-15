@@ -2286,11 +2286,13 @@ $('faultRoutePanel').addEventListener('submit',e=>{
  if(form.elements.namedItem('tripEnvelopeEnabled')?.checked){
   const names=['tripArticleSku','tripArticleRatingA','tripCurve','tripSourceEvidence'];
   const values=Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value||'']));
-  input.tripEnvelope={articleSku:values.tripArticleSku,articleRatingA:values.tripArticleRatingA,
-   curve:values.tripCurve,source:values.tripSourceEvidence,
+  const envelope={articleSku:values.tripArticleSku,source:values.tripSourceEvidence,
    faultType:'L_PE',guaranteeBasisConfirmed:form.elements.namedItem('tripGuaranteeBasis').checked,
    points:[...form.querySelectorAll('[data-trip-envelope-point]')].map(point=>
     Object.fromEntries([...point.querySelectorAll('[data-trip-point-field]')].map(el=>[el.dataset.tripPointField,el.value])))};
+  if(values.tripArticleRatingA.trim())envelope.articleRatingA=values.tripArticleRatingA;
+  if(values.tripCurve.trim())envelope.curve=values.tripCurve;
+  input.tripEnvelope=envelope;
  }
  const result=epApplyFaultRouteV2(state,form.dataset.faultRoute,input,catalogDevice);
  if(!result.project)return notify('Расчёт не сохранён: '+result.code,true);
