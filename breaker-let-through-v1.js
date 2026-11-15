@@ -57,6 +57,14 @@ function epBreakerLetThroughV1(project,line,article){
   add('LET_THROUGH_ENVELOPE_GUARANTEE_UNCONFIRMED');
  if(input.conductorApplicationReviewed!==true)
   add('LET_THROUGH_CABLE_APPLICABILITY_UNREVIEWED');
+ let evidenceBinding=null;
+ if(typeof epLetThroughEvidenceBindingV1==='function'){
+  evidenceBinding=epLetThroughEvidenceBindingV1(project,line,article,input);
+  for(const issue of evidenceBinding.issues)add(issue.code,issue.level);
+ }else if(input.evidenceRecordId)
+  add('LET_THROUGH_EVIDENCE_MODULE_UNAVAILABLE','BLOCKED');
+ else add('LET_THROUGH_EVIDENCE_RECORD_UNLINKED');
+
  source('manufacturerSource','LET_THROUGH_MANUFACTURER_SOURCE_MISSING');
  source('testConditionSource','LET_THROUGH_TEST_CONDITIONS_SOURCE_MISSING');
  source('cableSource','LET_THROUGH_CABLE_SOURCE_MISSING');
@@ -121,11 +129,11 @@ function epBreakerLetThroughV1(project,line,article){
    maxLetThroughA2s:energy,source:band.source??null});
   prevMax=max;
  }
- if(issues.some(x=>x.level==='BLOCKED'))return end({linkedFault,bands});
+ if(issues.some(x=>x.level==='BLOCKED'))return end({linkedFault,bands,evidenceBinding});
  const matching=bands.filter(b=>current>=b.minProspectiveA&&current<=b.maxProspectiveA);
  if(matching.length!==1){
   add('LET_THROUGH_NO_GUARANTEED_BAND');
-  return end({linkedFault,bands,prospectiveCurrentA:current,
+  return end({linkedFault,bands,evidenceBinding,prospectiveCurrentA:current,
    notice:'No manufacturer-declared upper bound covers this exact prospective current.'});
  }
  const letThroughUpperBoundA2s=matching[0].maxLetThroughA2s;
@@ -148,6 +156,7 @@ function epBreakerLetThroughV1(project,line,article){
   sectionMm2:section,kA_SqrtS_PerMm2:k,conductorRole:input.conductorRole,
   faultModel:input.faultModel,comparisonPoint:input.comparisonPoint,
   currentBasis:input.currentBasis,linkedFault,bands,matchedBand:matching[0],
+  evidenceBinding,
   testVoltageV:volts,testFrequencyHz:freq,
   sourceReferences:{manufacturer:input.manufacturerSource??null,
    conditions:input.testConditionSource??null,cable:input.cableSource??null,
