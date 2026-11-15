@@ -100,3 +100,24 @@ test('untrusted factor source is HTML escaped in editor and report',()=>{
   assert.match(s,/&lt;img/);
  }
 });
+
+test('declared overload input survives project JSON import without trusting derived results',()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+ const source=project(),dest={lines:[{id:'L1',catalogSku:'A'}]};
+ const context=vm.createContext({});context.raw=source;context.dest=dest;
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'..','project-state-v2.js'),'utf8'),context);
+ const restored=vm.runInContext('epRestoreProjectExtensionsV2(raw,dest)',context);
+ assert.equal(restored.lines[0].overloadCoordinationInput.i2A,23);
+ assert.equal(restored.lines[0].overloadCoordinationInput.factors[1].value,.9);
+ assert.equal(restored.lines[0].overloadCoordinationInput.baseIzSource,
+  'Cable rating with reference installation conditions');
+});
+test('change-impact invalidates cable and protective calculations when I2 changes',()=>{
+ const {epDesignChangeImpactV1}=require('../design-change-impact-v1.js');
+ const old=project(),next=structuredClone(old);
+ next.lines[0].overloadCoordinationInput.i2A=35;
+ const impact=epDesignChangeImpactV1(old,next);
+ assert.ok(impact.changed.includes('cable'));
+ assert.ok(impact.affected.includes('device'));
+ assert.equal(impact.engineeringApproved,false);
+});
