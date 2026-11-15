@@ -996,6 +996,8 @@ function renderEngineeringDiagnosticsV1(){
  const supplyHolder=$('deviceSupplyPanel');
  if(supplyHolder)supplyHolder.innerHTML=typeof epDeviceSupplyHtmlV1==='function'?
   epDeviceSupplyHtmlV1(state)+
+   (typeof epDeviceFaultHtmlV1==='function'?
+    epDeviceFaultHtmlV1(state,catalogDevice):'')+
    (typeof epIncomingTerminalBindingsHtmlV1==='function'?
     epIncomingTerminalBindingsHtmlV1(state):'')+
    (typeof epDeviceSupplyCrossEvidenceV1==='function'&&
