@@ -72,3 +72,27 @@ test('core circuit review carries same-point fault mismatch as a blocking issue'
  assert.equal(r.engineeringApproved,false);
  assert.equal(JSON.stringify(p),before);
 });
+
+test('engineering queue and printed evidence retain explicit under-reported Ikmax',()=>{
+ const fault=require('../fault-route-design-v2.js');
+ global.epMaximumFaultCurrentV2=fault.epMaximumFaultCurrentV2;
+ global.epFaultRouteProjectV2=fault.epFaultRouteProjectV2;
+ global.epCircuitDesignReviewV1=review;
+ const {epDesignWorkQueueV1}=require('../design-work-queue-v1.js');
+ const {epEngineeringPrintV1}=require('../engineering-print-v1.js');
+ const p={earthing:'TN-S',lines:[line(2)],
+  branchDevices:[{id:'BD1',circuitId:'L1',modules:3,label:'3P C16'}]};
+ p.lines[0].maximumFaultInput={...p.lines[0].maximumFaultInput,uLLV:400,cmax:1.1,
+  sourceROhm:0.04,sourceXOhm:0.03,networkSource:'grid equivalent',
+  segments:[{lengthM:30,r1OhmKm:0.4,x1OhmKm:0.08,
+   source:'line',temperatureBasisConfirmed:true}]};
+ const article={kind:'MCB',sku:'TEST',poles:3,modules:3,label:'3P C16',inA:16,
+  icnKa:6,icnVoltageV:400,icnStandard:'IEC 60898-1',verificationStatus:'VERIFIED'};
+ const queue=epDesignWorkQueueV1(p,()=>article);
+ assert.ok(queue.items.some(x=>x.code==='MANUAL_IK_UNDERSTATES_SAME_POINT_MAX'&&x.priority===1));
+ const design=review(p,()=>article);
+ const report=epEngineeringPrintV1({overallStatus:'BLOCKED',sections:{designReview:design}});
+ assert.match(report,/Сверка исходных токов КЗ/);
+ assert.match(report,/Заявлено совпадение/);
+ assert.match(report,/BLOCKED/);
+});
