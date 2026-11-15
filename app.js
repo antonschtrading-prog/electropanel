@@ -1001,6 +1001,8 @@ function renderEngineeringDiagnosticsV1(){
    (typeof epCoordHtmlV1==='function'?epCoordHtmlV1(state,catalogDevice):'')+
    (typeof epCalculatedDeviceFaultHtmlV1==='function'?
     epCalculatedDeviceFaultHtmlV1(state,catalogDevice):'')+
+   (typeof epIncomingMaximumHtmlV1==='function'?
+    epIncomingMaximumHtmlV1(state,catalogDevice):'')+
    (typeof epIncomingTerminalBindingsHtmlV1==='function'?
     epIncomingTerminalBindingsHtmlV1(state):'')+
    (typeof epDeviceSupplyCrossEvidenceV1==='function'&&
