@@ -25,24 +25,39 @@ function epMaximumFaultHtmlV2(project,lineId,lookup){
   epMaximumFaultCurrentV2(project,line,lookup):{status:'UNKNOWN',issues:[],ikMaxKa:null,thresholdStatus:'UNKNOWN'};
  const field=(key,title,val)=>'<label>'+title+'<input name="'+key+'" required value="'+esc(val??'')+'"></label>';
  const models=[
-  {id:'THREE_PHASE_POSITIVE_SEQUENCE',three:true,title:'Трёхфазное симметричное КЗ (Z1)'},
-  {id:'SINGLE_PHASE_L_N',three:false,title:'Однофазное замыкание L–N'}
+  {id:'THREE_PHASE_POSITIVE_SEQUENCE',three:true,sourceModel:'DECLARED_RX',title:'Трёхфазное КЗ · заданные R/X'},
+  {id:'THREE_PHASE_POSITIVE_SEQUENCE',three:true,sourceModel:'TRANSFORMER_WITH_UPSTREAM',title:'Трёхфазное КЗ · параметры трансформатора'},
+  {id:'SINGLE_PHASE_L_N',three:false,sourceModel:'DECLARED_RX',title:'Однофазное замыкание L–N'}
  ];
  const forms=models.map(m=>{
-  const current=input.model===m.id?input:{};
+  const sourceModel=input.sourceModel??'DECLARED_RX';
+  const current=input.model===m.id&&sourceModel===m.sourceModel?input:{};
   const segments=Array.isArray(current.segments)&&current.segments.length?current.segments:[{}];
-  const form='<form data-max-fault="'+esc(line.id)+'" data-max-fault-model="'+m.id+'">'+
+  const transformer=current.transformer||{};
+  const networkFields=m.sourceModel==='TRANSFORMER_WITH_UPSTREAM'?
+   field('ratedPowerKva','Мощность трансформатора, кВА',transformer.ratedPowerKva)+
+   field('ratedVoltageV','Номинальное ULL трансформатора, В',transformer.ratedVoltageV)+
+   field('ukPercent','Напряжение КЗ, %',transformer.ukPercent)+
+   field('loadLossW','Потери КЗ при номинальной нагрузке, Вт',transformer.loadLossW)+
+   field('upstreamROhm','R сети до трансформатора, приведённое к НН, Ом',transformer.upstreamROhm)+
+   field('upstreamXOhm','X сети до трансформатора, приведённое к НН, Ом',transformer.upstreamXOhm)+
+   field('source','Источник паспортных характеристик трансформатора',transformer.source)+
+   field('upstreamSource','Источник приведённых параметров сети',transformer.upstreamSource)+
+   '<label><input type="checkbox" name="lossBasisConfirmed" '+(transformer.lossBasisConfirmed===true?'checked':'')+
+   '> Подтверждено соответствие потерь и uk одной номинальной базе</label>':
+   field('sourceROhm','R источника, Ом',current.sourceROhm)+
+   field('sourceXOhm','X источника, Ом',current.sourceXOhm)+
+   field('networkSource','Источник эквивалента питающей сети',current.networkSource);
+  const form='<form data-max-fault="'+esc(line.id)+'" data-max-fault-model="'+m.id+
+   '" data-max-fault-source-model="'+m.sourceModel+'">'+
    '<div class="ep-engineering-fields">'+
     field(m.three?'uLLV':'u0V',m.three?'ULL, В':'U0, В',current[m.three?'uLLV':'u0V'])+
-    field('cmax','cmax (1…1,2)',current.cmax)+
-    field('sourceROhm','R источника, Ом',current.sourceROhm)+
-    field('sourceXOhm','X источника, Ом',current.sourceXOhm)+
-    field('networkSource','Источник эквивалента питающей сети',current.networkSource)+
+    field('cmax','cmax (1…1,2)',current.cmax)+networkFields+
    '</div><div data-max-segments>'+
     segments.map((segment,i)=>epMaximumFaultSegmentHtmlV2(segment,m.three,i)).join('')+
    '</div><button class="btn tiny" type="button" data-add-max-segment>Добавить участок</button> '+
    '<button type="submit" class="btn primary">Рассчитать и сохранить Ik,max</button></form>';
-  return '<details '+(input.model===m.id?'open':'')+'><summary>'+m.title+'</summary>'+form+'</details>';
+  return '<details '+(current.model?'open':'')+'><summary>'+m.title+'</summary>'+form+'</details>';
  }).join('');
  const numeric=result.ikMaxKa===null?'не рассчитан':Number(result.ikMaxKa).toFixed(3)+' кА';
  return '<details class="ep-fault-route"><summary>Максимальный ток КЗ · '+esc(line.id)+'</summary>'+
