@@ -43,6 +43,9 @@ function epEngineeringPrintV1(bundle){
  const incomingBindingsTable=rows(['Вводной','Терминальная модель','Клемм','Устаревшая привязка','Статус'],
   (sections.incomingTerminalBindings?.rows||[]).map(x=>[
    x.incomingId,x.modelDeviceId,x.terminalCount,x.snapshotStale?'ДА':'нет',x.status]));
+ const crossFeedTable=rows(['Цепь','Питающий аппарат','Объявленные проводники','Прежних связей','Маршрут объявлен'],
+  (sections.supplyCrossEvidence?.rows||[]).map(x=>[
+   x.circuitId,x.upstream??'—',(x.deviceConductors||[]).join(', '),x.legacyCount,x.routeDeclared?'Да':'Нет']));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -251,6 +254,7 @@ function epEngineeringPrintV1(bundle){
      t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
   '<h2>Питание между конкретными аппаратами · версия 1</h2>'+deviceSupplyTable+
+  '<h3>Сверка питания с прежними схемами проводников</h3>'+crossFeedTable+
   '<h3>Привязки вводных аппаратов к терминальной модели</h3>'+incomingBindingsTable+
   '<h3>Сверка с терминальной моделью и заявленными проводами</h3>'+supplyTerminalTable+
   '<p>Связи введены пользователем и не подтверждают физическое соединение или селективность.</p>'+
