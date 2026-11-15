@@ -151,10 +151,27 @@ function epCoordHtmlV1(project,lookup){
   '<label>Редакция<input id="coordRevision" maxlength="150"></label>'+
   '<label>Страница / таблица<input id="coordPage" maxlength="150"></label>'+
   '<label>Ссылка на паспорт<input id="coordUrl" maxlength="500" placeholder="https://..."></label></div>'+
-  '<button class="btn" type="button" id="coordSave">Сохранить документированное заявление</button>'+
+  '<button class="btn" type="button" id="coordSave">Сохранить документированное заявление</button>'+ 
+  '<button class="btn" type="button" id="coordCsv">Выгрузить CSV</button>'+
   '<div class="table-scroll"><table><thead><tr><th>Пара</th><th>Тип</th><th>кА</th><th>Сравнение</th><th></th></tr></thead><tbody>'+
   (rows||'<tr><td colspan="5">Подтверждающие документы не заявлены</td></tr>')+'</tbody></table></div></details>';
 }
+function epCoordCsvV1(report){
+ const cell=value=>{
+  let v=String(value??'');
+  if(/^\\s*[=+\\-@]/.test(v))v="'"+v;
+  return '"'+v.replace(/"/g,'""')+'"';
+ };
+ const entries=[['Upstream','Downstream','Evidence type','Manufacturer','Document',
+  'Revision','Page','Source URL','Study voltage V','Declared limit kA',
+  'Local Ik max kA','Upstream SKU snapshot','Downstream SKU snapshot',
+  'Comparison','Issue codes']];
+ for(const r of report?.rows||[])entries.push([r.from,r.to,r.evidenceType,
+  r.manufacturer,r.documentId,r.revision,r.page,r.sourceUrl,
+  r.voltageV,r.limitKa,r.ikMaxKa,r.upstreamSkuSnapshot,
+  r.downstreamSkuSnapshot,r.numeric,(r.issues||[]).map(x=>x.code).join(', ')]);
+ return '\\uFEFF'+entries.map(row=>row.map(cell).join(';')).join('\\r\\n');
+}
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epCoordPairV1,epCoordRecordV1,epCoordNormalizeV1,epCoordDeclareV1,
- epCoordClearV1,epCoordAuditV1,epCoordHtmlV1};
+ epCoordClearV1,epCoordAuditV1,epCoordHtmlV1,epCoordCsvV1};
