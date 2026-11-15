@@ -42,7 +42,7 @@ const server=http.createServer((req,res)=>{
   await maxFaultPage.locator('#maximumFaultPanel > details > summary').click();
   await maxForm.locator('xpath=..').locator('summary').click();
   for(const [key,value] of Object.entries({
-   u0V:'230',cmax:'1.1',sourceROhm:'0.04',sourceXOhm:'0.03',
+   u0V:'230',cmax:'1.1',comparisonPoint:'L1-OUTGOING',sourceROhm:'0.04',sourceXOhm:'0.03',
    networkSource:'Declared transformer equivalent'
   }))await maxForm.locator('[name="'+key+'"]').fill(value);
   for(const [key,value] of Object.entries({
@@ -80,7 +80,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await form.count(),1);
   await form.locator('xpath=..').locator('summary').click();
   for(const [key,value] of Object.entries({
-   uLLV:'400',cmax:'1.1',ratedPowerKva:'1000',ratedVoltageV:'400',
+   uLLV:'400',cmax:'1.1',comparisonPoint:'MAIN-BUSBAR',ratedPowerKva:'1000',ratedVoltageV:'400',
    ukPercent:'6',loadLossW:'9000',upstreamROhm:'0.001',
    upstreamXOhm:'0.002',source:'Manufacturer short-circuit data',
    upstreamSource:'Upstream grid impedance referred to LV'
