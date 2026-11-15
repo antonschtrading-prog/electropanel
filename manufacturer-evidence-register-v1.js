@@ -121,5 +121,28 @@ function epLetThroughEvidenceBindingV1(project,line,article,input){
    reviewedAt:rec.reviewedAt??null,recordId:id,
    notice:'Matching project-local source record means only that an engineer checked a declared document; not independently authenticated manufacturer data.'});
 }
+function epAddManufacturerEvidenceRecordV1(project,record){
+ if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object'||
+    Array.isArray(record))return {project:null,code:'EVIDENCE_PROJECT_OR_RECORD_INVALID'};
+ const existing=project.manufacturerEvidenceRecords;
+ if(existing!==undefined&&!Array.isArray(existing))
+  return {project:null,code:'EVIDENCE_REGISTER_INVALID'};
+ if((existing?.length??0)>=250)return {project:null,code:'EVIDENCE_REGISTER_LIMIT'};
+ if(existing?.some(r=>r?.id===record.id))
+  return {project:null,code:'EVIDENCE_RECORD_ALREADY_EXISTS'};
+ let draft;
+ try{
+  draft=JSON.parse(JSON.stringify(project));
+  draft.manufacturerEvidenceRecords=[...(draft.manufacturerEvidenceRecords||[]),
+   JSON.parse(JSON.stringify(record))];
+ }catch(_){return {project:null,code:'EVIDENCE_RECORD_NOT_SERIALIZABLE'};}
+ const report=epManufacturerEvidenceRegisterV1(draft);
+ const invalid=report.issues.find(i=>i.level==='BLOCKED');
+ if(invalid)return {project:null,code:invalid.code,report};
+ if(!report.records.some(r=>r.id===record.id))
+  return {project:null,code:'EVIDENCE_RECORD_NOT_ACCEPTED',report};
+ return {project:draft,report,status:'REVIEW_REQUIRED'};
+}
 if(typeof module!=='undefined'&&module.exports)
- module.exports={epManufacturerEvidenceRegisterV1,epLetThroughEvidenceBindingV1};
+ module.exports={epManufacturerEvidenceRegisterV1,epLetThroughEvidenceBindingV1,
+  epAddManufacturerEvidenceRecordV1};
