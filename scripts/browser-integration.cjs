@@ -35,6 +35,16 @@ const server=http.createServer((req,res)=>{
  assert.deepEqual(savedTopology.imported,savedTopology.links);
  assert.equal(savedTopology.edges,1);
  assert.equal(savedTopology.selectivity,'NOT_ASSESSED');
+ const supplyModel=await page.evaluate(()=>{
+  const r=epSupplyDeviceGraphV1(state);
+  return {status:r.status,nodes:r.nodes.length,edges:r.edges.length,
+   approved:r.engineeringApproved,physical:r.physicalContinuity};
+ });
+ assert.ok(supplyModel.nodes>0,JSON.stringify(supplyModel));
+ assert.equal(supplyModel.approved,false);
+ assert.equal(supplyModel.physical,'NOT_VERIFIED');
+ assert.equal(await page.locator('.ep-supply-device-graph').count(),1);
+
  assert.equal(await page.locator('.ep-protection-device-chain').count(),1);
  const deviceEvidence=await page.evaluate(()=>{
   const r=epProtectionDeviceChainV1(state,catalogDevice);
