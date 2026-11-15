@@ -1040,6 +1040,9 @@ function renderEngineeringDiagnosticsV1(){
  const loadPanel=$('loadCurrentPanel');
  if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
   epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
+ const factsPanel=$('manufacturerFactsPanel');
+ if(factsPanel&&typeof epManufacturerFactsHtmlV1==='function')
+  factsPanel.innerHTML=epManufacturerFactsHtmlV1(state,selectedLine,catalogDevice);
  const evidencePanel=$('manufacturerEvidencePanel');
  if(evidencePanel&&typeof epManufacturerEvidenceHtmlV1==='function')
   evidencePanel.innerHTML=epManufacturerEvidenceHtmlV1(state,selectedLine,catalogDevice);
