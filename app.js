@@ -2278,7 +2278,7 @@ $('breakerLetThroughPanel').addEventListener('submit',e=>{
  const target=candidate.lines.find(x=>x.id===line.id);target.letThroughInput=input;
  const report=epBreakerLetThroughV1(candidate,target,catalogDevice(target.catalogSku));
  const malformed=report.issues.find(x=>x.level==='BLOCKED'&&[
-  'LET_THROUGH_INPUT_INVALID','LET_THROUGH_ARTICLE_MISMATCH',
+  'LET_THROUGH_INPUT_INVALID','LET_THROUGH_CATALOG_KEY_MISMATCH','LET_THROUGH_ARTICLE_MISMATCH',
   'LET_THROUGH_ARTICLE_RATING_MISMATCH','LET_THROUGH_DEVICE_STANDARD_MISMATCH',
   'LET_THROUGH_TEST_CONDITIONS_MISMATCH','LET_THROUGH_ARTICLE_VOLTAGE_UNCONFIRMED',
   'LET_THROUGH_POLE_CONFIGURATION_MISMATCH','LET_THROUGH_FAULT_MODEL_UNSUPPORTED',
