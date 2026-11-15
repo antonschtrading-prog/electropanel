@@ -34,6 +34,8 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   const ib=safePositive(line.overloadInput?.ibA),iz=safePositive(line.overloadInput?.izA),
    ik=safePositive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa),
    voltageV=safePositive(line.faultInput?.voltageV);
+  const displayIk=faultBasis?.mode==='CALCULATED_MAXIMUM'?faultBasis.ikMaxKa:ik;
+  const displayVoltage=faultBasis?.mode==='CALCULATED_MAXIMUM'?faultBasis.voltageV:voltageV;
   const sku=line.catalogSku||null;
   let article=null;
   if(sku&&typeof lookupSku==='function'){try{article=lookupSku(sku);}catch(_){}}
@@ -111,7 +113,8 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   const status=reasons.some(x=>blocking.has(x))?'BLOCKED':'UNKNOWN';
   for(const code of reasons)issues.push({code,lineId:line.id,level:blocking.has(code)?'BLOCKED':'UNKNOWN'});
   rows.push({lineId:line.id,name:line.name||line.device||'',phase:line.phase||null,
-   ibA:ib,izA:iz,ikKa:ik,voltageV,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
+   ibA:ib,izA:iz,ikKa:displayIk,manualIkKa:ik,
+   voltageV:displayVoltage,manualVoltageV:voltageV,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
     kind:article.kind||null,label:article.label||null,
     residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
