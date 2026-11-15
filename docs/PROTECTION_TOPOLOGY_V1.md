@@ -53,3 +53,13 @@ Next: add a versioned device-to-device supply model able to express incoming bre
 - The UI supports adding/removing incoming devices, entering/removing device supply relations and undo/redo. Project import validates the saved model. Engineering bundle, issue register and print expose independent evidence.
 - On circuit removal, links to its outgoing device are removed; any downstream declarations may become incomplete, never silently reparented.
 - No IEC/GOST compliance or installation approval is produced from this graph; manufacturer technical parameters and source provenance are separate evidence tasks.
+
+## 2026-11-16 — Reconciliation of supply paths with the terminal model
+
+- Added `device-supply-terminal-reconciliation-v1.js`: a read-only bridge between explicitly saved device-supply edges, existing board-to-device identity mappings, the v1.9 declared device-terminal inventory and the v1.8 wire inventory.
+- Input graph and malformed reference failures remain blocking; absent mappings, physical evidence or incoming-device terminal bindings remain UNKNOWN, never a clean compliance verdict.
+- Checks terminal-to-device identity, terminal conductor roles, missing wiring endpoints, duplicate terminals, and mismatches between v1.8 wires and v1.9 terminal declarations. Only explicit direct wires between matching roles are counted. No conducting path is inferred through a breaker, RCD, contact or bus bar.
+- Integrated results into the engineering bundle, consolidated issue register, printable HTML and board workspace. Added core, bundle and real-Chromium regression coverage.
+- Incoming devices are not automatically mapped into the legacy board-device binding list. The next stage requires a versioned, user-confirmed incoming-device terminal binding with snapshot invalidation and manufacturer applicability checks.
+
+Verification: test outcomes are accepted only on the exact final GitHub commit; earlier successful CI is not a substitute.
