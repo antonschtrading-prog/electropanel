@@ -54,6 +54,9 @@ function epEngineeringBundleV1(project,lookupSku){
   typeof epSupplyDeviceGraphV1==='function'?p=>epSupplyDeviceGraphV1(p):null);
  const deviceSupply=section('DEVICE_SUPPLY',
   typeof epDeviceSupplyAuditV1==='function'?p=>epDeviceSupplyAuditV1(p):null);
+ const supplyTerminals=section('SUPPLY_TERMINAL_RECONCILIATION',
+  typeof epDeviceSupplyTerminalReconciliationV1==='function'?
+   p=>epDeviceSupplyTerminalReconciliationV1(p):null);
  const manufacturerEvidence=section('MANUFACTURER_EVIDENCE_REGISTER',
   typeof epManufacturerEvidenceRegisterV1==='function'?
    p=>epManufacturerEvidenceRegisterV1(p):null);
@@ -90,7 +93,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const catalogueIntegrity={status:!catalog||catalog.issues.some(x=>x.status==='BLOCKED')?'BLOCKED':'UNKNOWN',
   issues:catalog?.issues?.map(x=>({code:x.code,level:x.status==='BLOCKED'?'BLOCKED':'UNKNOWN',recordIndex:x.index}))||[{code:'PROJECT_CATALOGUE_AUDIT_UNAVAILABLE',level:'BLOCKED'}],
   engineeringApproved:false};
- const sections={manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const sections={manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
