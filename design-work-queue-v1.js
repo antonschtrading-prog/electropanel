@@ -55,6 +55,15 @@ function epDesignWorkQueueV1(project,lookupSku){
  if(typeof epFaultRouteProjectV2==='function')for(const row of epFaultRouteProjectV2(project,lookupSku).rows){
   if(row.status==='BLOCKED')add(row.lineId,1,'FAULT_ROUTE_BLOCKED','Проверить трассу и условие Ik,min ≥ Ia','fault_route');
   else if(row.thresholdStatus==='UNKNOWN')add(row.lineId,2,'FAULT_ROUTE_EVIDENCE_REQUIRED','Уточнить исходные данные и основания проверки петли L–PE','fault_route');
+  if(row.thresholdStatus==='PRELIMINARY_PASS')
+   add(row.lineId,3,'FAULT_ROUTE_NUMERIC_ONLY',
+    'Проверить реальную времятоковую характеристику: арифметика Ik,min ≥ Ia не является подтверждением отключения','fault_route');
+  if(row.tripEnvelope?.numericalStatus==='NOT_DEMONSTRATED')
+   add(row.lineId,2,'TRIP_ENVELOPE_DISCONNECTION_NOT_DEMONSTRATED',
+    'Уточнить паспортную гарантию отключения при Ik,min и требуемом времени','fault_route');
+  if(row.tripEnvelope?.numericalStatus==='PRELIMINARY_WITHIN_ENVELOPE')
+   add(row.lineId,3,'TRIP_ENVELOPE_PROVENANCE_REVIEW',
+    'Проверить применимость паспортной огибающей времени отключения и условия установки','fault_route');
   // Ik,max is a different fault scenario from the L-PE minimum.
   // Its issue must not be incorrectly reported as a minimum-loop failure.
   if(row.maximum?.numericComparison==='EXCEEDS_ICN')
