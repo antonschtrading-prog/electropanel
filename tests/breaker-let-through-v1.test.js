@@ -41,12 +41,12 @@ test('manufacturer upper-bound at 5000 A checks cable capacity without multiplyi
  assert.equal(r.engineeringApproved,false);
  assert.equal(JSON.stringify(p),original);
 });
-test('a guaranteed energy bound above k²S² is a blocking failure',()=>{
+test('an upper I2t bound above k²S² cannot demonstrate withstand but does not prove a failure',()=>{
  const p=project();p.lines[0].letThroughInput.bands[0].maxLetThroughA2s=700000;
  const r=decision(p,()=>article());
- assert.equal(r.rows[0].breakerLetThrough.numericalStatus,'FAIL');
- assert.equal(r.status,'BLOCKED');
- assert.ok(r.issues.some(x=>x.code==='LET_THROUGH_CABLE_CAPACITY_EXCEEDED'&&x.level==='BLOCKED'));
+ assert.equal(r.rows[0].breakerLetThrough.numericalStatus,'NOT_DEMONSTRATED');
+ assert.equal(r.status,'UNKNOWN');
+ assert.ok(r.issues.some(x=>x.code==='LET_THROUGH_WITHSTAND_NOT_DEMONSTRATED'&&x.level==='UNKNOWN'));
 });
 test('an uncovered prospective current cannot be considered a safe extrapolation',()=>{
  const p=project();p.lines[0].letThroughInput.prospectiveCurrentA=7000;
