@@ -29,6 +29,21 @@ function epIncomingMaximumNormalizeV1(project,records){
   // incomplete feed, so the audit can flag the actual stale source path.
   seen.add(r.deviceNodeId);
   const input=JSON.parse(JSON.stringify(r.maximumFaultInput));
+  const allowed=['model','comparisonPoint','segments','sourceModel','uLLV','cmax',
+   'sourceROhm','sourceXOhm','networkSource','transformer'];
+  if(Object.keys(input).some(k=>!allowed.includes(k))||
+   Object.keys(input).some(k=>['__proto__','constructor','prototype'].includes(k))||
+   input.engineeringApproved!==undefined||input.ready_for_installation!==undefined)
+   throw Error('INCOMING_MAX_INPUT_UNEXPECTED_FIELD');
+  if(input.sourceModel==='TRANSFORMER_WITH_UPSTREAM'){
+   const t=input.transformer;
+   const tk=['ratedPowerKva','ratedVoltageV','ukPercent','loadLossW',
+    'upstreamROhm','upstreamXOhm','source','upstreamSource','lossBasisConfirmed'];
+   if(!t||typeof t!=='object'||Array.isArray(t)||
+    Object.keys(t).some(k=>!tk.includes(k)))
+    throw Error('INCOMING_MAX_TRANSFORMER_SOURCE_INVALID');
+  }else if(input.transformer!==undefined)
+   throw Error('INCOMING_MAX_RX_WITH_TRANSFORMER_CONFLICT');
   if(JSON.stringify(input).length>35000||
    input.model!=='THREE_PHASE_POSITIVE_SEQUENCE'||
    input.comparisonPoint!==r.deviceNodeId||
