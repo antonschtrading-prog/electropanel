@@ -50,6 +50,11 @@ function epFaultRouteReviewV2(project,line,lookup){
  if(!['L1','L2','L3'].includes(line.phase))add('FAULT_ROUTE_SINGLE_PHASE_SCOPE_UNCONFIRMED');
  if(article&&(!Number.isFinite(article.inA)||article.inA<=0||!Number.isInteger(article.poles)||article.poles<1))add('FAULT_ROUTE_ARTICLE_RATING_UNCONFIRMED');
  if(article&&['L1','L2','L3'].includes(line.phase)&&article.poles!==1)add('FAULT_ROUTE_POLES_APPLICABILITY_UNCONFIRMED');
+ const disconnectionContext=typeof epDisconnectionContextV1==='function'?
+  epDisconnectionContextV1(project,line,article):null;
+ if(disconnectionContext&&input.disconnectionContext)
+  for(const issue of disconnectionContext.issues)
+   add('FAULT_ROUTE_'+issue.code,issue.level);
  const tripEnvelope=typeof epTripEnvelopeV1==='function'?
   epTripEnvelopeV1(line,article,ik,time):null;
  if(tripEnvelope&&input.tripEnvelope){
@@ -69,7 +74,7 @@ function epFaultRouteReviewV2(project,line,lookup){
   thresholdStatus='PRELIMINARY_PASS';
  }
  return finish({ikMinA:ik,zsOhm:zs,loopROhm:r,loopXOhm:x,thresholdZsOhm:ia?c*u/ia:null,
-  iaA:ia,requiredTimeS:time,thresholdStatus,segments,stale,tripEnvelope,
+  iaA:ia,requiredTimeS:time,thresholdStatus,segments,stale,tripEnvelope,disconnectionContext,
   formula:'Ik,min = cmin × U0 / hypot(Rsource + ΣRphase+PE, Xsource + ΣXphase+PE)',
   maxFaultCurrentKa:line.faultInput?.ikKa??null,
   notice:'Minimum L–PE fault current only. Maximum prospective fault current remains an independent input. Ia and time applicability are user-documented, not authenticated.'});
@@ -83,7 +88,8 @@ function epApplyFaultRouteV2(project,lineId,input,lookup){
  line.faultRouteInput={...input,model:'TN_RADIAL_L_PE_SINGLE_SOURCE',basis:epFaultRouteBasisV2(project,lines[0],article)};
  const report=epFaultRouteReviewV2(draft,line,lookup);
  // A valid but failing engineering case is still saved, so it can be corrected.
- const invalid=report.issues.find(x=>x.level==='BLOCKED'&&x.code!=='FAULT_ROUTE_CURRENT_BELOW_IA');
+ const invalid=report.issues.find(x=>x.level==='BLOCKED'&&
+  !['FAULT_ROUTE_CURRENT_BELOW_IA','FAULT_ROUTE_DISCONNECTION_REQUESTED_TIME_EXCEEDS_LIMIT'].includes(x.code));
  if(invalid)return {project:null,code:invalid.code,report};
  line.calculationReview={required:true,reason:'FAULT_ROUTE_UPDATED'};
  return {project:draft,report,status:'REVIEW_REQUIRED'};
