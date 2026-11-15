@@ -63,6 +63,6 @@ test('production page loads transformer arithmetic before maximum fault route an
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.ok(html.indexOf('transformer-source-v1.js')<html.indexOf('fault-route-design-v2.js'));
- assert.match(app,/data\.maxFaultSourceModel/);
+ assert.match(app,/dataset\.maxFaultSourceModel/);
  assert.match(app,/input\.transformer=/);
 });
