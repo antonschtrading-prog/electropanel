@@ -15,6 +15,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.supplyDeviceGraph)sectionNames.push('supplyDeviceGraph');
  if(sections.deviceSupply)sectionNames.push('deviceSupply');
  if(sections.supplyTerminals)sectionNames.push('supplyTerminals');
+ if(sections.incomingTerminalBindings)sectionNames.push('incomingTerminalBindings');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
