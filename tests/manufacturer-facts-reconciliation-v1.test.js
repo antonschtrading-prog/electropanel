@@ -80,3 +80,23 @@ test('production browser and bundle include independent manufacturer fact sectio
  assert.match(bundle,/manufacturerFacts=section/);
  assert.match(app,/epManufacturerFactsHtmlV1/);
 });
+
+test('catalogue conflicts propagate into the consolidated issue register',()=>{
+ const {epEngineeringIssueRegisterV1}=require('../engineering-issue-register-v1.js');
+ const p={lines:[{id:'L1',catalogSku:'SE-A9F73110'}]};
+ const result=check(p,()=>({...lookup('SE-A9F73110'),icnKa:10}));
+ const register=epEngineeringIssueRegisterV1({sections:{manufacturerFacts:result}},p);
+ assert.ok(register.entries.some(e=>e.section==='manufacturerFacts'&&
+  e.level==='BLOCKED'&&e.code==='MANUFACTURER_FACTS_CATALOG_FIELD_CONFLICT'&&
+  e.circuitId==='L1'));
+});
+test('manufacturer source records are consistent with real seed catalogue',()=>{
+ const references=EP_MANUFACTURER_FACT_REFERENCES_V1;
+ for(const r of references){
+  const article=lookup(r.catalogKey);
+  assert.ok(article,r.catalogKey);
+  const result=check({lines:[{id:'X',catalogSku:r.catalogKey}]},lookup);
+  assert.equal(result.rows[0].status,'FACTS_MATCH');
+  assert.equal(result.rows[0].conflictingFields.length,0);
+ }
+});
