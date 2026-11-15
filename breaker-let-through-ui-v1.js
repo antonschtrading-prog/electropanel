@@ -23,7 +23,8 @@ function epBreakerLetThroughHtmlV1(project,lineId,lookup){
  return '<form data-let-through="'+esc(line.id)+'"><details data-let-through-editor>'+
   '<summary>Энергия пропускания автомата · паспортный предел I²t</summary>'+
   '<p>Указывайте только гарантированные производителем верхние границы энергии для конкретных условий испытания. Между диапазонами интерполяции нет.</p>'+
-  field('letArticleSku','Артикул изготовителя',d.articleSku??line.catalogSku)+
+  field('letCatalogKey','Ключ в каталоге проекта',d.catalogKey??line.catalogSku)+
+  field('letArticleSku','Артикул изготовителя',d.articleSku??article?.sku)+
   field('letArticleInA','Номинал выбранного аппарата, А',d.articleInA??article?.inA)+
   field('letStandard','Стандарт испытания аппарата',d.deviceStandard??article?.icnStandard)+
   field('letVoltage','Напряжение испытания, В',d.testVoltageV)+
