@@ -12,10 +12,14 @@ function epFaultRouteHtmlV2(project,lineId,lookup){
  field('u0V','U0, В',input.u0V)+field('cmin','cmin (0…1)',input.cmin)+field('sourceROhm','R питающей сети, Ом',input.sourceROhm)+field('sourceXOhm','X питающей сети, Ом',input.sourceXOhm)+field('networkSource','Источник данных сети',input.networkSource)+
  field('iaA','Ia при заданном времени, А',input.iaA)+field('requiredTimeS','Требуемое время отключения, с',input.requiredTimeS)+field('tripSource','Паспорт / кривая аппарата для Ia',input.tripSource)+field('timeSource','Основание допустимого времени',input.timeSource)+'</div>'+
  '<div data-route-segments>'+segments.map((s,i)=>epFaultSegmentHtmlV2(s,i)).join('')+'</div><button type="button" class="btn tiny" data-add-route-segment>Добавить участок</button>'+
+ epDisconnectionContextFieldsV1(input.disconnectionContext)+
  epTripEnvelopeFieldsV1(input.tripEnvelope)+
  ' <button type="submit" class="btn primary">Рассчитать и сохранить трассу</button></form>'+
  '<div class="ep-route-result"><strong>Статус данных: '+esc(r.status)+' · Численное сравнение: '+esc(r.thresholdStatus)+'</strong><strong>Ik,min: '+(r.ikMinA===null?'не рассчитан':esc(r.ikMinA.toFixed(2))+' А')+'</strong><span>Zs: '+(r.zsOhm===null?'—':esc(r.zsOhm.toFixed(5))+' Ом')+'</span><span>Сравнение с Ia: '+esc(r.thresholdStatus)+'</span></div>'+
  '<p>Максимальный ток для Icn: '+esc(r.maxFaultCurrentKa??'не задан')+' кА — отдельное исходное значение. Минимальный ток его не заменяет.</p>'+
+ '<p>Ограничение времени для выбранной области применения: '+esc(r.disconnectionContext?.numericalStatus??'не заявлено')+
+  ' · максимально допустимое время: '+esc(r.disconnectionContext?.maxAllowedTimeS??'не определено')+
+  ' с · запас: '+esc(r.disconnectionContext?.timeMarginS??'—')+' с</p>'+
  '<p>Паспортная огибающая времени отключения: '+esc(r.tripEnvelope?.numericalStatus??'нет данных')+
   ' · гарантированная верхняя граница: '+esc(r.tripEnvelope?.guaranteedMaxTimeS??'не определена')+
   ' с · требуемый ток: '+esc(r.tripEnvelope?.requiredCurrentA??'не определён')+' А</p>'+
@@ -50,4 +54,24 @@ function epTripEnvelopeFieldsV1(input){
  '<label><input name="tripEnvelopeEnabled" type="checkbox" '+(input?'checked':'')+'> Применить паспортную огибающую при расчёте</label></details>';
 }
 
-if(typeof module!=='undefined'&&module.exports)module.exports={epFaultRouteHtmlV2,epFaultSegmentHtmlV2,epTripEnvelopeFieldsV1,epTripEnvelopePointHtmlV1};
+function epDisconnectionContextFieldsV1(input){
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const x=input||{};
+ const field=(name,title,value)=>'<label>'+title+'<input name="'+name+'" value="'+esc(value??'')+'"></label>';
+ const options=[['','Выберите тип цепи'],['FINAL_CIRCUIT','Конечная цепь'],['DISTRIBUTION_CIRCUIT','Распределительная цепь'],['OTHER','Другая цепь']].map(
+  ([value,label])=>'<option value="'+value+'" '+(value===x.circuitClass?'selected':'')+'>'+label+'</option>').join('');
+ return '<details data-disconnection-context-panel><summary>Условие автоматического отключения · область применения</summary>'+
+ '<p>Задайте время, установленное для вашей категории цепи и версии норм. Значения из нормативных таблиц программа автоматически не подставляет; подтверждение применимости остаётся ответственностью проектировщика.</p>'+
+ '<label>Категория цепи<select name="adsCircuitClass">'+options+'</select></label>'+
+ field('adsMaxAllowedTimeS','Предельное допустимое время, с',x.maxAllowedTimeS)+
+ field('adsU0V','Напряжение U0 по основанию времени, В',x.u0V)+
+ field('adsStandardReference','Стандарт, редакция и пункт/таблица',x.standardReference)+
+ field('adsTimeBasisSource','Основание выбранного предельного времени',x.timeBasisSource)+
+ field('adsCircuitClassSource','Основание классификации цепи',x.circuitClassSource)+
+ '<label><input name="adsApplicabilityReviewed" type="checkbox" '+(x.applicabilityReviewed===true?'checked':'')+
+ '> Применимость условия времени к данной цепи рассмотрена</label>'+
+ '<label><input name="adsContextEnabled" type="checkbox" '+(input?'checked':'')+
+ '> Использовать это основание в инженерной проверке</label></details>';
+}
+
+if(typeof module!=='undefined'&&module.exports)module.exports={epFaultRouteHtmlV2,epFaultSegmentHtmlV2,epTripEnvelopeFieldsV1,epTripEnvelopePointHtmlV1,epDisconnectionContextFieldsV1};
