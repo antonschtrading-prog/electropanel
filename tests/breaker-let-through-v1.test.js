@@ -139,3 +139,15 @@ test('changes to guaranteed energy bounds invalidate cable and device evidence',
  assert.ok(impact.affected.includes('device'));
  assert.equal(impact.engineeringApproved,false);
 });
+
+test('internal catalogue key and manufacturer article are distinct protected identities',()=>{
+ const p=project();p.lines[0].catalogSku='SE-A9F73110';
+ p.lines[0].letThroughInput.catalogKey='SE-A9F73110';
+ p.lines[0].letThroughInput.articleSku='A9F73110';
+ const a={...article(),sku:'A9F73110'};
+ const r=calc(p,p.lines[0],a);
+ assert.equal(r.numericalStatus,'PRELIMINARY_PASS');
+ assert.ok(!r.issues.some(x=>x.code==='LET_THROUGH_ARTICLE_MISMATCH'));
+ p.lines[0].letThroughInput.articleSku='A9F73111';
+ assert.ok(calc(p,p.lines[0],a).issues.some(x=>x.code==='LET_THROUGH_ARTICLE_MISMATCH'));
+});
