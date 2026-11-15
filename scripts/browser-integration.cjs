@@ -35,6 +35,17 @@ const server=http.createServer((req,res)=>{
  assert.equal(deviceGraphUI.restored,1);
  assert.equal(deviceGraphUI.selectivity,'NOT_ASSESSED');
  assert.equal(deviceGraphUI.approval,false);
+ const terminalReconciliation=await page.evaluate(()=>{
+  const r=epDeviceSupplyTerminalReconciliationV1(state);
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  return {status:r.status,rows:r.rows.length,physical:r.physicalContinuity,
+   bundleStatus:bundle.statuses.supplyTerminals,approved:r.engineeringApproved};
+ });
+ assert.equal(terminalReconciliation.rows,1,JSON.stringify(terminalReconciliation));
+ assert.equal(terminalReconciliation.physical,'NOT_VERIFIED');
+ assert.equal(terminalReconciliation.approved,false);
+ assert.equal(await page.locator('.ep-device-supply-terminals').count(),1);
+
  await page.locator('#deviceSupplyFrom').selectOption('INCOMING:QF0');
  await page.locator('#deviceSupplyTo').selectOption('INCOMING:QF0');
  await page.locator('#deviceSupplyLinkSave').click();
