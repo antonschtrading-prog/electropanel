@@ -85,7 +85,7 @@ test('different manual and calculated comparison points are disclosed, not false
  assert.ok(b.issues.some(x=>x.code==='SELECTION_MANUAL_IK_DIFFERENT_OR_UNSCOPED_POINT'));
 });
 test('three-phase source does not substitute for L-N protection context',()=>{
- const p=project(),l=p.lines[0];l.phase='3Ф';
+ const p=project(),l=p.lines[0];l.phase='3Ф';delete l.faultInput;
  l.catalogSku='SE-A9F74316';l.modules=3;
  l.maximumFaultInput={model:'THREE_PHASE_POSITIVE_SEQUENCE',comparisonPoint:'P-3',
   uLLV:400,cmax:1.1,sourceROhm:.05,sourceXOhm:.02,
