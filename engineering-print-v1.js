@@ -103,12 +103,11 @@ function epEngineeringPrintV1(bundle){
   rows(['Цепь','S, кВА','ULL, В','uk, %','Потери КЗ, Вт','Rt, Ом','Xt, Ом','R сети до Т, Ом','X сети до Т, Ом','Источник трансформатора','Источник сети','Основание потерь'],
    (sections.faultRoutes?.rows||[]).filter(x=>x.maximum?.sourceModel==='TRANSFORMER_WITH_UPSTREAM').map(x=>{
     const t=x.maximum.transformer||{};
-    const source=Array.isArray(bundle?.sourceTransformerRows)?bundle.sourceTransformerRows.find(y=>y.lineId===x.lineId):null;
     return [x.lineId,t.ratedPowerKva??'—',t.ratedVoltageV??'—',t.ukPercent??'—',
      t.loadLossW??'—',t.transformerROhm??'—',t.transformerXOhm??'—',
-     t.upstreamROhm??'—',t.upstreamXOhm??'—',source?.source??'См. исходный проект',
-     source?.upstreamSource??'См. исходный проект',
-     t.issues?.some(i=>i.code==='TRANSFORMER_LOSS_BASIS_UNCONFIRMED')?'Не подтверждено':'Заявлено']))+
+     t.upstreamROhm??'—',t.upstreamXOhm??'—',t.source??'Не указан',
+     t.upstreamSource??'Не указан',
+     t.lossBasisConfirmed?'Заявлено':'Не подтверждено']))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
