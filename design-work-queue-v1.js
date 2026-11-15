@@ -55,6 +55,15 @@ function epDesignWorkQueueV1(project,lookupSku){
  if(typeof epFaultRouteProjectV2==='function')for(const row of epFaultRouteProjectV2(project,lookupSku).rows){
   if(row.status==='BLOCKED')add(row.lineId,1,'FAULT_ROUTE_BLOCKED','Проверить трассу и условие Ik,min ≥ Ia','fault_route');
   else if(row.thresholdStatus==='UNKNOWN')add(row.lineId,2,'FAULT_ROUTE_EVIDENCE_REQUIRED','Уточнить исходные данные и основания проверки петли L–PE','fault_route');
+  if(row.disconnectionContext?.issues?.some(i=>i.code==='DISCONNECTION_REQUESTED_TIME_EXCEEDS_LIMIT'))
+   add(row.lineId,1,'DISCONNECTION_TIME_LIMIT_EXCEEDED',
+    'Выбранное время отключения превышает заявленный предел для категории цепи','fault_route');
+  else if(row.disconnectionContext?.issues?.length)
+   add(row.lineId,2,'DISCONNECTION_CONTEXT_EVIDENCE_REQUIRED',
+    'Документировать область применения и предельное время автоматического отключения','fault_route');
+  if(row.disconnectionContext?.numericalStatus==='PRELIMINARY_WITHIN_DECLARED_LIMIT')
+   add(row.lineId,3,'DISCONNECTION_TIME_APPLICABILITY_REVIEW',
+    'Проверить правильность нормативного основания и применимость выбранного времени','fault_route');
   if(row.thresholdStatus==='PRELIMINARY_PASS')
    add(row.lineId,3,'FAULT_ROUTE_NUMERIC_ONLY',
     'Проверить реальную времятоковую характеристику: арифметика Ik,min ≥ Ia не является подтверждением отключения','fault_route');
