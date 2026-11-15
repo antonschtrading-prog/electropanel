@@ -127,6 +127,7 @@ const server=http.createServer((req,res)=>{
   await cablePage.goto('http://127.0.0.1:'+server.address().port);
   await cablePage.locator('#loadDemo').click();
   await cablePage.evaluate(()=>{selectedLine='L1';switchView('board');});
+  await cablePage.locator('#catalogSku').selectOption('SE-A9F74116');
   const meta=await cablePage.evaluate(()=>{
    const l=state.lines.find(x=>x.id==='L1'),a=catalogDevice(l.catalogSku);
    return {sku:l.catalogSku,inA:a?.inA};
