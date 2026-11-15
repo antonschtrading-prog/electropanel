@@ -76,7 +76,8 @@ function epProtectionEvidenceMatrixHtmlV1(report){
   '</td><td>'+esc(x.status)+'</td></tr>').join('');
  return '<details class="ep-protection-evidence-matrix"><summary>Проверка комплектности инженерных данных по аппаратам · '+
   esc(report?.status??'UNKNOWN')+'</summary>'+
-  '<p class="muted">Показаны отсутствующие источники, непривязанные расчётные точки и устаревшие сведения. Полная комплектность не подтверждает нормативную пригодность или селективность.</p>'+
+  '<p class="muted">Показаны отсутствующие источники, непривязанные расчётные точки и устаревшие сведения. Полная комплектность не подтверждает нормативную пригодность или селективность.</p>'+ 
+  '<button type="button" class="btn" id="protectionEvidenceMatrixCsv">Выгрузить журнал замечаний CSV</button>'+
   '<div class="table-scroll"><table><thead><tr><th>Аппарат</th><th>Тип</th><th>Ik,max, кА</th><th>Документов пары</th><th>Что требуется</th><th>Статус</th></tr></thead><tbody>'+
   (items||'<tr><td colspan="6">Нет аппаратов</td></tr>')+'</tbody></table></div></details>';
 }
