@@ -33,6 +33,8 @@ function epEngineeringPrintV1(bundle){
    x.downstreamDeviceId??'—',x.downstream?.sku??'—',x.downstream?.inA??'—',
    x.upstreamLineId,x.upstreamDeviceId??'—',x.upstream?.sku??'—',x.upstream?.inA??'—',
    x.relation,x.selectivityStatus]));
+ const supplyEdgesTable=rows(['Источник','Назначение','Проводник','ID декларации','Достоверность'],
+  (sections.supplyDeviceGraph?.edges||[]).map(x=>[x.from,x.to,x.kind,x.sourceId,x.physicalContinuity]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -240,6 +242,8 @@ function epEngineeringPrintV1(bundle){
      t.upstreamSource??'Не указан',
      t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
+  '<h2>Декларативная модель источника, аппаратов и проводников</h2>'+supplyEdgesTable+
+  '<p>Граф не доказывает физическую непрерывность, идентификацию клемм, селективность или пригодность к монтажу.</p>'+
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
   '<h2>Паспортные данные выбранного оборудования · источники и ограничения</h2>'+catalogueEvidenceTable+
