@@ -25,6 +25,12 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.reasons.some(x=>x.code==='LOAD_CURRENT_STALE'))add(row.lineId,2,'LOAD_CURRENT_STALE','Пересчитать ток после изменения нагрузки','load');
   // Engineering gate reasons become actionable tasks, never silent flags.
   const guided={
+   LET_THROUGH_EVIDENCE_RECORD_UNLINKED:[2,'Привязать расчёт I²t к документу в реестре производителя','catalogue'],
+   LET_THROUGH_EVIDENCE_RECORD_NOT_UNIQUE:[1,'Исправить отсутствующую либо неоднозначную запись паспортных данных','catalogue'],
+   LET_THROUGH_EVIDENCE_IDENTITY_MISMATCH:[1,'Согласовать артикул и внутренний ключ каталога с записью источника','catalogue'],
+   LET_THROUGH_EVIDENCE_SCOPE_MISMATCH:[1,'Согласовать напряжение, частоту, модель КЗ и полюса с паспортным графиком','catalogue'],
+   LET_THROUGH_EVIDENCE_CURVE_MISMATCH:[1,'Проверить точное соответствие диапазонов и верхней границы I²t паспорту','catalogue'],
+   LET_THROUGH_EVIDENCE_DOCUMENT_NOT_REVIEWED:[2,'Просмотреть указанный паспортный документ и место расположения графика','catalogue'],
    LET_THROUGH_WITHSTAND_NOT_DEMONSTRATED:[2,'Получить более точную паспортную верхнюю границу I²t либо пересмотреть кабель: превышение верхней границы не доказывает повреждение','cable'],
    LET_THROUGH_INPUT_MISSING:[2,'Получить паспортную верхнюю границу энергии пропускания I²t для выбранного аппарата','catalogue'],
    LET_THROUGH_NO_GUARANTEED_BAND:[2,'Получить паспортное подтверждение I²t для диапазона ожидаемого тока КЗ','catalogue'],
