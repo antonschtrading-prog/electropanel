@@ -31,6 +31,25 @@ function epDeviceSupplyTerminalReconciliationV1(project){
   }
   bound.set(b.boardDeviceId,b.modelDeviceId);used.add(b.modelDeviceId);
  }
+ const incomingModels=new Map(),occupied=new Set(bound.values());
+ if(project.incomingTerminalBindingsV1!==undefined){
+  if(typeof epIncomingTerminalBindingsAuditV1!=='function')
+   add('SUPPLY_TERMINAL_INCOMING_AUDIT_UNAVAILABLE','BLOCKED');
+  else{
+   const report=epIncomingTerminalBindingsAuditV1(project);
+   if(report.status==='BLOCKED')
+    add('SUPPLY_TERMINAL_INCOMING_BINDING_AUDIT_BLOCKED','BLOCKED');
+   for(const row of report.rows){
+    if(row.snapshotStale||row.modelReused)continue;
+    if(occupied.has(row.modelDeviceId)){
+     add('SUPPLY_TERMINAL_MODEL_ID_REUSED','BLOCKED',{objectId:row.incomingId});
+     continue;
+    }
+    occupied.add(row.modelDeviceId);
+    incomingModels.set(row.incomingId,row.modelDeviceId);
+   }
+  }
+ }
  const deviceById=new Map(),termById=new Map(),byDevice=new Map();
  for(const d of model.devices){
   if(!d||typeof d.id!=='string'||deviceById.has(d.id)){add('SUPPLY_TERMINAL_DEVICE_INVALID','BLOCKED');continue;}
@@ -51,7 +70,10 @@ function epDeviceSupplyTerminalReconciliationV1(project){
   if(id==='SOURCE:MAIN')return {modelId:null,source:true};
   const parts=id.split(':');
   if(parts.length!==2)return {modelId:null,source:false};
-  if(parts[0]==='INCOMING')return {modelId:null,source:false,incoming:true};
+  if(parts[0]==='INCOMING'){
+   const modelId=incomingModels.get(parts[1])||null;
+   return {modelId,source:false,incoming:true};
+  }
   if(!['GROUP','BRANCH'].includes(parts[0]))return {modelId:null,source:false};
   const modelId=bound.get(parts[1])||null;
   return {modelId,source:false};
@@ -90,8 +112,8 @@ function epDeviceSupplyTerminalReconciliationV1(project){
    fromModelDeviceId:upstream.modelId,toModelDeviceId:downstream.modelId,
    declaredDirectWires:0,verification:'NOT_VERIFIED'};
   rows.push(row);
-  if(upstream.incoming||downstream.incoming)
-   add('SUPPLY_TERMINAL_INCOMING_BINDING_UNSUPPORTED','UNKNOWN',{objectId:link.to});
+  if((upstream.incoming&&!upstream.modelId)||(downstream.incoming&&!downstream.modelId))
+   add('SUPPLY_TERMINAL_INCOMING_BINDING_REQUIRED','UNKNOWN',{objectId:link.to});
   if(!upstream.source&&!upstream.modelId&&!upstream.incoming)
    add('SUPPLY_TERMINAL_SOURCE_BOARD_BINDING_MISSING','UNKNOWN',{objectId:link.from});
   if(!downstream.modelId&&!downstream.incoming)
