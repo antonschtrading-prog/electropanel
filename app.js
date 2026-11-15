@@ -1006,6 +1006,9 @@ function renderEngineeringDiagnosticsV1(){
    (typeof epProtectionEvidenceMatrixV1==='function'&&
     typeof epProtectionEvidenceMatrixHtmlV1==='function'?
     epProtectionEvidenceMatrixHtmlV1(epProtectionEvidenceMatrixV1(state,catalogDevice)):'')+
+   (typeof epFaultSourceConvergenceV1==='function'&&
+    typeof epFaultSourceConvergenceHtmlV1==='function'?
+    epFaultSourceConvergenceHtmlV1(epFaultSourceConvergenceV1(state,catalogDevice)):'')+
    (typeof epIncomingTerminalBindingsHtmlV1==='function'?
     epIncomingTerminalBindingsHtmlV1(state):'')+
    (typeof epDeviceSupplyCrossEvidenceV1==='function'&&
