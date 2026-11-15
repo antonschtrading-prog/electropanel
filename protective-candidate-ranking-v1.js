@@ -28,7 +28,13 @@ function epProtectiveCandidateRankingV1(line,shortlist,faultBasis=null){
         'SELECTION_MAX_FAULT_ICN_VOLTAGE_INSUFFICIENT'].includes(issue.code)){
     warnings.push('ORIGINAL_SELECTED_ARTICLE_'+issue.code);continue;
    }
-   if(issue.level==='BLOCKED')reasons.push(issue.code);
+   // A defective network calculation or contradictory manual basis cannot
+   // prove that every candidate is electrically incapable. It suspends the
+   // inspection classification until the fault study is resolved.
+   if(faultBasis?.mode==='CALCULATED_UNUSABLE'||
+      issue.code==='SELECTION_MANUAL_IK_UNDERSTATES_SAME_POINT_MAX')
+    warnings.push(issue.code);
+   else if(issue.level==='BLOCKED')reasons.push(issue.code);
    else warnings.push(issue.code);
   }
   const rated=num(c.inA),icn=num(c.icnKa),ratedVolts=num(c.icnVoltageV);
@@ -64,7 +70,9 @@ function epProtectiveCandidateRankingV1(line,shortlist,faultBasis=null){
   // then fewer documentary gaps, then deterministic catalogue attributes.
   const essentialMissing=ib===null||iz===null||ik===null||volts===null||
    ratedVolts===null||!c.icnStandard||
-   faultBasis?.mode==='CALCULATED_UNUSABLE';
+   faultBasis?.mode==='CALCULATED_UNUSABLE'||
+   (faultBasis?.issues||[]).some(i=>
+    i.code==='SELECTION_MANUAL_IK_UNDERSTATES_SAME_POINT_MAX');
   const classification=contradiction?'EXCLUDED':
    !eligible||essentialMissing?'INCOMPLETE':'PRELIMINARY_CANDIDATE';
   rows.push({catalogKey:c.sku,manufacturerSku:c.manufacturerSku??null,
