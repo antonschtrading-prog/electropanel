@@ -105,3 +105,22 @@ test('HTML escapes incoming device names',()=>{
  assert.ok(h.includes('&lt;svg onload=alert(1)&gt;'));
  assert.ok(!h.includes('<svg onload=alert(1)>'));
 });
+
+test('forged model success and unrelated nested inputs are rejected before import',()=>{
+ const project=p(),base=api.epIncomingMaximumDeclareV1(project,'INCOMING:Q0',rx(),()=>article())[0];
+ for(const change of [
+  x=>x.maximumFaultInput.engineeringApproved=true,
+  x=>x.maximumFaultInput.ready_for_installation=true,
+  x=>x.maximumFaultInput.unrelatedNetworkModel='untrusted',
+  x=>x.maximumFaultInput.transformer={ratedPowerKva:1000}
+ ]){
+  const item=structuredClone(base);change(item);
+  assert.throws(()=>api.epIncomingMaximumNormalizeV1(project,[item]),/INCOMING_MAX_/);
+ }
+});
+test('transformer model accepts only the supported technical data fields',()=>{
+ const project=p(),base=api.epIncomingMaximumDeclareV1(
+  project,'INCOMING:Q0',transformer(),()=>article(25))[0];
+ const forged=structuredClone(base);forged.maximumFaultInput.transformer.verified=true;
+ assert.throws(()=>api.epIncomingMaximumNormalizeV1(project,[forged]),/INCOMING_MAX_TRANSFORMER_SOURCE_INVALID/);
+});
