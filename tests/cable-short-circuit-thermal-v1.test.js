@@ -130,3 +130,46 @@ test('untrusted source is escaped in HTML',()=>{
  assert.doesNotMatch(h,/<svg /);
  assert.match(h,/&lt;svg /);
 });
+
+test('project import restores only declared thermal input and not an approval result',()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+ const raw=project(),dest={lines:[{id:'L1',catalogSku:'A'}]};
+ const ctx=vm.createContext({});ctx.raw=raw;ctx.dest=dest;
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'..','project-state-v2.js'),'utf8'),ctx);
+ const output=vm.runInContext('epRestoreProjectExtensionsV2(raw,dest)',ctx);
+ assert.equal(output.lines[0].shortCircuitThermalInput.sectionMm2,6);
+ assert.equal(output.lines[0].shortCircuitThermalInput.kA_SqrtS_PerMm2,115);
+ assert.equal(output.lines[0].shortCircuitThermalInput.engineeringApproved,undefined);
+});
+test('thermal input updates invalidate cable and protective dependent evidence',()=>{
+ const {epDesignChangeImpactV1}=require('../design-change-impact-v1.js');
+ const before=project(),after=structuredClone(before);
+ after.lines[0].shortCircuitThermalInput.clearingTimeS=.2;
+ const impact=epDesignChangeImpactV1(before,after);
+ assert.ok(impact.changed.includes('cable'));
+ assert.ok(impact.affected.includes('device'));
+ assert.equal(impact.engineeringApproved,false);
+});
+test('UI shows no default k or clearing time and escapes untrusted input',()=>{
+ const {epCableShortCircuitThermalHtmlV1}=require('../cable-short-circuit-thermal-ui-v1.js');
+ const empty=project();delete empty.lines[0].shortCircuitThermalInput;
+ global.epCableShortCircuitThermalV1=calc;
+ const h=epCableShortCircuitThermalHtmlV1(empty,'L1',()=>device());
+ assert.match(h,/name="thermalK" value=""/);
+ assert.match(h,/name="thermalClearingTime" value=""/);
+ empty.lines[0].shortCircuitThermalInput=thermal();
+ empty.lines[0].shortCircuitThermalInput.timeSource='<img src=x onerror=alert(1)>';
+ const result=epCableShortCircuitThermalHtmlV1(empty,'L1',()=>device());
+ assert.doesNotMatch(result,/<img /);
+ assert.match(result,/&lt;img /);
+});
+test('production browser links the thermal engine before the unified protection decision',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+ const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+ assert.ok(html.indexOf('cable-short-circuit-thermal-v1.js')<
+  html.indexOf('protection-decision-v1.js'));
+ assert.match(html,/id="cableThermalPanel"/);
+ assert.match(app,/epCableShortCircuitThermalV1\(candidate,next,catalogDevice/);
+ assert.match(app,/shortCircuitThermalInput=input/);
+});
