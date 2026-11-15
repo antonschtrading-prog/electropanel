@@ -59,6 +59,15 @@ function epProtectionDecisionV1(project,lookup){
    for(const issue of overloadCoordination?.issues||[])
     add(rowIssues,lineId,issue.code,issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN');
   }else add(rowIssues,lineId,'PROTECTION_OVERLOAD_I2_EVIDENCE_MISSING','UNKNOWN');
+  let shortCircuitThermal=null;
+  if(line.shortCircuitThermalInput){
+   if(typeof epCableShortCircuitThermalV1==='function'){
+    try{shortCircuitThermal=epCableShortCircuitThermalV1(project,line,article);}
+    catch(_){add(rowIssues,lineId,'PROTECTION_CABLE_THERMAL_FAILED','BLOCKED');}
+   }else add(rowIssues,lineId,'PROTECTION_CABLE_THERMAL_MODULE_UNAVAILABLE','BLOCKED');
+   for(const issue of shortCircuitThermal?.issues||[])
+    add(rowIssues,lineId,issue.code,issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN');
+  }else add(rowIssues,lineId,'PROTECTION_CABLE_THERMAL_EVIDENCE_MISSING','UNKNOWN');
   let maximum=null,minimum=null;
   if(typeof epMaximumFaultCurrentV2==='function'){
    try{maximum=epMaximumFaultCurrentV2(project,line,lookup);}catch(_){
@@ -94,7 +103,7 @@ function epProtectionDecisionV1(project,lookup){
   const unique=[...new Map(rowIssues.map(x=>[x.code,x])).values()];
   const status=unique.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId,sku:line.catalogSku??null,deviceKind:article?.kind??null,
-   status,currentChecks,overloadCoordination,breaking:{status:breakingStatus,ikMaxKa:imax,icnKa:icn},
+   status,currentChecks,overloadCoordination,shortCircuitThermal,breaking:{status:breakingStatus,ikMaxKa:imax,icnKa:icn},
    minimum:{status:loopStatus,ikMinA:minimum?.ikMinA??null,
     tripTimeStatus:trip?.numericalStatus??'UNKNOWN',
     requiredTimeS:minimum?.requiredTimeS??null,
