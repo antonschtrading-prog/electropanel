@@ -18,11 +18,19 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
    issues.push({code:'CIRCUIT_ID_INVALID_OR_DUPLICATE',level:'BLOCKED',lineId:line?.id??null});continue;
   }
   ids.add(line.id);
+  const faultBasis=typeof epSelectionFaultBasisV1==='function'?
+   epSelectionFaultBasisV1(project,line,lookupSku):null;
+  // The maximum-current comparison must use the same explicitly declared
+  // scenario and point. A scoped result supersedes manual Ik for screening;
+  // missing/stale evidence cannot silently fall back to manual approval.
+  const screeningLine=faultBasis?.mode==='CALCULATED_MAXIMUM'?
+   {...line,faultInput:{...(line.faultInput||{}),ikKa:faultBasis.ikMaxKa,
+     voltageV:faultBasis.voltageV}}:line;
   const raw=typeof epProtectiveDeviceShortlistV1==='function'?
-   epProtectiveDeviceShortlistV1(line,catalogue):
+   epProtectiveDeviceShortlistV1(screeningLine,catalogue):
    {candidates:[],issues:[{code:'SHORTLIST_UNAVAILABLE',level:'BLOCKED'}]};
   const ranking=typeof epProtectiveCandidateRankingV1==='function'?
-   epProtectiveCandidateRankingV1(line,raw):null;
+   epProtectiveCandidateRankingV1(screeningLine,raw,faultBasis):null;
   const ib=safePositive(line.overloadInput?.ibA),iz=safePositive(line.overloadInput?.izA),
    ik=safePositive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa),
    voltageV=safePositive(line.faultInput?.voltageV);
@@ -31,6 +39,11 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   if(sku&&typeof lookupSku==='function'){try{article=lookupSku(sku);}catch(_){}}
   const selectedCandidate=raw.candidates.find(c=>c.sku===sku);
   const reasons=[];
+  for(const issue of faultBasis?.issues||[]){
+   if(issue.level==='BLOCKED')reasons.push(issue.code);
+  }
+  if(faultBasis?.mode==='CALCULATED_UNUSABLE')
+   reasons.push('SELECTION_MAXIMUM_CURRENT_UNUSABLE');
   if(!sku)reasons.push('ARTICLE_NOT_SELECTED');
   else if(!article)reasons.push('ARTICLE_UNKNOWN');
   else if(!['MCB','RCBO'].includes(article.kind))reasons.push('SELECTED_ARTICLE_NOT_MCB');
@@ -85,7 +98,9 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
    }
   }
   if(article&&!article.source)reasons.push('ARTICLE_SOURCE_MISSING');
-  const blocking=new Set(['ARTICLE_UNKNOWN','SELECTED_ARTICLE_NOT_MCB','ARTICLE_NOT_IN_SHORTLIST',
+  const blocking=new Set(['SELECTION_MANUAL_IK_UNDERSTATES_SAME_POINT_MAX',
+   'SELECTION_FAULT_VOLTAGE_CONTEXT_MISMATCH',
+   'ARTICLE_UNKNOWN','SELECTED_ARTICLE_NOT_MCB','ARTICLE_NOT_IN_SHORTLIST',
    'IN_LT_IB','IN_GT_IZ','ICN_LT_DECLARED_IK','POLES_INCOMPATIBLE','CATALOG_SPEC_INVALID',
    'ARTICLE_ICN_UNDECLARED','MANUFACTURER_SOURCE_CONFLICT',
    'ARTICLE_MODULE_WIDTH_MISMATCH','ARTICLE_LABEL_MISMATCH','ARTICLE_MODULES_INVALID',
@@ -106,7 +121,7 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
     icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
     modules:article.modules??null,source:article.source||null,
     verificationStatus:article.verificationStatus||'UNKNOWN'}:null,
-   status,reasons,candidates:raw.candidates,ranking,engineeringApproved:false});
+   status,reasons,candidates:raw.candidates,ranking,faultBasis,engineeringApproved:false});
  }
  const selected=rows.find(x=>x.lineId===selectedId)||rows[0]||null;
  return {schema:'electropanel.protection.workbench.draft.1',
