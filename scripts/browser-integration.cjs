@@ -30,6 +30,42 @@ const server=http.createServer((req,res)=>{
  await page.locator('#catalogTier').selectOption('');
  assert.equal(await page.locator('#catalogTier').inputValue(),'');
 
+ // Real browser: engineer can enter max L-N fault scenario and retain the
+ // independently declared input across the project persistence roundtrip.
+ const maxFaultPage=await browser.newPage({viewport:{width:1280,height:900}});
+ try{
+  await maxFaultPage.goto('http://127.0.0.1:'+server.address().port);
+  await maxFaultPage.locator('#loadDemo').click();
+  await maxFaultPage.evaluate(()=>{selectedLine='L1';switchView('board');});
+  const maxForm=maxFaultPage.locator('#maximumFaultPanel [data-max-fault-model="SINGLE_PHASE_L_N"]');
+  assert.equal(await maxForm.count(),1);
+  for(const [key,value] of Object.entries({
+   u0V:'230',cmax:'1.1',sourceROhm:'0.04',sourceXOhm:'0.03',
+   networkSource:'Declared transformer equivalent'
+  }))await maxForm.locator('[name="'+key+'"]').fill(value);
+  for(const [key,value] of Object.entries({
+   lengthM:'30',phaseROhmKm:'0.4',neutralROhmKm:'0.6',
+   phaseXOhmKm:'0.08',neutralXOhmKm:'0.09',source:'Declared cable R/X'
+  }))await maxForm.locator('[data-max-segment-field="'+key+'"]').fill(value);
+  await maxForm.locator('[data-max-segment-temperature]').check();
+  await maxForm.locator('button[type="submit"]').click();
+  const maxState=await maxFaultPage.evaluate(()=>{
+   const line=state.lines.find(x=>x.id==='L1');
+   const stored=JSON.parse(localStorage.getItem('electropanel_web_preview'))
+    .lines.find(x=>x.id==='L1');
+   const result=epMaximumFaultCurrentV2(state,line,catalogDevice);
+   return {model:line.maximumFaultInput?.model,segments:line.maximumFaultInput?.segments?.length,
+    basis:line.maximumFaultInput?.basis?.catalogSku??null,
+    source:stored.maximumFaultInput?.networkSource,
+    max:result.ikMaxKa,approved:result.engineeringApproved};
+  });
+  assert.equal(maxState.model,'SINGLE_PHASE_L_N');
+  assert.equal(maxState.segments,1);
+  assert.equal(maxState.source,'Declared transformer equivalent');
+  assert.ok(maxState.max>0,JSON.stringify(maxState));
+  assert.equal(maxState.approved,false);
+ }finally{await maxFaultPage.close();}
+
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
