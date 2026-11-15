@@ -108,6 +108,18 @@ const server=http.createServer((req,res)=>{
   assert.equal(saved.approved,false);
  }finally{await transformerPage.close();}
 
+ // Browser-bundled unified protection decision must be consumable through
+ // the actual engineering package and print path, not only a standalone module.
+ const coreDecision=await page.evaluate(()=>{
+  const draft=epEngineeringBundleV1(state,catalogDevice);
+  const decision=draft.sections.protectionDecision;
+  const html=epEngineeringPrintV1(draft);
+  return {count:decision?.rows?.length??null,overall:decision?.status,
+   approved:decision?.engineeringApproved,printIncludes:html.includes('Единая проверка защиты')};
+ });
+ assert.equal(coreDecision.count,6,JSON.stringify(coreDecision));
+ assert.notEqual(coreDecision.approved,true);
+ assert.equal(coreDecision.printIncludes,true);
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
