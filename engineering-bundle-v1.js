@@ -47,6 +47,9 @@ function epEngineeringBundleV1(project,lookupSku){
  const manufacturerEvidence=section('MANUFACTURER_EVIDENCE_REGISTER',
   typeof epManufacturerEvidenceRegisterV1==='function'?
    p=>epManufacturerEvidenceRegisterV1(p):null);
+ const manufacturerFacts=section('MANUFACTURER_FACTS',
+  typeof epManufacturerFactsReconciliationV1==='function'?
+   (p,lookup)=>epManufacturerFactsReconciliationV1(p,lookup):null);
  const designWorkQueue=section('DESIGN_WORK_QUEUE',typeof epDesignWorkQueueV1==='function'?
   (p,lookup)=>({...epDesignWorkQueueV1(p,lookup),issues:[]}):null);
  const integratedEvidence=section('INTEGRATED_EVIDENCE',typeof epIntegratedEvidenceReview==='function'?
