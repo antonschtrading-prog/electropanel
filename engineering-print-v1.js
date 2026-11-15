@@ -123,10 +123,13 @@ function epEngineeringPrintV1(bundle){
    x.selectedArticle?.residualCurrentMa??'—',x.selectedArticle?.residualType||'—',
    x.selectedArticle?.source||'Не подтверждён',x.status,(x.reasons||[]).join(', ')]));
  const candidateRankingTable=rows(['Цепь','Артикул','Класс рассмотрения',
+  'Ik для сравнения, кА','Источник Ik','Модель КЗ','Точка КЗ',
   'Запас In−Ib, А','Запас Iz−In, А','Запас Icn−Ik, кА','Запас Uном−Uсети, В',
   'Источники и недостающие доказательства'],
   protection.flatMap(p=>(p.ranking?.rows||[]).map(c=>[
-   p.lineId,c.catalogKey,c.classification,c.currentHeadroomA??'—',
+   p.lineId,c.catalogKey,c.classification,c.ikComparedKa??'—',
+   c.ikComparisonSource??'MANUAL_OR_MISSING',c.calculatedFaultModel??'—',
+   c.calculatedFaultPoint??'—',c.currentHeadroomA??'—',
    c.cableHeadroomA??'—',c.breakingHeadroomKa??'—',c.voltageHeadroomV??'—',
    c.openEvidence.join('; ')])));
  const selectionTable=rows(['Цепь','Арифметически возможные артикулы','Количество'],
