@@ -27,6 +27,12 @@ function epEngineeringPrintV1(bundle){
    topology?.selectivityStatus??'NOT_ASSESSED']));
  const protectionTopologyIssues=rows(['Уровень','Код','Цепь'],
   (topology?.issues||[]).map(x=>[x.level,x.code,x.lineId??x.downstreamLineId??'—']));
+ const protectionChainTable=rows(['Нижестоящая цепь','Аппарат ID','Артикул','In, A',
+  'Вышестоящая цепь','Аппарат ID','Артикул','In, A','Путь','Селективность'],
+  (sections.protectionDeviceChain?.pairs||[]).map(x=>[x.downstreamLineId,
+   x.downstreamDeviceId??'—',x.downstream?.sku??'—',x.downstream?.inA??'—',
+   x.upstreamLineId,x.upstreamDeviceId??'—',x.upstream?.sku??'—',x.upstream?.inA??'—',
+   x.relation,x.selectivityStatus]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -179,6 +185,7 @@ function epEngineeringPrintV1(bundle){
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
   '<h2>Связи защитных аппаратов · топология, селективность не доказана</h2>'+protectionTopologyTable+protectionTopologyIssues+
+  '<h3>Связь с идентификаторами аппаратов и артикулами — предварительно</h3>'+protectionChainTable+
   '<p>Топология — лишь проверка объявленных связей. Для селективности нужны применимые заводские таблицы или времятоковые данные и отдельная проверка сценариев КЗ.</p>'+
   '<h2>Единая проверка защиты · числовые нарушения и неполные данные</h2>'+protectionDecisionTable+
   '<h3>Защита кабеля от перегрузки · подтверждение I2 и поправок Iz</h3>'+cableOverloadTable+
