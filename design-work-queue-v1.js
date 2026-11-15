@@ -4,6 +4,19 @@ function epDesignWorkQueueV1(project,lookupSku){
  const review=typeof epCircuitDesignReviewV1==='function'?epCircuitDesignReviewV1(project,lookupSku):null;
  if(!review)return {status:'BLOCKED',items:[],summary:{blocked:0,missing:0,readyForReview:0}};
  const items=[],add=(lineId,priority,code,action,section)=>items.push({lineId,priority,code,action,section});
+ const makerFacts=typeof epManufacturerFactsReconciliationV1==='function'?
+  epManufacturerFactsReconciliationV1(project,lookupSku):null;
+ for(const issue of makerFacts?.issues||[]){
+  if(issue.code==='MANUFACTURER_FACTS_CATALOG_FIELD_CONFLICT'||
+     issue.code==='MANUFACTURER_FACTS_SKU_CONFLICT'||
+     issue.code==='MANUFACTURER_FACTS_MAKER_CONFLICT')
+   add(issue.lineId,1,issue.code,'Сверить каталожный артикул/номинал с первичным источником изготовителя','catalogue');
+  else if(issue.code==='MANUFACTURER_FACTS_CATALOG_FIELD_MISSING')
+   add(issue.lineId,2,issue.code,'Дополнить недостающую характеристику из первичного документа производителя','catalogue');
+  else if(issue.code==='MANUFACTURER_FACTS_REFERENCE_NOT_INDEXED')
+   add(issue.lineId,3,issue.code,'Найти первичный документ производителя для выбранного артикула','catalogue');
+ }
+
  for(const row of review.rows){
   if(row.current==='FAIL')add(row.lineId,1,'IB_EXCEEDS_IN','Изменить номинал аппарата или расчётные исходные данные','protection');
   if(row.cable==='FAIL')add(row.lineId,1,'IN_EXCEEDS_IZ','Проверить сечение и допустимый ток проводника','cable');
