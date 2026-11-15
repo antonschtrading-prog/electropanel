@@ -2255,7 +2255,7 @@ $('breakerLetThroughPanel').addEventListener('submit',e=>{
  if(!line)return notify('Цепь не выбрана',true);
  const get=k=>form.elements.namedItem(k)?.value;
  const currentBasis=get('letCurrentBasis');
- const input={articleSku:get('letArticleSku'),articleInA:get('letArticleInA'),
+ const input={catalogKey:get('letCatalogKey'),articleSku:get('letArticleSku'),articleInA:get('letArticleInA'),
   deviceStandard:get('letStandard'),testVoltageV:get('letVoltage'),
   testFrequencyHz:get('letFrequency'),applicationVoltageV:get('letApplicationVoltage'),
   applicationFrequencyHz:get('letApplicationFrequency'),protectionPoles:Number(get('letPoles')),
