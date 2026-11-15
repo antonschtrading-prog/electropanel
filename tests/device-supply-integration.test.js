@@ -15,7 +15,8 @@ test('version 1 device supply survives project restoration and bundle/print',()=
  links:[{from:'SOURCE:MAIN',to:'INCOMING:Q0',conductors:['L1','N']},
  {from:'INCOMING:Q0',to:'BRANCH:B1',conductors:['L1','N']}]}};
  const target=project(),before=JSON.stringify(raw);
- restore(raw,target);assert.deepEqual(target.deviceSupplyV1,raw.deviceSupplyV1);
+ restore(raw,target);assert.deepEqual(target.deviceSupplyV1,{...raw.deviceSupplyV1,
+ incomingDevices:[{id:'Q0',label:'Ввод',catalogSku:null}]});
  assert.equal(JSON.stringify(raw),before);
  const b=bundle(target,()=>null);assert.equal(b.sections.deviceSupply.edges.length,2);
  assert.equal(b.sections.deviceSupply.selectivityStatus,'NOT_ASSESSED');
