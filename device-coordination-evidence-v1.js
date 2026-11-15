@@ -24,7 +24,8 @@ function epCoordRecordV1(project,r){
   Object.keys(r).some(k=>!allowed.includes(k))||
   typeof r.from!=='string'||typeof r.to!=='string'||
   !EP_COORD_TYPES.includes(r.evidenceType))fail('RECORD_INVALID');
- epCoordPairV1(project,r.from,r.to);
+ // Import keeps historical declarations even when the live supply edge changed.
+ // Audit must expose stale evidence rather than silently discard it.
  if(typeof r.voltageV!=='number'||!Number.isFinite(r.voltageV)||r.voltageV<=0||r.voltageV>1500||
   typeof r.limitKa!=='number'||!Number.isFinite(r.limitKa)||r.limitKa<=0||r.limitKa>1000)
   fail('VALUES_INVALID');
@@ -99,15 +100,25 @@ function epCoordAuditV1(project,lookup){
   if(articles.some(a=>a?.verificationStatus!=='VERIFIED'))
    flag('COORD_MANUFACTURER_FACTS_UNVERIFIED');
   const sourceStudy=(project.deviceFaultScenariosV1||[]).find(x=>x.deviceNodeId===r.to);
+  let studyCurrent=false;
   if(!sourceStudy)flag('COORD_LOCAL_FAULT_STUDY_REQUIRED');
-  else if(sourceStudy.voltageV!==r.voltageV)
-   flag('COORD_STUDY_VOLTAGE_DIFFERS','BLOCKED');
+  else{
+   if(sourceStudy.voltageV!==r.voltageV)
+    flag('COORD_STUDY_VOLTAGE_DIFFERS','BLOCKED');
+   try{
+    const now=epDeviceFaultSupplyFingerprintV1(project,r.to);
+    const selected=epDeviceFaultNodeV1(project,r.to).sku;
+    studyCurrent=sourceStudy.supplyFingerprint===now&&
+     sourceStudy.articleSkuSnapshot===selected;
+    if(!studyCurrent)flag('COORD_LOCAL_FAULT_STUDY_STALE','BLOCKED');
+   }catch(_){flag('COORD_LOCAL_FAULT_STUDY_INVALID','BLOCKED');}
+  }
   if(r.evidenceType==='SELECTIVITY_LIMIT')
    flag('COORD_SELECTIVITY_CURVE_AND_SETTINGS_REVIEW_REQUIRED');
   else flag('COORD_BACKUP_TABLE_APPLICABILITY_REVIEW_REQUIRED');
   // The limit is a statement taken from declared source metadata, not
   // independently verified manufacturer tabulation.
-  const numeric=sourceStudy&&sourceStudy.voltageV===r.voltageV?
+  const numeric=studyCurrent&&sourceStudy&&sourceStudy.voltageV===r.voltageV?
    sourceStudy.ikMaxKa>r.limitKa?'DECLARED_FAULT_ABOVE_CLAIMED_LIMIT':
     'WITHIN_DECLARED_LIMIT_UNVERIFIED':'NOT_ASSESSED';
   if(numeric==='DECLARED_FAULT_ABOVE_CLAIMED_LIMIT')
