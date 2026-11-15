@@ -998,6 +998,9 @@ function renderEngineeringDiagnosticsV1(){
   epDeviceSupplyHtmlV1(state)+
    (typeof epIncomingTerminalBindingsHtmlV1==='function'?
     epIncomingTerminalBindingsHtmlV1(state):'')+
+   (typeof epDeviceSupplyCrossEvidenceV1==='function'&&
+    typeof epDeviceSupplyCrossEvidenceHtmlV1==='function'?
+    epDeviceSupplyCrossEvidenceHtmlV1(epDeviceSupplyCrossEvidenceV1(state)):'')+
    (typeof epDeviceSupplyTerminalReconciliationV1==='function'&&
     typeof epDeviceSupplyTerminalHtmlV1==='function'?
     epDeviceSupplyTerminalHtmlV1(epDeviceSupplyTerminalReconciliationV1(state)):''):
