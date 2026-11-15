@@ -33,7 +33,7 @@ function epRestoreProjectExtensionsV2(raw,project){
  }
  for(const line of project.lines){
   const source=raw.lines.find(x=>x.id===line.id);if(!source)continue;
-  for(const key of ['loadCurrentCalculation','cableReferenceInput','cableDesignInput','voltageDropDesignInput','coordinationEvidence','faultLoopEvidence','faultRouteInput','maximumFaultInput']){
+  for(const key of ['loadCurrentCalculation','cableReferenceInput','cableDesignInput','overloadCoordinationInput','voltageDropDesignInput','coordinationEvidence','faultLoopEvidence','faultRouteInput','maximumFaultInput']){
    if(source[key]===undefined)continue;
    if(!object(source[key]))throw Error(key+': ожидается объект');
    line[key]=clone(source[key],key,20000);
