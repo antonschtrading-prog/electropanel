@@ -99,6 +99,18 @@ function epCoordAuditV1(project,lookup){
   }
   if(articles.some(a=>a?.verificationStatus!=='VERIFIED'))
    flag('COORD_MANUFACTURER_FACTS_UNVERIFIED');
+  // Device-level Icn data are not a manufacturer's pairwise selectivity table.
+  // Disagreement triggers review; never substitute a catalogue rating as pair proof.
+  const declaredMaker=r.manufacturer.trim().toLowerCase();
+  if(articles.some(a=>typeof a?.maker==='string'&&a.maker.trim()&&
+     a.maker.trim().toLowerCase()!==declaredMaker))
+   flag('COORD_CROSS_MANUFACTURER_PAIR_SOURCE_REVIEW_REQUIRED');
+  if(articles.some(a=>typeof a?.icnVoltageV==='number'&&
+     Number.isFinite(a.icnVoltageV)&&a.icnVoltageV!==r.voltageV))
+   flag('COORD_ARTICLE_VOLTAGE_SCOPE_REVIEW_REQUIRED');
+  const standards=[...new Set(articles.map(a=>a?.icnStandard).filter(Boolean))];
+  if(standards.length>1)
+   flag('COORD_MIXED_ARTICLE_STANDARDS_REVIEW_REQUIRED');
   const sourceStudy=(project.deviceFaultScenariosV1||[]).find(x=>x.deviceNodeId===r.to);
   let studyCurrent=false;
   if(!sourceStudy)flag('COORD_LOCAL_FAULT_STUDY_REQUIRED');
