@@ -26,6 +26,10 @@ function epRestoreProjectExtensionsV2(raw,project){
  const arrays=['catalogArticles','dinPlacementsV1','manualLayoutV1','cables','manufacturerEvidenceRecords'];
  for(const key of objects)if(raw[key]!==undefined){if(!object(raw[key]))throw Error(key+': ожидается объект');project[key]=clone(raw[key],key);}
  for(const key of arrays)if(raw[key]!==undefined){if(!Array.isArray(raw[key])||raw[key].length>500)throw Error(key+': ожидается массив до 500 записей');project[key]=clone(raw[key],key,250000);}
+ if(raw.incomingMaximumStudiesV1!==undefined){
+  if(typeof epIncomingMaximumNormalizeV1!=='function')
+   throw Error('Модуль Ik,max на вводных аппаратах недоступен');
+ }
  if(raw.calculatedDeviceFaultBindingsV1!==undefined){
   if(typeof epCalculatedDeviceFaultNormalizeV1!=='function')
    throw Error('Модуль привязки расчётного тока КЗ недоступен');
@@ -48,6 +52,9 @@ function epRestoreProjectExtensionsV2(raw,project){
   project.incomingTerminalBindingsV1=
    epIncomingTerminalBindingsNormalizeV1(project,raw.incomingTerminalBindingsV1);
  }
+ if(raw.incomingMaximumStudiesV1!==undefined)
+  project.incomingMaximumStudiesV1=
+   epIncomingMaximumNormalizeV1(project,raw.incomingMaximumStudiesV1);
  if(raw.calculatedDeviceFaultBindingsV1!==undefined)
   project.calculatedDeviceFaultBindingsV1=
    epCalculatedDeviceFaultNormalizeV1(project,raw.calculatedDeviceFaultBindingsV1);
