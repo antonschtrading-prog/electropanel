@@ -321,6 +321,25 @@ const server=http.createServer((req,res)=>{
   assert.equal(evidenceResult.approved,false);
  }finally{await letPage.close();}
 
+ // Browser calculation: original maker-source conflicts must disqualify an
+ // apparently arithmetic-compatible breaker, without modifying the catalogue.
+ const sourceScreen=await page.evaluate(()=>{
+  const l={id:'L-PROVENANCE',phase:'L1',
+   overloadInput:{ibA:10,izA:20},faultInput:{ikKa:2,voltageV:230}};
+  const device=epCatalogSku('SE-A9F74116');
+  const good=epProtectiveDeviceShortlistV1(l,[{id:'SE-A9F74116',device}]).candidates[0];
+  const bad=epProtectiveDeviceShortlistV1(l,[{id:'SE-A9F74116',device:{...device,sku:'INCORRECT'}}]).candidates[0];
+  return {good:good.status,bad:bad.status,
+   goodSource:good.manufacturerEvidence?.status,
+   wrong:bad.reasons.includes('MANUFACTURER_SOURCE_CONFLICT'),
+   missingI2t:good.caution.includes('MANUFACTURER_SOURCE_I2T_UNDOCUMENTED')};
+ });
+ assert.equal(sourceScreen.good,'POTENTIAL');
+ assert.equal(sourceScreen.goodSource,'FACTS_MATCH');
+ assert.equal(sourceScreen.bad,'REJECTED');
+ assert.equal(sourceScreen.wrong,true);
+ assert.equal(sourceScreen.missingI2t,true);
+
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
   const p=JSON.parse(JSON.stringify(state)),id=p.lines[0].id;
