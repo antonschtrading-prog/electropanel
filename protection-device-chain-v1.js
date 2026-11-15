@@ -73,4 +73,20 @@ function epProtectionDeviceChainV1(project, lookup){
  }
  return finish();
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epProtectionDeviceChainV1};
+function epProtectionDeviceChainHtmlV1(report){
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ if(!report||!Array.isArray(report.pairs))
+  return '<p>Проверка идентификаторов защиты недоступна.</p>';
+ const rows=report.pairs.map(p=>'<tr><td>'+esc(p.downstreamLineId)+'</td><td>'+
+  esc(p.downstreamDeviceId??'—')+'</td><td>'+esc(p.downstream?.sku??'—')+
+  '</td><td>'+esc(p.upstreamLineId)+'</td><td>'+esc(p.upstreamDeviceId??'—')+
+  '</td><td>'+esc(p.upstream?.sku??'—')+'</td><td>'+esc(p.selectivityStatus)+'</td></tr>').join('');
+ return '<details class="ep-protection-device-chain"><summary>Аппараты в иерархии · '+
+  report.pairs.length+' пар · '+esc(report.status)+'</summary>'+
+  '<p class="muted">Показаны ID аппаратов и заявленные артикулы. Электрическое соединение и селективность не подтверждены.</p>'+
+  '<div class="table-scroll"><table><thead><tr><th>Цепь</th><th>Аппарат</th><th>Артикул</th>'+
+  '<th>Вышестоящая цепь</th><th>Аппарат</th><th>Артикул</th><th>Селективность</th></tr></thead>'+
+  '<tbody>'+(rows||'<tr><td colspan="7">Нет заявленных пар</td></tr>')+'</tbody></table></div></details>';
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={
+ epProtectionDeviceChainV1,epProtectionDeviceChainHtmlV1};
