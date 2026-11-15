@@ -93,6 +93,10 @@ const server=http.createServer((req,res)=>{
  assert.equal(locationStudy.section,1);
  assert.equal(locationStudy.selectivity,'NOT_ASSESSED');
  assert.equal(locationStudy.approved,false);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>(state.deviceFaultScenariosV1||[]).length),0);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>(state.deviceFaultScenariosV1||[]).length),1);
  await page.locator('[data-device-fault-clear="INCOMING:QF0"]').click();
  assert.equal(await page.evaluate(()=>(state.deviceFaultScenariosV1||[]).length),0);
  await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
@@ -139,6 +143,10 @@ const server=http.createServer((req,res)=>{
  assert.equal(pairStudy.selectivity,'NOT_ASSESSED');
  assert.equal(pairStudy.backup,'NOT_ASSESSED');
  assert.equal(pairStudy.approved,false);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>(state.deviceCoordinationEvidenceV1||[]).length),0);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>(state.deviceCoordinationEvidenceV1||[]).length),1);
  await page.locator('[data-coord-clear="INCOMING:QF0|BRANCH:'+branch1+'|SELECTIVITY_LIMIT"]').click();
  assert.equal(await page.evaluate(()=>(state.deviceCoordinationEvidenceV1||[]).length),0);
  await page.locator('[data-device-fault-clear="BRANCH:'+branch1+'"]').click();
