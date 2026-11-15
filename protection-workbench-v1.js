@@ -166,6 +166,10 @@ function epProtectionWorkbenchHtmlV1(report){
    esc(article.maker)+' / '+esc(article.series)+' / '+esc(article.sku)+
    ' · In '+fmt(article.inA)+' А · Icn '+fmt(article.icnKa)+' кА · Icu '+fmt(article.icuKa)+' кА · '+fmt(article.poles)+' пол.':
    'Артикул не выбран или отсутствует в каталоге')+'</p>'+
+  '<p>Основание сравнения Icn: '+esc(x.faultBasis?.mode??'только введённый вручную ток')+
+   ' · точка: '+esc(x.faultBasis?.comparisonPoint??'не указана')+
+   ' · вид КЗ: '+esc(x.faultBasis?.model??'не указан')+
+   ' · расчётный Ik,max: '+fmt(x.faultBasis?.calculatedIkMaxKa)+' кА</p>'+
   '<p>Замечания: '+(x.reasons.length?x.reasons.map(esc).join('; '):'Нет по проверяемым входным данным')+'</p>'+
   rankingHtml+
   '<form data-protection-input-form="'+esc(x.lineId)+'" class="ep-protection-inputs">'+
