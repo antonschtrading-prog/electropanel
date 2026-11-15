@@ -69,6 +69,10 @@ function epEngineeringPrintV1(bundle){
   (sections.protectionEvidenceMatrix?.rows||[]).map(x=>[x.deviceNodeId,x.kind,x.sku??'—',
    x.declaredSupply?'ДА':'нет',x.calculatedIkMaxKa??'—',x.manualIkMaxKa??'—',
    x.coordinationRecords,x.evidenceStale?'ДА':'нет',x.status,(x.actions||[]).join(', ')]));
+ const sourceConvergenceTable=rows(['Вводной','Отходящий','Ik,max ввода, кА','Ik,max линии, кА',
+  'Сравнимость исходных условий','Статус'],
+  (sections.faultSourceConvergence?.rows||[]).map(x=>[x.incomingId,x.branchId,
+   x.incomingIkMaxKa??'—',x.branchIkMaxKa??'—',x.sourceConditions,x.status]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -276,6 +280,8 @@ function epEngineeringPrintV1(bundle){
      t.upstreamSource??'Не указан',
      t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
+  '<h2>Сравнение максимального КЗ: вводной и отходящая линия</h2>'+sourceConvergenceTable+
+  '<p>Сравнение допустимо только при одинаковой явно заявленной базе источника, одинаковых ULL/cmax и модели трёхфазного КЗ; достоверность питания и селективность не доказаны.</p>'+
   '<h2>Матрица недостающих инженерных данных по аппаратам</h2>'+evidenceMatrixTable+
   '<h2>Ток КЗ на вводных аппаратах из R/X и трансформатора</h2>'+incomingMaxTable+
   '<p>Область расчёта: точка вводного аппарата с явно приведённым импедансом источника. Истинность исходных данных и паспортов требует инженерного подтверждения.</p>'+
