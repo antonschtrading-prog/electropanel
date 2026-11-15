@@ -17,6 +17,14 @@ test('missing engineering gate fails closed',()=>{
 test('bundle cannot declare installation approval',()=>{
  const r=bundle(p(),lookup);assert.equal(r.engineeringApproved,false);assert.equal(r.ready_for_installation,false);
 });
+test('bundle includes the unified protection decision as a separate non-approval section',()=>{
+ const r=bundle(p(),lookup);
+ assert.ok(r.sections.protectionDecision);
+ assert.equal(r.sections.protectionDecision.engineeringApproved,false);
+ assert.equal(r.sections.protectionDecision.ready_for_installation,false);
+ assert.equal(r.statuses.protectionDecision,'BLOCKED',
+  'missing protection calculation module should fail closed in isolated bundle test');
+});
 test('bundle does not mutate original project',()=>{
  const x=p(),before=JSON.stringify(x);bundle(x,lookup);assert.equal(JSON.stringify(x),before);
 });
