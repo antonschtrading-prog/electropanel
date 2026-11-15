@@ -25,7 +25,7 @@ function epDesignWorkQueueV1(project,lookupSku){
   if(row.reasons.some(x=>x.code==='LOAD_CURRENT_STALE'))add(row.lineId,2,'LOAD_CURRENT_STALE','Пересчитать ток после изменения нагрузки','load');
   // Engineering gate reasons become actionable tasks, never silent flags.
   const guided={
-   LET_THROUGH_CABLE_CAPACITY_EXCEEDED:[1,'Увеличить термическую стойкость проводника либо выбрать аппарат с подтверждённым меньшим I²t','cable'],
+   LET_THROUGH_WITHSTAND_NOT_DEMONSTRATED:[2,'Получить более точную паспортную верхнюю границу I²t либо пересмотреть кабель: превышение верхней границы не доказывает повреждение','cable'],
    LET_THROUGH_INPUT_MISSING:[2,'Получить паспортную верхнюю границу энергии пропускания I²t для выбранного аппарата','catalogue'],
    LET_THROUGH_NO_GUARANTEED_BAND:[2,'Получить паспортное подтверждение I²t для диапазона ожидаемого тока КЗ','catalogue'],
    LET_THROUGH_ARTICLE_MISMATCH:[1,'Согласовать артикул, паспорт I²t и выбранный аппарат','catalogue'],
