@@ -38,3 +38,31 @@ test('page loads max-fault UI before app, and real editor handlers are attached'
  assert.match(app,/epMaximumFaultHtmlV2/);
  assert.match(app,/epApplyMaximumFaultV2\(state,form.dataset.maxFault,input,catalogDevice\)/);
 });
+
+test('transformer mode displays separate rated values, upstream R/X and evidence without defaults',()=>{
+ const project={lines:[{id:'L1',phase:'3Ф',maximumFaultInput:{
+  model:'THREE_PHASE_POSITIVE_SEQUENCE',sourceModel:'TRANSFORMER_WITH_UPSTREAM',
+  uLLV:400,cmax:1.1,transformer:{ratedPowerKva:1000,ratedVoltageV:400,
+   ukPercent:6,loadLossW:9000,upstreamROhm:0,upstreamXOhm:0,
+   source:'manufacturer data',upstreamSource:'grid study',lossBasisConfirmed:true},
+  segments:[{lengthM:10,r1OhmKm:0.4,x1OhmKm:0.08,source:'cable',
+   temperatureBasisConfirmed:true}]}}]};
+ global.epTransformerSourceV1=require('../transformer-source-v1.js').epTransformerSourceV1;
+ const h=epMaximumFaultHtmlV2(project,'L1',()=>null);
+ assert.match(h,/data-max-fault-source-model="TRANSFORMER_WITH_UPSTREAM"/);
+ assert.match(h,/name="ratedPowerKva" required value="1000"/);
+ assert.match(h,/name="upstreamROhm" required value="0"/);
+ assert.match(h,/name="lossBasisConfirmed" checked/);
+ assert.match(h,/manufacturer data/);
+ const blank=epMaximumFaultHtmlV2({lines:[{id:'L1',phase:'3Ф'}]},'L1',()=>null);
+ assert.match(blank,/name="ukPercent" required value=""/);
+ assert.match(blank,/name="ratedPowerKva" required value=""/);
+});
+test('production page loads transformer arithmetic before maximum fault route and UI',()=>{
+ const root=path.resolve(__dirname,'..');
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.ok(html.indexOf('transformer-source-v1.js')<html.indexOf('fault-route-design-v2.js'));
+ assert.match(app,/data\.maxFaultSourceModel/);
+ assert.match(app,/input\.transformer=/);
+});
