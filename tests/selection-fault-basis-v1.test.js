@@ -52,6 +52,30 @@ test('selected 6 kA breaker failure does not falsely reject a separate 10 kA alt
  assert.ok(alternative.openEvidence.includes('PRIMARY_MANUFACTURER_FACTS_INCOMPLETE'));
  assert.equal(alternative.engineeringApproved,false);
 });
+test('project-wide shortlist uses computed Ikmax rather than understated manual Ik',()=>{
+ const {epProtectiveDeviceProjectAuditV1}=require('../protective-device-shortlist-v1.js');
+ const p=project(),entries=[{id:'SE-A9F74116',device:EP_CATALOG['SE-A9F74116']}];
+ const a=epProtectiveDeviceProjectAuditV1(p,lookup,entries);
+ assert.equal(a.results[0].comparisonIkKa,study(p,p.lines[0],lookup).ikMaxKa);
+ assert.deepEqual(a.results[0].potential,[]);
+ assert.ok(a.issues.some(x=>x.code==='SELECTED_ARTICLE_REJECTED'));
+});
+test('selected 6 kA failure does not contaminate a candidate that supports 10 kA',()=>{
+ const p=project(),alternative={...EP_CATALOG['SE-A9F74116'],
+  sku:'SYNTHETIC-10KA',maker:'Example',icnKa:10,verificationStatus:'UNVERIFIED'};
+ const entries=[
+  {id:'SE-A9F74116',device:EP_CATALOG['SE-A9F74116']},
+  {id:'SYNTHETIC-10KA',device:alternative}];
+ const r=work(p,lookup,entries,'L1').selected;
+ const lower=r.ranking.rows.find(x=>x.catalogKey==='SE-A9F74116');
+ const upper=r.ranking.rows.find(x=>x.catalogKey==='SYNTHETIC-10KA');
+ assert.equal(lower.classification,'EXCLUDED');
+ assert.equal(upper.classification,'PRELIMINARY_CANDIDATE');
+ assert.ok(upper.breakingHeadroomKa>0);
+ assert.equal(upper.engineeringApproved,false);
+ assert.equal(r.ikKa,r.faultBasis.ikMaxKa);
+ assert.equal(r.manualIkKa,2);
+});
 test('missing explicit comparison point makes maximum calculation unsuitable for ranking',()=>{
  const p=project();delete p.lines[0].maximumFaultInput.comparisonPoint;
  const result=work(p,lookup,catalog(),'L1');
