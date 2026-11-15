@@ -49,6 +49,16 @@ function epDesignWorkQueueV1(project,lookupSku){
  if(typeof epFaultRouteProjectV2==='function')for(const row of epFaultRouteProjectV2(project,lookupSku).rows){
   if(row.status==='BLOCKED')add(row.lineId,1,'FAULT_ROUTE_BLOCKED','Проверить трассу и условие Ik,min ≥ Ia','fault_route');
   else if(row.thresholdStatus==='UNKNOWN')add(row.lineId,2,'FAULT_ROUTE_EVIDENCE_REQUIRED','Уточнить исходные данные и основания проверки петли L–PE','fault_route');
+  // Ik,max is a different fault scenario from the L-PE minimum.
+  // Its issue must not be incorrectly reported as a minimum-loop failure.
+  if(row.maximum?.numericComparison==='EXCEEDS_ICN')
+   add(row.lineId,1,'MAX_FAULT_EXCEEDS_ICN','Изменить аппарат или обоснованно пересчитать максимальный ток КЗ','protection');
+  else if(row.maximum?.status==='BLOCKED')
+   add(row.lineId,1,'MAX_FAULT_MODEL_BLOCKED','Исправить модель и исходные данные расчёта максимального КЗ','fault_max');
+  else if(row.maximum?.ikMaxKa===null)
+   add(row.lineId,2,'MAX_FAULT_INPUT_REQUIRED','Задать исходные данные максимального КЗ с источниками R/X','fault_max');
+  else if(row.maximum?.thresholdStatus==='UNKNOWN')
+   add(row.lineId,2,'MAX_FAULT_EVIDENCE_REQUIRED','Проверить паспорт Icn и основания расчёта Ik,max','fault_max');
  }
  items.sort((a,b)=>a.priority-b.priority||String(a.lineId).localeCompare(String(b.lineId),'ru')||a.code.localeCompare(b.code));
  return {schema:'electropanel.design.queue.1',status:items.some(x=>x.priority===1)?'BLOCKED':review.status,items,
