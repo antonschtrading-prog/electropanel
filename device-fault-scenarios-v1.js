@@ -156,11 +156,26 @@ function epDeviceFaultHtmlV1(project,lookup){
   '<label>Напряжение в точке, В<input id="deviceFaultVoltage" inputmode="decimal" placeholder="230"></label>'+
   '<label>Источник расчёта<input id="deviceFaultSource" maxlength="250" placeholder="Расчёт сети / документ"></label>'+
   '<label>Редакция расчёта<input id="deviceFaultRevision" maxlength="100" placeholder="rev 1"></label></div>'+
-  '<button class="btn" type="button" id="deviceFaultSave">Сохранить исследование точки</button>'+
+  '<button class="btn" type="button" id="deviceFaultSave">Сохранить исследование точки</button>'+ 
+  '<button class="btn" type="button" id="deviceFaultCsv">Выгрузить CSV</button>'+
   '<div class="table-scroll"><table><thead><tr><th>Аппарат</th><th>Ik,max, кА</th><th>В</th><th>Icn, кА</th><th>Сравнение</th><th></th></tr></thead><tbody>'+
   (table||'<tr><td colspan="6">Исследования не введены</td></tr>')+'</tbody></table></div></details>';
+}
+function epDeviceFaultCsvV1(report){
+ const cell=value=>{
+  let v=String(value??'');
+  if(/^\\s*[=+\\-@]/.test(v))v="'"+v;
+  return '"'+v.replace(/"/g,'""')+'"';
+ };
+ const entries=[['Apparatus','Ik max kA','Study voltage V','Selected SKU','Icn kA',
+  'Icn voltage V','Numeric comparison','Path stale','Article stale',
+  'Source document','Source revision','Issue codes']];
+ for(const r of report?.rows||[])entries.push([r.deviceNodeId,r.ikMaxKa,r.voltageV,
+  r.sku,r.icnKa,r.icnVoltageV,r.numericalComparison,r.supplyPathStale,
+  r.articleStale,r.sourceDocument,r.sourceRevision,(r.issues||[]).map(x=>x.code).join(', ')]);
+ return '\\uFEFF'+entries.map(row=>row.map(cell).join(';')).join('\\r\\n');
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epDeviceFaultNodeV1,epDeviceFaultSupplyFingerprintV1,epDeviceFaultScenarioV1,
  epDeviceFaultNormalizeV1,epDeviceFaultDeclareV1,epDeviceFaultClearV1,
- epDeviceFaultAuditV1,epDeviceFaultHtmlV1};
+ epDeviceFaultAuditV1,epDeviceFaultHtmlV1,epDeviceFaultCsvV1};
