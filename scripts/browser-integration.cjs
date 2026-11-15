@@ -339,6 +339,29 @@ const server=http.createServer((req,res)=>{
  assert.equal(sourceScreen.bad,'REJECTED');
  assert.equal(sourceScreen.wrong,true);
  assert.equal(sourceScreen.missingI2t,true);
+ const rankingScreen=await page.evaluate(()=>{
+  const l={id:'L-RANK',phase:'L1',
+   overloadInput:{ibA:10,izA:20},faultInput:{ikKa:2,voltageV:230}};
+  const key='SE-A9F74116',device=epCatalogSku(key);
+  const c=epProtectiveDeviceShortlistV1(l,[{id:key,device}]);
+  const good=epProtectiveCandidateRankingV1(l,c).rows[0];
+  const unresolved={...l,faultInput:{ikKa:2}};
+  const missing=epProtectiveCandidateRankingV1(unresolved,
+   epProtectiveDeviceShortlistV1(unresolved,[{id:key,device}])).rows[0];
+  const contaminated=epProtectiveCandidateRankingV1(l,
+   epProtectiveDeviceShortlistV1(l,[{id:key,device:{...device,sku:'OTHER'}}])).rows[0];
+  return {good:good.classification,inHeadroom:good.currentHeadroomA,
+   icnHeadroom:good.breakingHeadroomKa,
+   missing:missing.classification,wrong:contaminated.classification,
+   approved:good.engineeringApproved};
+ });
+ assert.equal(rankingScreen.good,'PRELIMINARY_CANDIDATE');
+ assert.equal(rankingScreen.inHeadroom,6);
+ assert.equal(rankingScreen.icnHeadroom,4);
+ assert.equal(rankingScreen.missing,'INCOMPLETE');
+ assert.equal(rankingScreen.wrong,'EXCLUDED');
+ assert.equal(rankingScreen.approved,false);
+
 
  // A catalogue article type must govern both protection selection and its board facade.
  const faceSelection=await page.evaluate(()=>{
