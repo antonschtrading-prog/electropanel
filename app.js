@@ -2218,6 +2218,15 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
   notify('Расчётный эквивалент источника на вводном сохранён. Требуется инженерная проверка.');
  }catch(error){notify('Исследование вводного не сохранено: '+error.message,true);}
 });
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ if(!e.target.closest('#protectionEvidenceMatrixCsv'))return;
+ if(typeof epProtectionEvidenceMatrixV1!=='function'||
+    typeof epProtectionEvidenceMatrixCsvV1!=='function')
+  return notify('Экспорт инженерных замечаний недоступен',true);
+ const report=epProtectionEvidenceMatrixV1(state,catalogDevice);
+ return download(baseName()+'_apparatus_evidence_DRAFT.csv',
+  epProtectionEvidenceMatrixCsvV1(report),'text/csv;charset=utf-8');
+});
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
   return notify('Ведомость защиты недоступна',true);
