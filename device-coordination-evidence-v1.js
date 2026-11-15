@@ -159,7 +159,7 @@ function epCoordHtmlV1(project,lookup){
 function epCoordCsvV1(report){
  const cell=value=>{
   let v=String(value??'');
-  if(/^\\s*[=+\\-@]/.test(v))v="'"+v;
+  if(/^\s*[=+\-@]/.test(v))v="'"+v;
   return '"'+v.replace(/"/g,'""')+'"';
  };
  const entries=[['Upstream','Downstream','Evidence type','Manufacturer','Document',
@@ -170,7 +170,7 @@ function epCoordCsvV1(report){
   r.manufacturer,r.documentId,r.revision,r.page,r.sourceUrl,
   r.voltageV,r.limitKa,r.ikMaxKa,r.upstreamSkuSnapshot,
   r.downstreamSkuSnapshot,r.numeric,(r.issues||[]).map(x=>x.code).join(', ')]);
- return '\\uFEFF'+entries.map(row=>row.map(cell).join(';')).join('\\r\\n');
+ return '\uFEFF'+entries.map(row=>row.map(cell).join(';')).join('\r\n');
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epCoordPairV1,epCoordRecordV1,epCoordNormalizeV1,epCoordDeclareV1,
