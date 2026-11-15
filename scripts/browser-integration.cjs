@@ -41,7 +41,8 @@ const server=http.createServer((req,res)=>{
   return {status:r.status,rows:r.rows.length,physical:r.physicalContinuity,
    bundleStatus:bundle.statuses.supplyTerminals,approved:r.engineeringApproved};
  });
- assert.equal(terminalReconciliation.rows,1,JSON.stringify(terminalReconciliation));
+ assert.equal(terminalReconciliation.rows,0,JSON.stringify(terminalReconciliation));
+ assert.equal(terminalReconciliation.status,'UNKNOWN');
  assert.equal(terminalReconciliation.physical,'NOT_VERIFIED');
  assert.equal(terminalReconciliation.approved,false);
  assert.equal(await page.locator('.ep-device-supply-terminals').count(),1);
