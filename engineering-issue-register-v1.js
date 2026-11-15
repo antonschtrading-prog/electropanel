@@ -11,6 +11,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.loadCurrent)sectionNames.splice(1,0,'loadCurrent');
  if(sections.protectionSelection)sectionNames.push('protectionSelection');
  if(sections.protectionTopology)sectionNames.push('protectionTopology');
+ if(sections.protectionDeviceChain)sectionNames.push('protectionDeviceChain');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
