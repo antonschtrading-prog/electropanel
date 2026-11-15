@@ -44,6 +44,9 @@ function epEngineeringBundleV1(project,lookupSku){
   (p,lookup)=>epCircuitDesignReviewV1(p,lookup):null);
  const protectionDecision=section('PROTECTION_DECISION',typeof epProtectionDecisionV1==='function'?
   (p,lookup)=>epProtectionDecisionV1(p,lookup):null);
+ const manufacturerEvidence=section('MANUFACTURER_EVIDENCE_REGISTER',
+  typeof epManufacturerEvidenceRegisterV1==='function'?
+   p=>epManufacturerEvidenceRegisterV1(p):null);
  const designWorkQueue=section('DESIGN_WORK_QUEUE',typeof epDesignWorkQueueV1==='function'?
   (p,lookup)=>({...epDesignWorkQueueV1(p,lookup),issues:[]}):null);
  const integratedEvidence=section('INTEGRATED_EVIDENCE',typeof epIntegratedEvidenceReview==='function'?
@@ -74,7 +77,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const catalogueIntegrity={status:!catalog||catalog.issues.some(x=>x.status==='BLOCKED')?'BLOCKED':'UNKNOWN',
   issues:catalog?.issues?.map(x=>({code:x.code,level:x.status==='BLOCKED'?'BLOCKED':'UNKNOWN',recordIndex:x.index}))||[{code:'PROJECT_CATALOGUE_AUDIT_UNAVAILABLE',level:'BLOCKED'}],
   engineeringApproved:false};
- const sections={protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const sections={manufacturerEvidence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
