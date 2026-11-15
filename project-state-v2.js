@@ -27,8 +27,15 @@ function epRestoreProjectExtensionsV2(raw,project){
  for(const key of objects)if(raw[key]!==undefined){if(!object(raw[key]))throw Error(key+': ожидается объект');project[key]=clone(raw[key],key);}
  for(const key of arrays)if(raw[key]!==undefined){if(!Array.isArray(raw[key])||raw[key].length>500)throw Error(key+': ожидается массив до 500 записей');project[key]=clone(raw[key],key,250000);}
  if(raw.deviceSupplyV1!==undefined){
+  if(raw.incomingTerminalBindingsV1!==undefined&&typeof epIncomingTerminalBindingsNormalizeV1!=='function')
+   throw Error('Модуль привязки вводных аппаратов недоступен');
   if(typeof epDeviceSupplyValidateV1!=='function')throw Error('Модуль питания устройств недоступен');
   project.deviceSupplyV1=epDeviceSupplyValidateV1(project,raw.deviceSupplyV1);
+ }
+ // If both are present, bind only after restoring the versioned incoming inventory.
+ if(raw.incomingTerminalBindingsV1!==undefined){
+  project.incomingTerminalBindingsV1=
+   epIncomingTerminalBindingsNormalizeV1(project,raw.incomingTerminalBindingsV1);
  }
  if(raw.protectionLinksVersion!==undefined&&raw.protectionLinksVersion!==1)
   throw Error('Неподдерживаемая версия иерархии защиты');
