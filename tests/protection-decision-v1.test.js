@@ -78,7 +78,7 @@ test('Icu is not an admissible replacement for missing Icn',()=>{
  assert.ok(r.issues.some(x=>x.code==='PROTECTION_IKMAX_OR_ICN_MISSING'));
 });
 test('minimum L-PE current below Ia is blocking, not masked by other checks',()=>{
- const p=fixture();p.lines[0].faultRouteInput.iaA=600;
+ const p=fixture();p.lines[0].faultRouteInput.iaA=1000;
  const r=decide(p,()=>device());
  assert.equal(r.status,'BLOCKED');
  assert.ok(r.issues.some(x=>x.code==='FAULT_ROUTE_CURRENT_BELOW_IA'&&x.level==='BLOCKED'));
