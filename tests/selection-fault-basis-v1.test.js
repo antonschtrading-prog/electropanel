@@ -38,6 +38,20 @@ test('computed same-point maximum replaces manual number in candidate Icn screen
  assert.equal(selected.status,'BLOCKED');
  assert.equal(JSON.stringify(p),before);
 });
+test('selected 6 kA breaker failure does not falsely reject a separate 10 kA alternative',()=>{
+ const p=project(),candidate={...EP_CATALOG['SE-A9F74116'],
+  sku:'ALTERNATIVE-10KA',maker:'Example',icnKa:10,verificationStatus:'UNVERIFIED'};
+ const entries=[{id:'SE-A9F74116',device:EP_CATALOG['SE-A9F74116']},
+  {id:'CUSTOM-10KA',device:candidate}];
+ const r=work(p,lookup,entries,'L1').selected.ranking.rows;
+ const selected=r.find(x=>x.catalogKey==='SE-A9F74116');
+ const alternative=r.find(x=>x.catalogKey==='CUSTOM-10KA');
+ assert.equal(selected.classification,'EXCLUDED');
+ assert.equal(alternative.classification,'PRELIMINARY_CANDIDATE');
+ assert.ok(alternative.breakingHeadroomKa>0);
+ assert.ok(alternative.openEvidence.includes('PRIMARY_MANUFACTURER_FACTS_INCOMPLETE'));
+ assert.equal(alternative.engineeringApproved,false);
+});
 test('missing explicit comparison point makes maximum calculation unsuitable for ranking',()=>{
  const p=project();delete p.lines[0].maximumFaultInput.comparisonPoint;
  const result=work(p,lookup,catalog(),'L1');
