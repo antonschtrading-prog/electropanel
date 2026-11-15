@@ -39,7 +39,17 @@ function epProtectiveDeviceShortlistV1(line,catalog){
   if(ik!==null&&d.icnKa<ik)reasons.push('ICN_LT_DECLARED_IK');
   if(ratedVoltage!==null&&Number.isFinite(d.icnVoltageV)&&d.icnVoltageV<ratedVoltage)
    reasons.push('ICN_VOLTAGE_LT_DECLARED');
+  const makerEvidence=typeof epManufacturerFactsCandidateV1==='function'?
+   epManufacturerFactsCandidateV1(sku,d):null;
+  if(makerEvidence?.issues?.some(x=>x.level==='BLOCKED'))
+   reasons.push('MANUFACTURER_SOURCE_CONFLICT');
   const caution=[];
+  if(makerEvidence?.status==='NOT_INDEXED')
+   caution.push('MANUFACTURER_PRIMARY_SOURCE_NOT_INDEXED');
+  else if(makerEvidence?.status==='INCOMPLETE')
+   caution.push('MANUFACTURER_SOURCE_FACTS_INCOMPLETE');
+  if(makerEvidence?.unavailableClaims?.includes('I2T_LET_THROUGH_BANDS'))
+   caution.push('MANUFACTURER_SOURCE_I2T_UNDOCUMENTED');
   if(d.modules===undefined)caution.push('CATALOG_MODULES_UNDECLARED');
   if(!d.poleConfiguration&&d.poles>=2)caution.push('POLE_CONFIGURATION_UNDECLARED');
   if(!Number.isFinite(d.icnVoltageV))caution.push('ICN_RATED_VOLTAGE_UNDECLARED');
@@ -68,6 +78,7 @@ function epProtectiveDeviceShortlistV1(line,catalog){
    icnVoltageV:d.icnVoltageV??null,icnStandard:d.icnStandard??null,
    residualCurrentMa:d.residualCurrentMa??null,residualType:d.residualType??null,
    source:d.source??null,verificationStatus:d.verificationStatus??'UNKNOWN',
+   manufacturerEvidence:makerEvidence,
    status:reasons.length?'REJECTED':(ib===null||iz===null||ik===null?'INCOMPLETE':'POTENTIAL'),
    reasons,caution,engineeringApproved:false});
  }
