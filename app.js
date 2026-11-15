@@ -16,7 +16,7 @@ function snapshot(){ensureV2(state);return JSON.stringify(state);}
 function checkpoint(){historyUndo.push(snapshot());if(historyUndo.length>MAX_HISTORY)historyUndo.shift();historyRedo.length=0;}
 function restoreHistory(from,to){if(!from.length)return;to.push(snapshot());const next=normalizeImport(JSON.parse(from.pop()));if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=next;selectedLine=null;changed();notify('История изменений восстановлена');}
 function reorderLine(sourceId,targetId){const from=state.lines.findIndex(l=>l.id===sourceId),to=state.lines.findIndex(l=>l.id===targetId);if(from<0||to<0||from===to)return false;checkpoint();const [moved]=state.lines.splice(from,1);state.lines.splice(to,0,moved);changed();return true;}
-function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x.deviceId!==removed&&x.deviceId!==id);}state.lines=state.lines.filter(x=>x.id!==id);if(selectedLine===id)selectedLine=null;changed();return true;}
+function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x.deviceId!==removed&&x.deviceId!==id);}state.lines=state.lines.filter(x=>x.id!==id);if(Array.isArray(state.protectionLinks))state.protectionLinks=state.protectionLinks.filter(x=>x.downstreamLineId!==id&&x.upstreamLineId!==id);if(selectedLine===id)selectedLine=null;changed();return true;}
 function safeText(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,error=false){const t=document.createElement('div');t.className='toast'+(error?' error':'');t.textContent=message;document.body.appendChild(t);setTimeout(()=>t.remove(),3800);}
 function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
@@ -984,6 +984,9 @@ function renderEngineeringDiagnosticsV1(){
   return;
  }
  holder.innerHTML=epEngineeringDiagnosticsPanelV1(state,catalogDevice);
+ const hierarchy=$('protectionLinksPanel');
+ if(hierarchy)hierarchy.innerHTML=typeof epProtectionLinksHtmlV1==='function'?
+  epProtectionLinksHtmlV1(state):'Модуль иерархии защиты недоступен.';
  const chain=$('projectChainPanel');
  if(chain&&typeof epReconcileProjectV2==='function')chain.innerHTML=epReconcileProjectHtmlV2(epReconcileProjectV2(state,catalogDevice));
  const preview=$('draftBoardPreview');
@@ -2001,6 +2004,21 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='declareMissingFeedBtn'){try{const draft=structuredCloneCompat(ensureV2(state));const before=state.feedLinks.length;declareMissingFeedLinks(draft);if(draft.feedLinks.length===before){notify('Новых деклараций нет');return;}checkpoint();state.feedLinks=draft.feedLinks;changed();notify('Отсутствующие декларации добавлены без замены существующих.');}catch(err){notify(err.message,true);}return;}
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
+});
+$('protectionLinksPanel').addEventListener('click',e=>{
+ const remove=e.target.closest('[data-protection-unlink]');
+ const save=e.target.closest('#protectionLinkSave');
+ if(!remove&&!save)return;
+ try{
+  const down=remove?remove.dataset.protectionUnlink:$('protectionDownstream').value;
+  const up=remove?null:($('protectionUpstream').value||null);
+  if(!down)throw Error('Выберите нижестоящую цепь');
+  const candidate=epProtectionLinksUpdateV1(state,down,up);
+  if(JSON.stringify(state.protectionLinks||[])===JSON.stringify(candidate.protectionLinks))return;
+  checkpoint();state.protectionLinks=candidate.protectionLinks;
+  state.protectionLinksVersion=1;changed();
+  notify('Связь защиты обновлена. Селективность требует отдельной проверки.');
+ }catch(error){notify('Связь не сохранена: '+error.message,true);}
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
