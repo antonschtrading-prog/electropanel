@@ -48,8 +48,10 @@ function epProtectiveCandidateRankingV1(line,shortlist){
   const contradiction=reasons.length>0||c.status==='REJECTED';
   // This is an inspection order only: first numerical suitability,
   // then fewer documentary gaps, then deterministic catalogue attributes.
+  const essentialMissing=ib===null||iz===null||ik===null||volts===null||
+   ratedVolts===null||!c.icnStandard;
   const classification=contradiction?'EXCLUDED':
-   !eligible?'INCOMPLETE':'PRELIMINARY_CANDIDATE';
+   !eligible||essentialMissing?'INCOMPLETE':'PRELIMINARY_CANDIDATE';
   rows.push({catalogKey:c.sku,manufacturerSku:c.manufacturerSku??null,
    maker:c.maker??null,series:c.series??null,inA:rated,icnKa:icn,
    classification,originalStatus:c.status,
