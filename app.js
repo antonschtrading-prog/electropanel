@@ -2074,6 +2074,9 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
    state.deviceCoordinationEvidenceV1=state.deviceCoordinationEvidenceV1.filter(x=>
     x.from!==removedNode&&x.to!==removedNode);
   }
+  if(del&&Array.isArray(state.incomingMaximumStudiesV1))
+   state.incomingMaximumStudiesV1=state.incomingMaximumStudiesV1.filter(x=>
+    x.deviceNodeId!=='INCOMING:'+del.dataset.deviceSupplyRemoveIncoming);
   if(del&&Array.isArray(state.deviceFaultScenariosV1))
    state.deviceFaultScenariosV1=state.deviceFaultScenariosV1.filter(x=>
     x.deviceNodeId!=='INCOMING:'+del.dataset.deviceSupplyRemoveIncoming);
@@ -2173,6 +2176,44 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
   checkpoint();state.calculatedDeviceFaultBindingsV1=candidate;changed();
   notify('Расчёт привязан к точке аппарата. Паспортная применимость не подтверждена.');
  }catch(error){notify('Привязка расчётного КЗ не сохранена: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const save=e.target.closest('#incomingMaxSave');
+ const clear=e.target.closest('[data-incoming-max-clear]');
+ if(!save&&!clear)return;
+ try{
+  const id=clear?clear.dataset.incomingMaxClear:$('incomingMaxNode').value;
+  if(!id)throw Error('Выберите вводной аппарат');
+  const number=(name,zero=false)=>{
+   const raw=String($(name).value||'').trim().replace(',','.');
+   if(!/^(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)$/.test(raw))
+    throw Error('Некорректное число в '+name);
+   const n=Number(raw);
+   if(!Number.isFinite(n)||(zero?n<0:n<=0))throw Error('Недопустимое значение '+name);
+   return n;
+  };
+  let next;
+  if(clear)next=epIncomingMaximumClearV1(state,id);
+  else{
+   const sourceModel=$('incomingMaxSourceModel').value;
+   const input={sourceModel,uLLV:number('incomingMaxU'),cmax:number('incomingMaxC')};
+   if(sourceModel==='DECLARED_RX')Object.assign(input,{
+    sourceROhm:number('incomingMaxR',true),sourceXOhm:number('incomingMaxX',true),
+    networkSource:$('incomingMaxNet').value.trim()});
+   else input.transformer={
+    ratedPowerKva:number('incomingMaxPower'),ratedVoltageV:input.uLLV,
+    ukPercent:number('incomingMaxUk'),loadLossW:number('incomingMaxLoss',true),
+    upstreamROhm:number('incomingMaxUpR',true),
+    upstreamXOhm:number('incomingMaxUpX',true),
+    source:$('incomingMaxTransformerSource').value.trim(),
+    upstreamSource:$('incomingMaxUpstreamSource').value.trim(),
+    lossBasisConfirmed:$('incomingMaxBasis').checked};
+   next=epIncomingMaximumDeclareV1(state,id,input,catalogDevice);
+  }
+  if(JSON.stringify(state.incomingMaximumStudiesV1||[])===JSON.stringify(next))return;
+  checkpoint();state.incomingMaximumStudiesV1=next;changed();
+  notify('Расчётный эквивалент источника на вводном сохранён. Требуется инженерная проверка.');
+ }catch(error){notify('Исследование вводного не сохранено: '+error.message,true);}
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
