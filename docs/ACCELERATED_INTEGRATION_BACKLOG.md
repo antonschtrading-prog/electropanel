@@ -1,7 +1,7 @@
 # Electropanel — accelerated integrated delivery backlog
 
 This is the **implementation and acceptance backlog**, not a claim that the listed work is completed.
-Work in coherent 12–25 task groups per development session, preserving existing modules; every final HEAD needs validation, full Node tests and real Chromium smoke tests.
+Work in coherent 50–60 individually verifiable engineering and acceptance tasks per substantial development cycle when dependencies permit; these are not necessarily 50–60 new features or commits. Preserve existing modules. Every final HEAD needs validation, full Node tests and real Chromium smoke tests.
 
 ## P0 — Integrity of the engineering core
 
@@ -13,18 +13,18 @@ Work in coherent 12–25 task groups per development session, preserving existin
 6. [x] Block the same model device being assigned both incoming and outgoing board identities in UI, with audit checks.
 7. [x] Cross-compare device supply, legacy feed origins and declared conductor route phases.
 8. [ ] Generalize incoming device selection to real manufacturer article/series, with canonical catalogue matching and immutable revision provenance.
-9. [ ] Validate upstream breaking capacity using a fault scenario at the **actual protective device location**, not another circuit's Ik,max.
-10. [ ] Map source/transformer and network impedance inputs to each incoming branch, preserving explicit connection points.
-11. [ ] Detect stale fault scenarios after upstream feed change, article substitution or voltage/phase changes.
+9. [x] Add preliminary, apparatus-location-specific Ik,max / Icn numerical screening at the incoming and outgoing devices; manufacturer and normative applicability remain unapproved.
+10. [x] Map engineer-declared source R/X and transformer-equivalent impedance calculations to exact incoming apparatus IDs and supply paths.
+11. [x] Flag stale modelled fault studies when upstream paths, selected articles, comparison points, model input or declared conductor basis changes.
 12. [ ] Compare upstream/downstream overload constraints only when Ib/In/Iz, apparatus types and verified settings are available.
 13. [ ] Add a device graph consistency matrix covering 1P, 1P+N, 2P, 3P, 3P+N, 4P: no inference from DIN module width.
 14. [ ] Ensure every neutral zone is tied to declared RCD topology; PE must never pass through switchable contacts.
-15. [ ] Implement explicit terminal ownership of incoming apparatus with model snapshot and manufacturer identification distinct from drawn-wire verification.
+15. [x] Implement explicit incoming-terminal model bindings with immutable identity snapshots and separate drawing/wire evidence.
 
 ## P1 — Traceable selection and engineering outputs
 
 16. [ ] Manufacturer selectivity records: exact upstream/downstream product pair, revision, voltage, current range, setting and source page; no default PASS.
-17. [ ] Manufacturer back-up protection/cascading records kept separate from full selectivity.
+17. [x] Store manufacturer's backup/cascading pair claims separately from selectivity claims; neither grants verified status.
 18. [ ] Per-device scope checking for Icn/Icu/Ics and applicable standards; refuse cross-standard substitution.
 19. [ ] Cross-view projection of graph onto GOST-oriented one-line draft with explicit incomplete/unknown states.
 20. [ ] Generate a searchable apparatus-to-terminal reference matrix in engineering PDF/HTML and CSV.
@@ -50,3 +50,8 @@ Work in coherent 12–25 task groups per development session, preserving existin
 ## Cycle selection
 
 Next large batch should combine items 8–15 and 19–21 when dependencies allow, with 25–29 running as acceptance tasks. Prefer finishing one complete user workflow (input → identity → calculation → warning → export → UI test) rather than adding disconnected partial modules.
+
+
+## Latest complete integrated batch
+
+See `docs/CYCLE_56_FAULT_SOURCE_INTEGRATION_20261116.md`: 56 linked delivery and acceptance items for existing R/X and transformer maximum fault studies, incoming/branch location binding, modelled fault-current comparison, evidence work queue, project import, printed dossier, stress and Chromium coverage. The matrix is explicitly a set of linked tasks and acceptance checks, not a claim of 56 brand-new modules.
