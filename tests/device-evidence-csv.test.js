@@ -12,7 +12,7 @@ test('per-device fault CSV has Excel-compatible BOM, traceability, and no formul
  assert.ok(csv.includes('DECLARED_IK_EXCEEDS_ICN'));
  assert.ok(csv.includes('FAULT_RISK'));
  assert.ok(csv.includes("'=HYPERLINK"));
- assert.ok(csv.includes('\r\n')===false);
+ assert.ok(csv.includes('\r\n'));
 });
 test('manufacturer coordination CSV preserves source revision, type and blocks formula text',()=>{
  const csv=coord.epCoordCsvV1({rows:[{from:'INCOMING:Q0',to:'BRANCH:B1',
