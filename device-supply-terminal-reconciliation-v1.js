@@ -58,11 +58,30 @@ function epDeviceSupplyTerminalReconciliationV1(project){
  };
  const wires=new Set(),wireRoles=[];
  if(wiring&&Array.isArray(wiring.wires)&&Array.isArray(wiring.terminals)){
+  const actual=new Map();
+  for(const t of wiring.terminals){
+   if(!t||typeof t.id!=='string'||actual.has(t.id)){
+    add('SUPPLY_TERMINAL_WIRING_TERMINAL_INVALID','BLOCKED');continue;
+   }
+   actual.set(t.id,t);
+  }
+  for(const [id,t] of actual){
+   const declared=termById.get(id);
+   if(!declared||declared.conductor!==t.conductor||
+     declared.device_id!==t.device_id)
+    add('SUPPLY_TERMINAL_WIRING_IDENTITY_MISMATCH','BLOCKED',{terminalId:id});
+  }
   for(const w of wiring.wires){
-   if(typeof w?.from!=='string'||typeof w?.to!=='string')continue;
+   if(typeof w?.from!=='string'||typeof w?.to!=='string'){
+    add('SUPPLY_TERMINAL_WIRE_INVALID','BLOCKED');continue;
+   }
+   const a=actual.get(w.from),b=actual.get(w.to);
+   if(!a||!b){
+    add('SUPPLY_TERMINAL_WIRE_ENDPOINT_UNKNOWN','BLOCKED');continue;
+   }
+   if(a.conductor!==b.conductor)wireRoles.push({a:w.from,b:w.to});
+   if(!termById.has(w.from)||!termById.has(w.to))continue;
    wires.add(JSON.stringify([w.from,w.to].sort()));
-   const a=termById.get(w.from),b=termById.get(w.to);
-   if(a&&b&&a.conductor!==b.conductor)wireRoles.push({a:w.from,b:w.to});
   }
  }else add('SUPPLY_TERMINAL_WIRING_MODEL_UNDECLARED');
  for(const link of supply.edges){
