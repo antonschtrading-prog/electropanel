@@ -44,3 +44,12 @@ No local or GitHub Actions test outcome has yet been established for this curren
 - All results remain DRAFT / NOT_VERIFIED; neither the graph nor a larger upstream breaker rating demonstrates electrical continuity, trip coordination, manufacturer applicability or compliance.
 
 Next: add a versioned device-to-device supply model able to express incoming breakers and branch-to-branch feeds without silently converting symbolic declarations to physical facts; reconcile device and terminal identities, ratings, and manufacturer evidence.
+
+## Device-to-device supply declarations v1
+
+- `device-supply-v1.js` provides a separate versioned project input `deviceSupplyV1`, including explicit incoming devices and user-declared directed feeds between `SOURCE:MAIN`, `INCOMING:id`, `GROUP:id`, and `BRANCH:id`.
+- Input validation rejects duplicate IDs, nonexistent endpoints, cycles, multiple upstream parents, invalid conductor sets, and neutral-only phase feeds before any editor mutation. Historical projects with no `deviceSupplyV1` remain valid and do not receive invented paths.
+- Dedicated audit distinguishes missing upstreams, branch/group phase mismatch, declared group membership contradictions and still-unreconciled legacy `feedLinks` / `groupInputLinks`. The model **does not** infer conductor continuity, enclosure terminal identities, rated breaking capacity, coordination or selectivity.
+- The UI supports adding/removing incoming devices, entering/removing device supply relations and undo/redo. Project import validates the saved model. Engineering bundle, issue register and print expose independent evidence.
+- On circuit removal, links to its outgoing device are removed; any downstream declarations may become incomplete, never silently reparented.
+- No IEC/GOST compliance or installation approval is produced from this graph; manufacturer technical parameters and source provenance are separate evidence tasks.
