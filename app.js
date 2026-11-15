@@ -1350,6 +1350,9 @@ function saveBoardBindingV1(){
  if(existing.some(x=>x.modelDeviceId!==model&&x.boardDeviceId===board)){
   notify('Аппарат щита уже связан с другим устройством',true);return;
  }
+ if((state.incomingTerminalBindingsV1||[]).some(x=>x.modelDeviceId===model)){
+  notify('Это устройство модели уже назначено вводному аппарату',true);return;
+ }
  checkpoint();
  state.boardBindingsV1=existing.filter(x=>x.modelDeviceId!==model).concat(binding);
  changed();
