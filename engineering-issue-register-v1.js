@@ -12,6 +12,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.protectionSelection)sectionNames.push('protectionSelection');
  if(sections.protectionTopology)sectionNames.push('protectionTopology');
  if(sections.protectionDeviceChain)sectionNames.push('protectionDeviceChain');
+ if(sections.supplyDeviceGraph)sectionNames.push('supplyDeviceGraph');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
