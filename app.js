@@ -16,7 +16,7 @@ function snapshot(){ensureV2(state);return JSON.stringify(state);}
 function checkpoint(){historyUndo.push(snapshot());if(historyUndo.length>MAX_HISTORY)historyUndo.shift();historyRedo.length=0;}
 function restoreHistory(from,to){if(!from.length)return;to.push(snapshot());const next=normalizeImport(JSON.parse(from.pop()));if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=next;selectedLine=null;changed();notify('История изменений восстановлена');}
 function reorderLine(sourceId,targetId){const from=state.lines.findIndex(l=>l.id===sourceId),to=state.lines.findIndex(l=>l.id===targetId);if(from<0||to<0||from===to)return false;checkpoint();const [moved]=state.lines.splice(from,1);state.lines.splice(to,0,moved);changed();return true;}
-function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x.deviceId!==removed&&x.deviceId!==id);}state.lines=state.lines.filter(x=>x.id!==id);if(Array.isArray(state.protectionLinks))state.protectionLinks=state.protectionLinks.filter(x=>x.downstreamLineId!==id&&x.upstreamLineId!==id);if(selectedLine===id)selectedLine=null;changed();return true;}
+function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x.deviceId!==removed&&x.deviceId!==id);}state.lines=state.lines.filter(x=>x.id!==id);if(Array.isArray(state.protectionLinks))state.protectionLinks=state.protectionLinks.filter(x=>x.downstreamLineId!==id&&x.upstreamLineId!==id);if(state.deviceSupplyV1){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.deviceSupplyV1.links=state.deviceSupplyV1.links.filter(x=>x.from!=='BRANCH:'+removed&&x.to!=='BRANCH:'+removed);}if(selectedLine===id)selectedLine=null;changed();return true;}
 function safeText(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,error=false){const t=document.createElement('div');t.className='toast'+(error?' error':'');t.textContent=message;document.body.appendChild(t);setTimeout(()=>t.remove(),3800);}
 function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
@@ -993,6 +993,9 @@ function renderEngineeringDiagnosticsV1(){
    (typeof epSupplyDeviceGraphV1==='function'&&typeof epSupplyDeviceGraphHtmlV1==='function'?
     epSupplyDeviceGraphHtmlV1(epSupplyDeviceGraphV1(state)):''):
   'Модуль иерархии защиты недоступен.';
+ const supplyHolder=$('deviceSupplyPanel');
+ if(supplyHolder)supplyHolder.innerHTML=typeof epDeviceSupplyHtmlV1==='function'?
+  epDeviceSupplyHtmlV1(state):'Редактор питания аппаратов недоступен.';
  const chain=$('projectChainPanel');
  if(chain&&typeof epReconcileProjectV2==='function')chain.innerHTML=epReconcileProjectHtmlV2(epReconcileProjectV2(state,catalogDevice));
  const preview=$('draftBoardPreview');
@@ -2025,6 +2028,29 @@ $('protectionLinksPanel').addEventListener('click',e=>{
   state.protectionLinksVersion=1;changed();
   notify('Связь защиты обновлена. Селективность требует отдельной проверки.');
  }catch(error){notify('Связь не сохранена: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const incoming=e.target.closest('#deviceSupplyIncomingSave');
+ const link=e.target.closest('#deviceSupplyLinkSave');
+ const unlink=e.target.closest('[data-device-supply-unlink]');
+ const del=e.target.closest('[data-device-supply-remove-incoming]');
+ if(!incoming&&!link&&!unlink&&!del)return;
+ try{
+  let next;
+  if(incoming)next=epDeviceSupplyIncomingV1(state,{
+   id:$('deviceSupplyIncomingId').value.trim(),label:$('deviceSupplyIncomingLabel').value.trim()});
+  else if(del)next=epDeviceSupplyRemoveIncomingV1(state,del.dataset.deviceSupplyRemoveIncoming);
+  else{
+   const to=unlink?unlink.dataset.deviceSupplyUnlink:$('deviceSupplyTo').value;
+   const from=unlink?null:($('deviceSupplyFrom').value||null);
+   if(!to)throw Error('Выберите получающий аппарат');
+   next=epDeviceSupplyUpdateV1(state,from,to,
+    $('deviceSupplyConductors').value.split(','));
+  }
+  if(JSON.stringify(state.deviceSupplyV1)===JSON.stringify(next))return;
+  checkpoint();state.deviceSupplyV1=next;changed();
+  notify('Декларация питания сохранена. Соединения не подтверждены.');
+ }catch(error){notify('Связь питания не сохранена: '+error.message,true);}
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
