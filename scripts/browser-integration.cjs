@@ -461,7 +461,7 @@ const server=http.createServer((req,res)=>{
  for(const [key,value] of Object.entries({lengthM:'25',phaseROhmKm:'8',peROhmKm:'8',phaseXOhmKm:'0.08',peXOhmKm:'0.08',source:'Test conductor datasheet at design temperature'}))await route.locator('[data-segment-field="'+key+'"]').fill(value);
  await route.locator('[data-segment-temperature]').check();
  await route.locator('button[type="submit"]').click();
- assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).thresholdStatus),'PASS');
+ assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).thresholdStatus),'PRELIMINARY_PASS');
  assert.equal(await page.evaluate(()=>state.lines[0].faultInput?.ikKa??null),null);
  await page.locator('#catalogSku').selectOption('SE-A9F74116');
  assert.equal(await page.evaluate(()=>epFaultRouteReviewV2(state,state.lines[0],catalogDevice).thresholdStatus),'UNKNOWN');
