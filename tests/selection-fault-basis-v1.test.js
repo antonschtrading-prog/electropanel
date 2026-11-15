@@ -122,6 +122,15 @@ test('three-phase source does not substitute for L-N protection context',()=>{
  assert.ok(b.ikMaxKa>0);
  assert.equal(b.engineeringApproved,false);
 });
+test('broken network R/X suspends alternatives instead of declaring all devices inadequate',()=>{
+ const p=project();p.lines[0].maximumFaultInput.sourceROhm=-1;
+ const r=work(p,lookup,catalog(),'L1').selected;
+ assert.equal(r.faultBasis.mode,'CALCULATED_UNUSABLE');
+ const candidate=r.ranking.rows.find(x=>x.catalogKey==='SE-A9F74116');
+ assert.equal(candidate.classification,'INCOMPLETE');
+ assert.ok(candidate.openEvidence.includes('SELECTION_MAX_FAULT_NETWORK_INVALID'));
+ assert.equal(candidate.engineeringApproved,false);
+});
 test('invalid maximum impedance never yields a usable calculated candidate',()=>{
  const p=project();p.lines[0].maximumFaultInput.sourceROhm=-5;
  const b=study(p,p.lines[0],lookup);
