@@ -50,6 +50,15 @@ function epFaultRouteReviewV2(project,line,lookup){
  if(!['L1','L2','L3'].includes(line.phase))add('FAULT_ROUTE_SINGLE_PHASE_SCOPE_UNCONFIRMED');
  if(article&&(!Number.isFinite(article.inA)||article.inA<=0||!Number.isInteger(article.poles)||article.poles<1))add('FAULT_ROUTE_ARTICLE_RATING_UNCONFIRMED');
  if(article&&['L1','L2','L3'].includes(line.phase)&&article.poles!==1)add('FAULT_ROUTE_POLES_APPLICABILITY_UNCONFIRMED');
+ const tripEnvelope=typeof epTripEnvelopeV1==='function'?
+  epTripEnvelopeV1(line,article,ik,time):null;
+ if(tripEnvelope&&input.tripEnvelope){
+  for(const issue of tripEnvelope.issues)
+   add('FAULT_ROUTE_'+issue.code,issue.level);
+  if(ia&&tripEnvelope.requiredCurrentA!==null&&
+    ia<tripEnvelope.requiredCurrentA)
+   add('FAULT_ROUTE_DECLARED_IA_BELOW_GUARANTEED_THRESHOLD');
+ }
  let thresholdStatus='UNKNOWN';
  // A declared insufficient L-PE current is a numerical blocker even when
  // sources are missing. Missing evidence may prevent PASS, not suppress FAIL.
@@ -57,10 +66,10 @@ function epFaultRouteReviewV2(project,line,lookup){
   thresholdStatus='FAIL';add('FAULT_ROUTE_CURRENT_BELOW_IA','BLOCKED');
  }else if(!stale&&article?.kind==='MCB'&&ia&&time&&tripDocumented&&timeDocumented&&
     !issues.some(x=>x.level==='UNKNOWN'||x.level==='BLOCKED')){
-  thresholdStatus='PASS';
+  thresholdStatus='PRELIMINARY_PASS';
  }
  return finish({ikMinA:ik,zsOhm:zs,loopROhm:r,loopXOhm:x,thresholdZsOhm:ia?c*u/ia:null,
-  iaA:ia,requiredTimeS:time,thresholdStatus,segments,stale,
+  iaA:ia,requiredTimeS:time,thresholdStatus,segments,stale,tripEnvelope,
   formula:'Ik,min = cmin × U0 / hypot(Rsource + ΣRphase+PE, Xsource + ΣXphase+PE)',
   maxFaultCurrentKa:line.faultInput?.ikKa??null,
   notice:'Minimum L–PE fault current only. Maximum prospective fault current remains an independent input. Ia and time applicability are user-documented, not authenticated.'});
