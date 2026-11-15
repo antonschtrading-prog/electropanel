@@ -12,7 +12,7 @@ global.epBreakerLetThroughV1=calc;
 const article=()=>({sku:'A',kind:'MCB',poles:1,inA:16,icnKa:10,
  icnVoltageV:230,icnStandard:'IEC 60898-1',verificationStatus:'VERIFIED'});
 function input(){
- return {articleSku:'A',articleInA:16,deviceStandard:'IEC 60898-1',
+ return {catalogKey:'A',articleSku:'A',articleInA:16,deviceStandard:'IEC 60898-1',
   testVoltageV:230,testFrequencyHz:50,applicationVoltageV:230,
   applicationFrequencyHz:50,protectionPoles:1,
   faultModel:'SINGLE_PHASE_L_N',comparisonPoint:'END-L1',
