@@ -107,8 +107,21 @@ function epProtectiveDeviceProjectAuditV1(project,lookup,catalogInput){
   typeof EP_CATALOG==='object'&&EP_CATALOG!==null?Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[]);
  const issues=[],results=[];
  for(const line of project.lines){
-  const r=epProtectiveDeviceShortlistV1(line,catalog);
-  results.push({lineId:line?.id??null,potential:r.candidates.filter(c=>c.status==='POTENTIAL').map(c=>c.sku)});
+  const basis=typeof epSelectionFaultBasisV1==='function'?
+   epSelectionFaultBasisV1(project,line,lookup):null;
+  const scopedLine=basis?.mode==='CALCULATED_MAXIMUM'?
+   {...line,faultInput:{...(line?.faultInput||{}),ikKa:basis.ikMaxKa,
+     voltageV:basis.voltageV}}:line;
+  const r=epProtectiveDeviceShortlistV1(scopedLine,catalog);
+  results.push({lineId:line?.id??null,
+   potential:basis?.mode==='CALCULATED_UNUSABLE'?[]:
+    r.candidates.filter(c=>c.status==='POTENTIAL').map(c=>c.sku),
+   faultBasis:basis,comparisonIkKa:basis?.mode==='CALCULATED_MAXIMUM'?
+    basis.ikMaxKa:null});
+  for(const issue of basis?.issues||[])issues.push({...issue,lineId:line?.id??null});
+  if(basis?.mode==='CALCULATED_UNUSABLE')
+   issues.push({code:'SELECTION_MAXIMUM_CURRENT_UNUSABLE',
+    level:'UNKNOWN',lineId:line?.id??null});
   for(const issue of r.issues)issues.push({...issue,lineId:line?.id??null});
   if(line?.catalogSku){
    let selected=null;
