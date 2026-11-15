@@ -474,7 +474,7 @@ test('issue register and bundle source contain provenance section wiring',()=>{
  const root=path.join(__dirname,'..'),bundle=fs.readFileSync(path.join(root,'engineering-bundle-v1.js'),'utf8');
  const registry=fs.readFileSync(path.join(root,'engineering-issue-register-v1.js'),'utf8');
  assert.match(bundle,/epCatalogEvidenceAuditV1/);
- const sectionsDeclaration=bundle.match(/const sections=\\{([^}]+)\\}/);
+ const sectionsDeclaration=bundle.match(/const sections=\{([^}]+)\}/);
  assert.ok(sectionsDeclaration,'Engineering bundle must declare assembled sections');
  const sectionNames=new Set(sectionsDeclaration[1].split(',').map(name=>name.trim()));
  for(const required of ['manufacturerFacts','manufacturerEvidence','protectionDecision',
