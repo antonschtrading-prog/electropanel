@@ -36,6 +36,7 @@ function epBreakerLetThroughHtmlV1(project,lineId,lookup){
   field('letPoint','Точка КЗ',d.comparisonPoint)+
   select('letCurrentBasis',[['DECLARED_SCENARIO','Отдельный ожидаемый Ik'],['LINKED_MAXIMUM','Максимальный Ik из ядра']],d.currentBasis)+
   field('letCurrent','Ожидаемый Ik, А для отдельного сценария',d.prospectiveCurrentA)+
+  field('letProspectiveSource','Источник расчёта ожидаемого Ik',d.prospectiveSource)+
   select('letRole',[['PHASE','Фазный проводник'],['NEUTRAL','Нейтральный проводник']],d.conductorRole)+
   select('letMaterial',[['','Материал'],['Cu','Медь'],['Al','Алюминий']],d.conductorMaterial)+
   field('letSection','Сечение проводника, мм²',d.sectionMm2)+
