@@ -2283,6 +2283,21 @@ $('faultRoutePanel').addEventListener('submit',e=>{
  const form=e.target.closest('[data-fault-route]');if(!form)return;e.preventDefault();
  const input=Object.fromEntries(['u0V','cmin','sourceROhm','sourceXOhm','networkSource','iaA','requiredTimeS','tripSource','timeSource'].map(key=>[key,form.elements.namedItem(key).value]));
  input.segments=[...form.querySelectorAll('[data-route-segment]')].map(row=>({...Object.fromEntries([...row.querySelectorAll('[data-segment-field]')].map(el=>[el.dataset.segmentField,el.value])),temperatureBasisConfirmed:row.querySelector('[data-segment-temperature]').checked}));
+ if(form.elements.namedItem('adsContextEnabled')?.checked){
+  const selected=state.lines.find(x=>x.id===form.dataset.faultRoute);
+  input.disconnectionContext={
+   circuitClass:form.elements.namedItem('adsCircuitClass').value,
+   protectiveMeasure:'ADS_OVERCURRENT',
+   maxAllowedTimeS:form.elements.namedItem('adsMaxAllowedTimeS').value,
+   u0V:form.elements.namedItem('adsU0V').value,
+   phase:selected?.phase??null,
+   earthing:state.earthing,
+   standardReference:form.elements.namedItem('adsStandardReference').value,
+   timeBasisSource:form.elements.namedItem('adsTimeBasisSource').value,
+   circuitClassSource:form.elements.namedItem('adsCircuitClassSource').value,
+   applicabilityReviewed:form.elements.namedItem('adsApplicabilityReviewed').checked
+  };
+ }
  if(form.elements.namedItem('tripEnvelopeEnabled')?.checked){
   const names=['tripArticleSku','tripArticleRatingA','tripCurve','tripSourceEvidence'];
   const values=Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value||'']));
