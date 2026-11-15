@@ -22,7 +22,11 @@ function epIncomingMaximumNormalizeV1(project,records){
    !r.maximumFaultInput||typeof r.maximumFaultInput!=='object'||
    Array.isArray(r.maximumFaultInput))
    throw Error('INCOMING_MAX_ENTRY_INVALID');
-  epIncomingMaximumTargetV1(project,r.deviceNodeId);
+  if(!/^INCOMING:[A-Za-z0-9_-]{1,60}$/.test(r.deviceNodeId)||
+   !(project?.deviceSupplyV1?.incomingDevices||[]).some(x=>'INCOMING:'+x.id===r.deviceNodeId))
+   throw Error('INCOMING_MAX_DEVICE_NOT_FOUND');
+  // Historical topology fingerprints remain unchanged when importing an
+  // incomplete feed, so the audit can flag the actual stale source path.
   seen.add(r.deviceNodeId);
   const input=JSON.parse(JSON.stringify(r.maximumFaultInput));
   if(JSON.stringify(input).length>35000||
