@@ -39,6 +39,8 @@ const server=http.createServer((req,res)=>{
   await maxFaultPage.evaluate(()=>{selectedLine='L1';switchView('board');});
   const maxForm=maxFaultPage.locator('#maximumFaultPanel [data-max-fault-model="SINGLE_PHASE_L_N"]');
   assert.equal(await maxForm.count(),1);
+  await maxFaultPage.locator('#maximumFaultPanel > details > summary').click();
+  await maxForm.locator('xpath=..').locator('summary').click();
   for(const [key,value] of Object.entries({
    u0V:'230',cmax:'1.1',sourceROhm:'0.04',sourceXOhm:'0.03',
    networkSource:'Declared transformer equivalent'
