@@ -995,7 +995,11 @@ function renderEngineeringDiagnosticsV1(){
   'Модуль иерархии защиты недоступен.';
  const supplyHolder=$('deviceSupplyPanel');
  if(supplyHolder)supplyHolder.innerHTML=typeof epDeviceSupplyHtmlV1==='function'?
-  epDeviceSupplyHtmlV1(state):'Редактор питания аппаратов недоступен.';
+  epDeviceSupplyHtmlV1(state)+
+   (typeof epDeviceSupplyTerminalReconciliationV1==='function'&&
+    typeof epDeviceSupplyTerminalHtmlV1==='function'?
+    epDeviceSupplyTerminalHtmlV1(epDeviceSupplyTerminalReconciliationV1(state)):''):
+  'Редактор питания аппаратов недоступен.';
  const chain=$('projectChainPanel');
  if(chain&&typeof epReconcileProjectV2==='function')chain.innerHTML=epReconcileProjectHtmlV2(epReconcileProjectV2(state,catalogDevice));
  const preview=$('draftBoardPreview');
