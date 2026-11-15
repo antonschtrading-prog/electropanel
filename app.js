@@ -2266,6 +2266,15 @@ $('maximumFaultPanel').addEventListener('submit',e=>{
  notify('Исходные данные Ik,max сохранены. Сравнение Icn: '+result.report.thresholdStatus);
 });
 $('faultRoutePanel').addEventListener('click',e=>{
+ const addPoint=e.target.closest('[data-add-trip-point]');
+ const removePoint=e.target.closest('[data-remove-trip-point]');
+ if(addPoint){
+  const holder=addPoint.closest('[data-trip-envelope-panel]').querySelector('[data-trip-envelope-points]');
+  if(holder.children.length>=40)return notify('Максимум 40 паспортных точек',true);
+  holder.insertAdjacentHTML('beforeend',epTripEnvelopePointHtmlV1({},holder.children.length));
+  return;
+ }
+ if(removePoint){removePoint.closest('[data-trip-envelope-point]').remove();return;}
  const add=e.target.closest('[data-add-route-segment]'),remove=e.target.closest('[data-remove-route-segment]');
  if(add){const holder=add.closest('form').querySelector('[data-route-segments]');if(holder.children.length>=50)return notify('Максимум 50 участков',true);holder.insertAdjacentHTML('beforeend',epFaultSegmentHtmlV2({},holder.children.length));}
  if(remove)remove.closest('[data-route-segment]').remove();
@@ -2274,6 +2283,15 @@ $('faultRoutePanel').addEventListener('submit',e=>{
  const form=e.target.closest('[data-fault-route]');if(!form)return;e.preventDefault();
  const input=Object.fromEntries(['u0V','cmin','sourceROhm','sourceXOhm','networkSource','iaA','requiredTimeS','tripSource','timeSource'].map(key=>[key,form.elements.namedItem(key).value]));
  input.segments=[...form.querySelectorAll('[data-route-segment]')].map(row=>({...Object.fromEntries([...row.querySelectorAll('[data-segment-field]')].map(el=>[el.dataset.segmentField,el.value])),temperatureBasisConfirmed:row.querySelector('[data-segment-temperature]').checked}));
+ if(form.elements.namedItem('tripEnvelopeEnabled')?.checked){
+  const names=['tripArticleSku','tripArticleRatingA','tripCurve','tripSourceEvidence'];
+  const values=Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value||'']));
+  input.tripEnvelope={articleSku:values.tripArticleSku,articleRatingA:values.tripArticleRatingA,
+   curve:values.tripCurve,source:values.tripSourceEvidence,
+   faultType:'L_PE',guaranteeBasisConfirmed:form.elements.namedItem('tripGuaranteeBasis').checked,
+   points:[...form.querySelectorAll('[data-trip-envelope-point]')].map(point=>
+    Object.fromEntries([...point.querySelectorAll('[data-trip-point-field]')].map(el=>[el.dataset.tripPointField,el.value])))};
+ }
  const result=epApplyFaultRouteV2(state,form.dataset.faultRoute,input,catalogDevice);
  if(!result.project)return notify('Расчёт не сохранён: '+result.code,true);
  checkpoint();state=result.project;changed();notify('Трасса сохранена. Сравнение с Ia: '+result.report.thresholdStatus);
