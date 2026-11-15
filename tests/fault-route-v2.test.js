@@ -8,7 +8,7 @@ const input=()=>({u0V:230,cmin:0.95,sourceROhm:0.1,sourceXOhm:0.05,networkSource
 test('independent reference example sums both conductors and source R/X',()=>{
  const out=apply(project(),'L1',input(),lookup);assert.ok(out.project);
  const r=out.report;assert.equal(r.loopROhm,0.5);assert.ok(Math.abs(r.loopXOhm-0.054)<1e-12);
- assert.ok(Math.abs(r.zsOhm-0.502907546175227)<1e-12);assert.ok(Math.abs(r.ikMinA-434.4734964940521342253260862787993861692)<1e-9);assert.equal(r.thresholdStatus,'PASS');assert.equal(r.engineeringApproved,false);
+ assert.ok(Math.abs(r.zsOhm-0.502907546175227)<1e-12);assert.ok(Math.abs(r.ikMinA-434.4734964940521342253260862787993861692)<1e-9);assert.equal(r.thresholdStatus,'PRELIMINARY_PASS');assert.equal(r.engineeringApproved,false);
 });
 test('multiple segments and separate maximum current are retained',()=>{
  const p=project(),x=input();x.segments=[{...x.segments[0],lengthM:10},{...x.segments[0],lengthM:15}];
