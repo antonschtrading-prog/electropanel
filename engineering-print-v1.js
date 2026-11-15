@@ -99,6 +99,14 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
   '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
+  '<h2>Паспортная огибающая времени отключения · только заявленные точки</h2>'+
+  rows(['Цепь','Паспортный источник','Ik,min, А','Требуемое время, с','Ток гарантированного отключения, А','Верхняя граница времени, с','Численная проверка','Замечания'],
+   (sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.tripEnvelope?.manufacturerSource??'Не указан',
+    x.tripEnvelope?.ikMinA??'—',x.tripEnvelope?.requiredTimeS??'—',
+    x.tripEnvelope?.requiredCurrentA??'—',x.tripEnvelope?.guaranteedMaxTimeS??'—',
+    x.tripEnvelope?.numericalStatus??'UNKNOWN',
+    (x.tripEnvelope?.issues||[]).map(i=>i.code).join('; ')]))+
+  '<p>Гарантированное максимальное время применяется без интерполяции только для заявленных паспортных точек. Нормативная пригодность и условия срабатывания должны проверяться отдельно.</p>'+
   '<h2>Максимальный заявленный ток КЗ · независимая расчётная модель</h2>'+
   rows(['Цепь','Модель','Напряжение, В','cmax','R, Ом','X, Ом','|Z|, Ом','Ik,max, кА','Icn, кА','Арифметическое сравнение','Статус'],
    (sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.maximum?.model??'Не выбран',
