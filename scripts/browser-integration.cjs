@@ -35,6 +35,17 @@ const server=http.createServer((req,res)=>{
  assert.deepEqual(savedTopology.imported,savedTopology.links);
  assert.equal(savedTopology.edges,1);
  assert.equal(savedTopology.selectivity,'NOT_ASSESSED');
+ assert.equal(await page.locator('.ep-protection-device-chain').count(),1);
+ const deviceEvidence=await page.evaluate(()=>{
+  const r=epProtectionDeviceChainV1(state,catalogDevice);
+  return {count:r.pairs.length,selectivity:r.selectivityStatus,
+   approved:r.engineeringApproved,ids:r.pairs.map(x=>[x.downstreamDeviceId,x.upstreamDeviceId])};
+ });
+ assert.equal(deviceEvidence.count,1);
+ assert.equal(deviceEvidence.selectivity,'NOT_ASSESSED');
+ assert.equal(deviceEvidence.approved,false);
+ assert.ok(deviceEvidence.ids[0].every(Boolean),JSON.stringify(deviceEvidence));
+
  await page.locator('#protectionDownstream').selectOption('L1');
  await page.locator('#protectionUpstream').selectOption('L2');
  await page.locator('#protectionLinkSave').click();
