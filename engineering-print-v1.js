@@ -40,6 +40,9 @@ function epEngineeringPrintV1(bundle){
  const supplyTerminalTable=rows(['От','К','Проводники','Устройство модели 1','Устройство модели 2','Прямые провода','Физический статус'],
   (sections.supplyTerminals?.rows||[]).map(x=>[x.from,x.to,(x.conductors||[]).join(', '),
    x.fromModelDeviceId??'—',x.toModelDeviceId??'—',x.declaredDirectWires,x.verification]));
+ const incomingBindingsTable=rows(['Вводной','Терминальная модель','Клемм','Устаревшая привязка','Статус'],
+  (sections.incomingTerminalBindings?.rows||[]).map(x=>[
+   x.incomingId,x.modelDeviceId,x.terminalCount,x.snapshotStale?'ДА':'нет',x.status]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -248,6 +251,7 @@ function epEngineeringPrintV1(bundle){
      t.lossBasisConfirmed?'Заявлено':'Не подтверждено'];}))+
   '<p>Расчёт Ik,max и сравнение с Icn не являются подтверждением соответствия требованиям без проверенных исходных данных, применимости стандарта и паспортов.</p>'+
   '<h2>Питание между конкретными аппаратами · версия 1</h2>'+deviceSupplyTable+
+  '<h3>Привязки вводных аппаратов к терминальной модели</h3>'+incomingBindingsTable+
   '<h3>Сверка с терминальной моделью и заявленными проводами</h3>'+supplyTerminalTable+
   '<p>Связи введены пользователем и не подтверждают физическое соединение или селективность.</p>'+
   '<h2>Декларативная модель источника, аппаратов и проводников</h2>'+supplyEdgesTable+
