@@ -15,8 +15,8 @@ test('indexed real maker product and catalogue records match only stated facts',
  assert.equal(r.rows[0].status,'FACTS_MATCH');
  assert.equal(r.rows[0].matchedFields.length,6);
  assert.equal(r.rows[0].sourceId,'SOURCE-SCHNEIDER-A9F73110-2026');
- assert.equal(r.rows[1].status,'INCOMPLETE');
- assert.ok(r.rows[1].missingFields.includes('icnStandard'));
+ assert.equal(r.rows[1].status,'FACTS_MATCH');
+ assert.equal(r.rows[1].missingFields.length,0);
  assert.equal(r.rows[1].sku,'2CDS251001R0164');
  assert.equal(r.engineeringApproved,false);
 });
@@ -65,7 +65,7 @@ test('report and UI expose original source location, missing facts and no approv
  assert.match(ui,/не равно инженерному допуску/);
 });
 test('source facts are individual read-only citations, not a generated I2t database',()=>{
- assert.equal(EP_MANUFACTURER_FACT_REFERENCES_V1.length,2);
+ assert.equal(EP_MANUFACTURER_FACT_REFERENCES_V1.length,4);
  assert.ok(EP_MANUFACTURER_FACT_REFERENCES_V1.every(x=>x.sourceUrl.startsWith('https://')));
  assert.ok(EP_MANUFACTURER_FACT_REFERENCES_V1.every(x=>!Object.hasOwn(x.fields,'i2t')));
 });
