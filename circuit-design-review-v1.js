@@ -90,6 +90,14 @@ function epCircuitDesignReviewV1(project,lookupSku){
    reasons.push({code:issue.code,level:issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN'});
   if(!line.shortCircuitThermalInput)
    reasons.push({code:'THERMAL_SHORT_CIRCUIT_EVIDENCE_REQUIRED',level:'UNKNOWN'});
+  const breakerLetThrough=line.letThroughInput?
+   (typeof epBreakerLetThroughV1==='function'?epBreakerLetThroughV1(project,line,article):null):null;
+  if(line.letThroughInput&&!breakerLetThrough)
+   reasons.push({code:'LET_THROUGH_MODULE_UNAVAILABLE',level:'BLOCKED'});
+  for(const issue of breakerLetThrough?.issues||[])
+   reasons.push({code:issue.code,level:issue.level==='BLOCKED'?'BLOCKED':'UNKNOWN'});
+  if(!line.letThroughInput)
+   reasons.push({code:'LET_THROUGH_INPUT_MISSING',level:'UNKNOWN'});
   // Independent maximum prospective short-circuit calculation. Never
   // substitute the minimum L-PE current or silently overwrite manual Ik.
   const maximumFault=line.maximumFaultInput&&typeof epMaximumFaultCurrentV2==='function'?
@@ -159,7 +167,7 @@ function epCircuitDesignReviewV1(project,lookupSku){
   const status=reasons.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN';
   rows.push({lineId:line.id,name:line.name||'',phase:line.phase||null,sku:line.catalogSku||null,
    ibA:ib,inA,izA:iz,ikKa:ik,voltageV,icnKa,sectionMm2:section,current,cable,breaking,referenceStatus,
-   referenceIzA:candidate?.izA??null,voltageDrop:drop,overloadCoordination,shortCircuitThermal,maximumFault,faultCurrentComparison,status,reasons});
+   referenceIzA:candidate?.izA??null,voltageDrop:drop,overloadCoordination,shortCircuitThermal,breakerLetThrough,maximumFault,faultCurrentComparison,status,reasons});
  }
  return {schema:'electropanel.design.review.1',
   status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
