@@ -23,7 +23,7 @@ function epRestoreProjectExtensionsV2(raw,project){
  if(raw.projectExtensionsVersion!==undefined&&raw.projectExtensionsVersion!==1)
   throw Error('Неподдерживаемая версия расширений проекта');
  const objects=['evidence','network','enclosure','dinEvidence'];
- const arrays=['catalogArticles','dinPlacementsV1','manualLayoutV1','cables'];
+ const arrays=['catalogArticles','dinPlacementsV1','manualLayoutV1','cables','manufacturerEvidenceRecords'];
  for(const key of objects)if(raw[key]!==undefined){if(!object(raw[key]))throw Error(key+': ожидается объект');project[key]=clone(raw[key],key);}
  for(const key of arrays)if(raw[key]!==undefined){if(!Array.isArray(raw[key])||raw[key].length>500)throw Error(key+': ожидается массив до 500 записей');project[key]=clone(raw[key],key,250000);}
  if(project.catalogArticles!==undefined){
