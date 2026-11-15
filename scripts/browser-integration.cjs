@@ -268,8 +268,8 @@ const server=http.createServer((req,res)=>{
   assert.equal(result.sku,'A9F73110');
   assert.equal(result.prospective,5000);
   assert.equal(result.energy,700000);
-  assert.equal(result.numeric,'FAIL');
-  assert.equal(result.combined,'FAIL');
+  assert.equal(result.numeric,'NOT_DEMONSTRATED');
+  assert.equal(result.combined,'NOT_DEMONSTRATED');
   assert.equal(result.approved,false);
  }finally{await letPage.close();}
 
