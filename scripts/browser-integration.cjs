@@ -97,6 +97,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>(state.deviceFaultScenariosV1||[]).length),0);
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>(state.deviceFaultScenariosV1||[]).length),1);
+ await page.locator('.ep-device-fault summary').click();
  await page.locator('[data-device-fault-clear="INCOMING:QF0"]').click();
  assert.equal(await page.evaluate(()=>(state.deviceFaultScenariosV1||[]).length),0);
  await page.locator('[data-device-supply-unlink="INCOMING:QF0"]').click();
@@ -147,6 +148,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>(state.deviceCoordinationEvidenceV1||[]).length),0);
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>(state.deviceCoordinationEvidenceV1||[]).length),1);
+ await page.locator('.ep-coordination-evidence summary').click();
  await page.locator('[data-coord-clear="INCOMING:QF0|BRANCH:'+branch1+'|SELECTIVITY_LIMIT"]').click();
  assert.equal(await page.evaluate(()=>(state.deviceCoordinationEvidenceV1||[]).length),0);
  await page.locator('[data-device-fault-clear="BRANCH:'+branch1+'"]').click();
