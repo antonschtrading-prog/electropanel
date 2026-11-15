@@ -99,6 +99,18 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
   '<h2>Минимальный ток замыкания L–PE (TN)</h2>'+rows(['Цепь','Zs, Ом','Ik,min, А','Ia, А','Время, с','Сравнение'],(sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.zsOhm,x.ikMinA,x.iaA,x.requiredTimeS,x.thresholdStatus]))+
+  '<h2>Основание времени автоматического отключения · область применения</h2>'+
+  rows(['Цепь','Класс цепи','Условие защиты','Предельное время, с','Заявленное время, с',
+   'Запас, с','Численное сравнение','Стандарт и пункт','Основание времени','Основание класса','Замечания'],
+   (sections.faultRoutes?.rows||[]).map(x=>{
+    const c=x.disconnectionContext||{};
+    return [x.lineId,c.circuitClass??'Не заявлен',c.protectiveMeasure??'—',
+     c.maxAllowedTimeS??'—',c.declaredTimeS??'—',c.timeMarginS??'—',
+     c.numericalStatus??'UNKNOWN',c.standardReference??'Не указан',
+     c.timeBasisSource??'Не указан',c.circuitClassSource??'Не указан',
+     (c.issues||[]).map(i=>i.code).join('; ')];
+   }))+
+  '<p>Предельное время не выбирается автоматически по нормативным таблицам. Источник, редакция и применимость заявлены проектировщиком; численное соответствие не является допуском.</p>'+
   '<h2>Паспортная огибающая времени отключения · только заявленные точки</h2>'+
   rows(['Цепь','Паспортный источник','Ik,min, А','Требуемое время, с','Ток гарантированного отключения, А','Верхняя граница времени, с','Численная проверка','Замечания'],
    (sections.faultRoutes?.rows||[]).map(x=>[x.lineId,x.tripEnvelope?.manufacturerSource??'Не указан',
