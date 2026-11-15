@@ -15,6 +15,37 @@ const server=http.createServer((req,res)=>{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
+ 
+ // Engineer edits declared upstream protection hierarchy using the shipped UI.
+ await page.evaluate(()=>switchView('board'));
+ await page.locator('#protectionDownstream').selectOption('L2');
+ await page.locator('#protectionUpstream').selectOption('L1');
+ await page.locator('#protectionLinkSave').click();
+ const savedTopology=await page.evaluate(()=>{
+  const local=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+  const imported=normalizeImport(local);
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  return {version:local.protectionLinksVersion,links:local.protectionLinks,
+   imported:imported.protectionLinks,
+   edges:bundle.sections.protectionTopology.edges.length,
+   selectivity:bundle.sections.protectionTopology.selectivityStatus};
+ });
+ assert.equal(savedTopology.version,1,JSON.stringify(savedTopology));
+ assert.deepEqual(savedTopology.links,[{downstreamLineId:'L2',upstreamLineId:'L1'}]);
+ assert.deepEqual(savedTopology.imported,savedTopology.links);
+ assert.equal(savedTopology.edges,1);
+ assert.equal(savedTopology.selectivity,'NOT_ASSESSED');
+ await page.locator('#protectionDownstream').selectOption('L1');
+ await page.locator('#protectionUpstream').selectOption('L2');
+ await page.locator('#protectionLinkSave').click();
+ assert.equal(await page.evaluate(()=>state.protectionLinks.length),1,'cycle must be rejected atomically');
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>(state.protectionLinks||[]).length),0);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>(state.protectionLinks||[]).length),1);
+ await page.locator('[data-protection-unlink="L2"]').click();
+ assert.equal(await page.evaluate(()=>state.protectionLinks.length),0);
+ 
  await page.evaluate(()=>{selectedLine='L1';switchView('board');});
  assert.equal(await page.locator('#boardCanvas [data-line]').count(),6);
  // Actual board controls must expose approved tier names, preserve selected
