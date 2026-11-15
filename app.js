@@ -1003,6 +1003,9 @@ function renderEngineeringDiagnosticsV1(){
     epCalculatedDeviceFaultHtmlV1(state,catalogDevice):'')+
    (typeof epIncomingMaximumHtmlV1==='function'?
     epIncomingMaximumHtmlV1(state,catalogDevice):'')+
+   (typeof epProtectionEvidenceMatrixV1==='function'&&
+    typeof epProtectionEvidenceMatrixHtmlV1==='function'?
+    epProtectionEvidenceMatrixHtmlV1(epProtectionEvidenceMatrixV1(state,catalogDevice)):'')+
    (typeof epIncomingTerminalBindingsHtmlV1==='function'?
     epIncomingTerminalBindingsHtmlV1(state):'')+
    (typeof epDeviceSupplyCrossEvidenceV1==='function'&&
