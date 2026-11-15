@@ -67,3 +67,21 @@ test('malformed route input is rejected and project-level review tolerates malfo
  assert.equal(apply({lines:{}},'L1',input(),lookup).code,'LINE_NOT_UNIQUE');
  assert.equal(projectReview({lines:[null,{id:'L1'}]},lookup).rows.length,1);
 });
+
+test('insufficient minimum current blocks even without trip or source provenance',()=>{
+ const x=input();x.iaA=1000;x.networkSource='';x.tripSource='';x.timeSource='';
+ x.segments[0].temperatureBasisConfirmed=false;
+ const out=apply(project(),'L1',x,lookup);
+ assert.ok(out.project,'a failing but numerically valid case remains editable');
+ assert.equal(out.report.thresholdStatus,'FAIL');
+ assert.equal(out.report.status,'BLOCKED');
+ assert.ok(out.report.issues.some(y=>y.code==='FAULT_ROUTE_CURRENT_BELOW_IA'&&y.level==='BLOCKED'));
+ assert.equal(out.report.engineeringApproved,false);
+});
+test('minimum current arithmetic does not issue PASS on undocumented inputs',()=>{
+ const x=input();x.networkSource='';x.iaA=100;
+ const out=apply(project(),'L1',x,lookup);
+ assert.ok(out.project);
+ assert.equal(out.report.thresholdStatus,'UNKNOWN');
+ assert.equal(out.report.status,'UNKNOWN');
+});
