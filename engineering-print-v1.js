@@ -42,6 +42,19 @@ function epEngineeringPrintV1(bundle){
     [d.baseIzSource,d.i2Source,d.i2Standard,d.applicabilitySource,
       ...(d.issues||[]).map(z=>z.code)].filter(Boolean).join('; ')];
   }));
+ const cableThermalTable=rows(['Цепь','Роль','Материал','Сечение, мм²','k, А√с/мм²',
+  'Модель КЗ','Точка','Ток, А','Время, с','I²t, А²с','k²S², А²с','Запас, А²с',
+  'Минимальное S, мм²','Численный результат','Источники и замечания'],
+  protectionDecisionRows.map(x=>{
+   const d=x.shortCircuitThermal||{},r=d.sourceReferences||{};
+   return [x.lineId,d.conductorRole??'—',d.conductorMaterial??'—',
+    d.sectionMm2??'—',d.kA_SqrtS_PerMm2??'—',d.faultModel??'—',
+    d.comparisonPoint??'—',d.faultCurrentA??'—',d.clearingTimeS??'—',
+    d.faultEnergyA2s??'—',d.conductorCapacityA2s??'—',d.energyMarginA2s??'—',
+    d.minimumSectionMm2??'—',d.numericalStatus??'UNKNOWN',
+    [r.k,r.time,r.current,r.conductor,r.method,...(d.issues||[]).map(i=>i.code)]
+     .filter(Boolean).join('; ')];
+  }));
  const faultReconciliationTable=rows(['Цепь','Общий расчётный пункт','Ручной Ik, кА','Расчётный Ik,max, кА','Разность, кА','Разность, %','Статус сверки'],
   designReview.filter(x=>x.faultCurrentComparison).map(x=>{
    const c=x.faultCurrentComparison;
@@ -119,6 +132,8 @@ function epEngineeringPrintV1(bundle){
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
   '<h2>Единая проверка защиты · числовые нарушения и неполные данные</h2>'+protectionDecisionTable+
   '<h3>Защита кабеля от перегрузки · подтверждение I2 и поправок Iz</h3>'+cableOverloadTable+
+  '<h3>Термическая стойкость проводника при КЗ · адиабатическая проверка</h3>'+cableThermalTable+
+  '<p>Расчёт I²t и k²S² применим только к объявленному сценарию и подтверждённому времени отключения; нормативная пригодность не установлена.</p>'+
   '<p>Проверки не подтверждают соответствие требованиям и не заменяют проверку паспортов, температурных условий, тока КЗ, норм и селективности.</p>'+
   '<h2>Предварительный подбор защиты</h2>'+protectionTable+
   '<h2>Арифметический перечень возможных MCB и RCBO (не допуск)</h2>'+selectionTable+
