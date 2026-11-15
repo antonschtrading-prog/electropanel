@@ -2449,7 +2449,8 @@ $('maximumFaultPanel').addEventListener('submit',e=>{
  const keys=[model==='THREE_PHASE_POSITIVE_SEQUENCE'?'uLLV':'u0V','cmax'];
  if(sourceModel==='DECLARED_RX')keys.push('sourceROhm','sourceXOhm','networkSource');
  const input={model,sourceModel,
-  ...Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value]))};
+  ...Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value])),
+  comparisonPoint:form.elements.namedItem('comparisonPoint').value};
  if(sourceModel==='TRANSFORMER_WITH_UPSTREAM'){
   const transformerKeys=['ratedPowerKva','ratedVoltageV','ukPercent','loadLossW',
    'upstreamROhm','upstreamXOhm','source','upstreamSource'];
