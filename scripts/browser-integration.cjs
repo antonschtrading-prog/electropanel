@@ -271,6 +271,39 @@ const server=http.createServer((req,res)=>{
   assert.equal(result.numeric,'NOT_DEMONSTRATED');
   assert.equal(result.combined,'NOT_DEMONSTRATED');
   assert.equal(result.approved,false);
+  // A named document and exact graph scope can be registered as project-local
+  // evidence without suggesting manufacturer authentication or certification.
+  const evidence=letPage.locator('#manufacturerEvidencePanel [data-evidence-record]');
+  await letPage.locator('#manufacturerEvidencePanel [data-evidence-editor] > summary').click();
+  for(const [name,value] of Object.entries({
+   evidenceId:'BROWSER-DOC-1',
+   evidenceManufacturer:'Schneider Electric',
+   evidenceSeries:'Acti9 iC60N',
+   evidenceTitle:'Illustrative manufacturer graph reference (test only)',
+   evidenceUrl:'https://example.org/demo-document.pdf',
+   evidenceRevision:'test-edition-1',
+   evidenceLocation:'page 5, graph 2',
+   evidenceDate:'2026-11-15',
+   evidenceReviewer:'browser-test'
+  }))await evidence.locator('[name="'+name+'"]').fill(value);
+  await evidence.locator('[name="evidenceSourceType"]').selectOption('MANUFACTURER_DOCUMENT');
+  await evidence.locator('[name="evidenceChecked"]').check();
+  await evidence.locator('button[type="submit"]').click();
+  const evidenceResult=await letPage.evaluate(()=>{
+   const raw=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+   const l=raw.lines.find(x=>x.id==='L1');
+   const article=catalogDevice(l.catalogSku);
+   const binding=epLetThroughEvidenceBindingV1(raw,l,article,l.letThroughInput);
+   return {count:raw.manufacturerEvidenceRecords?.length,
+    recordId:l.letThroughInput?.evidenceRecordId,
+    documentPage:binding.documentLocation,matched:binding.matched,
+    approved:binding.engineeringApproved};
+  });
+  assert.equal(evidenceResult.count,1);
+  assert.equal(evidenceResult.recordId,'BROWSER-DOC-1');
+  assert.equal(evidenceResult.documentPage,'page 5, graph 2');
+  assert.equal(evidenceResult.matched,true);
+  assert.equal(evidenceResult.approved,false);
  }finally{await letPage.close();}
 
  // A catalogue article type must govern both protection selection and its board facade.
