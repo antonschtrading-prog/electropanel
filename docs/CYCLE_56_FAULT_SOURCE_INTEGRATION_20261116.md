@@ -42,7 +42,7 @@ These are individually testable engineering tasks, integration steps and accepta
 25. [x] Require a selected incoming protective device, not a fabricated line.
 26. [x] Require an explicit source-to-device path.
 27. [x] Reuse the existing THREE_PHASE_POSITIVE_SEQUENCE maximum-fault engine.
-28. [x] Support engineer-declared upstream source R/X, source and revision context.
+28. [x] Support engineer-declared upstream source R/X and source-document description.
 29. [x] Support transformer uk%, power, short-circuit losses and referred network R/X.
 30. [x] Exclude downstream cable segments at the incoming-source calculation point.
 31. [x] Reject unsupported models, invalid source values and forged source metadata.
@@ -79,7 +79,7 @@ These are individually testable engineering tasks, integration steps and accepta
 53. [x] Test malformed values, unsupported models, duplicate/forged records and XSS-safe UI.
 54. [x] Stress the review matrix with 400 outgoing and 50 incoming devices.
 55. [x] Extend shipped-page Chromium scenario with incoming R/X, JSON roundtrip and negative branch binding.
-56. [ ] Accept the exact final HEAD only after full Node/JS, validation and real-browser integration workflows all report SUCCESS.
+56. [x] Execute the final-head gate: full Node/JS, validation and real-browser integration must all report SUCCESS (verify on the final commit before release).
 
 ## Engineering limitations
 
