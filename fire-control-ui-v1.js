@@ -17,6 +17,8 @@ function epFireControlHtmlV1(project){
  const din=typeof epFireDinReconcileV1==='function'?epFireDinReconcileV1(project):null;
  const catalogIssues=(catalog?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+'</li>').join('');
  const dinIssues=(din?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+'</li>').join('');
+ const gate=typeof epFireControlGateV1==='function'?epFireControlGateV1(project):null;
+ const gateRows=(gate?.checks||[]).map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.issueCount)+'</td></tr>').join('');
  const issues=(audit?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+' · '+esc(x.objectId??'')+'</li>').join('');
  return '<details class="ep-fire-control"><summary>Пожарное управление · '+esc(summary)+'</summary>'+
  '<p>Внешняя пожарная система проектируется отдельно. Здесь задаются только сигналы, действия над потребителями и исполнительные интерфейсы щита. Результат — проектный черновик.</p>'+
@@ -32,6 +34,7 @@ function epFireControlHtmlV1(project){
  '<h4>Исполнительные аппараты и DIN</h4><table><thead><tr><th>Действие</th><th>Аппарат</th><th>Артикул</th><th>Напряжение</th><th>Источник</th><th>DIN</th><th>Модули</th></tr></thead><tbody>'+designRows+'</tbody></table>'+ 
  '<h4>Предварительная спецификация выбранных аппаратов</h4><table><thead><tr><th>Артикул</th><th>Тип</th><th>Количество</th><th>Проверено инженером</th></tr></thead><tbody>'+bomRows+'</tbody></table>'+ 
  '<h4>Согласование каталога и общей DIN-компоновки</h4><p>Каталог: '+esc(catalog?.status??'НЕДОСТУПЕН')+' · DIN: '+esc(din?.status??'НЕДОСТУПЕН')+'</p>'+ 
+ '<h4>Инженерная проверка пожарного интерфейса</h4><p>Статус: '+esc(gate?.status??'НЕДОСТУПЕН')+'</p><table><thead><tr><th>Раздел</th><th>Статус</th><th>Замечания</th></tr></thead><tbody>'+gateRows+'</tbody></table>'+ 
  '<ul>'+issues+designIssues+catalogIssues+dinIssues+'</ul></details>';
 }
 if(typeof module!=='undefined')module.exports={epFireControlHtmlV1};
