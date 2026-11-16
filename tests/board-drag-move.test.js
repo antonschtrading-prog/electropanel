@@ -24,7 +24,7 @@ test('other device remains in place',()=>{
  assert.equal(after.placements.find(x=>x.deviceId==='L3').startModule,before.placements.find(x=>x.deviceId==='L3').startModule);
 });
 test('source project unchanged',()=>{const p=project(),before=JSON.stringify(p);move(p,'L1','L2');assert.equal(JSON.stringify(p),before)});
-test('line order unchanged',()=>{const p=project(),r=move(p,'L1','L2');assert.deepEqual(r.project.lines.map(x=>x.id),p.lines.map(x=>x.id))});
+test('line order unchanged',()=>{const p=project(),r=move(p,'L1','L2');assert.equal(JSON.stringify(r.project.lines.map(x=>x.id)),JSON.stringify(p.lines.map(x=>x.id)))});
 test('source shared device supported',()=>assert.equal(move(project(),'L3','R1').code,'BOARD_DRAG_SWAPPED'));
 test('shared apparatus can be target',()=>assert.equal(move(project(),'R1','L3').code,'BOARD_DRAG_SWAPPED'));
 test('different widths rejected',()=>assert.equal(move(project(),'L1','L3').code,'BOARD_DRAG_WIDTH_MISMATCH'));
@@ -55,7 +55,7 @@ test('move does not remove fixed layout on failure',()=>{
 test('swap twice restores positions',()=>{
  const p=project(),a=move(p,'L1','L2').project,b=move(a,'L1','L2').project;
  const initial=epDraftBoardPlanV1(p).placements,final=epDraftBoardPlanV1(b).placements;
- assert.deepEqual(final.map(x=>[x.deviceId,x.railIndex,x.startModule]),initial.map(x=>[x.deviceId,x.railIndex,x.startModule]));
+ assert.equal(JSON.stringify(final.map(x=>[x.deviceId,x.railIndex,x.startModule])),JSON.stringify(initial.map(x=>[x.deviceId,x.railIndex,x.startModule])));
 });
 test('index loads drag engine before app',()=>{
  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
