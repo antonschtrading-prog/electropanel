@@ -18,7 +18,14 @@ function epProjectCalculationCoverageV1(project,lookupSku){
    const s=String(v).trim().replace(',','.');
    return /^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s)&&Number(s)>0&&Number.isFinite(Number(s));
   };
-  const ib=line.overloadInput?.ibA,iz=line.overloadInput?.izA;
+  // Reuse a current already calculated by the project; no duplicate manual input.
+  const declaredIb=line.overloadInput?.ibA;
+  const derivedIb=line.loadCurrentCalculation?.stale===false?
+   line.loadCurrentCalculation?.roundedIbA:null;
+  const ib=declaredIb===undefined?derivedIb:declaredIb;
+  const iz=line.overloadInput?.izA;
+  const hasIz=iz!==undefined&&iz!==null&&String(iz).trim()!=='';
+  if(hasIz&&!positive(iz))add('IZ_DECLARED_INVALID',id,'BLOCKED');
   if(!positive(ib))missing.push('IB_NOT_DECLARED');
   // Iz is checked whenever supplied; an unrouted preliminary panel may not have it.
   let sku=null;
@@ -34,7 +41,9 @@ function epProjectCalculationCoverageV1(project,lookupSku){
   // Cable routing / optional fault study are assessed by their own applicable checks.
   if(line.calculationReview?.required)add('CALCULATION_REVIEW_STALE',id,'BLOCKED');
   for(const code of missing)add(code,id);
-  lines.push({id,missing,status:missing.length?'UNKNOWN':'AVAILABLE',
+  lines.push({id,ibA:positive(ib)?Number(String(ib).replace(',','.')):null,
+   ibSource:declaredIb===undefined&&positive(derivedIb)?'CALCULATED':'ENGINEER_DECLARED',
+   missing,status:missing.length?'UNKNOWN':'AVAILABLE',
    engineeringApproved:false});
  }
  if(!project.lines.length)add('NO_CIRCUITS',null,'BLOCKED');
