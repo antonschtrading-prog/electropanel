@@ -74,7 +74,7 @@ function epFireControlChecklistV1(project){
  add('FCHK_47_DIN_WIDTH','UNKNOWN','LAYOUT',null,actions.every(a=>Number.isInteger(assignmentMap.get(a?.id)?.moduleWidth)&&assignmentMap.get(a.id).moduleWidth>0),'DIN widths declared');
  add('FCHK_48_DIN_CAPACITY','UNKNOWN','LAYOUT',null,Number.isInteger(project.railCapacity)&&project.railCapacity>0,'DIN rail capacity declared');
  add('FCHK_49_FULL_BOARD_LAYOUT','UNKNOWN','LAYOUT',null,Array.isArray(project.dinPlacementsV1),'Other devices represented for collision review');
- add('FCHK_50_TERMINAL_PIN_MAPPING','UNKNOWN','WIRING',null,false,'Manufacturer pin-level mapping not yet modelled; requires engineer evidence');
+ add('FCHK_50_TERMINAL_PIN_MAPPING','UNKNOWN','WIRING',null,actions.length>0&&actions.every(a=>{const e=assignmentMap.get(a?.id);return Array.isArray(e?.pins)&&e.pins.length>0&&e.pins.every(p=>p&&idOk(p.terminalId)&&idOk(p.devicePin)&&typeof p.verifiedSource==='string'&&p.verifiedSource.startsWith('https://')&&Array.isArray(e.terminalIds)&&e.terminalIds.includes(p.terminalId));}),'Engineer-declared terminal-to-device pin mapping with manufacturer evidence URL');
  return {schema:'electropanel.fire.checklist.1',status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',
   checks,issues,passed:checks.filter(x=>x.status==='PASS').length,total:checks.length,
   engineeringApproved:false,ready_for_installation:false};
