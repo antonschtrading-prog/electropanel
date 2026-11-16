@@ -111,3 +111,36 @@ test('unsupported project structures cannot be implicitly approved',()=>{
  const r=api.epWorkflowPreviewV1({lines:[],loads:null},()=>article,catalogue,inputs());
  assert.equal(r.status,'BLOCKED');assert.equal(r.engineeringApproved,false);
 });
+
+test('single-phase-only project does not require unused three-phase voltage',()=>{
+ const p=project();p.lines=p.lines.filter(x=>x.phase!=='3Ф');
+ const input={...inputs(),threeVoltageV:null};
+ const r=api.epWorkflowPreviewV1(p,()=>article,catalogue,input);
+ assert.equal(r.summary.calculated,1);
+ const applied=api.epWorkflowApplyCurrentsV1(p,input);
+ assert.equal(applied.applied.length,1);
+ assert.equal(applied.project.workflowDesignInputsV1.threeVoltageV,null);
+});
+test('three-phase-only project does not require unused single-phase voltage',()=>{
+ const p=project();p.lines=p.lines.filter(x=>x.phase==='3Ф');
+ const input={...inputs(),singleVoltageV:null};
+ const r=api.epWorkflowPreviewV1(p,()=>article,catalogue,input);
+ assert.equal(r.summary.calculated,1);
+});
+test('missing relevant voltage leaves affected circuit pending without invented current',()=>{
+ const r=api.epWorkflowPreviewV1(project(),()=>article,catalogue,
+  {...inputs(),singleVoltageV:null});
+ assert.equal(r.rows[0].ibA,null);
+ assert.equal(r.rows[0].calculationCode,'WORKFLOW_RELEVANT_VOLTAGE_NOT_DECLARED');
+ assert.ok(r.rows.find(x=>x.lineId==='L3').ibA>0);
+});
+test('invalid manually entered Ib is preserved for correction rather than silently overwritten',()=>{
+ const p=project();p.lines[0].overloadInput={ibA:'bad'};
+ const r=api.epWorkflowApplyCurrentsV1(p,inputs());
+ assert.equal(r.project.lines[0].overloadInput.ibA,'bad');
+ assert.ok(r.skipped.some(x=>x.lineId==='L1'&&x.code==='WORKFLOW_EXISTING_CURRENT_PRESERVED'));
+});
+test('all source voltage fields missing fail explicit validation',()=>{
+ assert.throws(()=>api.epWorkflowInputsV1({...inputs(),singleVoltageV:null,threeVoltageV:null}),
+  /WORKFLOW_INPUT_VOLTAGE_REQUIRED/);
+});
