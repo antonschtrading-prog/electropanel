@@ -19,7 +19,8 @@ function epFireControlHtmlV1(project){
  '<label for="fireControlJson">Сценарии управления (JSON)</label>'+
  '<textarea id="fireControlJson" rows="10" spellcheck="false">'+esc(JSON.stringify(raw,null,2))+'</textarea>'+
  '<div><button type="button" class="btn primary" id="fireControlApplyBtn">Проверить и сохранить</button> '+
- '<button type="button" class="btn" id="fireControlClearBtn">Очистить сценарии</button></div>'+
+ '<button type="button" class="btn" id="fireControlClearBtn">Очистить сценарии</button> '+
+ '<button type="button" class="btn" id="fireControlExportBtn">Выгрузить инженерный отчёт JSON</button></div>'+
  '<table><thead><tr><th>Потребитель</th><th>Сигнал</th><th>Команда</th><th>Исполнитель</th><th>При потере сигнала</th></tr></thead><tbody>'+rows+'</tbody></table>'+
  '<h4>Трассировка управления (проектный черновик)</h4><table><thead><tr><th>Зона</th><th>Потребитель</th><th>Цепь</th><th>Клеммы</th><th>Питание управления</th><th>DIN</th></tr></thead><tbody>'+traceRows+'</tbody></table>'+ 
  '<h4>Исполнительные аппараты и DIN</h4><table><thead><tr><th>Действие</th><th>Аппарат</th><th>Артикул</th><th>Напряжение</th><th>Источник</th><th>DIN</th><th>Модули</th></tr></thead><tbody>'+designRows+'</tbody></table>'+ 
