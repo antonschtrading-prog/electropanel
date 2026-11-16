@@ -214,3 +214,22 @@ test('corrupt optional placement or branch data blocks grouping without throwing
   assert.equal(report.proposals.length,0);
  }
 });
+
+test('branch-level selected apparatus is protected even if legacy circuit label is blank',()=>{
+ for(const assign of [b=>b.label='QF16',b=>b.templateId='MCB_1P',
+  b=>b.catalogSku='A-16']){
+  const p=project();assign(p.branchDevices[1]);
+  const r=plan(p,options());
+  assert.equal(r.proposals.length,0);
+  assert.ok(r.issues.some(x=>x.code==='GROUP_MERGE_BRANCH_APPARATUS_PRESELECTED'));
+ }
+});
+test('duplicate or width-conflicting branch device IDs block rather than silently delete them',()=>{
+ for(const change of [p=>p.branchDevices.push({...p.branchDevices[1],id:'B99'}),
+  p=>p.branchDevices[1].modules=3]){
+  const p=project();change(p);
+  const r=plan(p,options());
+  assert.equal(r.status,'BLOCKED');
+  assert.ok(r.issues.some(x=>x.code==='GROUP_MERGE_BRANCH_MODEL_CONFLICT'));
+ }
+});
