@@ -50,3 +50,26 @@ test('wrong version blocks audit',()=>{
 test('unconfigured bill is not an approval',()=>{
  assert.equal(bill(project()).status,'NOT_CONFIGURED');
 });
+
+test('different signals commanding opposite states require interlock review',()=>{
+ const p=project();
+ const s1=signal(),s2={...signal(),id:'FIRE2',zoneId:'Z2'};
+ const a1=action(),a2={...action(),id:'A2',signalId:'FIRE2',action:'ENABLE'};
+ const result=audit(p,{signals:[s1,s2],actions:[a1,a2]});
+ assert.ok(result.issues.some(x=>x.code==='FIRE_CONTROL_MULTISIGNAL_INTERLOCK_REVIEW'));
+});
+test('opposite commands in same fire zone require priority review',()=>{
+ const p=project();
+ const s1=signal(),s2={...signal(),id:'FIRE2'};
+ const a1=action(),a2={...action(),id:'A2',signalId:'FIRE2',action:'ENABLE'};
+ const result=audit(p,{signals:[s1,s2],actions:[a1,a2]});
+ assert.ok(result.issues.some(x=>x.code==='FIRE_CONTROL_ZONE_COMMAND_PRIORITY_REQUIRED'));
+});
+test('duplicate consumer identifiers are blocked',()=>{
+ const p=project();p.loads.push({...p.loads[0]});
+ assert.ok(audit(p,{signals:[signal()],actions:[action()]}).issues.some(x=>x.code==='FIRE_CONTROL_DUPLICATE_CONSUMER_IDS'));
+});
+test('duplicate circuit identifiers are blocked',()=>{
+ const p=project();p.lines.push({...p.lines[0]});
+ assert.ok(audit(p,{signals:[signal()],actions:[action()]}).issues.some(x=>x.code==='FIRE_CONTROL_DUPLICATE_CIRCUIT_IDS'));
+});
