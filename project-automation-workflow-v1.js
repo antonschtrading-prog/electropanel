@@ -101,6 +101,7 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  }
  summary.phaseLoadsKw=Object.fromEntries(Object.entries(phaseLoads).map(([k,v])=>[k,
   Math.round(v*1000)/1000]));
+ summary.phaseHints=epWorkflowPhaseSuggestionsV1(project).candidates;
  if(summary.unknownPhase)add('WORKFLOW_PHASE_ASSIGNMENT_REQUIRED');
  if(summary.unassignedLoads)add('WORKFLOW_CONSUMERS_WITHOUT_CIRCUIT','BLOCKED');
  if(summary.missingInput)add('WORKFLOW_LOAD_INPUTS_PENDING');
@@ -133,6 +134,58 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  if(board?.issues?.some(i=>i.level==='BLOCKED'))add('WORKFLOW_BOARD_CONFLICT','BLOCKED');
  if(bom?.issues?.some(i=>i.level==='BLOCKED'))add('WORKFLOW_BOM_CONFLICT','BLOCKED');
  return result();
+}
+function epWorkflowArticleChoiceV1(project,lineId,sku,catalogInput){
+ if(!project||!Array.isArray(project.lines)||typeof lineId!=='string'||
+  typeof sku!=='string'||!sku||!Array.isArray(catalogInput))
+  throw Error('WORKFLOW_ARTICLE_CHOICE_INVALID');
+ const line=project.lines.find(x=>x?.id===lineId);
+ if(!line)throw Error('WORKFLOW_ARTICLE_LINE_MISSING');
+ if(line.catalogSku&&line.catalogSku!==sku)
+  throw Error('WORKFLOW_ARTICLE_ALREADY_SELECTED');
+ if(typeof epProtectiveDeviceShortlistV1!=='function')
+  throw Error('WORKFLOW_ARTICLE_SHORTLIST_UNAVAILABLE');
+ const assessment=epProtectiveDeviceShortlistV1(line,catalogInput);
+ const candidate=assessment.candidates.find(x=>x.sku===sku);
+ if(!candidate||candidate.status==='REJECTED')
+  throw Error('WORKFLOW_ARTICLE_CANDIDATE_REJECTED');
+ return {lineId,sku,status:candidate.status,
+  requiresFinalChecks:candidate.status!=='POTENTIAL'||candidate.caution.length>0,
+  caution:candidate.caution.slice(),engineeringApproved:false,
+  ready_for_installation:false};
+}
+function epWorkflowPhaseSuggestionsV1(project){
+ const total={L1:0,L2:0,L3:0},lines=project?.lines||[];
+ for(const line of lines){
+  const power=epWorkflowPositiveV1(line?.power??line?.powerKw);
+  if(power===null)continue;
+  if(line.phase==='3Ф')for(const phase of ['L1','L2','L3'])total[phase]+=power/3;
+  else if(Object.hasOwn(total,line.phase))total[line.phase]+=power;
+ }
+ const imbalance=obj=>Math.max(obj.L1,obj.L2,obj.L3)-Math.min(obj.L1,obj.L2,obj.L3);
+ const before=imbalance(total),items=[];
+ for(const line of lines){
+  const power=epWorkflowPositiveV1(line?.power??line?.powerKw);
+  if(power===null||!['L1','L2','L3'].includes(line.phase))continue;
+  for(const target of ['L1','L2','L3']){
+   if(line.phase===target)continue;
+   const afterLoads={...total};
+   afterLoads[line.phase]-=power;afterLoads[target]+=power;
+   const after=imbalance(afterLoads);
+   if(after<before-0.01)items.push({lineId:line.id,from:line.phase,
+    to:target,powerKw:power,beforeKw:Math.round(before*1000)/1000,
+    afterKw:Math.round(after*1000)/1000,applied:false,
+    engineeringApproved:false});
+  }
+ }
+ items.sort((a,b)=>a.afterKw-b.afterKw||
+  String(a.lineId).localeCompare(String(b.lineId))||
+  a.to.localeCompare(b.to));
+ return {schema:'electropanel.workflow.phase.hints.1',
+  phaseLoadsKw:Object.fromEntries(Object.entries(total).map(([k,v])=>
+   [k,Math.round(v*1000)/1000])),candidates:items.slice(0,5),
+  method:'ACTIVE_KW_HEURISTIC_ONLY',inputPowerFactorsAssumedEqual:false,
+  engineeringApproved:false,ready_for_installation:false};
 }
 function epWorkflowApplyCurrentsV1(project,rawInputs){
  const inputs=epWorkflowInputsV1(rawInputs);
@@ -178,7 +231,11 @@ function epWorkflowHtmlV1(report,stored={}){
   '</td><td>'+esc(r.name)+'</td><td>'+esc(r.phase??'—')+
   '</td><td>'+esc(r.powerKw??'—')+'</td><td>'+esc(r.ibA??'—')+
   '</td><td>'+esc(r.ibSource)+'</td><td>'+esc(r.selectedSku??'—')+
-  '</td><td>'+esc(r.proposedSku??'—')+'</td></tr>').join('');
+  '</td><td>'+esc(r.proposedSku??'—')+'</td><td>'+
+  (r.proposedSku&&!r.selectedSku?
+   '<button type="button" class="btn tiny" data-workflow-article="'+
+   esc(r.proposedSku)+'" data-workflow-line="'+esc(r.lineId)+
+   '">Назначить черновой артикул</button>':'—')+'</td></tr>').join('');
  return '<div class="ep-workflow-v1"><h3>Единый предварительный маршрут проектирования</h3>'+
   '<p class="muted">От потребителей и нагрузок до предварительных аппаратов, схемы, DIN и спецификации. Никаких придуманных напряжений и cos φ: задайте их один раз. Неизвестные трассы не мешают проектированию. Подсказки аппаратов — не автоматический нормативный выбор.</p>'+
   '<div class="form-grid">'+inputs+'</div><div class="mini-actions">'+
@@ -190,12 +247,20 @@ function epWorkflowHtmlV1(report,stored={}){
   ', расчетов Ib: '+esc(report?.summary?.calculated??0)+
   ', уже заданных токов: '+esc(report?.summary?.manualCurrentPreserved??0)+
   ', предложений аппаратов: '+esc(report?.summary?.protectiveCandidates??0)+
-  '.</p><div class="table-scroll"><table><thead><tr><th>Цепь</th><th>Назначение</th>'+
+  '.</p><p class="muted">Подсказки балансировки мощностей (только кВт, без индивидуальных cos φ и режимов): '+
+  ((report?.summary?.phaseHints||[]).length?
+   report.summary.phaseHints.slice(0,3).map(x=>esc(x.lineId)+': '+
+    esc(x.from)+' → '+esc(x.to)+'; разброс '+esc(x.beforeKw)+
+    ' → '+esc(x.afterKw)+' кВт').join(' · '):
+   'переназначение фаз не предлагается')+
+  '. Рекомендация не изменяет схему.</p>'+
+  '<div class="table-scroll"><table><thead><tr><th>Цепь</th><th>Назначение</th>'+
   '<th>Фаза</th><th>кВт</th><th>Ib, А</th><th>Источник Ib</th>'+
-  '<th>Выбранный артикул</th><th>Предварительный кандидат</th></tr></thead><tbody>'+
-  (rows||'<tr><td colspan="8">Добавьте цепи и потребителей</td></tr>')+
+  '<th>Выбранный артикул</th><th>Предварительный кандидат</th><th>Действие</th></tr></thead><tbody>'+
+  (rows||'<tr><td colspan="9">Добавьте цепи и потребителей</td></tr>')+
   '</tbody></table></div></div>';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epWorkflowPositiveV1,epWorkflowInputsV1,epWorkflowLineEstimateV1,
- epWorkflowPreviewV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1};
+ epWorkflowPreviewV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
+ epWorkflowArticleChoiceV1,epWorkflowPhaseSuggestionsV1};
