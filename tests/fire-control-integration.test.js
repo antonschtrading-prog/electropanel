@@ -17,13 +17,13 @@ test('fire-linked group cannot be split without explicit redesign',()=>{
 });
 test('project extension restoration preserves declared fire interface',()=>{
  const ctx=load(['fire-control-v1.js','fire-control-design-v1.js','project-state-v2.js']);
- const p=project();ctx.epRestoreProjectExtensionsV2({fireControlV1:control()},p);
+ const p=project();ctx.epRestoreProjectExtensionsV2({lines:p.lines,fireControlV1:control()},p);
  assert.equal(p.fireControlV1.actions[0].loadId,'AC1');
 });
 test('project extension restoration rejects orphaned fire interface',()=>{
  const ctx=load(['fire-control-v1.js','fire-control-design-v1.js','project-state-v2.js']);
  const bad=control();bad.actions[0].loadId='MISSING';
- assert.throws(()=>ctx.epRestoreProjectExtensionsV2({fireControlV1:bad},project()),/FIRE_CONTROL_IMPORT_INVALID/);
+ assert.throws(()=>ctx.epRestoreProjectExtensionsV2({lines:project().lines,fireControlV1:bad},project()),/FIRE_CONTROL_IMPORT_INVALID/);
 });
 test('engineering bundle exposes fire control section',()=>{
  const src=fs.readFileSync(require('node:path').join(__dirname,'..','engineering-bundle-v1.js'),'utf8');
