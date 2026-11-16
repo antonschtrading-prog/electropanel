@@ -37,7 +37,7 @@ function epEngineeringBundleV1(project,lookupSku){
   }):p=>({status:'UNKNOWN',issues:[],stage:'PRELIMINARY',items:[],
    engineeringApproved:false}));
  const designEvidence=section('DESIGN_EVIDENCE',typeof assessDesignEvidence==='function'?
-  p=>{const a=assessDesignEvidence(p);return {...a,status:a.status==='failed'?'BLOCKED':'UNKNOWN',issues:a.items.filter(x=>x.status!=='verified').map(x=>({code:'DESIGN_EVIDENCE_'+x.status.toUpperCase(),level:x.status==='failed'?'BLOCKED':'UNKNOWN',area:x.area}))};}:null);
+  p=>{const a=assessDesignEvidence(p);return {...a,status:a.status==='failed'?'BLOCKED':a.status==='not_required'?'NOT_REQUIRED':'UNKNOWN',issues:a.items.filter(x=>x.status==='failed'||x.status==='unknown').map(x=>({code:'DESIGN_EVIDENCE_'+x.status.toUpperCase(),level:x.status==='failed'?'BLOCKED':'UNKNOWN',area:x.area}))};}:null);
  const loadCurrent=section('LOAD_CURRENT',typeof epLoadCurrentEvidenceV1==='function'?
   p=>epLoadCurrentEvidenceV1(p):
   p=>({status:'UNKNOWN',rows:(Array.isArray(p?.lines)?p.lines:[]).map(x=>({lineId:x.id,calculation:x.loadCurrentCalculation||null,ibA:x.overloadInput?.ibA??null})),issues:[],engineeringApproved:false}));
