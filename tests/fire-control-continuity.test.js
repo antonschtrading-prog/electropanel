@@ -76,7 +76,7 @@ const cases=[
  ['FIRE_CONTINUITY_INTERLOCK_NOT_DECLARED',p=>p.fireControlV1.wiring.connections[5].purpose='OTHER'],
  ['FIRE_CONTINUITY_COMMAND_SIGNAL_DISCONNECTED',p=>p.fireControlV1.wiring.connections=p.fireControlV1.wiring.connections.filter(x=>x.id!=='W5')],
  ['FIRE_CONTINUITY_PROTECTIVE_ENDPOINT_ABSENT',p=>p.fireControlV1.wiring.connections[3].to=T1],
- ['FIRE_CONTINUITY_COIL_PIN_MISSING',p=>p.fireControlV1.wiring.connections=p.fireControlV1.wiring.connections.filter(x=>x.id!=='W2'&&x.id!=='W3')],
+ ['FIRE_CONTINUITY_COIL_PIN_MISSING',p=>{p.fireControlV1.wiring.connections=p.fireControlV1.wiring.connections.filter(x=>x.id!=='W2'&&x.id!=='W3');p.fireControlV1.wiring.connections[0].purpose='ACTUATOR_COIL'}],
  ['FIRE_CONTINUITY_CONTACT_PIN_MISSING',p=>{p.fireControlV1.wiring.connections=p.fireControlV1.wiring.connections.filter(x=>x.id!=='W2'&&x.id!=='W3');p.fireControlV1.wiring.connections[0].purpose='ACTUATOR_CONTACT'}],
  ['FIRE_CONTINUITY_UNREVIEWED_WIRES',p=>p.fireControlV1.wiring.connections[0].reviewed=false],
  ['FIRE_CONTINUITY_UNSPECIFIED_CONDUCTOR',p=>delete p.fireControlV1.wiring.connections[0].conductor],
