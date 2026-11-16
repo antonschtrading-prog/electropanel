@@ -993,6 +993,21 @@ function renderAutomationWorkflowV1(){
    rules:workflowMergeRuleInput||{maxGroupPowerKw:'',categories:[]},
    proposals:[],issues:[]}));
  }
+ if(typeof epFireControlHtmlV1==='function')target.insertAdjacentHTML('beforeend',epFireControlHtmlV1(state));
+}
+// Fire interface lives in the same project workflow as consumer grouping.
+function epFireControlEditorEventV1(event){
+ const apply=event.target.closest('#fireControlApplyBtn');
+ const clear=event.target.closest('#fireControlClearBtn');
+ if(!apply&&!clear)return;
+ try{
+  if(clear){epFireControlClearProjectV1();return notify('Сценарии пожарного управления очищены');}
+  const input=$('fireControlJson')?.value??'';
+  if(input.length>150000)throw Error('FIRE_CONTROL_JSON_TOO_LARGE');
+  const data=JSON.parse(input);
+  const audit=epFireControlSetProjectV1(data);
+  notify('Сценарии сохранены: '+audit.rows.length+' действий, '+audit.issues.length+' замечаний');
+ }catch(error){notify('Пожарное управление: '+error.message,true);}
 }
 function renderEngineeringDiagnosticsV1(){
  const impactHolder=$('designChangeImpactPanel');
@@ -1994,6 +2009,7 @@ $('pasteTask').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskTex
 $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending())$('taskModal').classList.add('hidden');};
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
+$('automationFlowPanel').addEventListener('click',epFireControlEditorEventV1);
 $('automationFlowPanel').addEventListener('click',e=>{
  const preview=e.target.closest('#groupMergePreviewBtn');
  const apply=e.target.closest('#groupMergeApplyBtn');
