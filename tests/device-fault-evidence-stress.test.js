@@ -22,7 +22,8 @@ const make=()=>{
   deviceSupplyV1:{version:1,incomingDevices:incoming,links}};
 };
 test('400 outgoing and 50 incoming devices produce bounded non-approved evidence matrix',()=>{
- const p=make(),report=epProtectionEvidenceMatrixV1(p,()=>null);
+ const p=make();p.designRequirementsV1={externalNetwork:true};
+ const report=epProtectionEvidenceMatrixV1(p,()=>null);
  assert.equal(report.rows.length,450);
  assert.equal(report.engineeringApproved,false);
  assert.equal(report.ready_for_installation,false);
