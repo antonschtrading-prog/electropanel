@@ -1007,8 +1007,15 @@ function epFireControlEditorEventV1(event){
  const graphCsv=event.target.closest('#fireControlGraphCsvBtn');
  const wiringSvg=event.target.closest('#fireControlWiringSvgBtn');
  const declaredWiresCsv=event.target.closest('#fireControlDeclaredWiresCsvBtn');
- if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv&&!wiringSvg&&!declaredWiresCsv)return;
+ const continuityCsv=event.target.closest('#fireControlContinuityCsvBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv&&!wiringSvg&&!declaredWiresCsv&&!continuityCsv)return;
  try{
+  if(continuityCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlContinuityCsvV1(state);
+   download(baseName()+'-fire-continuity-review.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Ведомость связности цепей управления CSV выгружена');
+  }
   if(declaredWiresCsv){
    if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
    const report=epFireControlDeclaredWiresCsvV1(state);
