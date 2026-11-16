@@ -1758,6 +1758,7 @@ function epFireControlSetProjectV1(raw){
  if(audit.status==='BLOCKED')throw Error('FIRE_CONTROL_INVALID');
  if(typeof epFireControlDesignV1!=='function'||epFireControlDesignV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_DESIGN_INVALID');
  if(typeof epFireDinReconcileV1==='function'&&epFireDinReconcileV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_DIN_CONFLICT');
+ if(typeof epFireControlWiringV1==='function'&&epFireControlWiringV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_WIRING_INVALID');
  checkpoint();state.fireControlV1=next;changed();return audit;
 }
 function epFireControlClearProjectV1(){
