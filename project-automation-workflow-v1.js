@@ -96,7 +96,10 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   if(line.catalogSku)summary.assignedArticles++;
   const selected=candidates.find(x=>x.sku===line.catalogSku)||null;
   const candidate=candidates[0]||null;
-  rows.push({lineId:line.id,name:line.name??line.id,phase:line.phase??null,
+  const consumers=project.loads.filter(x=>x.circuitId===line.id);
+  rows.push({lineId:line.id,name:line.name??line.id,
+   consumers:consumers.map(x=>({id:x.id,name:x.name,powerKw:x.powerKw})),
+   phase:line.phase??null,
    powerKw:power,ibA:current,ibSource:existing!==null?'EXISTING':
     estimate.status==='CALCULATED'?'CALCULATED_PREVIEW':'NOT_AVAILABLE',
    calculationStatus:estimate.status,calculationCode:estimate.code,
@@ -236,7 +239,7 @@ function epWorkflowHtmlV1(report,stored={}){
  const stages=(report?.steps||[]).map(s=>'<span class="ep-workflow-step"><b>'+
   esc(s.key)+'</b>: '+esc(s.status)+' ('+esc(s.count)+')</span>').join(' · ');
  const rows=(report?.rows||[]).slice(0,400).map(r=>'<tr><td>'+esc(r.lineId)+
-  '</td><td>'+esc(r.name)+'</td><td>'+esc(r.phase??'—')+
+  '</td><td>'+esc(r.name)+'</td><td>'+esc((r.consumers||[]).map(x=>x.name).join(', ')||'—')+'</td><td>'+esc(r.phase??'—')+
   '</td><td>'+esc(r.powerKw??'—')+'</td><td>'+esc(r.ibA??'—')+
   '</td><td>'+esc(r.ibSource)+'</td><td>'+esc(r.selectedSku??'—')+
   '</td><td>'+esc(r.proposedSku??'—')+'</td><td>'+
@@ -248,7 +251,8 @@ function epWorkflowHtmlV1(report,stored={}){
   '<p class="muted">От потребителей и нагрузок до предварительных аппаратов, схемы, DIN и спецификации. Никаких придуманных напряжений и cos φ: задайте их один раз. Неизвестные трассы не мешают проектированию. Подсказки аппаратов — не автоматический нормативный выбор.</p>'+
   '<div class="form-grid">'+inputs+'</div><div class="mini-actions">'+
   '<button id="workflowPreviewBtn" class="btn" type="button">Пересчитать предварительный маршрут</button>'+
-  '<button id="workflowApplyCurrentsBtn" class="btn primary" type="button">Рассчитать недостающие Ib</button>'+
+  '<button id="workflowApplyCurrentsBtn" class="btn primary" type="button">Рассчитать недостающие Ib</button>'+ 
+  '<button id="workflowExportCsvBtn" class="btn" type="button">Ведомость маршрута CSV</button>'+
   '</div><div class="muted">'+stages+'</div>'+
   '<p class="muted">Линий: '+esc(report?.summary?.circuits??0)+
   ', потребителей: '+esc(report?.summary?.consumers??0)+
@@ -263,12 +267,27 @@ function epWorkflowHtmlV1(report,stored={}){
    'переназначение фаз не предлагается')+
   '. Рекомендация не изменяет схему.</p>'+
   '<div class="table-scroll"><table><thead><tr><th>Цепь</th><th>Назначение</th>'+
-  '<th>Фаза</th><th>кВт</th><th>Ib, А</th><th>Источник Ib</th>'+
+  '<th>Потребители группы</th><th>Фаза</th><th>кВт</th><th>Ib, А</th><th>Источник Ib</th>'+
   '<th>Выбранный артикул</th><th>Предварительный кандидат</th><th>Действие</th></tr></thead><tbody>'+
-  (rows||'<tr><td colspan="9">Добавьте цепи и потребителей</td></tr>')+
+  (rows||'<tr><td colspan="10">Добавьте цепи и потребителей</td></tr>')+
   '</tbody></table></div></div>';
+}
+function epWorkflowCsvV1(report){
+ const cell=value=>{
+  let s=String(value??'');
+  if(/^[\s\u0000-\u001f]*[=+@-]/.test(s))s="'"+s;
+  return '"'+s.replace(/"/g,'""')+'"';
+ };
+ const rows=[['Circuit','Designation','Consumers','Phase','Power kW',
+  'Ib A','Ib source','Selected SKU','Suggested SKU','Candidate status',
+  'Review warnings','Calculation status']];
+ for(const r of report?.rows||[])rows.push([r.lineId,r.name,
+  (r.consumers||[]).map(x=>x.name).join(', '),r.phase,r.powerKw,
+  r.ibA,r.ibSource,r.selectedSku,r.proposedSku,r.proposedStatus,
+  (r.proposalCaution||[]).join(', '),r.calculationStatus]);
+ return '\uFEFF'+rows.map(row=>row.map(cell).join(';')).join('\r\n')+'\r\n';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epWorkflowPositiveV1,epWorkflowInputsV1,epWorkflowLineEstimateV1,
  epWorkflowPreviewV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
- epWorkflowArticleChoiceV1,epWorkflowPhaseSuggestionsV1};
+ epWorkflowArticleChoiceV1,epWorkflowPhaseSuggestionsV1,epWorkflowCsvV1};
