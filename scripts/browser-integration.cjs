@@ -1294,7 +1294,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.locator('.ep-group-merge summary').count(),1);
  await page.locator('.ep-group-merge summary').click();
  await page.locator('#groupMergeMaxKw').fill('6');
- await page.locator('#groupMergeCategories').fill('L1;Розетки\\nL2;Розетки');
+ await page.locator('#groupMergeCategories').fill('L1;Розетки\nL2;Розетки');
  await page.locator('#groupMergePreviewBtn').click();
  const mergePreview=await page.evaluate(()=>({
   oldLines:state.lines.length,loads:state.loads.length,
