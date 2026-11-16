@@ -52,4 +52,16 @@ function epFireControlDeclaredWiresCsvV1(project){
   csv:rows.map(r=>r.map(quote).join(';')).join('\r\n')+'\r\n',
   issues:report.issues,engineeringApproved:false,ready_for_installation:false};
 }
-if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1,epFireControlTopologyCsvV1,epFireControlDeclaredWiresCsvV1};
+
+function epFireControlContinuityCsvV1(project){
+ const engine=typeof epFireControlContinuityV1==='function'?epFireControlContinuityV1:typeof require==='function'?require('./fire-control-continuity-v1').epFireControlContinuityV1:null;
+ if(typeof engine!=='function')throw Error('FIRE_CONTINUITY_ENGINE_MISSING');
+ const report=engine(project);
+ const quote=x=>'"'+String(x??'').replace(/"/g,'""').replace(/^[=+@-]/,v=>"'"+v)+'"';
+ const rows=[['action_id','wire_count','node_count','component_count','supply_ids','signal_ids','reachable_pins','unreachable_pins','dangling_nodes','declared_return','declared_protection','declared_interlock','connectivity_verified']];
+ for(const a of report.actions)rows.push([a.actionId,a.wireCount,a.nodeCount,a.componentCount,a.supplies.join(','),a.signals.join(','),a.reachablePins.join(','),a.unreachablePins.join(','),a.dangling.join(','),a.hasDeclaredReturn,a.hasDeclaredProtection,a.hasDeclaredInterlock,a.connectivityVerified]);
+ return {schema:'electropanel.fire.continuity.csv.1',status:report.status,
+  csv:rows.map(r=>r.map(quote).join(';')).join('\r\n')+'\r\n',
+  issues:report.issues,engineeringApproved:false,ready_for_installation:false};
+}
+if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1,epFireControlTopologyCsvV1,epFireControlDeclaredWiresCsvV1,epFireControlContinuityCsvV1};
