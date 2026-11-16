@@ -4,10 +4,11 @@
 function epFireControlChecklistV1(project){
  const raw=project?.fireControlV1;
  if(!raw)return {schema:'electropanel.fire.checklist.1',status:'NOT_CONFIGURED',checks:[],issues:[],engineeringApproved:false};
+ const lines=Array.isArray(project.lines)?project.lines:[],loadsList=Array.isArray(project.loads)?project.loads:[];
  const signals=Array.isArray(raw.signals)?raw.signals:[],actions=Array.isArray(raw.actions)?raw.actions:[],
   assignments=Array.isArray(raw.design?.assignments)?raw.design.assignments:[];
- const loads=new Map((project.loads||[]).filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
- const lines=new Map((project.lines||[]).filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
+ const loads=new Map(loadsList.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
+ const lines=new Map(lines.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
  const signalMap=new Map(signals.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
  const assignmentMap=new Map(assignments.filter(x=>x&&typeof x.actionId==='string').map(x=>[x.actionId,x]));
  const checks=[],issues=[];
@@ -22,11 +23,11 @@ function epFireControlChecklistV1(project){
  // Project identity and cross-section integrity (10).
  add('FCHK_01_PROJECT_LINES','BLOCKED','PROJECT',null,Array.isArray(project.lines),'Circuit list required');
  add('FCHK_02_PROJECT_LOADS','BLOCKED','PROJECT',null,Array.isArray(project.loads),'Consumer list required');
- add('FCHK_03_LINE_IDS','BLOCKED','PROJECT',null,(project.lines||[]).every(x=>idOk(x?.id)),'Circuit IDs valid');
- add('FCHK_04_LOAD_IDS','BLOCKED','PROJECT',null,(project.loads||[]).every(x=>idOk(x?.id)),'Consumer IDs valid');
- add('FCHK_05_UNIQUE_LINES','BLOCKED','PROJECT',null,unique((project.lines||[]).map(x=>x?.id)),'Unique circuits');
- add('FCHK_06_UNIQUE_LOADS','BLOCKED','PROJECT',null,unique((project.loads||[]).map(x=>x?.id)),'Unique consumers');
- add('FCHK_07_LOAD_CIRCUITS','BLOCKED','PROJECT',null,(project.loads||[]).every(x=>lines.has(x?.circuitId)),'Consumers assigned to circuits');
+ add('FCHK_03_LINE_IDS','BLOCKED','PROJECT',null,lines.every(x=>idOk(x?.id)),'Circuit IDs valid');
+ add('FCHK_04_LOAD_IDS','BLOCKED','PROJECT',null,loadsList.every(x=>idOk(x?.id)),'Consumer IDs valid');
+ add('FCHK_05_UNIQUE_LINES','BLOCKED','PROJECT',null,unique(lines.map(x=>x?.id)),'Unique circuits');
+ add('FCHK_06_UNIQUE_LOADS','BLOCKED','PROJECT',null,unique(loadsList.map(x=>x?.id)),'Unique consumers');
+ add('FCHK_07_LOAD_CIRCUITS','BLOCKED','PROJECT',null,loadsList.every(x=>lines.has(x?.circuitId)),'Consumers assigned to circuits');
  add('FCHK_08_SIGNAL_LIST','BLOCKED','PROJECT',null,Array.isArray(raw.signals),'Signal list present');
  add('FCHK_09_ACTION_LIST','BLOCKED','PROJECT',null,Array.isArray(raw.actions),'Action list present');
  add('FCHK_10_ASSIGNMENTS_LIST','BLOCKED','PROJECT',null,raw.design===undefined||Array.isArray(raw.design?.assignments),'Design assignment list valid');
