@@ -28,4 +28,15 @@ function epFireControlChecklistCsvV1(project){
   csv:rows.map(row=>row.map(quote).join(';')).join('\r\n')+'\r\n',
   passed:report.passed,total:report.total,engineeringApproved:false,ready_for_installation:false};
 }
-if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1};
+
+function epFireControlTopologyCsvV1(project){
+ if(typeof epFireControlTopologyV1!=='function')throw Error('FIRE_TOPOLOGY_ENGINE_MISSING');
+ const graph=epFireControlTopologyV1(project);
+ const quote=x=>'"'+String(x??'').replace(/"/g,'""').replace(/^[=+@\\-]/,"'"+'if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1};')+'"';
+ const rows=[['edge_id','relation','from_node','to_node','control_voltage_v']];
+ for(const edge of graph.edges)rows.push([edge.id,edge.kind,edge.from,edge.to,edge.controlVoltageV??null]);
+ return {schema:'electropanel.fire.topology.csv.1',status:graph.status,
+  csv:rows.map(row=>row.map(quote).join(';')).join('\r\n')+'\r\n',
+  issues:graph.issues,engineeringApproved:false,ready_for_installation:false};
+}
+if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1,epFireControlTopologyCsvV1};
