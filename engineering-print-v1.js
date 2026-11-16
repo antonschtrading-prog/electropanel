@@ -75,6 +75,12 @@ function epEngineeringPrintV1(bundle){
    x.incomingIkMaxKa??'—',x.branchIkMaxKa??'—',x.sourceConditions,x.status]));
  const designStageTable=rows(['Область','Применимость'],
   (sections.designStageScope?.items||[]).map(x=>[x.code,x.status]));
+ const workflowRows=rows(['Цепь','Назначение','Фаза','кВт','Ib, А',
+  'Происхождение Ib','Выбранный артикул','Предлагаемый артикул',
+  'Состояние предварительного расчёта'],
+  (sections.workflowPreview?.rows||[]).map(x=>[x.lineId,x.name,x.phase??'—',
+   x.powerKw??'—',x.ibA??'—',x.ibSource,x.selectedSku??'—',
+   x.proposedSku??'—',x.calculationStatus]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -224,6 +230,8 @@ function epEngineeringPrintV1(bundle){
   '<h1>Инженерный отчёт · ЧЕРНОВИК</h1>'+
   '<p>Проект: '+esc(bundle?.projectTitle||'Без названия')+' · Состояние: '+esc(status)+'</p>'+
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
+  '<h2>Единый предварительный маршрут: нагрузки, токи и аппараты</h2>'+workflowRows+
+  '<p>Предварительные предложения аппаратов не являются утверждённой спецификацией. Параметры источника и потребителей задаёт инженер.</p>'+
   '<h2>Стадия и применимость проектных проверок</h2>'+designStageTable+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
