@@ -15,6 +15,46 @@ const server=http.createServer((req,res)=>{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
+ // New unified engineer workflow: consumer power -> existing arithmetic engine ->
+ // candidate shortlist and linked diagram/DIN/BOM. Inputs remain user-owned.
+ await page.evaluate(()=>switchView('loads'));
+ assert.equal(await page.locator('#automationFlowPanel #workflowPreviewBtn').count(),1);
+ const beforeWorkflow=await page.evaluate(()=>JSON.stringify(state.lines));
+ await page.locator('#workflow-singleVoltageV').fill('230');
+ await page.locator('#workflow-threeVoltageV').fill('400');
+ await page.locator('#workflow-powerFactor').fill('0,9');
+ await page.locator('#workflow-efficiency').fill('1');
+ await page.locator('#workflow-demandFactor').fill('1');
+ await page.locator('#workflowPreviewBtn').click();
+ const workflowPreview=await page.evaluate(()=>{
+  const r=epWorkflowPreviewV1(state,catalogDevice,
+   projectCatalogEntries().map(([id,device])=>({id,device})),
+   {singleVoltageV:230,threeVoltageV:400,powerFactor:.9,efficiency:1,demandFactor:1});
+  return {circuits:r.summary.circuits,calculated:r.summary.calculated,
+   stages:r.steps.length,preview:r.rows.length,
+   approved:r.engineeringApproved};
+ });
+ assert.ok(workflowPreview.circuits>0);
+ assert.ok(workflowPreview.calculated>0,JSON.stringify(workflowPreview));
+ assert.equal(workflowPreview.stages,5);
+ assert.equal(workflowPreview.approved,false);
+ assert.equal(await page.evaluate(()=>JSON.stringify(state.lines)),beforeWorkflow,
+  'Preview does not write calculations to project');
+ await page.locator('#workflowApplyCurrentsBtn').click();
+ const applied=await page.evaluate(()=>{
+  const saved=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+  return {updated:state.lines.filter(l=>l.loadCurrentCalculation?.powerSource==='circuit').length,
+   persisted:saved.workflowDesignInputsV1?.singleVoltageV,
+   arithmetic:saved.lines.filter(l=>l.loadCurrentCalculation?.powerSource==='circuit').length,
+   railCapacity:state.railCount*state.railCapacity};
+ });
+ assert.ok(applied.updated>0,JSON.stringify(applied));
+ assert.equal(applied.persisted,230);
+ assert.equal(applied.arithmetic,applied.updated);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.lines.filter(l=>l.loadCurrentCalculation?.powerSource==='circuit').length),0);
+ await page.locator('#redoBtn').click();
+ assert.ok(await page.evaluate(()=>state.lines.some(l=>l.loadCurrentCalculation?.powerSource==='circuit')));
  // Device-level supply source -> incoming -> outgoing apparatus via real controls.
  await page.evaluate(()=>switchView('board'));
  // Stage and scope must not demand cable length, external transformer or
