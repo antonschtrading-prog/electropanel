@@ -69,6 +69,10 @@ const server=http.createServer((req,res)=>{
  assert.equal(articleChoice.selected,proposalSku);
  assert.equal(articleChoice.stored,proposalSku);
  assert.equal(articleChoice.requestedReview,true);
+ const workflowCsvDownload=page.waitForEvent('download');
+ await page.locator('#workflowExportCsvBtn').click();
+ const exportedWorkflow=await workflowCsvDownload;
+ assert.match(exportedWorkflow.suggestedFilename(),/_workflow_DRAFT\.csv$/);
  await page.locator('#undoBtn').click();
  assert.notEqual(await page.evaluate(id=>state.lines.find(l=>l.id===id)?.catalogSku,proposalId),proposalSku);
  await page.locator('#redoBtn').click();
