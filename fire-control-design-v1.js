@@ -4,8 +4,8 @@ function epFireControlDesignV1(project){
  const raw=project?.fireControlV1;
  if(!raw)return {schema:'electropanel.fire.design.1',status:'NOT_CONFIGURED',rows:[],issues:[],engineeringApproved:false};
  const audit=epFireControlAuditV1(project,raw),issues=[...audit.issues],rows=[];
- const objects=raw.design||{};
- const assignments=Array.isArray(objects.assignments)?objects.assignments:[];
+ const objects=raw.design===undefined?{assignments:[]}:raw.design;
+ const assignments=Array.isArray(objects?.assignments)?objects.assignments:[];
  const ids=new Set(),actionIds=new Set(audit.rows.map(a=>a.id));
  const validId=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,80}$/.test(x);
  if(!objects||typeof objects!=='object'||Array.isArray(objects)||
@@ -25,12 +25,14 @@ function epFireControlDesignV1(project){
   if(entry.terminalIds!==undefined&&(!Array.isArray(entry.terminalIds)||entry.terminalIds.length<1||entry.terminalIds.length>16||entry.terminalIds.some(x=>!validId(x))||new Set(entry.terminalIds).size!==entry.terminalIds.length))
    issues.push({code:'FIRE_DESIGN_TERMINALS_INVALID',level:'BLOCKED',objectId:entry.actionId});
   if(entry.dinRailId!==undefined&&!validId(entry.dinRailId))issues.push({code:'FIRE_DESIGN_DIN_RAIL_INVALID',level:'BLOCKED',objectId:entry.actionId});
+  if(entry.dinRailId!==undefined&&knownRailIds.size&&!knownRailIds.has(entry.dinRailId))issues.push({code:'FIRE_DESIGN_DIN_RAIL_UNKNOWN',level:'UNKNOWN',objectId:entry.actionId});
   if(entry.dinStartModule!==undefined&&(!Number.isInteger(entry.dinStartModule)||entry.dinStartModule<1||entry.dinStartModule>1000))issues.push({code:'FIRE_DESIGN_DIN_START_INVALID',level:'BLOCKED',objectId:entry.actionId});
   if(entry.moduleWidth!==undefined&&(!Number.isInteger(entry.moduleWidth)||entry.moduleWidth<1||entry.moduleWidth>24))issues.push({code:'FIRE_DESIGN_MODULE_WIDTH_INVALID',level:'BLOCKED',objectId:entry.actionId});
   if(entry.wireReference!==undefined&&(!validId(entry.wireReference)||entry.wireReference.length>80))issues.push({code:'FIRE_DESIGN_WIRE_REFERENCE_INVALID',level:'BLOCKED',objectId:entry.actionId});
   if(entry.reviewed!==undefined&&typeof entry.reviewed!=='boolean')issues.push({code:'FIRE_DESIGN_REVIEW_INVALID',level:'BLOCKED',objectId:entry.actionId});
  }
  const deviceIds=new Set(),positions=new Map();
+ const knownRailIds=new Set(Array.from({length:Number.isInteger(project.railCount)?project.railCount:0},(_,i)=>'R'+(i+1)));
  for(const action of audit.rows){
   const entry=assignments.find(x=>x?.actionId===action.id)||{};
   const id=action.id;
