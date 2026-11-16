@@ -40,3 +40,21 @@ test('merge guard remains linked to fire control',()=>{
 test('split guard remains linked to fire control',()=>{
  assert.match(read('consumer-group-split-v1.js'),/GROUP_SPLIT_FIRE_CONTROL_LINKED/);
 });
+
+test('fire report export is visible in workflow',()=>{
+ const html=epFireControlHtmlV1({fireControlV1:{version:1,signals:[],actions:[]}});
+ assert.match(html,/id="fireControlExportBtn"/);
+});
+test('report export includes audit trace design and schedule',()=>{
+ const src=read('app.js');
+ assert.match(src,/fireControlExportBtn/);
+ assert.match(src,/trace:epFireControlTraceV1\(state\)/);
+ assert.match(src,/design:epFireControlDesignV1\(state\)/);
+ assert.match(src,/schedule:epFireControlScheduleV1\(state\)/);
+});
+test('invalid actuator design is rejected before state mutation',()=>{
+ const src=read('app.js');
+ const i=src.indexOf('function epFireControlSetProjectV1');
+ const section=src.slice(i,src.indexOf('function epFireControlClearProjectV1',i));
+ assert.ok(section.indexOf('epFireControlDesignV1')<section.indexOf('checkpoint()'));
+});
