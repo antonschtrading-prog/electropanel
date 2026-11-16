@@ -1963,8 +1963,20 @@ $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notif
 $('automationFlowPanel').addEventListener('click',e=>{
  const preview=e.target.closest('#workflowPreviewBtn');
  const apply=e.target.closest('#workflowApplyCurrentsBtn');
- if(!preview&&!apply)return;
+ const choose=e.target.closest('[data-workflow-article][data-workflow-line]');
+ if(!preview&&!apply&&!choose)return;
  try{
+  if(choose){
+   const id=choose.dataset.workflowLine,sku=choose.dataset.workflowArticle;
+   const catalog=projectCatalogEntries().map(([key,device])=>({id:key,device}));
+   const decision=epWorkflowArticleChoiceV1(state,id,sku,catalog);
+   const draft=structuredCloneCompat(ensureV2(state));
+   applyCatalogueSku(draft,id,sku);
+   checkpoint();state=draft;selectedLine=id;changed();
+   notify('Черновой артикул '+decision.sku+
+    ' назначен. Неизвестные условия требуют последующей проектной проверки.');
+   return;
+  }
   const panel=$('automationFlowPanel');
   const input={};
   for(const key of ['singleVoltageV','threeVoltageV','powerFactor','efficiency','demandFactor'])
