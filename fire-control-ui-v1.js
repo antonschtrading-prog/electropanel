@@ -21,6 +21,7 @@ function epFireControlHtmlV1(project){
  const gateRows=(gate?.checks||[]).map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.issueCount)+'</td></tr>').join('');
  const checklist=typeof epFireControlChecklistV1==='function'?epFireControlChecklistV1(project):null;
  const checklistRows=(checklist?.checks||[]).map(x=>'<tr><td>'+esc(x.code)+'</td><td>'+esc(x.scope)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.detail)+'</td></tr>').join('');
+ const diagram=typeof epFireControlDiagramV1==='function'?epFireControlDiagramV1(project):null;
  const issues=(audit?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+' · '+esc(x.objectId??'')+'</li>').join('');
  return '<details class="ep-fire-control"><summary>Пожарное управление · '+esc(summary)+'</summary>'+
  '<p>Внешняя пожарная система проектируется отдельно. Здесь задаются только сигналы, действия над потребителями и исполнительные интерфейсы щита. Результат — проектный черновик.</p>'+
@@ -31,8 +32,10 @@ function epFireControlHtmlV1(project){
  '<button type="button" class="btn" id="fireControlExportBtn">Выгрузить инженерный отчёт JSON</button> '+
  '<button type="button" class="btn" id="fireControlWiringCsvBtn">Ведомость управления CSV</button> '+
  '<button type="button" class="btn" id="fireControlBomCsvBtn">Спецификация CSV</button> '+
- '<button type="button" class="btn" id="fireControlChecklistCsvBtn">50 критериев CSV</button></div>'+
+ '<button type="button" class="btn" id="fireControlChecklistCsvBtn">50 критериев CSV</button> '+
+ '<button type="button" class="btn" id="fireControlSvgBtn">Логическая схема SVG</button></div>'+
  '<table><thead><tr><th>Потребитель</th><th>Сигнал</th><th>Команда</th><th>Исполнитель</th><th>При потере сигнала</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+ '<h4>Логическая схема интерфейса</h4><p>Не является монтажной схемой. Номера выводов аппаратов не определены.</p><div class="fire-diagram-preview" style="overflow-x:auto;max-height:430px;overflow-y:auto">'+(diagram?.svg||'Нет сценариев')+'</div>'+ 
  '<h4>Трассировка управления (проектный черновик)</h4><table><thead><tr><th>Зона</th><th>Потребитель</th><th>Цепь</th><th>Клеммы</th><th>Питание управления</th><th>DIN</th></tr></thead><tbody>'+traceRows+'</tbody></table>'+ 
  '<h4>Исполнительные аппараты и DIN</h4><table><thead><tr><th>Действие</th><th>Аппарат</th><th>Артикул</th><th>Напряжение</th><th>Источник</th><th>DIN</th><th>Модули</th></tr></thead><tbody>'+designRows+'</tbody></table>'+ 
  '<h4>Предварительная спецификация выбранных аппаратов</h4><table><thead><tr><th>Артикул</th><th>Тип</th><th>Количество</th><th>Проверено инженером</th></tr></thead><tbody>'+bomRows+'</tbody></table>'+ 
