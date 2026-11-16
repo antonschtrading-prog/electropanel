@@ -39,3 +39,18 @@ test('bundle includes explicit protection and alternate DIN sections',()=>{
  assert.equal(r.statuses.protection,'BLOCKED');
  assert.equal(r.statuses.layoutAlternatives,'BLOCKED');
 });
+
+test('preliminary cabinet sizing is a separate traceable bundle section',()=>{
+ global.epUniversalCabinetOptionsV1=require('../universal-cabinet-options-v1.js').epUniversalCabinetOptionsV1;
+ try {
+  const project=p();project.cabinetSizingPreferencesV1={maxUsableWidthMm:200,maxUsableHeightMm:500};
+  const out=bundle(project,lookup),c=out.sections.cabinetCapacity;
+  assert.equal(c.status,'REVIEW_REQUIRED');
+  assert.equal(c.engineeringApproved,false);
+  assert.equal(c.confirmedCabinetFit,false);
+  assert.equal(c.selectedLayout.modulesPerRail,4);
+  assert.equal(c.usableSizeLimits.maxUsableWidthMm,200);
+  assert.ok(c.options.some(o=>o.withinDeclaredLimits===false));
+  assert.equal(out.statuses.cabinetCapacity,'REVIEW_REQUIRED');
+ } finally {delete global.epUniversalCabinetOptionsV1;}
+});

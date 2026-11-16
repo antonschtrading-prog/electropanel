@@ -1779,6 +1779,13 @@ function applyCabinetCapacityOptionV1(id){
  if(!check||check.status==='BLOCKED'||check.placements.length!==report.equipmentCount){
   notify('Нельзя применить вариант: контроль размещения выявил несоответствие',true);return;
  }
+ if(!changedShape&&state.cabinetGeometryV1&&
+    typeof epCabinetPlacementChangeAuditV1==='function'){
+  const audit=epCabinetPlacementChangeAuditV1(state,proposed,sku=>catalog.get(sku)||null);
+  if(audit.status==='BLOCKED'){
+   notify('Компоновка создаёт новые пересечения в заданном корпусе. Изменение отменено.',true);return;
+  }
+ }
  checkpoint();
  state.railCapacity=proposed.railCapacity;state.railCount=proposed.railCount;
  state.manualLayoutV1=proposed.manualLayoutV1;

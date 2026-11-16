@@ -66,3 +66,17 @@ test('print report includes declared equipment W H D dimensions and marks unknow
  assert.match(h,/>85<\/td>/);assert.match(h,/>—<\/td>/);
  assert.match(h,/НЕ ДЛЯ МОНТАЖА/);
 });
+
+test('print cabinet capacity rows are transparently preliminary',()=>{
+ const b=bundle();
+ b.sections.cabinetCapacity={options:[{
+  status:'REVIEW_REQUIRED',capacityModules:36,railCount:3,modulesPerRail:12,reserveModules:4,
+  envelope:{preliminaryUsableWidthMm:356,preliminaryUsableHeightMm:650,
+   preliminaryUsableDepthMm:null},withinDeclaredLimits:false
+ }]};
+ const html=print(b);
+ assert.match(html,/Варианты вместимости и предварительной компоновки/);
+ assert.match(html,/Превышены/);
+ assert.match(html,/НЕИЗВЕСТНА/);
+ assert.match(html,/не паспортные размеры/);
+});

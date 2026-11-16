@@ -1458,6 +1458,41 @@ const server=http.createServer((req,res)=>{
  await page.locator('#cabinetWidthLimit').fill('');
  await page.locator('#cabinetWidthLimit').blur();
  assert.equal(await page.locator('[data-apply-cabinet-option="1x6"]').count(),1);
+ const sizingEvidence=await page.evaluate(()=>{
+  const b=epEngineeringBundleV1(state,catalogDevice);
+  const html=epEngineeringPrintV1(b);
+  return {status:b.sections.cabinetCapacity?.status,
+   selected:b.sections.cabinetCapacity?.selectedLayout.modulesPerRail,
+   print:html.includes('Варианты вместимости и предварительной компоновки корпуса')};
+ });
+ assert.equal(sizingEvidence.status,'REVIEW_REQUIRED');
+ assert.equal(sizingEvidence.selected,6);
+ assert.equal(sizingEvidence.print,true);
+
+ // Existing declared cabinet geometry is never silently kept across different
+ // DIN shape. Cancellation leaves state untouched; acceptance is undoable.
+ await page.evaluate(()=>{
+  state.cabinetGeometryV1={
+   version:1,source:'USER_DECLARED',
+   interior:{widthMm:360,heightMm:320,depthMm:180},
+   zones:[{railIndex:0,xMm:50,yMm:50,widthMm:260,heightMm:100}],
+   planning:{marginMm:50,firstRowYMm:50,zoneHeightMm:100,rowGapMm:20}
+  };
+  changed();
+ });
+ await page.evaluate(()=>window.confirm=()=>false);
+ const alternative=page.locator('[data-apply-cabinet-option="1x8"]');
+ assert.equal(await alternative.count(),1);
+ await alternative.click();
+ assert.equal(await page.evaluate(()=>state.railCapacity),6);
+ assert.equal(await page.evaluate(()=>!!state.cabinetGeometryV1),true);
+ await page.evaluate(()=>window.confirm=()=>true);
+ await alternative.click();
+ assert.equal(await page.evaluate(()=>state.railCapacity),8);
+ assert.equal(await page.evaluate(()=>!!state.cabinetGeometryV1),false);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.railCapacity),6);
+ assert.equal(await page.evaluate(()=>!!state.cabinetGeometryV1),true);
 
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
