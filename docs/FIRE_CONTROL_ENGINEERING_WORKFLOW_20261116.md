@@ -46,3 +46,18 @@ Existing curated catalogue records mainly cover protective devices. Do not misla
 
 ### Test additions
 `tests/fire-reconciliation.test.js`, `tests/fire-control-export.test.js`, `tests/fire-control-gate.test.js`.
+
+## Fifty linked review criteria (next cycle)
+`epFireControlChecklistV1` produces exactly 50 traceable criteria (FCHK_01–FCHK_50), grouped as:
+1. Project and consumer/circuit identity: 01–10
+2. External signals and contact interpretation: 11–20
+3. Action mapping and fail-state declarations: 21–30
+4. Actuator and supply evidence: 31–40
+5. Terminals, DIN layout and handoff: 41–50
+
+Each criterion has a code, scope, status and explanation. `PASS` only means that the **specific declared evidence criterion** was met; it does not establish design approval. A missing requirement is `REVIEW_REQUIRED` or `BLOCKED` as appropriate. The pin-level mapping criterion FCHK_50 remains unresolved until a real, reviewed terminal pin model exists.
+
+The checklist is included in the engineering bundle, overall fire-control gate, project draft JSON report, UI and a semicolon-delimited CSV export. The CSV is spreadsheet-formula-safe. Regression tests exercise every criterion against a baseline and intentionally violate 49 other conditions, including input volume limits.
+
+### Remaining design work
+A checklist is not a substitute for electrical schematics. Next implementation priorities are real manufacturer contactor/relay/UVR/shunt accessory evidence, terminal pin assignments, control supply topology, electrical interlocks, complete panel DIN geometry, and actual graphical control schematics. Do not promote a review checklist to normative certification.
