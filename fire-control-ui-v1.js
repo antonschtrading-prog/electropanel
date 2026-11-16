@@ -33,7 +33,8 @@ function epFireControlHtmlV1(project){
  '<button type="button" class="btn" id="fireControlWiringCsvBtn">Ведомость управления CSV</button> '+
  '<button type="button" class="btn" id="fireControlBomCsvBtn">Спецификация CSV</button> '+
  '<button type="button" class="btn" id="fireControlChecklistCsvBtn">50 критериев CSV</button> '+
- '<button type="button" class="btn" id="fireControlSvgBtn">Логическая схема SVG</button></div>'+
+ '<button type="button" class="btn" id="fireControlSvgBtn">Логическая схема SVG</button> '+
+ '<button type="button" class="btn" id="fireControlGraphCsvBtn">Связи схемы CSV</button></div>'+
  '<table><thead><tr><th>Потребитель</th><th>Сигнал</th><th>Команда</th><th>Исполнитель</th><th>При потере сигнала</th></tr></thead><tbody>'+rows+'</tbody></table>'+
  '<h4>Логическая схема интерфейса</h4><p>Не является монтажной схемой. Номера выводов аппаратов не определены.</p><div class="fire-diagram-preview" style="overflow-x:auto;max-height:430px;overflow-y:auto">'+(diagram?.svg||'Нет сценариев')+'</div>'+ 
  '<h4>Трассировка управления (проектный черновик)</h4><table><thead><tr><th>Зона</th><th>Потребитель</th><th>Цепь</th><th>Клеммы</th><th>Питание управления</th><th>DIN</th></tr></thead><tbody>'+traceRows+'</tbody></table>'+ 
