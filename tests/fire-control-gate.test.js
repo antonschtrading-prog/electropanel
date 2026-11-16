@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const ctx=vm.createContext({module:{exports:{}}});
-for(const f of ['fire-control-v1.js','fire-control-design-v1.js','fire-control-trace-v1.js','fire-control-schedule-v1.js','fire-catalog-reconcile-v1.js','fire-din-reconcile-v1.js','fire-control-checklist-v1.js','fire-control-topology-v1.js','fire-control-diagram-v1.js','fire-control-gate-v1.js'])
+for(const f of ['fire-control-v1.js','fire-control-design-v1.js','fire-control-trace-v1.js','fire-control-schedule-v1.js','fire-catalog-reconcile-v1.js','fire-din-reconcile-v1.js','fire-control-checklist-v1.js','fire-control-topology-v1.js','fire-control-diagram-v1.js','fire-control-wiring-v1.js','fire-control-wiring-diagram-v1.js','fire-control-gate-v1.js'])
  vm.runInContext(fs.readFileSync(path.join(__dirname,'..',f),'utf8'),ctx);
 const project=()=>({railCapacity:12,lines:[{id:'L1'}],loads:[{id:'AC',circuitId:'L1'}],fireControlV1:{
  signals:[{id:'S',kind:'FIRE',zoneId:'Z',contactType:'NC'}],
@@ -9,7 +9,7 @@ const project=()=>({railCapacity:12,lines:[{id:'L1'}],loads:[{id:'AC',circuitId:
  design:{assignments:[{actionId:'A',deviceId:'K1',articleSku:'SKU1',controlVoltageV:24,controlSupplyId:'PS1',
  terminalIds:['T1'],dinRailId:'R1',dinStartModule:1,moduleWidth:2,wireReference:'W1',reviewed:true}]}}});
 const article=()=>({sku:'SKU1',kind:'CONTACTOR',modules:2,controlVoltageV:24,maker:'Example',series:'X',source:'https://example.com',verificationStatus:'VERIFIED'});
-test('gate lists six independent engineering sections',()=>assert.equal(ctx.epFireControlGateV1(project(),()=>article()).checks.length,9));
+test('gate lists six independent engineering sections',()=>assert.equal(ctx.epFireControlGateV1(project(),()=>article()).checks.length,11));
 test('valid declared data still requires engineering review',()=>{
  const r=ctx.epFireControlGateV1(project(),()=>article());
  assert.equal(r.status,'REVIEW_REQUIRED');assert.equal(r.engineeringApproved,false);
