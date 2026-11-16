@@ -1710,7 +1710,7 @@ function renderBoard(){
   const rail=holder.querySelector('.din-rail');
   let col=0;
   while(col<slots.length){const slot=slots[col];
-   if(!slot){const empty=document.createElement('span');empty.className='din-slot empty';empty.textContent='·';empty.setAttribute('aria-label',`Свободный модуль ${col+1}, DIN ${r+1}`);empty.dataset.railIndex=String(r);empty.dataset.startModule=String(col);empty.title='Перетащите аппарат сюда; другие позиции останутся неизменными';rail.appendChild(empty);col++;continue;}
+   if(!slot){const empty=document.createElement('button');empty.type='button';empty.className='din-slot empty';empty.textContent='·';empty.setAttribute('aria-label',`Свободный модуль ${col+1}, DIN ${r+1}`);empty.dataset.railIndex=String(r);empty.dataset.startModule=String(col);empty.title='Выберите аппарат и нажмите сюда или перетащите его; другие позиции останутся неизменными';rail.appendChild(empty);col++;continue;}
    const l=slot.line;let width=0;while(col+width<slots.length&&slots[col+width]?.line.id===l.id)width++;
    const d=document.createElement('button');d.type='button';d.draggable=true;d.dataset.line=l.id;d.style.gridColumn=`span ${width}`;
    const visual=deviceAppearance(l);
@@ -1758,7 +1758,17 @@ $('selectedDevice').addEventListener('click',e=>{
  if(e.target.id!=='resetBoardPositions')return;
  checkpoint();delete state.manualLayoutV1;changed();notify('Восстановлена автоматическая компоновка');
 });
-$('boardCanvas').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();renderCircuitGraph();renderEngineeringDiagnosticsV1();});
+$('boardCanvas').addEventListener('click',e=>{
+ const free=e.target.closest('.din-slot.empty[data-rail-index]');
+ if(free){
+  if(!selectedLine){notify('Сначала выберите аппарат, затем свободный модуль DIN');return;}
+  const deviceId=state.branchDevices?.find(x=>x.circuitId===selectedLine)?.id||selectedLine;
+  const result=epMoveBoardDeviceV1(state,deviceId,Number(free.dataset.railIndex),Number(free.dataset.startModule),catalogDevice);
+  if(!result.project){notify('Позиция DIN недоступна: '+result.code,true);return;}
+  checkpoint();state=result.project;changed();notify('Аппарат перемещён на выбранный модуль DIN');return;
+ }
+ const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();renderCircuitGraph();renderEngineeringDiagnosticsV1();
+});
 $('boardCanvas').addEventListener('dragstart',e=>{const b=e.target.closest('[data-line]');if(!b)return;dragLineId=b.dataset.line;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragLineId);});
 $('boardCanvas').addEventListener('dragover',e=>{
  const target=e.target.closest('[data-line], .din-slot.empty[data-rail-index]');
