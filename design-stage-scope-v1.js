@@ -16,13 +16,15 @@ function epDesignStageScopeV1(project){
  const hasCableInput=hasLines&&p.lines.some(l=>l&&(
   l.cableDesignInput!==undefined||l.cableReferenceInput!==undefined||
   l.overloadInput?.izA!==undefined));
- const optional=(code,required,known)=>({code,status:required?'REQUIRED':
-  known?'IN_PROGRESS':'NOT_REQUIRED'});
+ const optional=(code,required,known,deferred=false)=>({code,status:required?'REQUIRED':
+  deferred?'DEFERRED':known?'IN_PROGRESS':'NOT_REQUIRED'});
  const items=[
   optional('LOAD_CALCULATION',hasLines,false),
   optional('BOARD_PROTECTION_SELECTION',stage!=='PRELIMINARY'&&hasLines,false),
-  optional('CABLING_AMPACITY',stage==='DETAILED'&&hasCableInput,hasCableInput),
-  optional('CABLE_ROUTE_AND_LENGTH',stage==='DETAILED'&&hasRouting,hasRouting),
+  optional('CABLING_AMPACITY',stage==='DETAILED'&&hasCableInput,hasCableInput,
+   stage==='DETAILED'&&!hasCableInput),
+  optional('CABLE_ROUTE_AND_LENGTH',stage==='DETAILED'&&hasRouting,hasRouting,
+   stage==='DETAILED'&&!hasRouting),
   optional('EXTERNAL_NETWORK_MODEL',externalNetwork,externalNetwork||
    !!(p.network?.transformer||p.incomingMaximumStudiesV1?.length)),
   optional('MANUFACTURER_SELECTIVITY',selectivity,selectivity||
@@ -33,6 +35,7 @@ function epDesignStageScopeV1(project){
   selectivityRequested:selectivity,externalNetworkRequested:externalNetwork,
   required:items.filter(x=>x.status==='REQUIRED').map(x=>x.code),
   notRequired:items.filter(x=>x.status==='NOT_REQUIRED').map(x=>x.code),
+  deferred:items.filter(x=>x.status==='DEFERRED').map(x=>x.code),
   engineeringApproved:false,ready_for_installation:false};
 }
 function epDesignStageScopeHtmlV1(report){
