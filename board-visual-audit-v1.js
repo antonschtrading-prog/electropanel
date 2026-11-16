@@ -25,6 +25,13 @@ function epBoardVisualAuditV1(project,lookup){
   for(const code of evidence)issues.push({code,deviceId:p.deviceId,level:
    code==='VISUAL_PLACEMENT_WIDTH_MISMATCH'||code==='VISUAL_ARTICLE_ID_MISMATCH'?'BLOCKED':'UNKNOWN'});
  }
+ for(const source of [...(project.lines||[]),...(project.branchDevices||[]),...(project.sharedDevices||[])]){
+  if(!source?.catalogSku)continue;
+  if(typeof lookup!=='function'||!lookup(source.catalogSku)){
+   if(!issues.some(x=>x.code==='VISUAL_SKU_NOT_FOUND'&&x.deviceId===source.id))
+    issues.push({code:'VISUAL_SKU_NOT_FOUND',deviceId:source.id,level:'BLOCKED'});
+  }
+ }
  if(plan.status==='BLOCKED')issues.push({code:'VISUAL_LAYOUT_BLOCKED',level:'BLOCKED'});
  return {status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',rows,issues,
   verifiedCatalogueFaces:rows.filter(x=>x.visual.source==='CATALOG_DECLARED'&&!x.evidence.length).length,
