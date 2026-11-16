@@ -1004,8 +1004,15 @@ function epFireControlEditorEventV1(event){
  const bomCsv=event.target.closest('#fireControlBomCsvBtn');
  const checklistCsv=event.target.closest('#fireControlChecklistCsvBtn');
  const svgBtn=event.target.closest('#fireControlSvgBtn');
- if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn)return;
+ const graphCsv=event.target.closest('#fireControlGraphCsvBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv)return;
  try{
+  if(graphCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlTopologyCsvV1(state);
+   download(baseName()+'-fire-interface-links.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Ведомость логических связей CSV выгружена');
+  }
   if(svgBtn){
    if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
    const report=epFireControlDiagramV1(state);
