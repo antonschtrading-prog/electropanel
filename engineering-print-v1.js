@@ -73,6 +73,8 @@ function epEngineeringPrintV1(bundle){
   'Сравнимость исходных условий','Статус'],
   (sections.faultSourceConvergence?.rows||[]).map(x=>[x.incomingId,x.branchId,
    x.incomingIkMaxKa??'—',x.branchIkMaxKa??'—',x.sourceConditions,x.status]));
+ const designStageTable=rows(['Область','Применимость'],
+  (sections.designStageScope?.items||[]).map(x=>[x.code,x.status]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -222,6 +224,7 @@ function epEngineeringPrintV1(bundle){
   '<h1>Инженерный отчёт · ЧЕРНОВИК</h1>'+
   '<p>Проект: '+esc(bundle?.projectTitle||'Без названия')+' · Состояние: '+esc(status)+'</p>'+
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
+  '<h2>Стадия и применимость проектных проверок</h2>'+designStageTable+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
   '<h2>Связи защитных аппаратов · топология, селективность не доказана</h2>'+protectionTopologyTable+protectionTopologyIssues+
