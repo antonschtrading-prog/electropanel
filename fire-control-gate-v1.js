@@ -12,7 +12,8 @@ function epFireControlGateV1(project,lookupSku){
   ['DIN',()=>epFireDinReconcileV1(project)],
   ['CHECKLIST_50',()=>epFireControlChecklistV1(project)],
   ['TOPOLOGY',()=>epFireControlTopologyV1(project)],
-  ['DIAGRAM',()=>epFireControlDiagramV1(project)]
+  ['DIAGRAM',()=>epFireControlDiagramV1(project)],
+  ['WIRING',()=>epFireControlWiringV1(project)]
  ];
  const checks=[],issues=[];
  for(const [name,fn] of engines){
