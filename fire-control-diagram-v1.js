@@ -7,11 +7,11 @@ function epFireControlDiagramV1(project){
  const topology=engine(project);
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
  if(topology.status==='NOT_CONFIGURED')return {schema:'electropanel.fire.diagram.1',status:'NOT_CONFIGURED',svg:'',issues:[],engineeringApproved:false};
- const nodes=topology.nodes.filter(n=>['EXTERNAL_SIGNAL','COMMAND','ACTUATOR','CONSUMER','CONTROL_SUPPLY','TERMINAL'].includes(n.kind));
- const kinds=['EXTERNAL_SIGNAL','COMMAND','ACTUATOR','CONSUMER','CONTROL_SUPPLY','TERMINAL'];
+ const nodes=topology.nodes.filter(n=>['EXTERNAL_SIGNAL','COMMAND','ACTUATOR','CONSUMER','CONTROL_SUPPLY','TERMINAL','DEVICE_PIN'].includes(n.kind));
+ const kinds=['EXTERNAL_SIGNAL','COMMAND','ACTUATOR','CONSUMER','CONTROL_SUPPLY','TERMINAL','DEVICE_PIN'];
  const layout=new Map(),counts=new Map();
- const width=1200,rowHeight=70,top=105;
- const positions={EXTERNAL_SIGNAL:40,COMMAND:240,ACTUATOR:450,CONSUMER:665,CONTROL_SUPPLY:875,TERMINAL:1040};
+ const width=1400,rowHeight=70,top=105;
+ const positions={EXTERNAL_SIGNAL:30,COMMAND:220,ACTUATOR:410,CONSUMER:600,CONTROL_SUPPLY:790,TERMINAL:980,DEVICE_PIN:1170};
  for(const node of nodes){
   const idx=counts.get(node.kind)||0;counts.set(node.kind,idx+1);
   layout.set(node.id,{x:positions[node.kind],y:top+idx*rowHeight});
