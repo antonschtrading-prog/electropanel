@@ -1272,6 +1272,51 @@ const server=http.createServer((req,res)=>{
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.lines.length),2);
 
+ // Separate real-browser acceptance for explicit category-based merging.
+ // The original group split scenario above must not be reused as a shortcut.
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.railCount=2;state.railCapacity=12;
+  state.lines=[
+   {id:'L1',name:'Desk power A',phase:'L1',power:2,modules:1,
+    device:'',source:'manual',sourceRef:''},
+   {id:'L2',name:'Desk power B',phase:'L1',power:3,modules:1,
+    device:'',source:'manual',sourceRef:''}
+  ];
+  state.loads=[
+   {id:'LD1',name:'Desk 1',circuitId:'L1',powerKw:2,source:'manual',sourceRef:''},
+   {id:'LD2',name:'Desk 2',circuitId:'L2',powerKw:3,source:'manual',sourceRef:''}
+  ];
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  syncBranchDevices(state);lastDesignSnapshot=null;changed();
+ });
+ await page.evaluate(()=>switchView('loads'));
+ assert.equal(await page.locator('.ep-group-merge summary').count(),1);
+ await page.locator('.ep-group-merge summary').click();
+ await page.locator('#groupMergeMaxKw').fill('6');
+ await page.locator('#groupMergeCategories').fill('L1;Розетки\\nL2;Розетки');
+ await page.locator('#groupMergePreviewBtn').click();
+ const mergePreview=await page.evaluate(()=>({
+  oldLines:state.lines.length,loads:state.loads.length,
+  candidates:workflowMergePlan?.proposals?.length,
+  target:workflowMergePlan?.proposals?.[0]?.targetCircuitId,
+  status:workflowMergePlan?.status}));
+ assert.deepEqual(mergePreview,{oldLines:2,loads:2,candidates:1,target:'L1',status:'DRAFT'});
+ await page.locator('#groupMergeApplyBtn').click();
+ const merged=await page.evaluate(()=>{
+  const imported=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+  return {circuits:state.lines.length,loads:state.loads.length,
+   groupPower:state.lines[0].power,allAssigned:state.loads.every(x=>x.circuitId==='L1'),
+   persisted:imported.consumerGroupMergeRulesV1?.categories?.length,
+   branches:state.branchDevices.length,approved:false};
+ });
+ assert.deepEqual(merged,{circuits:1,loads:2,groupPower:5,allAssigned:true,
+  persisted:1,branches:1,approved:false});
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.lines.length),2);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>state.lines.length),1);
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
