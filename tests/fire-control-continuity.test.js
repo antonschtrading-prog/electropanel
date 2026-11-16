@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {epFireControlContinuityV1:run}=require('../fire-control-continuity-v1');
+const {epFireControlContinuityCsvV1}=require('../fire-control-export-v1');
 const wire=(id,from,to,purpose='OTHER')=>({id,wireReference:'REF_'+id,from,to,purpose,actionId:'A1',verifiedSource:'https://example.org/source',reviewed:true,conductor:{sectionMm2:1.5,material:'COPPER'}});
 const endpoint=(kind,id,pin)=>({kind,id,...(pin?{pin}:{})});
 const S=endpoint('SUPPLY','PS1'),T1=endpoint('TERMINAL','T1'),T2=endpoint('TERMINAL','T2'),T3=endpoint('TERMINAL','T3'),K1=endpoint('DEVICE_PIN','K1','A1'),K2=endpoint('DEVICE_PIN','K1','A2'),F=endpoint('PROTECTION','F1'),SIG=endpoint('SIGNAL','S1');
@@ -130,3 +131,16 @@ test('connected graph is still review required',()=>{
  const p=base();p.fireControlV1.wiring.connections.push(wire('W7',T2,K1));
  assert.equal(run(p).status,'REVIEW_REQUIRED');
 });
+
+test('continuity CSV includes action',()=>assert.match(epFireControlContinuityCsvV1(base()).csv,/A1/));
+test('continuity CSV includes supply',()=>assert.match(epFireControlContinuityCsvV1(base()).csv,/SUPPLY:PS1/));
+test('continuity CSV includes reachable pin',()=>assert.match(epFireControlContinuityCsvV1(base()).csv,/DEVICE_PIN:K1:A1/));
+test('continuity CSV includes unreachable pin',()=>assert.match(epFireControlContinuityCsvV1(base()).csv,/DEVICE_PIN:K1:A2/));
+test('continuity CSV includes header',()=>assert.match(epFireControlContinuityCsvV1(base()).csv,/action_id/));
+test('continuity CSV includes component count',()=>assert.match(epFireControlContinuityCsvV1(base()).csv,/component_count/));
+test('continuity CSV includes unresolved status',()=>assert.match(epFireControlContinuityCsvV1(base()).csv,/false/));
+test('continuity CSV is never approved',()=>assert.equal(epFireControlContinuityCsvV1(base()).engineeringApproved,false));
+test('continuity CSV is never installation ready',()=>assert.equal(epFireControlContinuityCsvV1(base()).ready_for_installation,false));
+test('continuity CSV empty project has header',()=>assert.match(epFireControlContinuityCsvV1({}).csv,/action_id/));
+test('continuity CSV preserves diagnostic issues',()=>assert.ok(epFireControlContinuityCsvV1(base()).issues.length>0));
+test('continuity CSV is deterministic',()=>{const p=base();assert.equal(epFireControlContinuityCsvV1(p).csv,epFireControlContinuityCsvV1(p).csv)});
