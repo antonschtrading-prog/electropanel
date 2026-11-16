@@ -15,14 +15,24 @@ function epProtectionEvidenceMatrixV1(project,lookup){
   try{return fn(project,lookup);}catch(_){add('PROTECTION_MATRIX_'+name+'_ERROR','BLOCKED');return null;}
  };
  const supply=guarded('SUPPLY',typeof epDeviceSupplyAuditV1==='function'?epDeviceSupplyAuditV1:null);
- const branch=guarded('BRANCH_CALCULATED',
-  typeof epCalculatedDeviceFaultAuditV1==='function'?epCalculatedDeviceFaultAuditV1:null);
- const incoming=guarded('INCOMING_CALCULATED',
-  typeof epIncomingMaximumAuditV1==='function'?epIncomingMaximumAuditV1:null);
- const manual=guarded('MANUAL_STUDIES',
-  typeof epDeviceFaultAuditV1==='function'?epDeviceFaultAuditV1:null);
- const coordination=guarded('MANUFACTURER_PAIR',
-  typeof epCoordAuditV1==='function'?epCoordAuditV1:null);
+ const needsExternal=project.designRequirementsV1?.externalNetwork===true;
+ const needsCoordination=project.designRequirementsV1?.selectivity===true;
+ const branch=needsExternal||project.calculatedDeviceFaultBindingsV1?.length?
+  guarded('BRANCH_CALCULATED',
+   typeof epCalculatedDeviceFaultAuditV1==='function'?epCalculatedDeviceFaultAuditV1:null):
+  {rows:[]};
+ const incoming=needsExternal||project.incomingMaximumStudiesV1?.length?
+  guarded('INCOMING_CALCULATED',
+   typeof epIncomingMaximumAuditV1==='function'?epIncomingMaximumAuditV1:null):
+  {rows:[]};
+ const manual=project.deviceFaultScenariosV1?.length?
+  guarded('MANUAL_STUDIES',
+   typeof epDeviceFaultAuditV1==='function'?epDeviceFaultAuditV1:null):
+  {rows:[]};
+ const coordination=needsCoordination||project.deviceCoordinationEvidenceV1?.length?
+  guarded('MANUFACTURER_PAIR',
+   typeof epCoordAuditV1==='function'?epCoordAuditV1:null):
+  {rows:[]};
  const supplyEdges=new Map((supply?.edges||[]).map(x=>[x.to,x]));
  const supported=[
   ...(project.deviceSupplyV1?.incomingDevices||[]).map(x=>({id:'INCOMING:'+x.id,kind:'INCOMING',sku:x.catalogSku??null})),
