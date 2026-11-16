@@ -30,6 +30,7 @@ function epDesignStageScopeV1(project){
   optional('PHYSICAL_INSTALLATION_TESTS',false,false)
  ];
  return {schema:'electropanel.design.stage.scope.1',stage,valid,items,
+  selectivityRequested:selectivity,externalNetworkRequested:externalNetwork,
   required:items.filter(x=>x.status==='REQUIRED').map(x=>x.code),
   notRequired:items.filter(x=>x.status==='NOT_REQUIRED').map(x=>x.code),
   engineeringApproved:false,ready_for_installation:false};
@@ -46,7 +47,10 @@ function epDesignStageScopeHtmlV1(report){
   '<label>Стадия<select id="designStageSelect">'+
   EP_DESIGN_STAGES_V1.map(x=>'<option value="'+esc(x)+'"'+
   (report?.stage===x?' selected':'')+'>'+esc(labels[x])+'</option>').join('')+
-  '</select></label><button class="btn" id="designStageSave" type="button">Применить стадию</button>'+
+  '</select></label>'+ 
+  '<label><input id="designSelectivityRequested" type="checkbox"'+(report?.selectivityRequested?' checked':'')+'> Требуется селективность по заданию</label>'+ 
+  '<label><input id="designExternalNetworkRequested" type="checkbox"'+(report?.externalNetworkRequested?' checked':'')+'> Выполнить дополнительный расчёт внешней сети</label>'+ 
+  '<button class="btn" id="designStageSave" type="button">Применить требования</button>'+
   '<div class="table-scroll"><table><thead><tr><th>Проверка</th><th>Применимость</th></tr></thead><tbody>'+
   rows+'</tbody></table></div></details>';
 }
