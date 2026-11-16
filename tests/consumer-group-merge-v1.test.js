@@ -198,3 +198,19 @@ test('large 400-line project preserves one-to-one consumer ownership in immutabl
  assert.equal(JSON.stringify(p),before);
  assert.equal(r.engineeringApproved,false);
 });
+
+test('corrupt optional placement or branch data blocks grouping without throwing',()=>{
+ for(const mutation of [
+  p=>p.branchDevices={bad:1},
+  p=>p.dinPlacementsV1={bad:1},
+  p=>p.manualLayoutV1={bad:1},
+  p=>p.feedLinks={bad:1},
+  p=>p.conductorRoutes={bad:1}
+ ]){
+  const p=project();mutation(p);
+  const report=plan(p,options());
+  assert.equal(report.status,'BLOCKED');
+  assert.ok(report.issues.some(x=>x.code==='GROUP_MERGE_PROJECT_INVALID'));
+  assert.equal(report.proposals.length,0);
+ }
+});
