@@ -1975,7 +1975,8 @@ $('automationFlowPanel').addEventListener('click',e=>{
  if(!preview&&!apply)return;
  try{
   if(preview){
-   const raw={maxGroupPowerKw:$('groupSplitMaxKw')?.value};
+   const raw={maxGroupPowerKw:$('groupSplitMaxKw')?.value,
+    maxConsumersPerCircuit:$('groupSplitMaxConsumers')?.value};
    const rules=epGroupSplitRulesV1(raw);
    const plan=epGroupSplitPlanV1(ensureV2(state),rules);
    workflowSplitRuleInput=rules.maxGroupPowerKw;
@@ -1989,8 +1990,9 @@ $('automationFlowPanel').addEventListener('click',e=>{
   if(!workflowSplitPlan)
    throw Error('Сначала выполните предварительный просмотр');
   const freshInput=epGroupSplitRulesV1({
-   maxGroupPowerKw:$('groupSplitMaxKw')?.value});
-  if(freshInput.maxGroupPowerKw!==workflowSplitPlan.rules.maxGroupPowerKw)
+   maxGroupPowerKw:$('groupSplitMaxKw')?.value,
+   maxConsumersPerCircuit:$('groupSplitMaxConsumers')?.value});
+  if(JSON.stringify(freshInput)!==JSON.stringify(workflowSplitPlan.rules))
    throw Error('Изменены правила. Пересчитайте предварительный просмотр');
   const result=epGroupSplitApplyV1(ensureV2(state),workflowSplitPlan);
   if(!result.project)return notify('Нет групп для безопасного разделения');
