@@ -9,7 +9,8 @@ function epFireControlGateV1(project,lookupSku){
   ['TRACE',()=>epFireControlTraceV1(project)],
   ['SCHEDULE',()=>epFireControlScheduleV1(project)],
   ['CATALOGUE',()=>epFireCatalogReconcileV1(project,lookupSku)],
-  ['DIN',()=>epFireDinReconcileV1(project)]
+  ['DIN',()=>epFireDinReconcileV1(project)],
+  ['CHECKLIST_50',()=>epFireControlChecklistV1(project)]
  ];
  const checks=[],issues=[];
  for(const [name,fn] of engines){
