@@ -1744,7 +1744,7 @@ function renderBoard(){
   const capacity=epBoardCapacityReviewV1(state,catalogDevice);
   const lines=capacity.rails.map(r=>'DIN '+(r.railIndex+1)+': '+r.occupied+'/'+r.capacity+' мод.; свободно '+r.free+', максимальный непрерывный участок '+r.largestFreeRun);
   $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Распределение модулей по рейкам</strong></div>'+lines.map(x=>'<div class="check-line"><span>'+safeText(x)+'</span></div>').join(''));
-  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><button type="button" id="boardCompactBtn">Уплотнить DIN</button><button type="button" id="boardFillGapsBtn">Заполнить свободные места, сохранив закреплённые аппараты</button><button type="button" id="boardAddRailBtn">Добавить DIN-рейку</button><button type="button" id="boardRemoveRailBtn">Убрать последнюю DIN-рейку</button></div>');
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><button type="button" id="boardCompactBtn">Уплотнить DIN</button><button type="button" id="boardFillGapsBtn">Заполнить свободные места, сохранив закреплённые аппараты</button><button type="button" id="boardPlacementCsvBtn">Ведомость DIN CSV</button><button type="button" id="boardAddRailBtn">Добавить DIN-рейку</button><button type="button" id="boardRemoveRailBtn">Убрать последнюю DIN-рейку</button></div>');
  }
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
  $('selectedDevice').innerHTML=l?`<div class="selected-info">${devicePreviewHtml(l)}<b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Доступны одно- и трёхполюсные модели и пользовательский каталог.'}</div>${boardPositionForm(l)}${faultLineInfo(l)}${l.calculationReview?.required?'<div class="ep-fault-status ep-fault-fail"><strong>ПОВТОРНАЯ ПРОВЕРКА</strong><span>Параметры цепи или аппарат изменены. Сохранённые расчёты требуют перепроверки.</span></div>':''}<div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
@@ -1758,6 +1758,13 @@ $('selectedDevice').addEventListener('submit',e=>{
 $('selectedDevice').addEventListener('click',e=>{
  if(e.target.id!=='resetBoardPositions')return;
  checkpoint();delete state.manualLayoutV1;changed();notify('Восстановлена автоматическая компоновка');
+});
+$('boardChecks').addEventListener('click',e=>{
+ if(!e.target.closest('#boardPlacementCsvBtn'))return;
+ const result=epBoardPlacementCsvV1(state,catalogDevice);
+ if(result.status==='BLOCKED'){notify('Экспорт DIN содержит ошибки проекта; исправьте компоновку',true);return;}
+ download(baseName()+'-din-placement.csv',result.csv,'text/csv;charset=utf-8');
+ notify('Ведомость размещения DIN выгружена');
 });
 $('boardChecks').addEventListener('click',e=>{
  const button=e.target.closest('#boardAddRailBtn,#boardRemoveRailBtn');if(!button)return;
