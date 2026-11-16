@@ -101,7 +101,14 @@ function epGroupMergePlanV1(project,rawRules){
    consumers.get(line.id).length>rules.maxConsumersPerCircuit){
    add('GROUP_MERGE_CIRCUIT_CONSUMERS_EXCEED_LIMIT','UNKNOWN',line.id);continue;
   }
-  const branches=(project.branchDevices||[]).filter(x=>x.circuitId===line.id);
+  const branches=(project.branchDevices||[]).filter(x=>x?.circuitId===line.id);
+  if(branches.length>1||branches.some(x=>!x||typeof x.id!=='string'||
+   x.modules!==line.modules)){
+   add('GROUP_MERGE_BRANCH_MODEL_CONFLICT','BLOCKED',line.id);continue;
+  }
+  if(branches.some(x=>x.label||x.templateId||x.catalogSku)){
+   add('GROUP_MERGE_BRANCH_APPARATUS_PRESELECTED','UNKNOWN',line.id);continue;
+  }
   const hasDinEvidence=(project.dinPlacementsV1||[]).some(x=>x?.deviceId===line.id||
    branches.some(b=>b.id===x?.deviceId));
   if(hasDinEvidence){
