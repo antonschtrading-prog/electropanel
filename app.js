@@ -1960,6 +1960,31 @@ $('pasteTask').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskTex
 $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending())$('taskModal').classList.add('hidden');};
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
+$('automationFlowPanel').addEventListener('click',e=>{
+ const preview=e.target.closest('#workflowPreviewBtn');
+ const apply=e.target.closest('#workflowApplyCurrentsBtn');
+ if(!preview&&!apply)return;
+ try{
+  const panel=$('automationFlowPanel');
+  const input={};
+  for(const key of ['singleVoltageV','threeVoltageV','powerFactor','efficiency','demandFactor'])
+   input[key]=panel.querySelector('#workflow-'+key)?.value??'';
+  const normalized=epWorkflowInputsV1(input);
+  if(preview){
+   workflowPreviewInputs=normalized;
+   renderAutomationWorkflowV1();
+   return notify('Предварительный маршрут рассчитан по заданным исходным данным.');
+  }
+  const result=epWorkflowApplyCurrentsV1(ensureV2(state),normalized);
+  if(!result.applied.length)
+   return notify('Новых токов для автоматического расчёта нет: ранее заданные Ib сохранены.');
+  checkpoint();
+  state=result.project;workflowPreviewInputs=null;changed();
+  notify('Рассчитано '+result.applied.length+' цепей; '+result.skipped.length+
+   ' пропущено без изменения ручных данных.');
+ }catch(err){notify('Маршрут не изменён: '+err.message,true);}
+});
+
 $('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}checkpoint();state[key]=n;changed();});
 $('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;$('ref39Run').onclick=runReference39;$('lv43Run').onclick=runLV43;$('lv43SaveLine').onclick=saveLV43ToLine;$('route44Save').onclick=saveRoute44;$('wiring18Check').onclick=()=>checkWiring18(false);$('wiring18Save').onclick=()=>checkWiring18(true);$('device19Check').onclick=()=>checkDevice19(false);$('device19Save').onclick=()=>checkDevice19(true);$('bindingSave').onclick=saveBoardBindingV1;$('bindingClear').onclick=clearBoardBindingV1;$('endpointSave').onclick=saveEndpointBindingV1;$('endpointClear').onclick=clearEndpointBindingV1;$('endpointSymbolicRef').onchange=renderEndpointBridgeV1;
 $('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();selectedLine=null;changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
