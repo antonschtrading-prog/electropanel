@@ -1003,6 +1003,8 @@ function renderEngineeringDiagnosticsV1(){
     epCalculatedDeviceFaultHtmlV1(state,catalogDevice):'')+
    (typeof epIncomingMaximumHtmlV1==='function'?
     epIncomingMaximumHtmlV1(state,catalogDevice):'')+
+   (typeof epDesignStageScopeV1==='function'&&typeof epDesignStageScopeHtmlV1==='function'?
+    epDesignStageScopeHtmlV1(epDesignStageScopeV1(state)):'')+
    (typeof epProtectionEvidenceMatrixV1==='function'&&
     typeof epProtectionEvidenceMatrixHtmlV1==='function'?
     epProtectionEvidenceMatrixHtmlV1(epProtectionEvidenceMatrixV1(state,catalogDevice)):'')+
@@ -2229,6 +2231,15 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
  const report=epProtectionEvidenceMatrixV1(state,catalogDevice);
  return download(baseName()+'_apparatus_evidence_DRAFT.csv',
   epProtectionEvidenceMatrixCsvV1(report),'text/csv;charset=utf-8');
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ if(!e.target.closest('#designStageSave'))return;
+ const stage=$('designStageSelect')?.value;
+ if(!['PRELIMINARY','BOARD_DESIGN','DETAILED'].includes(stage))
+  return notify('Некорректная стадия проектирования',true);
+ if(state.designStageV1===stage)return;
+ checkpoint();state.designStageV1=stage;changed();
+ notify('Стадия проектирования обновлена; необязательные проверки не блокируют щит.');
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
