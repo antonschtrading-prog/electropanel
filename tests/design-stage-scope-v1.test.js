@@ -19,7 +19,8 @@ test('board design enables apparatus selection but not external network study',(
 });
 test('detailed design with a declared route activates route review only when relevant',()=>{
  const x=p();x.designStageV1='DETAILED';
- assert.ok(scope(x).notRequired.includes('CABLE_ROUTE_AND_LENGTH'));
+ assert.ok(scope(x).deferred.includes('CABLE_ROUTE_AND_LENGTH'));
+ assert.ok(scope(x).deferred.includes('CABLING_AMPACITY'));
  x.lines[0].route44Input={segments:[]};
  assert.ok(scope(x).required.includes('CABLE_ROUTE_AND_LENGTH'));
 });
