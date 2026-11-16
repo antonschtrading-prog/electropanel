@@ -7,6 +7,7 @@ function epFireControlDesignV1(project){
  const objects=raw.design===undefined?{assignments:[]}:raw.design;
  const assignments=Array.isArray(objects?.assignments)?objects.assignments:[];
  const ids=new Set(),actionIds=new Set(audit.rows.map(a=>a.id));
+ const knownRailIds=new Set(Array.from({length:Number.isInteger(project.railCount)?project.railCount:0},(_,i)=>'R'+(i+1)));
  const validId=x=>typeof x==='string'&&/^[A-Za-z0-9_-]{1,80}$/.test(x);
  if(!objects||typeof objects!=='object'||Array.isArray(objects)||
   Object.keys(objects).some(k=>k!=='assignments')||!Array.isArray(objects.assignments)||
@@ -32,7 +33,7 @@ function epFireControlDesignV1(project){
   if(entry.reviewed!==undefined&&typeof entry.reviewed!=='boolean')issues.push({code:'FIRE_DESIGN_REVIEW_INVALID',level:'BLOCKED',objectId:entry.actionId});
  }
  const deviceIds=new Set(),positions=new Map();
- const knownRailIds=new Set(Array.from({length:Number.isInteger(project.railCount)?project.railCount:0},(_,i)=>'R'+(i+1)));
+
  for(const action of audit.rows){
   const entry=assignments.find(x=>x?.actionId===action.id)||{};
   const id=action.id;
