@@ -20,6 +20,13 @@ function epRestoreProjectExtensionsV2(raw,project){
   };
   const result=walk(value,0);if(JSON.stringify(result).length>limit)throw Error(label+': превышен размер');return result;
  };
+ if(raw.fireControlV1!==undefined){
+  if(typeof epFireControlAuditV1!=='function')throw Error('FIRE_CONTROL_MODULE_MISSING');
+  const data=clone(raw.fireControlV1,'fireControlV1',150000);
+  const audit=epFireControlAuditV1(project,data);
+  if(audit.status==='BLOCKED')throw Error('FIRE_CONTROL_IMPORT_INVALID');
+  project.fireControlV1=data;
+ }
  if(raw.consumerGroupMergeRulesV1!==undefined){
   if(typeof epGroupMergeRulesV1!=='function')
    throw Error('Модуль объединения групп недоступен');
