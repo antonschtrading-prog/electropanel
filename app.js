@@ -999,8 +999,18 @@ function renderAutomationWorkflowV1(){
 function epFireControlEditorEventV1(event){
  const apply=event.target.closest('#fireControlApplyBtn');
  const clear=event.target.closest('#fireControlClearBtn');
- if(!apply&&!clear)return;
+ const exportBtn=event.target.closest('#fireControlExportBtn');
+ if(!apply&&!clear&&!exportBtn)return;
  try{
+  if(exportBtn){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report={schema:'electropanel.fire.report.draft.1',projectTitle:state.title,
+    audit:epFireControlAuditV1(state,state.fireControlV1),trace:epFireControlTraceV1(state),
+    design:epFireControlDesignV1(state),schedule:epFireControlScheduleV1(state),
+    engineeringApproved:false,ready_for_installation:false};
+   download(baseName()+'-fire-control-draft.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
+   return notify('Черновой отчёт пожарного управления выгружен');
+  }
   if(clear){epFireControlClearProjectV1();return notify('Сценарии пожарного управления очищены');}
   const input=$('fireControlJson')?.value??'';
   if(input.length>150000)throw Error('FIRE_CONTROL_JSON_TOO_LARGE');
