@@ -44,10 +44,17 @@ function epProtectionEvidenceMatrixV1(project,lookup){
   };
   if(!declaredSupply)mark('PROTECTION_MATRIX_SUPPLY_PARENT_REQUIRED');
   if(!item.sku)mark('PROTECTION_MATRIX_SELECTED_ARTICLE_REQUIRED');
-  if(!auto)mark(item.kind==='INCOMING'?
-   'PROTECTION_MATRIX_INCOMING_MAX_STUDY_REQUIRED':'PROTECTION_MATRIX_BRANCH_RX_BINDING_REQUIRED');
-  if(!manualStudy)mark('PROTECTION_MATRIX_MANUAL_STUDY_OPTIONAL', 'UNKNOWN');
-  if(!coordSources.length&&declaredSupply)
+  // Independent external-network model and derived device-local R/X studies
+  // are optional. A declared Ik at the boundary can be used instead.
+  const explicitNetworkModel=project.designRequirementsV1?.externalNetwork===true;
+  const hasSelectedSource=item.kind==='INCOMING'?
+   !!(project.network?.ikMaxKa??project.network?.ikKa??project.incomingIkMaxKa):
+   !!project.lines.find(l=>l.id===project.branchDevices.find(b=>'BRANCH:'+b.id===item.id)?.circuitId)?.faultInput;
+  if(!auto&&!manualStudy&&explicitNetworkModel&&!hasSelectedSource)
+   mark(item.kind==='INCOMING'?'PROTECTION_MATRIX_INCOMING_MAX_STUDY_REQUIRED':
+    'PROTECTION_MATRIX_BRANCH_RX_BINDING_REQUIRED');
+  if(!coordSources.length&&declaredSupply&&
+     project.designRequirementsV1?.selectivity===true)
    mark('PROTECTION_MATRIX_COORDINATION_MANUFACTURER_SOURCE_REQUIRED');
   if(stale)mark('PROTECTION_MATRIX_EVIDENCE_STALE','BLOCKED');
   if(auto?.thresholdStatus==='FAIL'||auto?.calculationThreshold==='FAIL')
@@ -64,7 +71,7 @@ function epProtectionEvidenceMatrixV1(project,lookup){
     'PROTECTION_MATRIX_COORDINATION_LIMIT_REJECTION'].includes(code))?'BLOCKED':'UNKNOWN'});
  }
  if(!supported.length)add('PROTECTION_MATRIX_NO_PROTECTIVE_DEVICES');
- add('PROTECTION_MATRIX_NORMATIVE_APPLICABILITY_NOT_PROVEN');
+ // No blanket requirement for external source studies or manufacturer documents.
  return finish();
 }
 function epProtectionEvidenceMatrixHtmlV1(report){
