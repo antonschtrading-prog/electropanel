@@ -39,3 +39,5 @@ The board offers optional maximum *usable interior* width/height limits (not ext
 The engineering bundle now carries a cabinetCapacity section with options, usable-space constraints and the board's selected rail configuration. Print HTML includes a preliminary capacity table. Existing cabinet fit audit remains separate evidence.
 
 A rail shape change cannot silently retain incompatible user-declared cabinetGeometryV1. The application requests confirmation before removing the old geometry. Cancellation makes no changes. Approval clears it in an undoable checkpoint, with circuit ratings retained; users must redeclare the usable mounting zones. No manufacturer enclosure is assumed.
+
+Reserved capacity is user-adjustable (0–50%, integer percent), persisted with width/height preferences, and interpreted as minimum whole-module free capacity. The same reserve assumption applies to the interactive picker and exported engineering bundle.

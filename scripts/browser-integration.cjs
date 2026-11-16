@@ -1458,6 +1458,15 @@ const server=http.createServer((req,res)=>{
  await page.locator('#cabinetWidthLimit').fill('');
  await page.locator('#cabinetWidthLimit').blur();
  assert.equal(await page.locator('[data-apply-cabinet-option="1x6"]').count(),1);
+ await page.locator('#cabinetReservePercent').fill('50');
+ await page.locator('#cabinetReservePercent').blur();
+ assert.equal(await page.locator('[data-apply-cabinet-option="1x6"]').count(),0);
+ assert.equal(await page.locator('[data-apply-cabinet-option="1x8"]').count(),1);
+ const persistedReserve=await page.evaluate(()=>normalizeImport(JSON.parse(snapshot())).cabinetSizingPreferencesV1.reservePercent);
+ assert.equal(persistedReserve,50);
+ await page.locator('#cabinetReservePercent').fill('20');
+ await page.locator('#cabinetReservePercent').blur();
+ assert.equal(await page.locator('[data-apply-cabinet-option="1x6"]').count(),1);
  const sizingEvidence=await page.evaluate(()=>{
   const b=epEngineeringBundleV1(state,catalogDevice);
   const html=epEngineeringPrintV1(b);

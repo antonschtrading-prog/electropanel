@@ -1722,7 +1722,7 @@ function renderCabinetGeometryV1(){
 }
 function cabinetCapacityReportV1(){
  return typeof epUniversalCabinetOptionsV1==='function'?
-  epUniversalCabinetOptionsV1(state,catalogDevice):null;
+  epUniversalCabinetOptionsV1(state,catalogDevice,{reserveFraction:(state.cabinetSizingPreferencesV1?.reservePercent??20)/100}):null;
 }
 function renderCabinetCapacityOptionsV1(){
  const target=$('cabinetCapacityOptions');if(!target)return;
@@ -1732,7 +1732,19 @@ function renderCabinetCapacityOptionsV1(){
   return;
  }
  const limits=state.cabinetSizingPreferencesV1||{};
- for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
+ const reserveInput=$('cabinetReservePercent');
+ if(reserveInput&&document.activeElement!==reserveInput)
+  reserveInput.value=String(limits.reservePercent??20);
+ $('cabinetReservePercent')?.addEventListener('change',e=>{
+ const val=Number(e.target.value);
+ if(e.target.value.trim()===''||!Number.isInteger(val)||val<0||val>50){
+  notify('Резерв должен быть целым числом от 0 до 50%',true);
+  e.target.value=state.cabinetSizingPreferencesV1?.reservePercent??20;return;
+ }
+ checkpoint();state.cabinetSizingPreferencesV1={
+  ...(state.cabinetSizingPreferencesV1||{}),reservePercent:val};changed();
+});
+for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   ['cabinetHeightLimit','maxUsableHeightMm']]){
   const input=$(id);if(input&&document.activeElement!==input)
    input.value=limits[field]||'';
@@ -1744,7 +1756,7 @@ function renderCabinetCapacityOptionsV1(){
  if(!shown.length){target.textContent='Под заданные ограничения вариантов не найдено. Проверьте полезные размеры или уменьшите резерв.';return;}
  const selected=state.railCount+'x'+state.railCapacity;
  target.innerHTML='<p>Аппаратура: <b>'+report.equipmentModules+
-  ' мод.</b> · Резерв по умолчанию: 20%. Варианты являются предварительными.</p>'+
+  ' мод.</b> · Минимальный резерв: '+(limits.reservePercent??20)+'%. Варианты являются предварительными.</p>'+
   '<div class="ep-capacity-options" style="display:flex;gap:8px;flex-wrap:wrap">'+
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
    '" data-apply-cabinet-option="'+o.id+'">'+o.capacityModules+
@@ -2290,13 +2302,15 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
  if(x.cabinetSizingPreferencesV1!==undefined){
   const c=x.cabinetSizingPreferencesV1;
   if(!c||typeof c!=='object'||Array.isArray(c)||
-    Object.keys(c).some(k=>!['maxUsableWidthMm','maxUsableHeightMm'].includes(k))||
+    Object.keys(c).some(k=>!['maxUsableWidthMm','maxUsableHeightMm','reservePercent'].includes(k))||
+    (c.reservePercent!==undefined&&(!Number.isInteger(c.reservePercent)||c.reservePercent<0||c.reservePercent>50))||
     ['maxUsableWidthMm','maxUsableHeightMm'].some(k=>
      c[k]!==null&&c[k]!==undefined&&(!Number.isInteger(c[k])||c[k]<1||c[k]>10000)))
    throw Error('Некорректные ограничения полезных размеров щита');
   p.cabinetSizingPreferencesV1={
    maxUsableWidthMm:c.maxUsableWidthMm??null,
-   maxUsableHeightMm:c.maxUsableHeightMm??null};
+   maxUsableHeightMm:c.maxUsableHeightMm??null,
+   reservePercent:c.reservePercent??20};
  }
  return p;}
 function parseCSV(text){
