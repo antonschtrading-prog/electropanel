@@ -40,4 +40,16 @@ function epFireControlTopologyCsvV1(project){
   csv:rows.map(row=>row.map(quote).join(';')).join('\r\n')+'\r\n',
   issues:graph.issues,engineeringApproved:false,ready_for_installation:false};
 }
-if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1,epFireControlTopologyCsvV1};
+
+function epFireControlDeclaredWiresCsvV1(project){
+ const engine=typeof epFireControlWiringV1==='function'?epFireControlWiringV1:typeof require==='function'?require('./fire-control-wiring-v1').epFireControlWiringV1:null;
+ if(typeof engine!=='function')throw Error('FIRE_DECLARED_WIRING_ENGINE_MISSING');
+ const report=engine(project);
+ const quote=x=>'"'+String(x??'').replace(/"/g,'""').replace(/^[=+@-]/,v=>"'"+v)+'"';
+ const rows=[['wire_id','wire_reference','action_id','from','to','purpose','section_mm2','material','color','evidence_source','reviewed']];
+ for(const w of report.connections)rows.push([w.id,w.wireReference,w.actionId,w.from,w.to,w.purpose,w.conductor?.sectionMm2,w.conductor?.material,w.conductor?.color,w.verifiedSource,w.reviewed]);
+ return {schema:'electropanel.fire.declared-wires.csv.1',status:report.status,
+  csv:rows.map(r=>r.map(quote).join(';')).join('\r\n')+'\r\n',
+  issues:report.issues,engineeringApproved:false,ready_for_installation:false};
+}
+if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1,epFireControlTopologyCsvV1,epFireControlDeclaredWiresCsvV1};
