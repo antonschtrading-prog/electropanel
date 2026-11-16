@@ -2,6 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {epFireControlTopologyV1}=require('../fire-control-topology-v1');
 const {epFireControlDiagramV1}=require('../fire-control-diagram-v1');
+const {epFireControlTopologyCsvV1}=require('../fire-control-export-v1');
 const project=()=>({lines:[{id:'L1',name:'HVAC feeder'},{id:'L2',name:'Audio feeder'}],
  loads:[{id:'AC',circuitId:'L1',name:'Air conditioning'},{id:'MUSIC',circuitId:'L2',name:'Audio'}],
  fireControlV1:{version:1,signals:[{id:'S1',kind:'FIRE',zoneId:'Z1',contactType:'NC'}],
@@ -154,4 +155,24 @@ test('graph edges contain four terminal assignments',()=>{
 });
 test('graph does not include physical wire continuity',()=>{
  const p=project();assert.ok(!topo(p).edges.some(e=>e.kind==='PHYSICAL_WIRE'));
+});
+
+test('graph CSV preserves all relation types',()=>{
+ const csv=epFireControlTopologyCsvV1(project()).csv;
+ for(const kind of ['LOGICAL_TRIGGER','LOGICAL_COMMAND','ACTUATOR_ASSIGNMENT','TERMINAL_ASSIGNMENT','CONTROL_SUPPLY_REFERENCE','POWER_RELATION'])assert.match(csv,new RegExp(kind));
+});
+test('graph CSV preserves declared source and target IDs',()=>{
+ const csv=epFireControlTopologyCsvV1(project()).csv;assert.match(csv,/"TRIGGER:A1";"LOGICAL_TRIGGER";"SIG:S1";"ACT:A1"/);
+});
+test('graph CSV preserves declared control voltage',()=>{
+ const csv=epFireControlTopologyCsvV1(project()).csv;assert.match(csv,/"SUPPLY:A1";"CONTROL_SUPPLY_REFERENCE";"SUP:PS1";"DEV:K1";"24"/);
+});
+test('graph CSV is explicitly unapproved',()=>{
+ const r=epFireControlTopologyCsvV1(project());assert.equal(r.engineeringApproved,false);assert.equal(r.ready_for_installation,false);
+});
+test('graph CSV contains no invented pin number edges',()=>{
+ const csv=epFireControlTopologyCsvV1(project()).csv;assert.ok(!csv.includes('PIN_MAPPING'));
+});
+test('graph CSV has no fake relations when unconfigured',()=>{
+ const csv=epFireControlTopologyCsvV1({}).csv;assert.ok(!csv.includes('TRIGGER:A1'));
 });
