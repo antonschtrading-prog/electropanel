@@ -242,7 +242,10 @@ function epWorkflowHtmlV1(report,stored={}){
   '</td><td>'+esc(r.name)+'</td><td>'+esc((r.consumers||[]).map(x=>x.name).join(', ')||'—')+'</td><td>'+esc(r.phase??'—')+
   '</td><td>'+esc(r.powerKw??'—')+'</td><td>'+esc(r.ibA??'—')+
   '</td><td>'+esc(r.ibSource)+'</td><td>'+esc(r.selectedSku??'—')+
-  '</td><td>'+esc(r.proposedSku??'—')+'</td><td>'+
+  '</td><td>'+esc(r.proposedSku??'—')+
+  (r.proposedSku?' <small>('+esc(r.proposedStatus)+
+   (r.proposedStatus==='INCOMPLETE'?'; условия требуют уточнения':'')+')</small>':'')+
+  '</td><td>'+
   (r.proposedSku&&!r.selectedSku?
    '<button type="button" class="btn tiny" data-workflow-article="'+
    esc(r.proposedSku)+'" data-workflow-line="'+esc(r.lineId)+
