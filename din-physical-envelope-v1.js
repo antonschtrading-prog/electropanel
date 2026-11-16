@@ -45,6 +45,8 @@ function epDinPhysicalEnvelopeV1(plan,lookupSku){
     add('DIN_ENVELOPE_BODY_OVERLAP',right.deviceId,'BLOCKED');
   }
  }
+ // A late overlap must also mark the affected apparatus row, not just the aggregate.
+ for(const row of rows)if(issues.some(x=>x.deviceId===row.deviceId&&x.level==='BLOCKED'))row.status='BLOCKED';
  add('DIN_ENCLOSURE_CLEARANCES_NOT_CHECKED',null,'UNKNOWN');
  return {status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',rows,issues,
   modulePitchMm:pitch,checkedWidths:rows.filter(x=>x.bodyWidthMm!==null).length,

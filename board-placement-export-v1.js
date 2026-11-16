@@ -20,7 +20,7 @@ function epBoardPlacementCsvV1(project,lookup){
   let device=null;
   try{device=p.article&&typeof lookup==='function'?lookup(p.article):null;}catch(_){}
   const asset=device&&typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(device):null;
-  const widthStatus=!row?'NOT_CHECKED':row.issues.some(x=>['DIN_ENVELOPE_BODY_OVERFLOW','DIN_ENVELOPE_MODULE_MISMATCH','DIN_ENVELOPE_WIDTH_INVALID'].includes(x))?'BLOCKED':
+  const widthStatus=!row?'NOT_CHECKED':row.status==='BLOCKED'?'BLOCKED':
    row.bodyWidthMm===null?'UNKNOWN':'DECLARED_WITHIN_SLOT';
   lines.push([p.deviceId,p.kind,p.article,p.railIndex+1,p.startModule+1,p.modules,p.startModule+p.modules,
    board.status,p.modules*18,row?.bodyWidthMm??null,row?.bodyHeightMm??null,row?.bodyDepthMm??null,

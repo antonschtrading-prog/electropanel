@@ -48,3 +48,10 @@ test('model loads before the preview',()=>{
  const s=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
  assert.ok(s.indexOf('din-physical-envelope-v1.js')<s.indexOf('draft-board-preview-v1.js'));
 });
+
+test('physical overlap marks the affected device row, not only the summary',()=>{
+ const p=plan();p.placements[1].startModule=0;
+ const r=check(p,lookup);
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.rows.find(x=>x.deviceId==='B').status,'BLOCKED');
+});
