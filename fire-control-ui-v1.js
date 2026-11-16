@@ -41,7 +41,8 @@ function epFireControlHtmlV1(project){
  '<button type="button" class="btn" id="fireControlSvgBtn">Логическая схема SVG</button> '+
  '<button type="button" class="btn" id="fireControlGraphCsvBtn">Связи схемы CSV</button> '+
  '<button type="button" class="btn" id="fireControlWiringSvgBtn">Соединения SVG</button> '+
- '<button type="button" class="btn" id="fireControlDeclaredWiresCsvBtn">Провода CSV</button></div>'+
+ '<button type="button" class="btn" id="fireControlDeclaredWiresCsvBtn">Провода CSV</button> '+
+ '<button type="button" class="btn" id="fireControlContinuityCsvBtn">Связность CSV</button></div>'+
  '<table><thead><tr><th>Потребитель</th><th>Сигнал</th><th>Команда</th><th>Исполнитель</th><th>При потере сигнала</th></tr></thead><tbody>'+rows+'</tbody></table>'+
  '<h4>Логическая схема интерфейса</h4><p>Не является монтажной схемой. Номера выводов аппаратов не определены.</p><div class="fire-diagram-preview" style="overflow-x:auto;max-height:430px;overflow-y:auto">'+(diagram?.svg||'Нет сценариев')+'</div>'+ 
  '<h4>Связность цепей управления (только по введённым проводам)</h4><p>Контакты, полярность, срабатывание и электрическая непрерывность не подтверждены.</p><table><thead><tr><th>Действие</th><th>Провода</th><th>Компоненты</th><th>Доступные выводы</th><th>Изолированные выводы</th><th>Статус</th></tr></thead><tbody>'+continuityRows+'</tbody></table>'+ 
