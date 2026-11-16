@@ -1216,6 +1216,10 @@ const server=http.createServer((req,res)=>{
  assert.equal(rcboWorkflow.reportHasRcbo,true);
  assert.equal(rcboWorkflow.globalCatalogUntouched,true);
 
+ assert.ok(await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.faultRoutes.rows[0].ikMinA>400));
+ await page.locator('#faultRoutePanel > details > summary').click();
+ await page.locator('#faultRoutePanel').screenshot({path:'browser-fault-route.png'});
+ await page.screenshot({path:'browser-integration.png',fullPage:true});
  // Browser: real opt-in consumer group split from a design with NO apparatus
  // or electrical links. No name-driven regrouping and no implicit cable data.
  const originalGroupedState=await page.evaluate(()=>{
@@ -1267,10 +1271,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.lines.length),1);
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.lines.length),2);
- assert.ok(await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.faultRoutes.rows[0].ikMinA>400));
- await page.locator('#faultRoutePanel > details > summary').click();
- await page.locator('#faultRoutePanel').screenshot({path:'browser-fault-route.png'});
- await page.screenshot({path:'browser-integration.png',fullPage:true});
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
