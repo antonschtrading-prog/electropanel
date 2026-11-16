@@ -13,6 +13,10 @@ function epFireControlHtmlV1(project){
  const designIssues=(design?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+' · '+esc(x.objectId??'')+'</li>').join('');
  const schedule=typeof epFireControlScheduleV1==='function'?epFireControlScheduleV1(project):null;
  const bomRows=(schedule?.preliminaryBom||[]).map(x=>'<tr><td>'+esc(x.articleSku)+'</td><td>'+esc(x.actuator)+'</td><td>'+esc(x.quantity)+'</td><td>'+esc(x.reviewedQuantity)+'</td></tr>').join('');
+ const catalog=typeof epFireCatalogReconcileV1==='function'?epFireCatalogReconcileV1(project):null;
+ const din=typeof epFireDinReconcileV1==='function'?epFireDinReconcileV1(project):null;
+ const catalogIssues=(catalog?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+'</li>').join('');
+ const dinIssues=(din?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+'</li>').join('');
  const issues=(audit?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+' · '+esc(x.objectId??'')+'</li>').join('');
  return '<details class="ep-fire-control"><summary>Пожарное управление · '+esc(summary)+'</summary>'+
  '<p>Внешняя пожарная система проектируется отдельно. Здесь задаются только сигналы, действия над потребителями и исполнительные интерфейсы щита. Результат — проектный черновик.</p>'+
@@ -25,6 +29,7 @@ function epFireControlHtmlV1(project){
  '<h4>Трассировка управления (проектный черновик)</h4><table><thead><tr><th>Зона</th><th>Потребитель</th><th>Цепь</th><th>Клеммы</th><th>Питание управления</th><th>DIN</th></tr></thead><tbody>'+traceRows+'</tbody></table>'+ 
  '<h4>Исполнительные аппараты и DIN</h4><table><thead><tr><th>Действие</th><th>Аппарат</th><th>Артикул</th><th>Напряжение</th><th>Источник</th><th>DIN</th><th>Модули</th></tr></thead><tbody>'+designRows+'</tbody></table>'+ 
  '<h4>Предварительная спецификация выбранных аппаратов</h4><table><thead><tr><th>Артикул</th><th>Тип</th><th>Количество</th><th>Проверено инженером</th></tr></thead><tbody>'+bomRows+'</tbody></table>'+ 
- '<ul>'+issues+designIssues+'</ul></details>';
+ '<h4>Согласование каталога и общей DIN-компоновки</h4><p>Каталог: '+esc(catalog?.status??'НЕДОСТУПЕН')+' · DIN: '+esc(din?.status??'НЕДОСТУПЕН')+'</p>'+ 
+ '<ul>'+issues+designIssues+catalogIssues+dinIssues+'</ul></details>';
 }
 if(typeof module!=='undefined')module.exports={epFireControlHtmlV1};
