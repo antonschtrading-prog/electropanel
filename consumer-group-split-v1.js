@@ -28,6 +28,9 @@ function epGroupSplitRulesV1(raw){
 }
 function epGroupSplitAllowedV1(project,line){
  const id=line?.id;
+ if((project.fireControlV1?.actions||[]).some(a=>
+   (project.loads||[]).some(load=>load.id===a.loadId&&load.circuitId===id)))
+  return 'GROUP_SPLIT_FIRE_CONTROL_LINKED';
  if(!id||!['L1','L2','L3','3Ф'].includes(line.phase))
   return 'GROUP_SPLIT_PHASE_REQUIRED';
  if((project.sharedDevices||[]).some(x=>x.circuitIds?.includes(id)))
