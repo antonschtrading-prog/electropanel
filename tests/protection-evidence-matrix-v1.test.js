@@ -16,7 +16,8 @@ const p=()=>({lines:[{id:'L1',phase:'L1',catalogSku:'A'}],branchDevices:[{id:'BD
  links:[{from:'SOURCE:MAIN',to:'INCOMING:Q0',conductors:['L1','N']},
  {from:'INCOMING:Q0',to:'BRANCH:BD1',conductors:['L1','N']}]}});
 test('matrix shows actionable missing studies per actual apparatus',()=>{
- const project=p(),before=JSON.stringify(project),r=matrix(project,()=>null);
+ const project=p();project.designRequirementsV1={externalNetwork:true};
+ const before=JSON.stringify(project),r=matrix(project,()=>null);
  assert.equal(r.rows.length,2);
  assert.ok(r.rows.find(x=>x.kind==='INCOMING').actions.includes('PROTECTION_MATRIX_INCOMING_MAX_STUDY_REQUIRED'));
  assert.ok(r.rows.find(x=>x.kind==='BRANCH').actions.includes('PROTECTION_MATRIX_BRANCH_RX_BINDING_REQUIRED'));
@@ -49,4 +50,20 @@ test('CSV quotes formulas and serializes per-device actions',()=>{
  assert.equal(result.charCodeAt(0),0xfeff);
  assert.ok(result.includes("'=HYPERLINK"));
  assert.ok(result.includes('REVIEW'));
+});
+
+test('default stage does not demand external source model, manual study or selectivity table',()=>{
+ const project=p(),r=matrix(project,()=>null);
+ const codes=new Set(r.issues.map(x=>x.code));
+ assert.ok(!codes.has('PROTECTION_MATRIX_INCOMING_MAX_STUDY_REQUIRED'));
+ assert.ok(!codes.has('PROTECTION_MATRIX_BRANCH_RX_BINDING_REQUIRED'));
+ assert.ok(!codes.has('PROTECTION_MATRIX_COORDINATION_MANUFACTURER_SOURCE_REQUIRED'));
+ assert.ok(!codes.has('PROTECTION_MATRIX_MANUAL_STUDY_OPTIONAL'));
+ assert.equal(r.engineeringApproved,false);
+});
+test('explicit selectivity requirement activates coordination review without claiming approval',()=>{
+ const project=p();project.designRequirementsV1={selectivity:true};
+ const r=matrix(project,()=>null);
+ assert.ok(r.issues.some(x=>x.code==='PROTECTION_MATRIX_COORDINATION_MANUFACTURER_SOURCE_REQUIRED'));
+ assert.equal(r.engineeringApproved,false);
 });
