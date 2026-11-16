@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const html=root('index.html'),app=root('app.js'),bundle=root('engineering-bundle-v1.js');
-const scripts=['fire-control-v1.js','fire-control-design-v1.js','fire-control-wiring-v1.js','fire-control-wiring-diagram-v1.js','fire-control-gate-v1.js','project-state-v2.js','app.js'];
+const scripts=['fire-control-continuity-v1.js','fire-control-v1.js','fire-control-design-v1.js','fire-control-wiring-v1.js','fire-control-wiring-diagram-v1.js','fire-control-gate-v1.js','project-state-v2.js','app.js'];
 test('all wiring scripts are present',()=>{for(const s of scripts)assert.ok(html.includes('src="'+s+'"'),s)});
 test('wiring engine loads before drawing engine',()=>assert.ok(html.indexOf('fire-control-wiring-v1.js')<html.indexOf('fire-control-wiring-diagram-v1.js')));
 test('wiring engine loads before consolidated gate',()=>assert.ok(html.indexOf('fire-control-wiring-v1.js')<html.indexOf('fire-control-gate-v1.js')));
@@ -32,3 +32,16 @@ test('UI contains wire CSV download button',()=>assert.match(root('fire-control-
 test('UI uses safe HTML escaping',()=>assert.match(root('fire-control-ui-v1.js'),/&#39;/));
 test('wiring model does not call approval mutation',()=>assert.ok(!root('fire-control-wiring-v1.js').includes('engineeringApproved:true')));
 test('diagram does not call approval mutation',()=>assert.ok(!root('fire-control-wiring-diagram-v1.js').includes('engineeringApproved:true')));
+
+test('continuity engine loads before gate',()=>assert.ok(html.indexOf('fire-control-continuity-v1.js')<html.indexOf('fire-control-gate-v1.js')));
+test('continuity engine loads before project application',()=>assert.ok(html.indexOf('fire-control-continuity-v1.js')<html.indexOf('app.js')));
+test('continuity gate is included',()=>assert.match(root('fire-control-gate-v1.js'),/\['CONTINUITY',/));
+test('continuity included in engineering bundle',()=>assert.match(bundle,/FIRE_CONTROL_CONTINUITY/));
+test('continuity included in project report',()=>assert.match(app,/continuity:epFireControlContinuityV1\(state\)/));
+test('continuity CSV download is wired',()=>assert.match(app,/fire-continuity-review\.csv/));
+test('continuity CSV button exists',()=>assert.match(root('fire-control-ui-v1.js'),/fireControlContinuityCsvBtn/));
+test('continuity table exists',()=>assert.match(root('fire-control-ui-v1.js'),/continuityRows/));
+test('continuity UI warns that contacts are not verified',()=>assert.match(root('fire-control-ui-v1.js'),/полярность/));
+test('continuity report is not approved',()=>assert.match(root('fire-control-continuity-v1.js'),/engineeringApproved:false/));
+test('continuity report is not installation ready',()=>assert.match(root('fire-control-continuity-v1.js'),/ready_for_installation:false/));
+test('continuity model does not infer contact conduction',()=>assert.match(root('fire-control-continuity-v1.js'),/Contacts and switching devices are not treated as conductive edges/));
