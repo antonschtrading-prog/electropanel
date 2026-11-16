@@ -27,6 +27,8 @@ function epRestoreProjectExtensionsV2(raw,project){
   if(audit.status==='BLOCKED')throw Error('FIRE_CONTROL_IMPORT_INVALID');
   if(typeof epFireControlDesignV1!=='function')throw Error('FIRE_CONTROL_DESIGN_MODULE_MISSING');
   if(epFireControlDesignV1({...project,fireControlV1:data}).status==='BLOCKED')throw Error('FIRE_CONTROL_DESIGN_IMPORT_INVALID');
+  if(typeof epFireControlWiringV1!=='function')throw Error('FIRE_CONTROL_WIRING_MODULE_MISSING');
+  if(epFireControlWiringV1({...project,fireControlV1:data}).status==='BLOCKED')throw Error('FIRE_CONTROL_WIRING_IMPORT_INVALID');
   project.fireControlV1=data;
  }
  if(raw.consumerGroupMergeRulesV1!==undefined){
