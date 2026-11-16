@@ -17,6 +17,31 @@ const server=http.createServer((req,res)=>{
  await page.locator('#loadDemo').click();
  // Device-level supply source -> incoming -> outgoing apparatus via real controls.
  await page.evaluate(()=>switchView('board'));
+ // Stage and scope must not demand cable length, external transformer or
+ // manufacturer selectivity in a preliminary panel project.
+ assert.equal(await page.locator('.ep-design-stage-scope').count(),1);
+ const previewScope=await page.evaluate(()=>epDesignStageScopeV1(state));
+ assert.equal(previewScope.stage,'PRELIMINARY');
+ assert.ok(previewScope.notRequired.includes('CABLE_ROUTE_AND_LENGTH'));
+ assert.ok(previewScope.notRequired.includes('EXTERNAL_NETWORK_MODEL'));
+ await page.locator('.ep-design-stage-scope summary').click();
+ await page.locator('#designStageSelect').selectOption('BOARD_DESIGN');
+ await page.locator('#designSelectivityRequested').check();
+ await page.locator('#designStageSave').click();
+ const stageAfterSave=await page.evaluate(()=>{
+  const restored=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+  const scope=epDesignStageScopeV1(state);
+  return {stage:state.designStageV1,selectivity:scope.selectivityRequested,
+   persisted:restored.designRequirementsV1?.selectivity,
+   scopeRequired:scope.required.includes('MANUFACTURER_SELECTIVITY')};
+ });
+ assert.deepEqual(stageAfterSave,{stage:'BOARD_DESIGN',selectivity:true,
+  persisted:true,scopeRequired:true});
+ await page.locator('.ep-design-stage-scope summary').click();
+ await page.locator('#designStageSelect').selectOption('PRELIMINARY');
+ await page.locator('#designSelectivityRequested').uncheck();
+ await page.locator('#designStageSave').click();
+ assert.equal(await page.evaluate(()=>epDesignStageScopeV1(state).selectivityRequested),false);
  await page.locator('#deviceSupplyIncomingId').fill('QF0');
  await page.locator('#deviceSupplyIncomingLabel').fill('Главный ввод');
  await page.locator('#deviceSupplyIncomingSave').click();
