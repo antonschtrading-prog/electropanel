@@ -28,7 +28,7 @@ test('project extension restoration rejects orphaned fire interface',()=>{
 test('engineering bundle exposes fire control section',()=>{
  const src=fs.readFileSync(require('node:path').join(__dirname,'..','engineering-bundle-v1.js'),'utf8');
  assert.match(src,/const fireControl=section\('FIRE_CONTROL'/);
- assert.match(src,/const sections=\{fireControl,/);
+ assert.match(src,/const sections=\{(?:deliveryTrace,)?fireControl,/);
 });
 test('browser loads fire module before project state',()=>{
  const src=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8');
