@@ -39,7 +39,12 @@ function epGroupMergePlanV1(project,rawRules){
   engineeringApproved:false,ready_for_installation:false});
  if(!project||!Array.isArray(project.lines)||!Array.isArray(project.loads)||
   !Array.isArray(project.sharedDevices)||project.lines.length>400||
-  project.loads.length>1600){
+  project.loads.length>1600||
+  project.branchDevices!==undefined&&!Array.isArray(project.branchDevices)||
+  project.dinPlacementsV1!==undefined&&!Array.isArray(project.dinPlacementsV1)||
+  project.manualLayoutV1!==undefined&&!Array.isArray(project.manualLayoutV1)||
+  project.feedLinks!==undefined&&!Array.isArray(project.feedLinks)||
+  project.conductorRoutes!==undefined&&!Array.isArray(project.conductorRoutes)){
   add('GROUP_MERGE_PROJECT_INVALID','BLOCKED');return finish();
  }
  const ids=new Map();
