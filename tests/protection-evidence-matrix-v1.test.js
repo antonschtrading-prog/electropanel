@@ -32,7 +32,8 @@ test('missing graph never grants readiness',()=>{
 test('external components unavailable are blockers, not hidden gaps',()=>{
  const old=global.epCoordAuditV1;
  global.epCoordAuditV1=undefined;
- try{const r=matrix(p(),()=>null);assert.equal(r.status,'BLOCKED');
+ try{const project=p();project.designRequirementsV1={selectivity:true};
+ const r=matrix(project,()=>null);assert.equal(r.status,'BLOCKED');
   assert.ok(r.issues.some(x=>x.code==='PROTECTION_MATRIX_MANUFACTURER_PAIR_UNAVAILABLE'));
  }finally{global.epCoordAuditV1=old;}
 });
@@ -66,4 +67,24 @@ test('explicit selectivity requirement activates coordination review without cla
  const r=matrix(project,()=>null);
  assert.ok(r.issues.some(x=>x.code==='PROTECTION_MATRIX_COORDINATION_MANUFACTURER_SOURCE_REQUIRED'));
  assert.equal(r.engineeringApproved,false);
+});
+
+test('unrequested evidence engines are optional and do not block early design',()=>{
+ const prev=global.epIncomingMaximumAuditV1;
+ global.epIncomingMaximumAuditV1=undefined;
+ try{
+  const r=matrix(p(),()=>null);
+  assert.equal(r.status,'UNKNOWN');
+  assert.ok(!r.issues.some(x=>x.code==='PROTECTION_MATRIX_INCOMING_CALCULATED_UNAVAILABLE'));
+ }finally{global.epIncomingMaximumAuditV1=prev;}
+});
+test('requested network assessment still fails closed if its calculation engine is unavailable',()=>{
+ const prev=global.epIncomingMaximumAuditV1;
+ global.epIncomingMaximumAuditV1=undefined;
+ try{
+  const project=p();project.designRequirementsV1={externalNetwork:true};
+  const r=matrix(project,()=>null);
+  assert.equal(r.status,'BLOCKED');
+  assert.ok(r.issues.some(x=>x.code==='PROTECTION_MATRIX_INCOMING_CALCULATED_UNAVAILABLE'));
+ }finally{global.epIncomingMaximumAuditV1=prev;}
 });
