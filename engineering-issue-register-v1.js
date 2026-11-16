@@ -33,6 +33,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.loadCurrent)sectionNames.splice(1,0,'loadCurrent');
  if(sections.workflowPreview)sectionNames.splice(1,0,'workflowPreview');
  if(sections.consumerGrouping)sectionNames.splice(1,0,'consumerGrouping');
+ if(sections.consumerMerge)sectionNames.splice(1,0,'consumerMerge');
  if(sections.protectionSelection)sectionNames.push('protectionSelection');
  if(sections.protectionTopology)sectionNames.push('protectionTopology');
  if(sections.protectionDeviceChain)sectionNames.push('protectionDeviceChain');
