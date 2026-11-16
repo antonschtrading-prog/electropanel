@@ -33,7 +33,7 @@ function epFireControlTopologyCsvV1(project){
  const engine=typeof epFireControlTopologyV1==='function'?epFireControlTopologyV1:typeof require==='function'?require('./fire-control-topology-v1').epFireControlTopologyV1:null;
  if(typeof engine!=='function')throw Error('FIRE_TOPOLOGY_ENGINE_MISSING');
  const graph=engine(project);
- const quote=x=>'"'+String(x??'').replace(/"/g,'""').replace(/^[=+@\\-]/,"'"+'if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1};')+'"';
+ const quote=x=>'"'+String(x??'').replace(/"/g,'""').replace(/^[=+@-]/,v=>"'"+v)+'"';
  const rows=[['edge_id','relation','from_node','to_node','control_voltage_v']];
  for(const edge of graph.edges)rows.push([edge.id,edge.kind,edge.from,edge.to,edge.controlVoltageV??null]);
  return {schema:'electropanel.fire.topology.csv.1',status:graph.status,
