@@ -73,6 +73,10 @@ function epEngineeringPrintV1(bundle){
   'Сравнимость исходных условий','Статус'],
   (sections.faultSourceConvergence?.rows||[]).map(x=>[x.incomingId,x.branchId,
    x.incomingIkMaxKa??'—',x.branchIkMaxKa??'—',x.sourceConditions,x.status]));
+ const groupSplitTable=rows(['Исходная цепь','Мощность, кВт','Групп после разделения','Состав предложенных групп'],
+  (sections.consumerGrouping?.proposals||[]).map(x=>[
+   x.circuitId,x.originalTotalKw,x.groups.length,
+   x.groups.map(g=>g.consumerIds.join(', ')+' ('+g.connectedKw+' кВт)').join(' / ')]));
  const designStageTable=rows(['Область','Применимость'],
   (sections.designStageScope?.items||[]).map(x=>[x.code,x.status]));
  const workflowRows=rows(['Цепь','Назначение','Фаза','кВт','Ib, А',
@@ -232,6 +236,8 @@ function epEngineeringPrintV1(bundle){
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Единый предварительный маршрут: нагрузки, токи и аппараты</h2>'+workflowRows+
   '<p>Предварительные предложения аппаратов не являются утверждённой спецификацией. Параметры источника и потребителей задаёт инженер.</p>'+
+  '<h2>Предварительное разбиение потребителей по введённому пределу</h2>'+groupSplitTable+
+  '<p>Перегруппировка не назначает электрическую защиту и не меняет общие УЗО без инженерного решения.</p>'+
   '<h2>Стадия и применимость проектных проверок</h2>'+designStageTable+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
