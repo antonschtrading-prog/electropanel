@@ -6,6 +6,8 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
  const p=epDraftBoardPlanV1(project,lookupSku);
  if(!Number.isInteger(p.rails)||!Number.isInteger(p.capacityPerRail))
   return '<p>Параметры щита некорректны. Размещение заблокировано.</p>';
+ const physical=typeof epDinPhysicalEnvelopeV1==='function'?epDinPhysicalEnvelopeV1(p,lookupSku):null;
+ const physicalById=new Map((physical?.rows||[]).map(x=>[x.deviceId,x]));
  const byRail=Array.from({length:p.rails},()=>[]);
  for(const d of (Array.isArray(p.placements)?p.placements:[]))if(d&&byRail[d.railIndex])byRail[d.railIndex].push(d);
  const branchMap=new Map((Array.isArray(project?.branchDevices)?project.branchDevices:[]).filter(x=>x&&typeof x==='object').map(x=>[x.id,x.circuitId]));
@@ -30,7 +32,8 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    const widthKnown=Number.isFinite(catalog?.widthMm)&&catalog.widthMm>0;
    const moduleMatch=Number.isInteger(catalog?.modules)&&catalog.modules===d.modules;
    const envelopeMatch=widthKnown&&catalog.widthMm<=d.modules*18+0.001;
-   const geometryIssue=!!catalog&&(!widthKnown||!moduleMatch||!envelopeMatch);
+   const physicalRow=physicalById.get(d.deviceId);
+   const geometryIssue=!!catalog&&(!widthKnown||!moduleMatch||!envelopeMatch||physicalRow?.status==='BLOCKED');
    const evidenceNote=!catalog?'Артикул не выбран':geometryIssue?'Геометрия каталога не согласована с DIN':catalog.verificationStatus!=='VERIFIED'?'Паспортные данные не подтверждены':'Геометрия по заявленному каталогу';
    const rating=catalog&&Number.isFinite(catalog.inA)?
     (safe(catalog.curve||'')+safe(catalog.inA)+' A'):'';
@@ -49,7 +52,7 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
     '<span class="ep-din-block-id">'+safe(d.deviceId)+'</span>'+
     facade+
     '<span class="ep-din-device-face ep-din-face-'+faceStyle+'" aria-hidden="true">'+
-    (catalog&&typeof epCatalogFrontSvgV1==='function'?epCatalogFrontSvgV1(catalog,d.deviceId)+'<span class="ep-din-device-toggle" hidden></span>':'<span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span>')+'</span>'+ 
+    (catalog&&typeof epCatalogFrontSvgV1==='function'?(typeof epManufacturerVisualHtmlV1==='function'?epManufacturerVisualHtmlV1(catalog,d.deviceId):epCatalogFrontSvgV1(catalog,d.deviceId))+'<span class="ep-din-device-toggle" hidden></span>':'<span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span>')+'</span>'+ 
     '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+
     (bodySize?'<span class="ep-din-block-body-size" title="Заявленный корпус, Ш×В×Г">'+safe(bodySize)+'</span>':'')+ 
     '<span class="ep-din-block-evidence" title="'+safe(evidenceNote)+'">'+safe(evidenceNote)+'</span>'+
@@ -68,6 +71,8 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
   '<p><strong>Предварительный план: '+safe(p.status)+'</strong>. Только геометрическое размещение; монтаж не подтверждён.</p>'+
   railRows+'<p>Блокирующих ошибок: '+errors.length+'; неопределённостей: '+warnings.length+'.</p>'+
   (errors.length?'<ul>'+errors.slice(0,30).map(x=>'<li>'+safe(x.code)+(x.id?' · '+safe(x.id):'')+'</li>').join('')+'</ul>':'')+
+  (physical?'<p class="ep-din-physical-summary">Габаритная ширина по каталогу: '+physical.checkedWidths+' аппаратов; неизвестная ширина: '+physical.missingWidths+'; блокирующих замечаний: '+physical.issues.filter(x=>x.level==='BLOCKED').length+'.</p>':'')+
+  (physical&&physical.issues.some(x=>x.level==='BLOCKED')?'<details class="ep-din-physical-issues"><summary>Противоречия физических габаритов</summary><ul>'+physical.issues.filter(x=>x.level==='BLOCKED').slice(0,30).map(x=>'<li>'+safe(x.code)+' · '+safe(x.deviceId||'—')+'</li>').join('')+'</ul></details>':'')+
   '<p>Проверка нагрева, зазоров, проводников и совместимости корпуса не выполнена.</p></div>';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epDraftBoardPreviewV1};

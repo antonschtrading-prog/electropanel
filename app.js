@@ -1745,7 +1745,7 @@ function renderBoard(){
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
  if(typeof epBoardVisualAuditV1==='function'){
   const audit=epBoardVisualAuditV1(state,catalogDevice);
-  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Внешний вид аппаратов: '+audit.verifiedCatalogueFaces+' по каталогу; '+audit.placeholders+' условных</strong></div>');
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Внешний вид аппаратов: '+audit.verifiedCatalogueFaces+' по каталогу; '+audit.placeholders+' условных; проверенных изображений: '+(audit.reviewedManufacturerImages||0)+'</strong></div>');
   if(audit.issues.some(x=>x.level==='BLOCKED'))$('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line bad">Несоответствие модели и DIN-компоновки — проверьте артикулы и ширину</div>');
  }
  if(typeof epBoardCapacityReviewV1==='function'){

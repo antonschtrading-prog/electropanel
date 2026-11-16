@@ -291,3 +291,11 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-catalog-workbench details{margin-top:18px;padding:12px;border-top:1px solid #e0e7eb}
 .ep-catalog-workbench p{font-size:12px;line-height:1.65;color:#526773}
 .ep-catalog-workbench [hidden]{display:none!important}
+
+/* Article-exact licensed raster fronts; SVG remains a fallback. */
+.ep-din-device-face:has(.ep-manufacturer-front-image){display:flex;overflow:hidden;background:transparent;padding:0;border:0;box-shadow:none;min-height:0}
+.ep-manufacturer-front-image{display:block;max-width:100%;width:auto;height:auto;max-height:180px;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(12,25,34,.16))}
+.ep-din-block:has(.ep-manufacturer-front-image){min-height:230px}
+.ep-din-physical-summary{font-size:12px;color:#314756}
+.ep-din-physical-issues{margin:8px 0;color:#a33f21}
+@media(max-width:800px){.ep-din-block:has(.ep-manufacturer-front-image){min-height:190px}.ep-manufacturer-front-image{max-height:125px}}

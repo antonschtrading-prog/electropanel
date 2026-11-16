@@ -15,12 +15,14 @@ function epBoardVisualAuditV1(project,lookup){
   const sku=source?.catalogSku||line?.catalogSku||'';
   const catalog=sku&&typeof lookup==='function'?lookup(sku):null;
   const visual=epDeviceVisualEvidenceV1({modules:p.modules,device:source?.label||line?.device},catalog);
+  const asset=catalog&&typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(catalog):null;
   const evidence=visual.issues.slice();
+  if(asset?.status==='ASSET_REJECTED')evidence.push('VISUAL_MANUFACTURER_ASSET_REJECTED');
   if(sku&&!catalog)evidence.push('VISUAL_SKU_NOT_FOUND');
   if(catalog&&Number.isInteger(catalog.modules)&&catalog.modules!==p.modules)evidence.push('VISUAL_PLACEMENT_WIDTH_MISMATCH');
   if(catalog&&catalog.sku&&catalog.sku!==sku)evidence.push('VISUAL_ARTICLE_ID_MISMATCH');
   const row={deviceId:p.deviceId,sku,railIndex:p.railIndex,startModule:p.startModule,
-   modules:p.modules,visual,evidence};
+   modules:p.modules,visual,assetStatus:asset?.status||'STYLIZED_ONLY',evidence};
   rows.push(row);
   for(const code of evidence)issues.push({code,deviceId:p.deviceId,level:
    code==='VISUAL_PLACEMENT_WIDTH_MISMATCH'||code==='VISUAL_ARTICLE_ID_MISMATCH'?'BLOCKED':'UNKNOWN'});
@@ -36,6 +38,8 @@ function epBoardVisualAuditV1(project,lookup){
  return {status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',rows,issues,
   verifiedCatalogueFaces:rows.filter(x=>x.visual.source==='CATALOG_DECLARED'&&!x.evidence.length).length,
   placeholders:rows.filter(x=>x.visual.source==='UNVERIFIED_PLACEHOLDER').length,
+  reviewedManufacturerImages:rows.filter(x=>x.assetStatus==='REVIEWED_IMAGE').length,
+  rejectedManufacturerImages:rows.filter(x=>x.assetStatus==='ASSET_REJECTED').length,
   engineeringApproved:false,photographVerified:false};
 }
 if(typeof module!=='undefined')module.exports={epBoardVisualAuditV1};
