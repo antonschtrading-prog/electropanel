@@ -4,7 +4,7 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
  const blocked=(code)=>({schema:'electropanel.universal.cabinet.options.1',status:'BLOCKED',
   issues:[{code,level:'BLOCKED'}],options:[],engineeringApproved:false,confirmedCabinetFit:false});
  if(!project||!Array.isArray(project.lines)||project.lines.length>500||
-    !Array.isArray(project.sharedDevices??[])||project.sharedDevices.length>500||
+    !Array.isArray(project.sharedDevices??[])||(project.sharedDevices??[]).length>500||
     !settings||typeof settings!=='object'||Array.isArray(settings))return blocked('INPUT_INVALID');
  const defaults={reserveFraction:0.2,sideAllowanceMm:70,topBottomAllowanceMm:100,
   rowPitchMm:150,depthAllowanceMm:60};
