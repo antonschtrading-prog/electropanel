@@ -35,6 +35,11 @@ function epEngineeringBundleV1(project,lookupSku){
   typeof epWorkflowPreviewV1==='function'?
    (p,lookup)=>epWorkflowPreviewV1(p,lookup,projectCatalogItems,p?.workflowDesignInputsV1): 
    p=>({status:'UNKNOWN',issues:[],rows:[],steps:[],engineeringApproved:false}));
+ const consumerGrouping=section('CONSUMER_GROUPING',
+  p=>p?.consumerGroupSplitRulesV1&&typeof epGroupSplitPlanV1==='function'?
+   epGroupSplitPlanV1(p,p.consumerGroupSplitRulesV1):{
+    schema:'electropanel.group.split.plan.1',status:'NOT_REQUIRED',
+    proposals:[],issues:[],engineeringApproved:false,ready_for_installation:false});
  const designStageScope=section('DESIGN_STAGE_SCOPE',
   typeof epDesignStageScopeV1==='function'?p=>({
    ...epDesignStageScopeV1(p),status:'UNKNOWN',issues:[],engineeringApproved:false
@@ -124,7 +129,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const catalogueIntegrity={status:!catalog||catalog.issues.some(x=>x.status==='BLOCKED')?'BLOCKED':'UNKNOWN',
   issues:catalog?.issues?.map(x=>({code:x.code,level:x.status==='BLOCKED'?'BLOCKED':'UNKNOWN',recordIndex:x.index}))||[{code:'PROJECT_CATALOGUE_AUDIT_UNAVAILABLE',level:'BLOCKED'}],
   engineeringApproved:false};
- const sections={workflowPreview,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const sections={workflowPreview,consumerGrouping,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
