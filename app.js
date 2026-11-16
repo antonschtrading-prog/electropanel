@@ -11,7 +11,9 @@ const demoCommercial = () => ({schema:'electropanel.web.preview.1',title:'Ком
  {id:'L4',name:'Вентиляция',power:1.5,phase:'L3',device:'C16',modules:1,source:'demo'}],plan:null,changedAt:new Date().toISOString()});
 let workflowPreviewInputs=null;
 let workflowSplitPlan=null;
+let workflowMergePlan=null;
 let workflowSplitRuleInput=null;
+let workflowMergeRuleInput=null;
 let state = initial(); let lastDesignSnapshot=null; let lastDesignImpact=null; let selectedLine = null; let currentView = 'overview'; let pendingRows = []; let planPreviewUrl = null; const MAX_LINES=400;
 const historyUndo=[], historyRedo=[]; let dragLineId=null; const MAX_HISTORY=30;
 const SOURCES=Object.freeze({manual:'Ручной ввод',tz:'Техническое задание',csv:'Импорт CSV',demo:'Учебный пример',unknown:'Источник неизвестен'});
@@ -22,7 +24,7 @@ function reorderLine(sourceId,targetId){const from=state.lines.findIndex(l=>l.id
 function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x.deviceId!==removed&&x.deviceId!==id);}state.lines=state.lines.filter(x=>x.id!==id);if(Array.isArray(state.protectionLinks))state.protectionLinks=state.protectionLinks.filter(x=>x.downstreamLineId!==id&&x.upstreamLineId!==id);if(Array.isArray(state.calculatedDeviceFaultBindingsV1)){const removedNode='BRANCH:'+state.branchDevices?.find(x=>x.circuitId===id)?.id;state.calculatedDeviceFaultBindingsV1=state.calculatedDeviceFaultBindingsV1.filter(x=>x.deviceNodeId!==removedNode);}if(Array.isArray(state.deviceFaultScenariosV1)){const removedNode='BRANCH:'+state.branchDevices?.find(x=>x.circuitId===id)?.id;state.deviceFaultScenariosV1=state.deviceFaultScenariosV1.filter(x=>x.deviceNodeId!==removedNode);if(Array.isArray(state.deviceCoordinationEvidenceV1))state.deviceCoordinationEvidenceV1=state.deviceCoordinationEvidenceV1.filter(x=>x.from!==removedNode&&x.to!==removedNode);}if(state.deviceSupplyV1){const removed=state.branchDevices?.find(x=>x.circuitId===id)?.id;state.deviceSupplyV1.links=state.deviceSupplyV1.links.filter(x=>x.from!=='BRANCH:'+removed&&x.to!=='BRANCH:'+removed);}if(selectedLine===id)selectedLine=null;changed();return true;}
 function safeText(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,error=false){const t=document.createElement('div');t.className='toast'+(error?' error':'');t.textContent=message;document.body.appendChild(t);setTimeout(()=>t.remove(),3800);}
-function changed(){workflowSplitPlan=null;syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
+function changed(){workflowSplitPlan=null;workflowMergePlan=null;syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
  if(Array.isArray(state.lines)){
   for(const line of state.lines){
    const calculated=line?.loadCurrentCalculation;
