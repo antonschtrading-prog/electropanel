@@ -5,7 +5,7 @@ function epCabinetGeometryNormalizeV1(input){
  const fail=code=>{const error=new Error(code);error.code=code;throw error;};
  if(!plain(input)||input.version!==1||input.source!=='USER_DECLARED')
   fail('CABINET_SCHEMA_UNSUPPORTED');
- if(Object.keys(input).some(k=>!['version','source','interior','zones','planning'].includes(k)))
+ if(Object.keys(input).some(k=>!['version','source','interior','zones','planning','obstacles'].includes(k)))
   fail('CABINET_FIELD_UNKNOWN');
  if(!plain(input.interior)||Object.keys(input.interior).some(k=>!['widthMm','heightMm','depthMm'].includes(k)))
   fail('CABINET_INTERIOR_INVALID');
@@ -35,9 +35,27 @@ function epCabinetGeometryNormalizeV1(input){
   planning={marginMm:input.planning.marginMm,firstRowYMm:input.planning.firstRowYMm,
    zoneHeightMm:input.planning.zoneHeightMm,rowGapMm:input.planning.rowGapMm};
  }
+ let obstacles;
+ if(input.obstacles!==undefined){
+  if(!Array.isArray(input.obstacles)||input.obstacles.length>100)
+   fail('CABINET_OBSTACLES_INVALID');
+  const ids=new Set();
+  obstacles=[];
+  for(const o of input.obstacles){
+   if(!plain(o)||Object.keys(o).some(k=>!['id','kind','xMm','yMm','widthMm','heightMm'].includes(k))||
+     typeof o.id!=='string'||!/^[A-Za-z0-9_-]{1,40}$/.test(o.id)||
+     ids.has(o.id)||!['WIRE_DUCT','TERMINAL_REGION','RESERVED'].includes(o.kind)||
+     !n(o.xMm,0,5000)||!n(o.yMm,0,5000)||!n(o.widthMm,1,5000)||!n(o.heightMm,1,5000))
+    fail('CABINET_OBSTACLE_INVALID');
+   ids.add(o.id);
+   obstacles.push({id:o.id,kind:o.kind,xMm:o.xMm,yMm:o.yMm,
+    widthMm:o.widthMm,heightMm:o.heightMm});
+  }
+ }
  return {version:1,source:'USER_DECLARED',
   interior:{widthMm,heightMm,depthMm},
-  zones:zones.sort((a,b)=>a.railIndex-b.railIndex),...(planning?{planning}:{})};
+  zones:zones.sort((a,b)=>a.railIndex-b.railIndex),...(planning?{planning}:{}),
+  ...(obstacles!==undefined?{obstacles}:{})};
 }
 function epCabinetGeometryCheckV1(input,railCount,railCapacity){
  const issues=[],add=(code,level='BLOCKED',railIndex=null)=>issues.push({code,level,railIndex});
@@ -68,6 +86,20 @@ function epCabinetGeometryCheckV1(input,railCount,railCapacity){
     a.yMm<b.yMm+b.heightMm-1e-6&&b.yMm<a.yMm+a.heightMm-1e-6)
    add('CABINET_ZONE_OVERLAP','BLOCKED',b.railIndex);
  }
+ const intersect=(a,b)=>a.xMm<b.xMm+b.widthMm-1e-6&&b.xMm<a.xMm+a.widthMm-1e-6&&
+   a.yMm<b.yMm+b.heightMm-1e-6&&b.yMm<a.yMm+a.heightMm-1e-6;
+ const obstacles=geometry.obstacles||[];
+ for(const o of obstacles){
+  if(o.xMm+o.widthMm>geometry.interior.widthMm+1e-6||
+     o.yMm+o.heightMm>geometry.interior.heightMm+1e-6)
+   issues.push({code:'CABINET_OBSTACLE_OUTSIDE_INTERIOR',level:'BLOCKED',obstacleId:o.id});
+  for(const z of geometry.zones)if(intersect(o,z))
+   issues.push({code:'CABINET_OBSTACLE_ZONE_OVERLAP',level:'BLOCKED',obstacleId:o.id,railIndex:z.railIndex});
+ }
+ for(let i=0;i<obstacles.length;i++)for(let j=i+1;j<obstacles.length;j++){
+  if(intersect(obstacles[i],obstacles[j]))
+   issues.push({code:'CABINET_OBSTACLES_OVERLAP',level:'BLOCKED',obstacleId:obstacles[j].id});
+ }
  add('CABINET_HARDWARE_MOUNTING_CLEARANCES_UNVERIFIED','UNKNOWN');
  return {status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',
   geometry,issues,engineeringApproved:false,ready_for_installation:false};
@@ -86,7 +118,7 @@ function epCabinetAutoZonesV1(input,railCount,railCapacity){
   zones:Array.from({length:railCount},(_,railIndex)=>({
    railIndex,xMm:marginMm,yMm:firstRowYMm+railIndex*(zoneHeightMm+rowGapMm),
    widthMm:interiorWidthMm-2*marginMm,heightMm:zoneHeightMm
-  }))};
+  })),...(input.obstacles!==undefined?{obstacles:input.obstacles}:{})};
  const audit=epCabinetGeometryCheckV1(geometry,railCount,railCapacity);
  return {status:audit.status,geometry:audit.geometry,issues:audit.issues};
 }

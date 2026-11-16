@@ -22,7 +22,8 @@ function epBoardRailCountChangeV1(project,newRailCount,lookup,{preserve=true}={}
   if(!original.planning)return fail('CABINET_MANUAL_ZONES_REPLAN_REQUIRED');
   const prop=epCabinetAutoZonesV1({
    interiorWidthMm:original.interior.widthMm,interiorHeightMm:original.interior.heightMm,
-   interiorDepthMm:original.interior.depthMm,...original.planning
+   interiorDepthMm:original.interior.depthMm,...original.planning,
+   ...(original.obstacles!==undefined?{obstacles:original.obstacles}:{})
   },newRailCount,project.railCapacity);
   if(prop.status==='BLOCKED')return fail('CABINET_NEW_RAIL_ZONE_NOT_FIT',prop.issues);
   next.cabinetGeometryV1=prop.geometry;cabinetReplanned=true;

@@ -24,3 +24,6 @@ A change to declared cabinet geometry invalidates only enclosure design evidence
 
 ## SVG draft drawing
 The separate `cabinet-drawing-v1.js` creates a mm-scaled SVG from declared interior and band coordinates and uses catalogue body dimensions only where known. Unknown body size is outlined as an explicit placeholder; no manufacturer model or shop-drawing accuracy is claimed. The board UI exports this as `-cabinet-plan-DRAFT.svg` independently of the existing board SVG.
+
+## Reserved installation regions
+Optional `obstacles[]` is a list of user-declared rectangles with unique safe ID, kind (`WIRE_DUCT`, `TERMINAL_REGION`, `RESERVED`), and x/y/width/height in millimetres. It does not draw actual cabling or imply that an actual trunking kit is chosen. Out-of-envelope rectangles, intersecting reserved regions, or overlaps with allocated rail bands are blocked; touching edges are allowed. Repacking of rail zones preserves registered obstacles and fails if the new proposal collides with them, without deleting user data.
