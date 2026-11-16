@@ -125,3 +125,24 @@ test('generated branch IDs never collide with consumer IDs or common apparatus I
   ...r.project.sharedDevices.map(x=>x.id)];
  assert.equal(new Set(ids).size,ids.length);
 });
+
+test('optional count limit can split groups even when connected kW stays below limit',()=>{
+ const p=project(),r=plan(p,{maxGroupPowerKw:20,maxConsumersPerCircuit:2});
+ assert.equal(r.proposals.length,1);
+ assert.equal(r.proposals[0].groups.length,2);
+ assert.ok(r.proposals[0].groups.every(x=>x.consumerIds.length<=2));
+ const accepted=apply(p,r);
+ assert.equal(accepted.project.lines.length,2);
+});
+test('strict count rules reject fractional and oversized entries',()=>{
+ for(const count of [-1,0,2.4,'2.5',1001,'bad',false]){
+  assert.throws(()=>rules({maxGroupPowerKw:10,maxConsumersPerCircuit:count}),/GROUP_SPLIT_MAX_CONSUMERS_INVALID/);
+ }
+ assert.equal(rules({maxGroupPowerKw:10,maxConsumersPerCircuit:'3'}).maxConsumersPerCircuit,3);
+ assert.deepEqual(rules({maxGroupPowerKw:10,maxConsumersPerCircuit:''}),{maxGroupPowerKw:10});
+});
+test('changing consumer limit between preview and apply invalidates proposal',()=>{
+ const p=project(),r=plan(p,{maxGroupPowerKw:10,maxConsumersPerCircuit:1});
+ r.rules={maxGroupPowerKw:10,maxConsumersPerCircuit:2};
+ assert.throws(()=>apply(p,r),/GROUP_SPLIT_PLAN_STALE/);
+});
