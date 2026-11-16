@@ -167,7 +167,7 @@ function epGroupSplitHtmlV1(plan){
   esc(plan.rules.maxGroupPowerKw)+'"></label><div class="mini-actions">'+
   '<button class="btn" type="button" id="groupSplitPreviewBtn">Предварительный просмотр</button>'+
   '<button class="btn primary" type="button" id="groupSplitApplyBtn"'+
-  (plan.proposals.length?'':' disabled')+'>Применить проверенное разбиение</button></div>'+
+  (plan.proposals.length&&plan.status!=='BLOCKED'?'':' disabled')+'>Применить проверенное разбиение</button></div>'+
   '<div class="table-scroll"><table><thead><tr><th>Цепь</th><th>Было, кВт</th><th>Получится групп</th><th>Потребители</th></tr></thead><tbody>'+
   (rows||'<tr><td colspan="4">Подходящих групп нет</td></tr>')+
   '</tbody></table></div><p class="muted">Нельзя автоматически разделять цепи с выбранной защитой, уже выполненными расчётами или связями: сначала необходим пересмотр инженерной модели.</p>'+
