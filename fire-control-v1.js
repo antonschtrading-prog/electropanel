@@ -10,10 +10,13 @@ function epFireControlAuditV1(project, raw) {
  }
  const {signals,actions}=raw;
  if(Object.keys(raw).some(k=>!['signals','actions','version','design'].includes(k))||raw.version!==undefined&&raw.version!==1)issue('FIRE_CONTROL_SCHEMA_INVALID');
+ if(raw.design!==undefined&&(!raw.design||typeof raw.design!=='object'||Array.isArray(raw.design)))issue('FIRE_CONTROL_DESIGN_INVALID');
  if(!Array.isArray(signals)||!Array.isArray(actions)||signals.length>200||actions.length>800) {
   issue('FIRE_CONTROL_LIST_INVALID');return done();
  }
  const signalIds=new Set(),loadIds=new Set(),lineIds=new Set();
+ if(new Set(project.loads.map(x=>x?.id)).size!==project.loads.length)issue('FIRE_CONTROL_DUPLICATE_CONSUMER_IDS');
+ if(new Set(project.lines.map(x=>x?.id)).size!==project.lines.length)issue('FIRE_CONTROL_DUPLICATE_CIRCUIT_IDS');
  const signalMap=new Map();
  for(const line of project.lines)if(typeof line?.id==='string'&&line.id)lineIds.add(line.id);
  for(const load of project.loads)if(typeof load?.id==='string'&&load.id&&lineIds.has(load.circuitId))loadIds.add(load.id);
@@ -43,6 +46,8 @@ function epFireControlAuditV1(project, raw) {
   if(a.action==='MAINTAIN'&&a.actuator==='UNDERVOLTAGE_RELEASE')issue('FIRE_CONTROL_MAINTAIN_UVR_CONFLICT','BLOCKED',a.id);
   if(signalMap.get(a.signalId)?.kind==='RESET'&&a.action==='DISCONNECT')issue('FIRE_CONTROL_RESET_TRIP_REVIEW','UNKNOWN',a.id);
   if(a.onSignalLoss==='UNSPECIFIED')issue('FIRE_CONTROL_LOSS_STATE_UNDECLARED','UNKNOWN',a.id);
+  if(a.action==='DISCONNECT'&&a.actuator==='INTERFACE_RELAY')issue('FIRE_CONTROL_INTERFACE_RELAY_LOAD_PATH_REVIEW','UNKNOWN',a.id);
+  if(a.action==='ENABLE'&&a.actuator==='CONTACTOR')issue('FIRE_CONTROL_CONTACTOR_START_INTERLOCK_REVIEW','UNKNOWN',a.id);
   if(a.action==='EXTERNAL_CONTROL'&&a.actuator!=='EXTERNAL')issue('FIRE_CONTROL_EXTERNAL_INTERFACE_CONFLICT','BLOCKED',a.id);
   if(a.action!=='EXTERNAL_CONTROL'&&a.actuator==='EXTERNAL')issue('FIRE_CONTROL_ACTUATOR_UNDECLARED','UNKNOWN',a.id);
   if(a.actuator==='EXTERNAL'&&a.onSignalLoss==='UNSPECIFIED')issue('FIRE_CONTROL_EXTERNAL_LOSS_STATE_REVIEW','UNKNOWN',a.id);
