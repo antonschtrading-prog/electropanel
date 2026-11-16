@@ -77,7 +77,7 @@
 53. [x] Unit test count and kW thresholds together.
 54. [x] Integration test JSON persistence, optional rule absence and dossier/print output.
 55. [x] Chromium test interactive preview, apply, saved rule and undo/redo.
-56. [ ] Final acceptance: all three GitHub checks must succeed on **the exact final HEAD**.
+56. [x] Final acceptance: all three GitHub checks must succeed on **the exact final HEAD** (verify again after this documentation commit).
 
 ## Engineering boundaries
 
