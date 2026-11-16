@@ -1006,8 +1006,15 @@ function epFireControlEditorEventV1(event){
  const svgBtn=event.target.closest('#fireControlSvgBtn');
  const graphCsv=event.target.closest('#fireControlGraphCsvBtn');
  const wiringSvg=event.target.closest('#fireControlWiringSvgBtn');
- if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv&&!wiringSvg)return;
+ const declaredWiresCsv=event.target.closest('#fireControlDeclaredWiresCsvBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv&&!wiringSvg&&!declaredWiresCsv)return;
  try{
+  if(declaredWiresCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlDeclaredWiresCsvV1(state);
+   download(baseName()+'-fire-declared-wires.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Ведомость заданных проводов CSV выгружена');
+  }
   if(wiringSvg){
    if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
    const report=epFireControlWiringDiagramV1(state);
