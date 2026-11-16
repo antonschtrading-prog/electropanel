@@ -79,6 +79,10 @@
 55. [x] Run Chromium preview, apply, saved JSON, Undo and Redo through actual UI.
 56. [ ] Final acceptance on exact final HEAD: all GitHub JavaScript, validation and Chromium CI jobs SUCCESS.
 
+## Dedicated circuit exclusions
+
+The engineer may explicitly enter `separateCircuitIds` (via the “Отдельные линии” input) to block merging a dedicated circuit even when its category and phase match other circuits. The list is validated for duplicate IDs, bounded content and references to existing circuits. Adding an exclusion after preview invalidates the previous proposal; deleting it requires a new preview. This is a deterministic safety rule, not inferred from text labels.
+
 ## Remaining design work
 
 The category merge engine intentionally does not assign an RCD group, protective device, cable, current values or terminal wiring. Those depend on the circuit's function and project-specific electrical conditions. After a reviewed merge, the established current calculation, apparatus shortlist, single-line, DIN and BOM workflow can be used.
