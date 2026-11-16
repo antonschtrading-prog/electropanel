@@ -1446,6 +1446,18 @@ const server=http.createServer((req,res)=>{
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.railCapacity),6);
  assert.equal(await page.locator('#exportCabinetCapacityBtn').count(),1);
+ await page.locator('#cabinetWidthLimit').fill('200');
+ await page.locator('#cabinetWidthLimit').blur();
+ assert.equal(await page.locator('[data-apply-cabinet-option="1x6"]').count(),0);
+ const constrained=await page.evaluate(()=>{
+  const saved=normalizeImport(JSON.parse(snapshot()));
+  return {limit:saved.cabinetSizingPreferencesV1?.maxUsableWidthMm,
+   appliances:state.lines.length};
+ });
+ assert.deepEqual(constrained,{limit:200,appliances:5});
+ await page.locator('#cabinetWidthLimit').fill('');
+ await page.locator('#cabinetWidthLimit').blur();
+ assert.equal(await page.locator('[data-apply-cabinet-option="1x6"]').count(),1);
 
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}

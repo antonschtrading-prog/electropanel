@@ -31,3 +31,5 @@ Candidates now use enumerated row-count × modules-per-row capacity patterns; e.
 The board screen shows fitting choices. Choosing one validates the complete placement through the existing board planner, records a manual layout, and adds an undo checkpoint. Electrical circuits and device nominal ratings are unchanged. Manual layout is included in project JSON. No enclosure SKU, external size or certified fit is inferred.
 
 Acceptance: small cabinet pattern 1×6, saved manual rail positions, unchanged circuit data, undo/redo and JSON roundtrip are exercised in the Chromium integration test. The board also exports a clearly marked draft, manufacturer-neutral capacity recommendation JSON.
+
+The board offers optional maximum *usable interior* width/height limits (not exterior cabinet dimensions). Values survive project JSON/undo/redo and are applied to preliminary candidate envelopes only. No claims of verified manufacturer fit.

@@ -1731,9 +1731,17 @@ function renderCabinetCapacityOptionsV1(){
   target.textContent='Нет вариантов: проверьте модули и состав оборудования.';
   return;
  }
- const good=report.options.filter(o=>o.status!=='BLOCKED');
+ const limits=state.cabinetSizingPreferencesV1||{};
+ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
+  ['cabinetHeightLimit','maxUsableHeightMm']]){
+  const input=$(id);if(input&&document.activeElement!==input)
+   input.value=limits[field]||'';
+ }
+ const good=report.options.filter(o=>o.status!=='BLOCKED'&&
+  (!limits.maxUsableWidthMm||o.envelope.preliminaryUsableWidthMm<=limits.maxUsableWidthMm)&&
+  (!limits.maxUsableHeightMm||o.envelope.preliminaryUsableHeightMm<=limits.maxUsableHeightMm));
  const shown=good.slice(0,12);
- if(!shown.length){target.textContent='В типовых конфигурациях подходящего размещения не найдено.';return;}
+ if(!shown.length){target.textContent='Под заданные ограничения вариантов не найдено. Проверьте полезные размеры или уменьшите резерв.';return;}
  const selected=state.railCount+'x'+state.railCapacity;
  target.innerHTML='<p>Аппаратура: <b>'+report.equipmentModules+
   ' мод.</b> · Резерв по умолчанию: 20%. Варианты являются предварительными.</p>'+
@@ -1741,13 +1749,20 @@ function renderCabinetCapacityOptionsV1(){
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
    '" data-apply-cabinet-option="'+o.id+'">'+o.capacityModules+
    ' мод. · '+o.railCount+' × '+o.modulesPerRail+
-   ' · свободно '+o.reserveModules+'</button>').join('')+'</div>'+
+   ' · свободно '+o.reserveModules+' · полезное ~'+
+   Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
+   Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+
   '<p class="mini-warning">Предварительные внутренние размеры (не внешние размеры шкафа). Проверки кабельных вводов и нагрева не выполнены.</p>';
 }
 function applyCabinetCapacityOptionV1(id){
  const report=cabinetCapacityReportV1();
  const option=report?.options.find(x=>x.id===id&&x.status==='REVIEW_REQUIRED');
  if(!option){notify('Вариант недоступен: проверьте состав оборудования и размеры',true);return;}
+ const lim=state.cabinetSizingPreferencesV1||{};
+ if((lim.maxUsableWidthMm&&option.envelope.preliminaryUsableWidthMm>lim.maxUsableWidthMm)||
+    (lim.maxUsableHeightMm&&option.envelope.preliminaryUsableHeightMm>lim.maxUsableHeightMm)){
+  notify('Предварительная компоновка превышает указанные полезные размеры',true);return;
+ }
  const proposed=structuredCloneCompat(state);
  proposed.railCapacity=option.modulesPerRail;proposed.railCount=option.railCount;
  proposed.manualLayoutV1=option.rails.flatMap(rail=>rail.devices.map(d=>({
@@ -2258,6 +2273,17 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
  }else migrateLegacyEntities(p);
  ensureV2(p);
  if(typeof epRestoreProjectExtensionsV2==='function')epRestoreProjectExtensionsV2(x,p);
+ if(x.cabinetSizingPreferencesV1!==undefined){
+  const c=x.cabinetSizingPreferencesV1;
+  if(!c||typeof c!=='object'||Array.isArray(c)||
+    Object.keys(c).some(k=>!['maxUsableWidthMm','maxUsableHeightMm'].includes(k))||
+    ['maxUsableWidthMm','maxUsableHeightMm'].some(k=>
+     c[k]!==null&&c[k]!==undefined&&(!Number.isInteger(c[k])||c[k]<1||c[k]>10000)))
+   throw Error('Некорректные ограничения полезных размеров щита');
+  p.cabinetSizingPreferencesV1={
+   maxUsableWidthMm:c.maxUsableWidthMm??null,
+   maxUsableHeightMm:c.maxUsableHeightMm??null};
+ }
  return p;}
 function parseCSV(text){
  // RFC 4180-style quoted fields, including line breaks in quoted text.
@@ -2485,9 +2511,23 @@ $('exportCabinetCapacityBtn')?.addEventListener('click',()=>{
  download(baseName()+'_cabinet_capacity_draft.json',JSON.stringify({
   schema:'electropanel.cabinet.capacity.export.1',project:state.title,
   selectedLayout:{rails:state.railCount,modulesPerRail:state.railCapacity},
+  usableSizeLimits:state.cabinetSizingPreferencesV1||null,
   ...report,reviewRequired:true,manufacturerSelected:false
  },null,2),'application/json;charset=utf-8');
 });
+for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
+ ['cabinetHeightLimit','maxUsableHeightMm']]){
+ $(id)?.addEventListener('change',e=>{
+  const raw=e.target.value.trim();const val=raw===''?null:Number(raw);
+  if(val!==null&&(!Number.isInteger(val)||val<=0||val>10000)){
+   notify('Введите полезный размер от 1 до 10000 мм или оставьте поле пустым',true);
+   e.target.value=state.cabinetSizingPreferencesV1?.[field]||'';return;
+  }
+  checkpoint();
+  state.cabinetSizingPreferencesV1={...(state.cabinetSizingPreferencesV1||{}),[field]:val};
+  changed();
+ });
+}
 $('cabinetCapacityOptions')?.addEventListener('click',e=>{
  const b=e.target.closest('[data-apply-cabinet-option]');
  if(b)applyCabinetCapacityOptionV1(b.dataset.applyCabinetOption);
