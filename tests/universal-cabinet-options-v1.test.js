@@ -18,7 +18,7 @@ test('never splits an individual multi-module appliance',()=>{
 });
 test('wide device blocks only alternatives that cannot contain it',()=>{
  const r=plan({lines:[{id:'L',modules:19}]});
- assert.ok(r.options.every(o=>o.modulesPerRail>=19));assert.ok(r.options.some(o=>o.status==='REVIEW_REQUIRED'));
+ assert.ok(r.options.filter(o=>o.modulesPerRail<19).every(o=>o.status==='BLOCKED'));assert.ok(r.options.some(o=>o.status==='REVIEW_REQUIRED'));
 });
 test('source article dimension conflict blocks all recommendations',()=>{
  const r=plan({lines:[{id:'L',modules:1,catalogSku:'A'}]},()=>({article:'A',modules:2}));
