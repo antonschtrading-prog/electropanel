@@ -14,7 +14,7 @@ function epFireControlDesignV1(project){
   assignments.length>800)issues.push({code:'FIRE_DESIGN_INPUT_INVALID',level:'BLOCKED'});
  for(const entry of assignments){
   if(!entry||typeof entry!=='object'||Array.isArray(entry)||
-   Object.keys(entry).some(k=>!['actionId','deviceId','articleSku','controlVoltageV','controlSupplyId','terminalIds','dinRailId','dinStartModule','moduleWidth','wireReference','reviewed'].includes(k))||
+   Object.keys(entry).some(k=>!['actionId','deviceId','articleSku','controlVoltageV','controlSupplyId','terminalIds','dinRailId','dinStartModule','moduleWidth','wireReference','reviewed','pins'].includes(k))||
    !validId(entry.actionId)||ids.has(entry.actionId)||!actionIds.has(entry.actionId)){
    issues.push({code:'FIRE_DESIGN_ASSIGNMENT_INVALID',level:'BLOCKED',objectId:entry?.actionId??null});continue;
   }
@@ -31,6 +31,22 @@ function epFireControlDesignV1(project){
   if(entry.moduleWidth!==undefined&&(!Number.isInteger(entry.moduleWidth)||entry.moduleWidth<1||entry.moduleWidth>24))issues.push({code:'FIRE_DESIGN_MODULE_WIDTH_INVALID',level:'BLOCKED',objectId:entry.actionId});
   if(entry.wireReference!==undefined&&(!validId(entry.wireReference)||entry.wireReference.length>80))issues.push({code:'FIRE_DESIGN_WIRE_REFERENCE_INVALID',level:'BLOCKED',objectId:entry.actionId});
   if(entry.reviewed!==undefined&&typeof entry.reviewed!=='boolean')issues.push({code:'FIRE_DESIGN_REVIEW_INVALID',level:'BLOCKED',objectId:entry.actionId});
+  if(entry.pins!==undefined){
+   if(!Array.isArray(entry.pins)||entry.pins.length>32||entry.pins.some(p=>!p||typeof p!=='object'||Array.isArray(p)||
+    Object.keys(p).some(k=>!['terminalId','devicePin','role','verifiedSource'].includes(k))||
+    !validId(p.terminalId)||!validId(p.devicePin)||!['COIL_A1','COIL_A2','COMMON','NO','NC','TRIP','RETURN','OTHER'].includes(p.role)||
+    typeof p.verifiedSource!=='string'||!/^https:\/\//.test(p.verifiedSource)||p.verifiedSource.length>500)){
+    issues.push({code:'FIRE_DESIGN_PIN_MAPPING_INVALID',level:'BLOCKED',objectId:entry.actionId});
+   }else{
+    if(new Set(entry.pins.map(p=>p.terminalId)).size!==entry.pins.length)
+     issues.push({code:'FIRE_DESIGN_PIN_TERMINAL_REUSED',level:'BLOCKED',objectId:entry.actionId});
+    if(new Set(entry.pins.map(p=>p.devicePin)).size!==entry.pins.length)
+     issues.push({code:'FIRE_DESIGN_DEVICE_PIN_REUSED',level:'BLOCKED',objectId:entry.actionId});
+    if(Array.isArray(entry.terminalIds)&&entry.pins.some(p=>!entry.terminalIds.includes(p.terminalId)))
+     issues.push({code:'FIRE_DESIGN_PIN_TERMINAL_UNDECLARED',level:'BLOCKED',objectId:entry.actionId});
+   }
+  }
+
  }
  const deviceIds=new Set(),positions=new Map();
 
@@ -57,7 +73,7 @@ function epFireControlDesignV1(project){
    deviceId:entry.deviceId??null,articleSku:entry.articleSku??null,controlVoltageV:entry.controlVoltageV??null,
    controlSupplyId:entry.controlSupplyId??null,terminalIds:entry.terminalIds??[],
    dinRailId:entry.dinRailId??null,dinStartModule:entry.dinStartModule??null,moduleWidth:entry.moduleWidth??null,
-   wireReference:entry.wireReference??null,reviewed:entry.reviewed===true});
+   wireReference:entry.wireReference??null,pins:entry.pins??[],reviewed:entry.reviewed===true});
  }
  return {schema:'electropanel.fire.design.1',status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
   rows,issues,engineeringApproved:false,ready_for_installation:false};
