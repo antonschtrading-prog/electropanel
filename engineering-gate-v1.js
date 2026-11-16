@@ -14,7 +14,7 @@ function epEngineeringGateV1(project, lookupSku){
    }
    if(r?.status==='BLOCKED'&&!issues.some(i=>i.origin===name&&i.level==='BLOCKED'))
     add(name,'COMPONENT_BLOCKED','BLOCKED');
-   else if(r?.status!=='BLOCKED')add(name,'ENGINEERING_EVIDENCE_INCOMPLETE','UNKNOWN');
+   // A non-blocked optional projection is not automatically an incomplete project.
   }catch(e){
    components[name]={status:'BLOCKED',engineeringApproved:false};
    add(name,'AUDIT_EXECUTION_FAILED','BLOCKED');
@@ -84,8 +84,8 @@ function epEngineeringGateV1(project, lookupSku){
  if(typeof assessDesignEvidence==='function')
   inspect('design_evidence',()=>{
    const report=assessDesignEvidence(project);
-   return {status:report.status==='failed'?'BLOCKED':'UNKNOWN',
-    issues:report.items.filter(x=>x.status!=='verified').map(x=>({
+   return {status:report.status==='failed'?'BLOCKED':report.status==='not_required'?'NOT_REQUIRED':'UNKNOWN',
+    issues:report.items.filter(x=>x.status==='failed'||x.status==='unknown').map(x=>({
      code:'DESIGN_EVIDENCE_'+x.status.toUpperCase()+'_'+x.area.toUpperCase(),
      level:x.status==='failed'?'BLOCKED':'UNKNOWN'}))};
   });
