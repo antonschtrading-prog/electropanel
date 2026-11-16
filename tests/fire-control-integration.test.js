@@ -39,19 +39,19 @@ test('project extension restoration preserves explicit wiring evidence',()=>{
  const ctx=load(['fire-control-v1.js','fire-control-design-v1.js','fire-control-wiring-v1.js','project-state-v2.js']);
  const p=project(),data=control();
  data.wiring={connections:[{id:'W1',wireReference:'WIRE1',from:{kind:'SIGNAL',id:'F1'},to:{kind:'JUNCTION',id:'J1'},purpose:'SIGNAL_CONTACT',actionId:'A1',verifiedSource:'https://example.org',reviewed:true}]};
- ctx.epRestoreProjectExtensionsV2({fireControlV1:data},p);
+ ctx.epRestoreProjectExtensionsV2({lines:p.lines,fireControlV1:data},p);
  assert.equal(p.fireControlV1.wiring.connections[0].wireReference,'WIRE1');
 });
 test('project extension restoration rejects unknown wiring endpoints',()=>{
  const ctx=load(['fire-control-v1.js','fire-control-design-v1.js','fire-control-wiring-v1.js','project-state-v2.js']);
  const p=project(),data=control();
  data.wiring={connections:[{id:'W1',wireReference:'WIRE1',from:{kind:'SIGNAL',id:'MISSING'},to:{kind:'JUNCTION',id:'J1'},purpose:'SIGNAL_CONTACT',actionId:'A1',verifiedSource:'https://example.org',reviewed:true}]};
- assert.throws(()=>ctx.epRestoreProjectExtensionsV2({fireControlV1:data},p),/FIRE_CONTROL_WIRING_IMPORT_INVALID/);
+ assert.throws(()=>ctx.epRestoreProjectExtensionsV2({lines:p.lines,fireControlV1:data},p),/FIRE_CONTROL_WIRING_IMPORT_INVALID/);
 });
 test('project extension restoration rejects malformed wiring object',()=>{
  const ctx=load(['fire-control-v1.js','fire-control-design-v1.js','fire-control-wiring-v1.js','project-state-v2.js']);
  const p=project(),data=control();data.wiring='invalid';
- assert.throws(()=>ctx.epRestoreProjectExtensionsV2({fireControlV1:data},p),/FIRE_CONTROL_IMPORT_INVALID/);
+ assert.throws(()=>ctx.epRestoreProjectExtensionsV2({lines:p.lines,fireControlV1:data},p),/FIRE_CONTROL_IMPORT_INVALID/);
 });
 test('browser loads wiring engine before project restore',()=>{
  const html=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8');
