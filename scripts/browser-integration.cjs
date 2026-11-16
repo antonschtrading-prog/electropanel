@@ -1038,7 +1038,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.interior.widthMm),2000);
  const cabinetBefore=await page.evaluate(()=>JSON.stringify(state.cabinetGeometryV1));
  const firstZone=page.locator('#cabinetGeometryPanel [data-cabinet-zone="0"]');
- await page.locator('#cabinetGeometryPanel details').filter({has:firstZone}).locator('summary').click();
+ await page.locator('#cabinetGeometryPanel details:has(form[data-cabinet-zone="0"]) > summary').click();
  await firstZone.locator('[name="xMm"]').fill('60');
  await firstZone.locator('[name="yMm"]').fill('50');
  await firstZone.locator('button[type="submit"]').click();
