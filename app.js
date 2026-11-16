@@ -1005,8 +1005,15 @@ function epFireControlEditorEventV1(event){
  const checklistCsv=event.target.closest('#fireControlChecklistCsvBtn');
  const svgBtn=event.target.closest('#fireControlSvgBtn');
  const graphCsv=event.target.closest('#fireControlGraphCsvBtn');
- if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv)return;
+ const wiringSvg=event.target.closest('#fireControlWiringSvgBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv&&!wiringSvg)return;
  try{
+  if(wiringSvg){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlWiringDiagramV1(state);
+   download(baseName()+'-fire-control-wiring-draft.svg',report.svg,'image/svg+xml;charset=utf-8');
+   return notify('Черновая схема соединений SVG выгружена');
+  }
   if(graphCsv){
    if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
    const report=epFireControlTopologyCsvV1(state);
@@ -1036,7 +1043,7 @@ function epFireControlEditorEventV1(event){
    const report={schema:'electropanel.fire.report.draft.1',projectTitle:state.title,
     audit:epFireControlAuditV1(state,state.fireControlV1),trace:epFireControlTraceV1(state),
     design:epFireControlDesignV1(state),schedule:epFireControlScheduleV1(state),
-    catalogue:epFireCatalogReconcileV1(state),din:epFireDinReconcileV1(state),checklist:epFireControlChecklistV1(state),topology:epFireControlTopologyV1(state),diagram:epFireControlDiagramV1(state),wiring:epFireControlWiringV1(state),gate:epFireControlGateV1(state),
+    catalogue:epFireCatalogReconcileV1(state),din:epFireDinReconcileV1(state),checklist:epFireControlChecklistV1(state),topology:epFireControlTopologyV1(state),diagram:epFireControlDiagramV1(state),wiring:epFireControlWiringV1(state),wiringDiagram:epFireControlWiringDiagramV1(state),gate:epFireControlGateV1(state),
     engineeringApproved:false,ready_for_installation:false};
    download(baseName()+'-fire-control-draft.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
    return notify('Черновой отчёт пожарного управления выгружен');
