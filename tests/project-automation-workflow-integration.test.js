@@ -28,6 +28,9 @@ test('project saves shared calculation inputs and engineering dossier reuses con
  const projectBefore=project();
  const computed=wf.epWorkflowApplyCurrentsV1(projectBefore,inputs);
  const target=project(),raw=computed.project;
+ // The production import restores line.overloadInput in the core parser,
+ // then project-state-v2 restores the extended calculated-current provenance.
+ target.lines[0].overloadInput=JSON.parse(JSON.stringify(raw.lines[0].overloadInput));
  restore(raw,target);
  assert.deepEqual(target.workflowDesignInputsV1,inputs);
  assert.equal(projectBefore.lines[0].overloadInput,undefined);
