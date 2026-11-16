@@ -24,6 +24,8 @@ function epFireControlHtmlV1(project){
  const diagram=typeof epFireControlDiagramV1==='function'?epFireControlDiagramV1(project):null;
  const wiring=typeof epFireControlWiringV1==='function'?epFireControlWiringV1(project):null;
  const wiringDiagram=typeof epFireControlWiringDiagramV1==='function'?epFireControlWiringDiagramV1(project):null;
+ const continuity=typeof epFireControlContinuityV1==='function'?epFireControlContinuityV1(project):null;
+ const continuityRows=(continuity?.actions||[]).map(x=>'<tr><td>'+esc(x.actionId)+'</td><td>'+esc(x.wireCount)+'</td><td>'+esc(x.componentCount)+'</td><td>'+esc(x.reachablePins.join(', '))+'</td><td>'+esc(x.unreachablePins.join(', '))+'</td><td>Требуется проверка</td></tr>').join('');
  const wiringRows=(wiring?.connections||[]).map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.from)+'</td><td>'+esc(x.to)+'</td><td>'+esc(x.purpose)+'</td><td>'+esc(x.wireReference)+'</td></tr>').join('');
  const issues=(audit?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+' · '+esc(x.objectId??'')+'</li>').join('');
  return '<details class="ep-fire-control"><summary>Пожарное управление · '+esc(summary)+'</summary>'+
@@ -42,6 +44,7 @@ function epFireControlHtmlV1(project){
  '<button type="button" class="btn" id="fireControlDeclaredWiresCsvBtn">Провода CSV</button></div>'+
  '<table><thead><tr><th>Потребитель</th><th>Сигнал</th><th>Команда</th><th>Исполнитель</th><th>При потере сигнала</th></tr></thead><tbody>'+rows+'</tbody></table>'+
  '<h4>Логическая схема интерфейса</h4><p>Не является монтажной схемой. Номера выводов аппаратов не определены.</p><div class="fire-diagram-preview" style="overflow-x:auto;max-height:430px;overflow-y:auto">'+(diagram?.svg||'Нет сценариев')+'</div>'+ 
+ '<h4>Связность цепей управления (только по введённым проводам)</h4><p>Контакты, полярность, срабатывание и электрическая непрерывность не подтверждены.</p><table><thead><tr><th>Действие</th><th>Провода</th><th>Компоненты</th><th>Доступные выводы</th><th>Изолированные выводы</th><th>Статус</th></tr></thead><tbody>'+continuityRows+'</tbody></table>'+ 
  '<h4>Черновая схема соединений</h4><div style="overflow:auto;max-height:400px">'+(wiringDiagram?.svg||'Нет соединений')+'</div>'+ 
  '<h4>Соединения управления, введённые инженером</h4><p>Статус: '+esc(wiring?.status??'НЕДОСТУПЕН')+'</p><table><thead><tr><th>ID</th><th>От</th><th>К</th><th>Назначение</th><th>Провод</th></tr></thead><tbody>'+wiringRows+'</tbody></table>'+ 
  '<h4>Трассировка управления (проектный черновик)</h4><table><thead><tr><th>Зона</th><th>Потребитель</th><th>Цепь</th><th>Клеммы</th><th>Питание управления</th><th>DIN</th></tr></thead><tbody>'+traceRows+'</tbody></table>'+ 
