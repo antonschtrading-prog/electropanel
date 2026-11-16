@@ -75,3 +75,22 @@ for(const [code,mutate] of mutations)test('reject missing or inconsistent eviden
  const p=project();mutate(p);
  assert.notEqual(check(p,code)?.status,'PASS',code+' must detect mutation');
 });
+
+test('signal volume above 200 is blocked by criterion 16',()=>{
+ const p=project();p.fireControlV1.signals=Array.from({length:201},(_,i)=>({...p.fireControlV1.signals[0],id:'S'+i}));
+ assert.equal(check(p,'FCHK_16_SIGNAL_LIMIT').status,'BLOCKED');
+});
+test('action volume above 800 is blocked by criterion 23',()=>{
+ const p=project();p.fireControlV1.actions=Array.from({length:801},(_,i)=>({...p.fireControlV1.actions[0],id:'X'+i}));
+ assert.equal(check(p,'FCHK_23_ACTION_LIMIT').status,'BLOCKED');
+});
+test('pin-level terminal mapping remains explicitly unresolved',()=>{
+ const p=project();assert.equal(check(p,'FCHK_50_TERMINAL_PIN_MAPPING').status,'REVIEW_REQUIRED');
+});
+test('missing project arrays produce blocked checklist without throwing',()=>{
+ const p=project();delete p.lines;delete p.loads;
+ const r=epFireControlChecklistV1(p);assert.equal(r.status,'BLOCKED');
+});
+test('no configured fire interface has no fabricated checklist',()=>{
+ const r=epFireControlChecklistV1({lines:[],loads:[]});assert.equal(r.status,'NOT_CONFIGURED');assert.equal(r.checks.length,0);
+});
