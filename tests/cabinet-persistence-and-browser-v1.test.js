@@ -44,3 +44,10 @@ test('actual browser regression covers saving dimensions, undo, redo and printed
  assert.match(script,/cabinet_zone_x_mm/);
  assert.match(script,/cabinetBefore/);
 });
+
+test('browser covers reserved installation zones and their restoration',()=>{
+ const script=fs.readFileSync(path.join(__dirname,'..','scripts/browser-integration.cjs'),'utf8');
+ assert.match(script,/data-cabinet-obstacle-remove/);
+ assert.match(script,/data-obstacle="WD_CI"/);
+ assert.match(script,/state\.cabinetGeometryV1\.obstacles/);
+});

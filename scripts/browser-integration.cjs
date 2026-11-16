@@ -1036,6 +1036,15 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.cabinetGeometryV1===undefined),true);
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.interior.widthMm),2000);
+ await page.locator('#cabinetGeometryPanel details:has(form[data-cabinet-obstacle]) > summary').click();
+ const reserved=page.locator('#cabinetGeometryPanel form[data-cabinet-obstacle]');
+ await reserved.locator('[name="id"]').fill('WD_CI');
+ await reserved.locator('[name="kind"]').selectOption('WIRE_DUCT');
+ for(const [name,value] of Object.entries({xMm:'50',yMm:'170',widthMm:'1900',heightMm:'20'}))
+  await reserved.locator('[name="'+name+'"]').fill(value);
+ await reserved.locator('button[type="submit"]').click();
+ assert.equal(await page.evaluate(()=>state.cabinetGeometryV1.obstacles?.[0]?.id),'WD_CI');
+ assert.equal(await page.locator('#cabinetGeometryPanel .ep-cabinet-obstacle').count(),1);
  const cabinetBefore=await page.evaluate(()=>JSON.stringify(state.cabinetGeometryV1));
  const firstZone=page.locator('#cabinetGeometryPanel [data-cabinet-zone="0"]');
  await page.locator('#cabinetGeometryPanel details:has(form[data-cabinet-zone="0"]) > summary').click();
@@ -1062,6 +1071,12 @@ const server=http.createServer((req,res)=>{
  assert.match(svgText,/data-factory-cad="false"/);
  assert.match(svgText,/НЕ ПРОИЗВОДСТВЕННЫЙ ЧЕРТЁЖ/);
  assert.match(svgText,/viewBox="0 0 2000 1500"/);
+ assert.match(svgText,/data-obstacle="WD_CI"/);
+ await page.locator('#cabinetGeometryPanel details:has(form[data-cabinet-obstacle]) > summary').click();
+ await page.locator('#cabinetGeometryPanel [data-cabinet-obstacle-remove="WD_CI"]').click();
+ assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.obstacles?.length),0);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.obstacles?.[0]?.id),'WD_CI');
  // Engineering forms share the board workspace.
  await page.evaluate(()=>switchView('board'));
  await page.locator('#loadCurrentPanel summary').click();
