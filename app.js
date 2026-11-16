@@ -1000,8 +1000,16 @@ function epFireControlEditorEventV1(event){
  const apply=event.target.closest('#fireControlApplyBtn');
  const clear=event.target.closest('#fireControlClearBtn');
  const exportBtn=event.target.closest('#fireControlExportBtn');
- if(!apply&&!clear&&!exportBtn)return;
+ const wiringCsv=event.target.closest('#fireControlWiringCsvBtn');
+ const bomCsv=event.target.closest('#fireControlBomCsvBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv)return;
  try{
+  if(wiringCsv||bomCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=wiringCsv?epFireControlCsvV1(state):epFireControlBomCsvV1(state);
+   download(baseName()+(wiringCsv?'-fire-wiring-draft.csv':'-fire-bom-draft.csv'),report.csv,'text/csv;charset=utf-8');
+   return notify('Черновая ведомость CSV выгружена');
+  }
   if(exportBtn){
    if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
    const report={schema:'electropanel.fire.report.draft.1',projectTitle:state.title,
