@@ -18,3 +18,6 @@ The board editor offers dimension inputs, generation of uniformly spaced mountin
 
 ## Acceptance boundary
 No physical manufacturing tolerances, exact DIN mounting offset, front plate depth, door clearance, wiring duct interference, protective thermal assessment, approved CAD or product installation suitability is established. Full manufacturer enclosure model integration must be based on product-specific source geometry. The editor never changes the electrical circuit or device selection to force a fit.
+
+## Dependency and issue tracking
+A change to declared cabinet geometry invalidates only enclosure design evidence, not unrelated load, protection or cable arithmetic. `cabinetFit` is a separate engineering bundle and consolidated issue-register section. During preliminary circuit planning, absence of cabinet data is deferred; an invalid declared cabinet geometry remains a blocking issue at every stage.

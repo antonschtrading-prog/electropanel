@@ -7,6 +7,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  const requested=project?.designRequirementsV1||{};
  const defer=(code,level)=>{
   if(level!=='UNKNOWN')return false;
+  if(code==='CABINET_GEOMETRY_NOT_DECLARED'&&stage==='PRELIMINARY')return true;
   if(['CATALOG_SOURCE_REVIEW_NOT_RECORDED',
       'CATALOG_USER_DECLARATION_NOT_INDEPENDENTLY_VERIFIED',
       'CATALOG_MIRROR_REQUIRES_MANUFACTURER_CONFIRMATION',
@@ -48,6 +49,7 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.incomingMaximum)sectionNames.push('incomingMaximum');
  if(sections.protectionEvidenceMatrix)sectionNames.push('protectionEvidenceMatrix');
  if(sections.faultSourceConvergence)sectionNames.push('faultSourceConvergence');
+ if(sections.cabinetFit)sectionNames.push('cabinetFit');
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');

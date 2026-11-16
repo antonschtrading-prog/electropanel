@@ -20,7 +20,8 @@ function epDesignChangeImpactV1(before,after){
   cable:[lines(before,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput']),lines(after,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput']),before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],
   device:[before.catalogArticles,after.catalogArticles,before.manufacturerEvidenceRecords,after.manufacturerEvidenceRecords,lines(before,['catalogSku','device','modules','templateId','articleReplacementReview']),lines(after,['catalogSku','device','modules','templateId','articleReplacementReview']),before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
   topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1,before.terminalLinks,after.terminalLinks,before.feedLinks,after.feedLinks,before.groupInputLinks,after.groupInputLinks],
-  enclosure:[before.manualLayoutV1,after.manualLayoutV1,before.railCount,after.railCount,before.railCapacity,after.railCapacity,before.enclosure,after.enclosure]
+  enclosure:[before.manualLayoutV1,after.manualLayoutV1,before.railCount,after.railCount,before.railCapacity,after.railCapacity,before.enclosure,after.enclosure,
+   before.cabinetGeometryV1,after.cabinetGeometryV1]
  };
  const changed=[];
  for(const [key,parts] of Object.entries(areas)){

@@ -101,3 +101,14 @@ test('new declared max fault R/X input invalidates dependent protective design e
  assert.ok(r.affected.includes('topology'));
  assert.equal(r.engineeringApproved,false);
 });
+
+test('declared cabinet changes invalidate only enclosure evidence',()=>{
+ const p=base(),q=structuredClone(p);
+ q.cabinetGeometryV1={version:1,source:'USER_DECLARED',interior:{widthMm:500,heightMm:500,depthMm:120},zones:[{railIndex:0,xMm:0,yMm:0,widthMm:500,heightMm:100}]};
+ const impact=a(p,q);assert.deepEqual(impact.changed,['enclosure']);
+ assert.deepEqual(impact.affected,['enclosure']);
+ q.evidence={enclosure:{status:'verified',source:'manual'},device:{status:'verified',source:'catalogue'}};
+ const result=invalidate(q,impact);
+ assert.equal(result.evidence.enclosure.stale,true);
+ assert.equal(result.evidence.device.status,'verified');
+});
