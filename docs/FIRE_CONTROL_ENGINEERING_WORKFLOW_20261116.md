@@ -88,3 +88,12 @@ Validation checks unknown signals/supplies/terminals/device pins, self-loops, du
 The UI renders a separate wiring SVG based on **actual declared connections**, alongside the earlier logical control SVG. SVG is deliberately marked DRAFT/NOT FOR INSTALLATION and the preview is capped at 100 links. The model is connected to the engineering bundle and the consolidated gate.
 
 This is a functional data model and review drawing, not yet a final GOST control schematic. The next implementation should validate return-path topology, protective-device paths, contact state/NO-NC behavior, supply loading, interlocks, manufacturer catalog compatibility and drawing conventions using declared design inputs rather than guesses.
+
+## Declared conductor graph and diagnostic connectivity
+The `fire-control-continuity-v1.js` module constructs an undirected graph **only from engineer-declared wire endpoints**, separately for each fire-interface action. It reports connected components, supply-reachable device pins, unreachable pins, isolated subgraphs, dangling endpoints, signal presence, protective endpoints and explicitly declared return/protection/interlock wire categories. It does not infer a conductor from a logical command or infer continuity across contactors, relay contacts, protective devices or power supplies.
+
+Every report is a draft. Connectivity of an undirected conductor graph is **not** proof of electrical continuity, switching sequence, control voltage polarity, conductor suitability, contact NO/NC behavior, fail-safe function or protection coordination. The output deliberately retains these review requirements even if every graph node is reachable.
+
+The continuity section is available in the consolidated engineering gate, engineering bundle, fire-interface UI and CSV export. Regressions cover isolated coils, missing return/protection/interlock declarations, missing signals, disconnected supplies, multiple components, duplicate/unreviewed inputs and safe preservation of unresolved status.
+
+Next steps: a typed contact and supply-terminal model with engineer-supplied pin function evidence; then evaluate open/closed state per declared signal and loss-of-power scenario. Only after that can a contact-aware electrical path evaluator be built. It must never silently assume the state of an unknown contact or the characteristics of a protective device.
