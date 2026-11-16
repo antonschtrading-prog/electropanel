@@ -31,5 +31,6 @@ test('unknown body height and depth do not become made-up numbers',()=>{
 test('unresolved article stays unverified and cannot invent manufacturer geometry',()=>{
  const html=render(project(),()=>null);
  assert.match(html,/ARTICLE_UNKNOWN/);
- assert.match(html,/Нет каталожной записи/);
+ assert.doesNotMatch(html,/class="ep-manufacturer-front"/);
+ assert.match(html,/DIN 1 · 0\/4 мод/);
 });
