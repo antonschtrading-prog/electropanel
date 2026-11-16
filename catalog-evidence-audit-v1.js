@@ -70,7 +70,8 @@ function epCatalogEvidenceAuditV1(project,lookup){
    poleConfiguration:d.poleConfiguration??null
   };
   items.push(item);
-  if(!d.maker||!d.series||!d.sku||!d.source)
+  // Source URLs are useful catalogue metadata, not a prerequisite for an engineer-entered article.
+  if(!d.maker||!d.series||!d.sku)
    add('CATALOG_EVIDENCE_INCOMPLETE','UNKNOWN',o);
   if(d.source&&!safeUrl(d.source))add('CATALOG_SOURCE_URL_INVALID','BLOCKED',o);
   if(d.productSource&&!safeUrl(d.productSource))add('CATALOG_PRODUCT_URL_INVALID','BLOCKED',o);
