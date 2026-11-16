@@ -20,6 +20,18 @@ function epRestoreProjectExtensionsV2(raw,project){
   };
   const result=walk(value,0);if(JSON.stringify(result).length>limit)throw Error(label+': превышен размер');return result;
  };
+ if(raw.designStageV1!==undefined){
+  if(!['PRELIMINARY','BOARD_DESIGN','DETAILED'].includes(raw.designStageV1))
+   throw Error('Неизвестная стадия проектирования');
+  project.designStageV1=raw.designStageV1;
+ }
+ if(raw.designRequirementsV1!==undefined){
+  if(!object(raw.designRequirementsV1)||
+   Object.keys(raw.designRequirementsV1).some(k=>!['selectivity','externalNetwork'].includes(k))||
+   Object.values(raw.designRequirementsV1).some(v=>typeof v!=='boolean'))
+   throw Error('Некорректные требования к необязательным проверкам');
+  project.designRequirementsV1=clone(raw.designRequirementsV1,'designRequirementsV1',2000);
+ }
  if(raw.projectExtensionsVersion!==undefined&&raw.projectExtensionsVersion!==1)
   throw Error('Неподдерживаемая версия расширений проекта');
  const objects=['evidence','network','enclosure','dinEvidence'];
