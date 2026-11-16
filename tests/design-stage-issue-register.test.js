@@ -59,3 +59,14 @@ test('HTML shows deferred count and preserves safe output',()=>{
  const x=report(bundle,p());
  assert.match(html(x),/отложено 1/);
 });
+
+test('deferred optional problems remain available in collapsible UI and safe CSV',()=>{
+ const {epEngineeringIssueRegisterCsvV1:csv}=require('../engineering-issue-register-v1.js');
+ const bundle=b();bundle.sections.engineering.issues=[
+  {code:'CATALOG_SOURCE_REVIEW_NOT_RECORDED',level:'UNKNOWN'}];
+ const r=report(bundle,p()),h=html(r),csvData=csv(r);
+ assert.match(h,/Отложенные и необязательные проверки/);
+ assert.match(h,/CATALOG_SOURCE_REVIEW_NOT_RECORDED/);
+ assert.ok(csvData.includes('DEFERRED'));
+ assert.ok(csvData.includes('CATALOG_SOURCE_REVIEW_NOT_RECORDED'));
+});
