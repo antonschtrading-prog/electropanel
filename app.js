@@ -1993,8 +1993,10 @@ $('automationFlowPanel').addEventListener('click',e=>{
    return {circuitId:line.slice(0,pos).trim(),
     category:line.slice(pos+1).trim()};
   });
+  const separated=String($('groupMergeSeparateIds')?.value??'').trim();
   const rules=epGroupMergeRulesV1({maxGroupPowerKw:$('groupMergeMaxKw')?.value,
-   maxConsumersPerCircuit:$('groupMergeMaxConsumers')?.value,categories});
+   maxConsumersPerCircuit:$('groupMergeMaxConsumers')?.value,categories,
+   ...(separated?{separateCircuitIds:separated.split(',').map(x=>x.trim())}:{})});
   if(preview){
    workflowMergeRuleInput=rules;
    workflowMergePlan=epGroupMergePlanV1(ensureV2(state),rules);
