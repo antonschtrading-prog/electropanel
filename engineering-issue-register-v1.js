@@ -1,7 +1,29 @@
 'use strict';
 // Aggregate all draft engineering issues without claiming regulatory compliance.
 function epEngineeringIssueRegisterV1(bundle,project){
- const sections=bundle?.sections||{},entries=[],counts={BLOCKED:0,UNKNOWN:0};
+ const sections=bundle?.sections||{},entries=[],deferred=[],counts={BLOCKED:0,UNKNOWN:0,DEFERRED:0};
+ const stage=typeof epDesignStageScopeV1==='function'?
+  epDesignStageScopeV1(project).stage:'PRELIMINARY';
+ const requested=project?.designRequirementsV1||{};
+ const defer=(code,level)=>{
+  if(level!=='UNKNOWN')return false;
+  if(['CATALOG_SOURCE_REVIEW_NOT_RECORDED',
+      'CATALOG_USER_DECLARATION_NOT_INDEPENDENTLY_VERIFIED',
+      'CATALOG_MIRROR_REQUIRES_MANUFACTURER_CONFIRMATION',
+      'MANUFACTURER_TERMINALS_UNVERIFIED'].includes(code))
+   return true;
+  if(['MAX_FAULT_INPUT_MISSING','FAULT_ROUTE_INPUT_MISSING',
+      'ROUTE_IMPEDANCE_NOT_DECLARED'].includes(code)&&stage!=='DETAILED')
+   return true;
+  if(['PROTECTION_MATRIX_COORDINATION_MANUFACTURER_SOURCE_REQUIRED',
+      'COORD_LOCAL_FAULT_STUDY_REQUIRED'].includes(code)&&requested.selectivity!==true)
+   return true;
+  if(['PROTECTION_MATRIX_INCOMING_MAX_STUDY_REQUIRED',
+      'PROTECTION_MATRIX_BRANCH_RX_BINDING_REQUIRED',
+      'INCOMING_MAX_STUDY_UNDECLARED'].includes(code)&&requested.externalNetwork!==true)
+   return true;
+  return false;
+ };
  const knownLines=Array.isArray(project?.lines)?new Set(project.lines.map(x=>x?.id).filter(x=>typeof x==='string')):null;
  const sectionNames=['designWorkQueue','designReview','cableReference','designEvidence','dossier','bom','board','layoutAlternatives','protection','crossView','wiringTrace','neutralSegregation','neutralWireIsolation','singleLine','engineering'];
  if(sections.catalogueIntegrity)sectionNames.unshift('catalogueIntegrity');
@@ -38,15 +60,19 @@ function epEngineeringIssueRegisterV1(bundle,project){
    const level=issue.level==='BLOCKED'||issue.status==='BLOCKED'?'BLOCKED':'UNKNOWN';
    const circuitId=issue.lineId??issue.circuitId??issue.owner??null;
    const id=typeof circuitId==='string'?circuitId:null;
-   entries.push({section:name,level,code:issue.code,
+   const entry={section:name,level,code:issue.code,
     circuitId:knownLines&&!knownLines.has(id)?null:id,
     objectId:knownLines&&id&&!knownLines.has(id)?id:null,
-    recordIndex:Number.isInteger(issue.recordIndex)?issue.recordIndex:null});
+    recordIndex:Number.isInteger(issue.recordIndex)?issue.recordIndex:null};
+   if(defer(issue.code,level)){deferred.push({...entry,level:'DEFERRED'});continue;}
+   entries.push(entry);
   }
  }
  for(const x of entries)counts[x.level]++;
+ counts.DEFERRED=deferred.length;
  return {schema:'electropanel.issue.register.draft.1',status:counts.BLOCKED?'BLOCKED':'UNKNOWN',
-  entries,counts,sections:sectionNames,engineeringApproved:false,ready_for_installation:false};
+  entries,deferred,counts,sections:sectionNames,stage,
+  engineeringApproved:false,ready_for_installation:false};
 }
 function epEngineeringIssueRegisterHtmlV1(report,selectedId=null){
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -60,8 +86,9 @@ function epEngineeringIssueRegisterHtmlV1(report,selectedId=null){
    '<td>'+(x.circuitId?'<button class="btn tiny" type="button" data-issue-focus="'+esc(x.circuitId)+'">'+esc(x.circuitId)+'</button>':x.objectId?esc(x.objectId):'Проект')+'</td></tr>';
  }).join('');
  return '<details class="ep-issue-register"><summary>Сводный реестр замечаний · блокирующих '+
-  report.counts.BLOCKED+', неопределённостей '+report.counts.UNKNOWN+'</summary>'+
-  '<p>Замечания могут повторяться в разных инженерных разделах. Это журнал проверки, не допуск.</p>'+
+  report.counts.BLOCKED+', неопределённостей '+report.counts.UNKNOWN+
+  ', отложено '+(report.counts.DEFERRED||0)+'</summary>'+
+  '<p>Замечания могут повторяться в разных инженерных разделах. Отложенные проверки и происхождение введённых данных не блокируют текущую стадию. Это журнал проектирования, не допуск.</p>'+
   '<div style="overflow-x:auto"><table><thead><tr><th>Уровень</th><th>Раздел</th><th>Проблема</th><th>Что проверить</th><th>Цепь / объект</th></tr></thead><tbody>'+
   (items||'<tr><td colspan="5">Замечания не перечислены; подтверждение монтажа отсутствует.</td></tr>')+
   '</tbody></table></div></details>';
