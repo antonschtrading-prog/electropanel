@@ -115,3 +115,13 @@ test('changing only unsplit line assignments after preview invalidates plan when
  p.loads[2].circuitId='L9';
  assert.throws(()=>apply(p,preview),/GROUP_SPLIT_PLAN_STALE/);
 });
+
+test('generated branch IDs never collide with consumer IDs or common apparatus IDs',()=>{
+ const p=project();p.loads[1].id='L2';p.sharedDevices.push({id:'L3',circuitIds:[]});
+ const r=apply(p,plan(p,{maxGroupPowerKw:5}));
+ assert.equal(r.createdCircuits.length,1);
+ assert.equal(r.createdCircuits[0],'L4');
+ const ids=[...r.project.lines.map(x=>x.id),...r.project.loads.map(x=>x.id),
+  ...r.project.sharedDevices.map(x=>x.id)];
+ assert.equal(new Set(ids).size,ids.length);
+});
