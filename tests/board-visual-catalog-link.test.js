@@ -1,0 +1,15 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+test('shared device carries own SKU',()=>assert.match(app,/catalogSku:d\.catalogSku\|\|''/));
+test('branch device SKU has precedence',()=>assert.match(app,/catalogSku:b\?\.catalogSku\|\|l\.catalogSku\|\|''/));
+test('shared device keeps own width',()=>assert.match(app,/modules:d\.modules,catalogSku:d\.catalogSku/));
+test('branch device keeps own width',()=>assert.match(app,/modules:b\?\.modules\?\?l\.modules,catalogSku:/));
+test('shared devices included before lines',()=>assert.match(app,/return \[\.\.\.\(project\.sharedDevices\|\|\[\]\)/));
+test('visual resolved from project catalog',()=>assert.match(app,/const d=catalogDevice\(line\.catalogSku\)/));
+test('visual evidence model used',()=>assert.match(app,/epDeviceVisualEvidenceV1\(line,d\)/));
+test('board slot uses apparatus ID',()=>assert.match(app,/d\.dataset\.apparatusId=boardId\|\|''/));
+test('board face includes visual status',()=>assert.match(app,/d\.dataset\.visualEvidence=visual\.source/));
+test('board face displays evidence text',()=>assert.match(app,/epDeviceVisualEvidenceHtmlV1\(visual\)/));
+test('visual does not override project width',()=>assert.match(app,/let width=0;while\(col\+width<slots\.length/));
+test('visual does not alter electrical calculations',()=>assert.ok(!app.includes('visual.mark=calculate')));
