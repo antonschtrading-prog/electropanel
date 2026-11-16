@@ -1,8 +1,10 @@
 'use strict';
+const epFireTopologyModuleV1=typeof module!=='undefined'&&typeof require==='function'?require('./fire-control-topology-v1'):null;
 // SVG logical interface diagram, deliberately not an installation-ready point-to-point wiring diagram.
 function epFireControlDiagramV1(project){
- if(typeof epFireControlTopologyV1!=='function')throw Error('FIRE_DIAGRAM_TOPOLOGY_MISSING');
- const topology=epFireControlTopologyV1(project);
+ const engine=typeof epFireControlTopologyV1==='function'?epFireControlTopologyV1:epFireTopologyModuleV1?.epFireControlTopologyV1;
+ if(typeof engine!=='function')throw Error('FIRE_DIAGRAM_TOPOLOGY_MISSING');
+ const topology=engine(project);
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
  if(topology.status==='NOT_CONFIGURED')return {schema:'electropanel.fire.diagram.1',status:'NOT_CONFIGURED',svg:'',issues:[],engineeringApproved:false};
  const nodes=topology.nodes.filter(n=>['EXTERNAL_SIGNAL','COMMAND','ACTUATOR','CONSUMER','CONTROL_SUPPLY','TERMINAL'].includes(n.kind));
