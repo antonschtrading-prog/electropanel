@@ -44,7 +44,8 @@ test("provenance: missing source",()=>{
  delete d.source;
  const source=owners==='shared'?{...p,lines:[],sharedDevices:[{id:'G1',catalogSku:a.id}]}:p;
  const result=audit(source,()=>{if(lookupException)throw Error('offline');return d;});
- assert.ok(result.issues.some(x=>x.code==="CATALOG_EVIDENCE_INCOMPLETE"&&x.level==="UNKNOWN"),JSON.stringify(result.issues));
+ assert.ok(!result.issues.some(x=>x.code==="CATALOG_EVIDENCE_INCOMPLETE"),JSON.stringify(result.issues));
+ assert.equal(result.summary.missingSource,1);
  assert.equal(result.engineeringApproved,false);
 });
 test("provenance: insecure source URL",()=>{
