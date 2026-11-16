@@ -1970,6 +1970,39 @@ $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
 $('automationFlowPanel').addEventListener('click',e=>{
+ const preview=e.target.closest('#groupSplitPreviewBtn');
+ const apply=e.target.closest('#groupSplitApplyBtn');
+ if(!preview&&!apply)return;
+ try{
+  if(preview){
+   const raw={maxGroupPowerKw:$('groupSplitMaxKw')?.value};
+   const rules=epGroupSplitRulesV1(raw);
+   const plan=epGroupSplitPlanV1(ensureV2(state),rules);
+   workflowSplitRuleInput=rules.maxGroupPowerKw;
+   workflowSplitPlan=plan;
+   renderAutomationWorkflowV1();
+   const details=$('automationFlowPanel').querySelector('.ep-group-split');
+   if(details)details.open=true;
+   return notify('Разбиение рассчитано: '+plan.proposals.length+
+    ' исходных групп. Проект не изменён.');
+  }
+  if(!workflowSplitPlan)
+   throw Error('Сначала выполните предварительный просмотр');
+  const freshInput=epGroupSplitRulesV1({
+   maxGroupPowerKw:$('groupSplitMaxKw')?.value});
+  if(freshInput.maxGroupPowerKw!==workflowSplitPlan.rules.maxGroupPowerKw)
+   throw Error('Изменены правила. Пересчитайте предварительный просмотр');
+  const result=epGroupSplitApplyV1(ensureV2(state),workflowSplitPlan);
+  if(!result.project)return notify('Нет групп для безопасного разделения');
+  checkpoint();state=result.project;
+  state.consumerGroupSplitRulesV1=freshInput;
+  workflowSplitPlan=null;workflowSplitRuleInput=null;changed();
+  notify('Разделено исходных групп: '+result.applied+
+   '. Добавлено цепей: '+result.createdCircuits.length+
+   '. Подбор защиты для новых групп требуется выполнить отдельно.');
+ }catch(error){notify('Группировка не применена: '+error.message,true);}
+});
+$('automationFlowPanel').addEventListener('click',e=>{
  const preview=e.target.closest('#workflowPreviewBtn');
  const apply=e.target.closest('#workflowApplyCurrentsBtn');
  const choose=e.target.closest('[data-workflow-article][data-workflow-line]');
