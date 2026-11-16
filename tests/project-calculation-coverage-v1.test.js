@@ -25,17 +25,18 @@ test('invalid current is not treated as evidence',()=>{
  const r=audit({lines:[{id:'L1',overloadInput:{ibA:'NaN',izA:'-5'}}]});
  assert.ok(r.issues.some(x=>x.code==='IB_NOT_DECLARED'));
 });
-test('even complete declarations require independent engineering review',()=>{
+test('panel calculations can be available without routing or provenance',()=>{
  const r=audit({lines:[{id:'L1',catalogSku:'x',overloadInput:{ibA:10,izA:20},
  route44Input:{},breakingCapacityInput:{},calculationReview:{}}]},()=>sku);
- assert.equal(r.status,'UNKNOWN');assert.equal(r.ready_for_installation,false);
+ assert.equal(r.status,'AVAILABLE');assert.equal(r.ready_for_installation,false);
 });
 
 test('actual faultInput Ik counts as a declaration, not a verification',()=>{
  const r=audit({lines:[{id:'L1',catalogSku:'x',overloadInput:{ibA:'10,5',izA:'20,5'},
  faultInput:{ikKa:'3,5'},route44Input:{}}]},()=>sku);
  assert.ok(!r.issues.some(x=>x.code==='SHORT_CIRCUIT_INPUT_NOT_DECLARED'));
- assert.ok(r.issues.some(x=>x.code==='ENGINEERING_REVIEW_EVIDENCE_NOT_ESTABLISHED'));
+ assert.ok(!r.issues.some(x=>x.code==='ENGINEERING_REVIEW_EVIDENCE_NOT_ESTABLISHED'));
+ assert.ok(!r.issues.some(x=>x.code==='ROUTE_IMPEDANCE_NOT_DECLARED'));
 });
 test('stale calculation review blocks',()=>{
  const r=audit({lines:[{id:'L1',calculationReview:{required:true}}]});
@@ -44,4 +45,15 @@ test('stale calculation review blocks',()=>{
 test('decimal comma currents compared to article rating',()=>{
  const r=audit({lines:[{id:'L1',catalogSku:'x',overloadInput:{ibA:'16,5',izA:'20,0'}}]},()=>sku);
  assert.ok(r.issues.some(x=>x.code==='IB_EXCEEDS_SELECTED_IN'));
+});
+
+test('no cable length or Iz is mandatory for preliminary panel design',()=>{
+ const r=audit({lines:[{id:'L1',catalogSku:'x',overloadInput:{ibA:10}}]},()=>sku);
+ assert.equal(r.status,'AVAILABLE');
+ assert.ok(!r.issues.some(x=>x.code==='IZ_NOT_DECLARED'));
+ assert.ok(!r.issues.some(x=>x.code==='SHORT_CIRCUIT_INPUT_NOT_DECLARED'));
+});
+test('invalid declared cable ampacity does not produce false numeric pass',()=>{
+ const r=audit({lines:[{id:'L1',catalogSku:'x',overloadInput:{ibA:10,izA:'bad'}}]},()=>sku);
+ assert.equal(r.engineeringApproved,false);
 });
