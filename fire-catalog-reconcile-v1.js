@@ -8,7 +8,8 @@ function epFireCatalogReconcileV1(project,lookupSku){
  const design=epFireControlDesignV1(project);
  if(design.status==='NOT_CONFIGURED')return {schema:'electropanel.fire.catalog.1',status:'NOT_CONFIGURED',rows,issues,engineeringApproved:false};
  issues.push(...design.issues);
- const lookup=typeof lookupSku==='function'?lookupSku:typeof epCatalogSku==='function'?epCatalogSku:null;
+ const projectCatalog=typeof epProjectCatalogV1==='function'?epProjectCatalogV1(project,typeof EP_CATALOG==='object'?EP_CATALOG:{}):null;
+ const lookup=typeof lookupSku==='function'?lookupSku:projectCatalog?.lookup??(typeof epCatalogSku==='function'?epCatalogSku:null);
  const validCategories={CONTACTOR:['CONTACTOR'],SHUNT_TRIP:['SHUNT_TRIP','ACCESSORY'],UNDERVOLTAGE_RELEASE:['UNDERVOLTAGE_RELEASE','ACCESSORY'],INTERFACE_RELAY:['INTERFACE_RELAY','RELAY']};
  for(const item of design.rows){
   let article=null;
