@@ -17,4 +17,15 @@ function epFireControlBomCsvV1(project){
  return {schema:'electropanel.fire.bom.csv.1',status:report.status,csv:rows.map(r=>r.map(quote).join(';')).join('\r\n')+'\r\n',
   issues:report.issues,engineeringApproved:false,ready_for_installation:false};
 }
-if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1};
+
+function epFireControlChecklistCsvV1(project){
+ if(typeof epFireControlChecklistV1!=='function')throw Error('FIRE_CHECKLIST_ENGINE_MISSING');
+ const report=epFireControlChecklistV1(project);
+ const quote=x=>'"'+String(x??'').replace(/"/g,'""').replace(/^[=+@\-]/,"'if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1};")+'"';
+ const rows=[['criterion','section','object_id','status','requirement']];
+ for(const item of report.checks)rows.push([item.code,item.scope,item.objectId,item.status,item.detail]);
+ return {schema:'electropanel.fire.checklist.csv.1',status:report.status,
+  csv:rows.map(row=>row.map(quote).join(';')).join('\r\n')+'\r\n',
+  passed:report.passed,total:report.total,engineeringApproved:false,ready_for_installation:false};
+}
+if(typeof module!=='undefined')module.exports={epFireControlCsvV1,epFireControlBomCsvV1,epFireControlChecklistCsvV1};
