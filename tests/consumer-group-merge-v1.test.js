@@ -174,3 +174,27 @@ test('exclusion added after preview rejects stale merger even with same grouping
  preview.rules={...preview.rules,separateCircuitIds:['L2']};
  assert.throws(()=>apply(p,preview),/GROUP_MERGE_PLAN_STALE/);
 });
+
+test('independent DIN article placement prevents deleting an already placed apparatus',()=>{
+ for(const id of ['B1','B2']){
+  const p=project();p.dinPlacementsV1=[{deviceId:id,article:'ABCD',modules:1}];
+  const r=plan(p,options());
+  assert.equal(r.proposals.length,0);
+  assert.ok(r.issues.some(x=>x.code==='GROUP_MERGE_DIN_ARTICLE_PLACEMENT_LINKED'));
+ }
+});
+test('large 400-line project preserves one-to-one consumer ownership in immutable preview',()=>{
+ const p=project();p.lines=p.lines.slice(0,2);p.loads=p.loads.slice(0,2);
+ p.branchDevices=p.branchDevices.slice(0,2);
+ for(let i=4;i<=401;i++){
+  const id='L'+i;
+  p.lines.push({id,phase:'L3',power:1,modules:1,device:''});
+  p.loads.push({id:'LD'+i,circuitId:id,powerKw:1});
+  p.branchDevices.push({id:'B'+i,circuitId:id,modules:1});
+ }
+ const before=JSON.stringify(p),r=plan(p,options());
+ assert.equal(p.lines.length,400);
+ assert.equal(r.proposals.length,1);
+ assert.equal(JSON.stringify(p),before);
+ assert.equal(r.engineeringApproved,false);
+});
