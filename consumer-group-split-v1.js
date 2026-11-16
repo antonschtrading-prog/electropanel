@@ -130,7 +130,12 @@ function epGroupSplitApplyV1(project,plan){
  if(!fresh.proposals.length)return {project:null,applied:0,createdCircuits:[],
   status:'NO_CHANGES',engineeringApproved:false};
  let next=JSON.parse(JSON.stringify(project)),newIds=[],serial=1;
- const taken=new Set(next.lines.map(x=>x.id));
+ const taken=new Set([
+  ...next.lines.map(x=>x.id),
+  ...next.loads.map(x=>x.id),
+  ...(next.sharedDevices||[]).map(x=>x.id),
+  ...(next.branchDevices||[]).map(x=>x.id)
+ ]);
  function allocate(){
   while(taken.has('L'+serial))serial++;
   const id='L'+serial++;taken.add(id);return id;
