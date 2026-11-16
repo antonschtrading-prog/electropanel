@@ -987,6 +987,26 @@ const server=http.createServer((req,res)=>{
  // Assign a real seeded article through the actual editor.
  await page.locator('#boardCanvas [data-line="L1"]').click();
  await page.locator('#catalogSku').selectOption('SE-A9F74116');
+ // Exact-article front, nominal DIN slot and declared body must agree in the live UI.
+ const face=await page.evaluate(()=>{
+  const row=document.querySelector('#boardCanvas [data-line="L1"]');
+  const p=epDinPhysicalEnvelopeV1(epDraftBoardPlanV1(state,catalogDevice),catalogDevice);
+  const d=p.rows.find(r=>r.deviceId==='L1'||r.deviceId==='BR_L1');
+  return {asset:row?.dataset.frontAssetStatus,bodyWidth:row?.dataset.bodyWidthMm,
+   slotWidth:row?.dataset.nominalSlotWidthMm,hasSvg:!!row?.querySelector('.ep-board-front svg'),
+   hasPhoto:!!row?.querySelector('.ep-board-front img'),hasSelectedFront:
+    !!document.querySelector('#selectedDevice .ep-preview-article-front svg'),
+   geometryStatus:p.status,declaredWidth:d?.bodyWidthMm,
+   approval:p.engineeringApproved};
+ });
+ assert.equal(face.asset,'STYLIZED_ONLY',JSON.stringify(face));
+ assert.equal(face.hasSvg,true,JSON.stringify(face));
+ assert.equal(face.hasPhoto,false,JSON.stringify(face));
+ assert.equal(face.hasSelectedFront,true,JSON.stringify(face));
+ assert.equal(face.declaredWidth,18,JSON.stringify(face));
+ assert.equal(face.bodyWidth,'18');
+ assert.equal(face.slotWidth,'18');
+ assert.equal(face.approval,false);
  // Engineering forms share the board workspace.
  await page.evaluate(()=>switchView('board'));
  await page.locator('#loadCurrentPanel summary').click();
