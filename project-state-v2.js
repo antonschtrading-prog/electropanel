@@ -20,6 +20,12 @@ function epRestoreProjectExtensionsV2(raw,project){
   };
   const result=walk(value,0);if(JSON.stringify(result).length>limit)throw Error(label+': превышен размер');return result;
  };
+ if(raw.consumerGroupSplitRulesV1!==undefined){
+  if(typeof epGroupSplitRulesV1!=='function')
+   throw Error('Модуль правил группировки недоступен');
+  project.consumerGroupSplitRulesV1=
+   epGroupSplitRulesV1(raw.consumerGroupSplitRulesV1);
+ }
  if(raw.workflowDesignInputsV1!==undefined){
   if(typeof epWorkflowInputsV1!=='function')
    throw Error('Модуль единого проектного маршрута недоступен');
