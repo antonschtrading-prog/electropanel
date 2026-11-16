@@ -985,6 +985,14 @@ function renderAutomationWorkflowV1(){
   target.insertAdjacentHTML('beforeend',epGroupSplitHtmlV1(plan||{
    rules:{maxGroupPowerKw:workflowSplitRuleInput??''},proposals:[],issues:[]}));
  }
+ if(typeof epGroupMergeHtmlV1==='function'){
+  let plan=workflowMergePlan;
+  if(!plan&&state.consumerGroupMergeRulesV1&&typeof epGroupMergePlanV1==='function')
+   try{plan=epGroupMergePlanV1(state,state.consumerGroupMergeRulesV1);}catch(_){}
+  target.insertAdjacentHTML('beforeend',epGroupMergeHtmlV1(plan||{
+   rules:workflowMergeRuleInput||{maxGroupPowerKw:'',categories:[]},
+   proposals:[],issues:[]}));
+ }
 }
 function renderEngineeringDiagnosticsV1(){
  const impactHolder=$('designChangeImpactPanel');
@@ -1971,6 +1979,53 @@ $('pasteTask').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskTex
 $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending())$('taskModal').classList.add('hidden');};
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
+$('automationFlowPanel').addEventListener('click',e=>{
+ const preview=e.target.closest('#groupMergePreviewBtn');
+ const apply=e.target.closest('#groupMergeApplyBtn');
+ if(!preview&&!apply)return;
+ try{
+  const rawText=String($('groupMergeCategories')?.value??'');
+  if(rawText.length>10000)throw Error('Слишком длинный список категорий');
+  const categories=rawText.split(/\r?\n/).filter(x=>x.trim()).map((line,i)=>{
+   const pos=line.indexOf(';');
+   if(pos<1||pos===line.length-1||line.indexOf(';',pos+1)!==-1)
+    throw Error('Категории: неверная строка '+(i+1));
+   return {circuitId:line.slice(0,pos).trim(),
+    category:line.slice(pos+1).trim()};
+  });
+  const rules=epGroupMergeRulesV1({maxGroupPowerKw:$('groupMergeMaxKw')?.value,
+   maxConsumersPerCircuit:$('groupMergeMaxConsumers')?.value,categories});
+  if(preview){
+   workflowMergeRuleInput=rules;
+   workflowMergePlan=epGroupMergePlanV1(ensureV2(state),rules);
+   renderAutomationWorkflowV1();
+   const details=$('automationFlowPanel').querySelector('.ep-group-merge');
+   if(details)details.open=true;
+   return notify('Предложено объединений: '+workflowMergePlan.proposals.length+
+    '. Исходный проект не изменён.');
+  }
+  if(!workflowMergePlan)throw Error('Сначала выполните предварительный просмотр');
+  if(JSON.stringify(rules)!==JSON.stringify(workflowMergePlan.rules))
+   throw Error('Изменились категории или пределы: пересчитайте предложение');
+  const result=epGroupMergeApplyV1(ensureV2(state),workflowMergePlan);
+  if(!result.project)return notify('Допустимых объединений нет');
+  const candidate=result.project;
+  syncBranchDevices(candidate);candidate.branchModelVersion=1;
+  ensureV2(candidate);
+  if(typeof epDraftBoardPlanV1==='function'){
+   const layout=epDraftBoardPlanV1(candidate,catalogDevice);
+   if((layout.issues||[]).some(x=>x.level==='BLOCKED'&&
+    ['RAIL_CAPACITY_EXCEEDED','MANUAL_LAYOUT_OVERLAP',
+     'MANUAL_LAYOUT_OUT_OF_BOUNDS'].includes(x.code)))
+    throw Error('Нарушена компоновка DIN; объединение отменено');
+  }
+  checkpoint();state=candidate;
+  workflowMergePlan=null;workflowMergeRuleInput=null;changed();
+  notify('Объединено групп: '+result.merged+
+   ', удалено пустых черновых линий: '+result.removedCircuits.length+
+   '. Защиту объединённых цепей необходимо подобрать заново.');
+ }catch(error){notify('Объединение не применено: '+error.message,true);}
+});
 $('automationFlowPanel').addEventListener('click',e=>{
  const preview=e.target.closest('#groupSplitPreviewBtn');
  const apply=e.target.closest('#groupSplitApplyBtn');
