@@ -231,6 +231,7 @@ function devicePreviewHtml(line){
 }
 function deviceAppearance(line){
  const d=catalogDevice(line.catalogSku);
+ if(typeof epDeviceVisualEvidenceV1!=='function')return d?{type:d.appearance,maker:d.maker,series:d.series,sku:d.sku,mark:d.label}:{type:'generic',maker:'DIN',series:'Условный аппарат',sku:'',mark:line.device||'—'};
  const evidence=epDeviceVisualEvidenceV1(line,d);
  return {...evidence,type:evidence.appearance};
 }
