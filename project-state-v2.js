@@ -25,6 +25,8 @@ function epRestoreProjectExtensionsV2(raw,project){
   const data=clone(raw.fireControlV1,'fireControlV1',150000);
   const audit=epFireControlAuditV1(project,data);
   if(audit.status==='BLOCKED')throw Error('FIRE_CONTROL_IMPORT_INVALID');
+  if(typeof epFireControlDesignV1!=='function')throw Error('FIRE_CONTROL_DESIGN_MODULE_MISSING');
+  if(epFireControlDesignV1({...project,fireControlV1:data}).status==='BLOCKED')throw Error('FIRE_CONTROL_DESIGN_IMPORT_INVALID');
   project.fireControlV1=data;
  }
  if(raw.consumerGroupMergeRulesV1!==undefined){
