@@ -3,7 +3,9 @@
 function epFireControlDesignV1(project){
  const raw=project?.fireControlV1;
  if(!raw)return {schema:'electropanel.fire.design.1',status:'NOT_CONFIGURED',rows:[],issues:[],engineeringApproved:false};
- const audit=epFireControlAuditV1(project,raw),issues=[...audit.issues],rows=[];
+ const auditEngine=typeof epFireControlAuditV1==='function'?epFireControlAuditV1:typeof require==='function'?require('./fire-control-v1').epFireControlAuditV1:null;
+ if(typeof auditEngine!=='function')throw Error('FIRE_DESIGN_AUDIT_ENGINE_MISSING');
+ const audit=auditEngine(project,raw),issues=[...audit.issues],rows=[];
  const objects=raw.design===undefined?{assignments:[]}:raw.design;
  const assignments=Array.isArray(objects?.assignments)?objects.assignments:[];
  const ids=new Set(),actionIds=new Set(audit.rows.map(a=>a.id));
