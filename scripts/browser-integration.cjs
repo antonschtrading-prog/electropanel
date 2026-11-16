@@ -55,6 +55,24 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.lines.filter(l=>l.loadCurrentCalculation?.powerSource==='circuit').length),0);
  await page.locator('#redoBtn').click();
  assert.ok(await page.evaluate(()=>state.lines.some(l=>l.loadCurrentCalculation?.powerSource==='circuit')));
+ const offer=page.locator('[data-workflow-article][data-workflow-line]').first();
+ assert.ok(await offer.count()>0,'Draft workflow offers a reviewed provisional SKU');
+ const proposalId=await offer.getAttribute('data-workflow-line');
+ const proposalSku=await offer.getAttribute('data-workflow-article');
+ await offer.click();
+ const articleChoice=await page.evaluate(id=>{
+  const line=state.lines.find(l=>l.id===id);
+  const saved=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+  return {selected:line?.catalogSku,stored:saved.lines.find(l=>l.id===id)?.catalogSku,
+   requestedReview:line?.articleReplacementReview?.required};
+ },proposalId);
+ assert.equal(articleChoice.selected,proposalSku);
+ assert.equal(articleChoice.stored,proposalSku);
+ assert.equal(articleChoice.requestedReview,true);
+ await page.locator('#undoBtn').click();
+ assert.notEqual(await page.evaluate(id=>state.lines.find(l=>l.id===id)?.catalogSku,proposalId),proposalSku);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(id=>state.lines.find(l=>l.id===id)?.catalogSku,proposalId),proposalSku);
  // Device-level supply source -> incoming -> outgoing apparatus via real controls.
  await page.evaluate(()=>switchView('board'));
  // Stage and scope must not demand cable length, external transformer or
