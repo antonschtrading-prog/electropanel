@@ -14,7 +14,8 @@ function epManufacturerFrontResolveV1(device,library=EP_MANUFACTURER_FRONT_ASSET
  const base={status:'STYLIZED_ONLY',image:null,issues:[],geometryVerified:false,
   manufacturerFaceVerified:false,engineeringApproved:false};
  const key=epManufacturerFrontKeyV1(device);
- if(!device||key==='|')return {...base,issues:['FRONT_ARTICLE_UNSPECIFIED']};
+ if(!device||[device.maker,device.series,device.sku,device.kind].some(x=>typeof x!=='string'||!x.trim()))
+  return {...base,issues:['FRONT_ARTICLE_UNSPECIFIED']};
  if(!library||typeof library!=='object'||Array.isArray(library))
   return {...base,status:'ASSET_REJECTED',issues:['FRONT_LIBRARY_INVALID']};
  if(!Object.prototype.hasOwnProperty.call(library,key))
@@ -37,7 +38,10 @@ function epManufacturerFrontResolveV1(device,library=EP_MANUFACTURER_FRONT_ASSET
   if(!['FRONT_PHOTO','FRONT_RENDER'].includes(a.assetType))issues.push('FRONT_ASSET_TYPE_INVALID');
   if(a.rightsStatus!=='PERMISSION_RECORDED'||!epManufacturerFrontHttpsV1(a.rightsEvidenceUrl))
    issues.push('FRONT_RIGHTS_NOT_DOCUMENTED');
-  if(!epManufacturerFrontHttpsV1(a.productEvidenceUrl)||!(/^\d{4}-\d{2}-\d{2}$/.test(a.reviewedAt||'')))
+  const date=a.reviewedAt;
+  const dateValid=typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&
+   Number.isFinite(Date.parse(date+'T00:00:00Z'))&&new Date(date+'T00:00:00Z').toISOString().slice(0,10)===date;
+  if(!epManufacturerFrontHttpsV1(a.productEvidenceUrl)||!dateValid)
    issues.push('FRONT_SOURCE_NOT_REVIEWED');
  }
  if(issues.length)return {...base,status:'ASSET_REJECTED',issues};

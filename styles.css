@@ -312,3 +312,7 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-preview-article-front .ep-board-front{min-width:90px;max-width:280px;max-height:320px}
 .ep-preview-article-front .ep-manufacturer-front,.ep-preview-article-front .ep-manufacturer-front-image{max-height:320px;width:100%;height:auto}
 @media(max-width:760px){.din-apparatus:has(.ep-board-front){height:132px;min-height:132px}.ep-board-front .ep-manufacturer-front,.ep-board-front .ep-manufacturer-front-image{max-height:75px}}
+
+/* Prioritize actual device image on the constrained editable DIN slot. */
+.din-apparatus .ep-board-front{order:-1}
+.ep-board-front svg,.ep-board-front img{pointer-events:none}

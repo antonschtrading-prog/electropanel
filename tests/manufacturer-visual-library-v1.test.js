@@ -56,3 +56,13 @@ test('visual library loads ahead of board preview and app',()=>{
  assert.ok(s.indexOf('manufacturer-visual-library-v1.js')<s.indexOf('draft-board-preview-v1.js'));
  assert.ok(s.indexOf('manufacturer-visual-library-v1.js')<s.indexOf('app.js'));
 });
+
+test('missing manufacturer, series, SKU and kind are never approved as an exact visual',()=>{
+ for(const change of [{maker:''},{series:''},{sku:''},{kind:''}]){
+  assert.equal(lib.epManufacturerFrontResolveV1({...d,...change},registry()).status,'STYLIZED_ONLY');
+ }
+});
+test('invalid calendar dates cannot be used as manufacturer review evidence',()=>{
+ const r=lib.epManufacturerFrontResolveV1(d,{'abb|a1':{...a,reviewedAt:'2026-02-30'}});
+ assert.equal(r.status,'ASSET_REJECTED');
+});
