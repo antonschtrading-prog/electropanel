@@ -79,3 +79,12 @@ Optional `fireControlV1.design.assignments[].pins` entries bind a previously dec
 - `verifiedSource`: an HTTPS manufacturer evidence reference supplied by the engineer
 
 Invalid mappings, repeated pins and orphan terminal references are blocked. Explicit mappings add DEVICE_PIN nodes and ENGINEER_DECLARED_PIN_BINDING edges to the logical graph and appear in SVG/CSV. FCHK_50 may pass when all action mappings have such declared evidence. This does **not** verify the URL contents or infer that the full control circuit is correct. It does not approve installation or resolve return wiring, interlocks, protection, ratings or supply compatibility.
+
+## Explicit control wiring stage
+The fire-interface project can now include `fireControlV1.wiring.connections`, an array of engineer-declared point-to-point links. Each connection requires an ID, unique wire reference, two endpoints, purpose, action ID, HTTPS evidence reference and review flag. Optional conductor data records declared cross section in mm², material and color. Supported endpoint types are SIGNAL, SUPPLY, TERMINAL, DEVICE_PIN, PROTECTION and JUNCTION. DEVICE_PIN references must match the engineer-declared pin mapping.
+
+Validation checks unknown signals/supplies/terminals/device pins, self-loops, duplicate IDs/references, conductor schema, action mapping, missing return/protection/interlock categories, and unreviewed connections. The wiring model never infers a physical wire from a logical command. It preserves the declared connection graph and marks continuity, contact functions, supply capacity and conductor rating as unverified.
+
+The UI renders a separate wiring SVG based on **actual declared connections**, alongside the earlier logical control SVG. SVG is deliberately marked DRAFT/NOT FOR INSTALLATION and the preview is capped at 100 links. The model is connected to the engineering bundle and the consolidated gate.
+
+This is a functional data model and review drawing, not yet a final GOST control schematic. The next implementation should validate return-path topology, protective-device paths, contact state/NO-NC behavior, supply loading, interlocks, manufacturer catalog compatibility and drawing conventions using declared design inputs rather than guesses.
