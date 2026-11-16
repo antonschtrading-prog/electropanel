@@ -1216,6 +1216,57 @@ const server=http.createServer((req,res)=>{
  assert.equal(rcboWorkflow.reportHasRcbo,true);
  assert.equal(rcboWorkflow.globalCatalogUntouched,true);
 
+ // Browser: real opt-in consumer group split from a design with NO apparatus
+ // or electrical links. No name-driven regrouping and no implicit cable data.
+ const originalGroupedState=await page.evaluate(()=>{
+  state=initial();
+  state.schema=PROJECT_SCHEMA;
+  state.earthing='TN-S';
+  state.railCapacity=12;state.railCount=2;
+  state.lines=[{id:'L1',name:'Office sockets',phase:'L1',
+   power:8,modules:1,device:'',source:'manual',sourceRef:''}];
+  state.loads=[
+   {id:'LD1',name:'Desk 1',circuitId:'L1',powerKw:3,source:'manual',sourceRef:''},
+   {id:'LD2',name:'Desk 2',circuitId:'L1',powerKw:3,source:'manual',sourceRef:''},
+   {id:'LD3',name:'Desk 3',circuitId:'L1',powerKw:2,source:'manual',sourceRef:''}];
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  syncBranchDevices(state);lastDesignSnapshot=null;changed();
+  return JSON.stringify({lines:state.lines,loads:state.loads});
+ });
+ await page.evaluate(()=>switchView('loads'));
+ assert.equal(await page.locator('.ep-group-split summary').count(),1);
+ await page.locator('.ep-group-split summary').click();
+ await page.locator('#groupSplitMaxKw').fill('5');
+ await page.locator('#groupSplitPreviewBtn').click();
+ const previewSplits=await page.evaluate(()=>({
+  rows:state.lines.length,loads:state.loads.length,
+  plan:workflowSplitPlan?.proposals?.length,
+  groups:workflowSplitPlan?.proposals?.[0]?.groups.length}));
+ assert.deepEqual(previewSplits,{rows:1,loads:3,plan:1,groups:2});
+ await page.locator('#groupSplitApplyBtn').click();
+ const grouped=await page.evaluate(()=>{
+  const saved=normalizeImport(JSON.parse(localStorage.getItem('electropanel_web_preview')));
+  return {circuits:state.lines.length,
+   consumers:state.loads.length,
+   groups:state.lines.map(x=>x.power),
+   ids:new Set(state.loads.map(x=>x.id)).size,
+   savedCircuits:saved.lines.length,
+   savedRule:saved.consumerGroupSplitRulesV1?.maxGroupPowerKw,
+   selected:state.lines.some(x=>x.catalogSku),
+   branches:state.branchDevices.length};
+ });
+ assert.equal(grouped.circuits,2);
+ assert.equal(grouped.consumers,3);
+ assert.deepEqual(grouped.groups,[5,3]);
+ assert.equal(grouped.ids,3);
+ assert.equal(grouped.savedCircuits,2);
+ assert.equal(grouped.savedRule,5);
+ assert.equal(grouped.selected,false);
+ assert.equal(grouped.branches,2);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.lines.length),1);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>state.lines.length),2);
  assert.ok(await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.faultRoutes.rows[0].ikMinA>400));
  await page.locator('#faultRoutePanel > details > summary').click();
  await page.locator('#faultRoutePanel').screenshot({path:'browser-fault-route.png'});
