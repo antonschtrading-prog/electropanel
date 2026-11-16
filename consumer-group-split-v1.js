@@ -41,6 +41,16 @@ function epGroupSplitAllowedV1(project,line){
   (project.branchDevices||[]).some(b=>b.circuitId===id&&
    (x.to==='BRANCH:'+b.id||x.from==='BRANCH:'+b.id))))
   return 'GROUP_SPLIT_SUPPLY_DEFINED';
+ const branches=(project.branchDevices||[]).filter(b=>b.circuitId===id);
+ if((project.boardBindingsV1||[]).some(b=>
+    branches.some(x=>x.id===b.boardDeviceId))||
+   (project.deviceFaultScenariosV1||[]).some(x=>
+    branches.some(b=>x.deviceNodeId==='BRANCH:'+b.id))||
+   (project.calculatedDeviceFaultBindingsV1||[]).some(x=>
+    branches.some(b=>x.deviceNodeId==='BRANCH:'+b.id))||
+   (project.deviceCoordinationEvidenceV1||[]).some(x=>
+    branches.some(b=>x.from==='BRANCH:'+b.id||x.to==='BRANCH:'+b.id)))
+  return 'GROUP_SPLIT_DESIGN_EVIDENCE_LINKED';
  if(line.device||line.templateId)
   return 'GROUP_SPLIT_DEVICE_PRESELECTED';
  return null;
