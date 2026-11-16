@@ -114,6 +114,10 @@ function epGroupMergePlanV1(project,rawRules){
   if(hasDinEvidence){
    add('GROUP_MERGE_DIN_ARTICLE_PLACEMENT_LINKED','UNKNOWN',line.id);continue;
   }
+  if(typeof epFireControlAffectedCircuitsV1==='function'&&
+   epFireControlAffectedCircuitsV1(project).includes(line.id)){
+   add('GROUP_MERGE_FIRE_CONTROL_LINKED','UNKNOWN',line.id);continue;
+  }
   const denied=typeof epGroupSplitAllowedV1==='function'?
    epGroupSplitAllowedV1(project,line):'GROUP_MERGE_SAFETY_AUDIT_UNAVAILABLE';
   if(denied){add('GROUP_MERGE_'+denied,'UNKNOWN',line.id);continue;}
