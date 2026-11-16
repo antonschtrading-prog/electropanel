@@ -1689,6 +1689,21 @@ $('selectedDevice').addEventListener('click',e=>{const b=e.target.closest('butto
 function renderIssues(){$('documentIssues').innerHTML=issues().map(x=>`<div class="issue">◆ ${safeText(x)}</div>`).join('');}
 function download(name,content,mime){const blob=new Blob([content],{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 const baseName=()=>state.title.replace(/[^\p{L}\p{N}_-]+/gu,'_').slice(0,45)||'electropanel';
+function epFireControlSetProjectV1(raw){
+ if(typeof epFireControlAuditV1!=='function')throw Error('FIRE_CONTROL_MODULE_MISSING');
+ const next=JSON.parse(JSON.stringify(raw));
+ const audit=epFireControlAuditV1(state,next);
+ if(audit.status==='BLOCKED')throw Error('FIRE_CONTROL_INVALID');
+ checkpoint();state.fireControlV1=next;changed();return audit;
+}
+function epFireControlClearProjectV1(){
+ if(!state.fireControlV1)return false;
+ checkpoint();delete state.fireControlV1;changed();return true;
+}
+function epFireControlReportV1(){
+ return typeof epFireControlAuditV1==='function'&&state.fireControlV1?
+ epFireControlAuditV1(state,state.fireControlV1):null;
+}
 function saveProject(){download(baseName()+'.json',JSON.stringify(state,null,2),'application/json;charset=utf-8');notify('Проект сохранён в JSON.');}
 function csv(){const header=['ID','Наименование','Мощность кВт','Фаза','Аппарат','Модули'], rows=state.lines.map(l=>[l.id,l.name,l.power??'',l.phase,l.device,l.modules]);const esc=v=>{const raw=String(v??'');const safe=/^\s*[=+@\t\r]/.test(raw)?'\''+raw:raw;return '"'+safe.replaceAll('"','""')+'"';};return '\uFEFF'+[header,...rows].map(r=>r.map(esc).join(';')).join('\r\n');}
 function draftEquipment(){
