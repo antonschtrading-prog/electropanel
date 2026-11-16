@@ -1,31 +1,36 @@
 'use strict';
-// Design-stage evidence assessment. Does not inspect or certify a physically assembled board.
+// Stage-scoped assessment of declared design checks. Never claims physical installation approval.
 const REQUIRED = Object.freeze(['load','network','cable','device','topology','enclosure']);
 const VALID = new Set(['verified','failed','unknown']);
-function assessDesignEvidence(project) {
+// Fields are checked when explicitly supplied, or when their output/stage requires them.
+// No source document or method declaration is required for an engineer-entered value.
+function assessDesignEvidence(project,options={}) {
   const records = project && typeof project === 'object' && !Array.isArray(project) ? project.evidence : null;
-  const items = [];
-  for (const area of REQUIRED) {
-    const entry = records && Object.prototype.hasOwnProperty.call(records, area) ? records[area] : null;
-    let status = 'unknown', reason = 'Нет проверяемых исходных данных';
-    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
-      const claimed = entry.status;
-      const hasSource = typeof entry.source === 'string' && entry.source.trim().length > 0;
-      const hasMethod = typeof entry.method === 'string' && entry.method.trim().length > 0;
-      if (claimed === 'failed') { status = 'failed'; reason = 'Зафиксировано инженерное противоречие'; }
-      else if (claimed === 'verified' && hasSource && hasMethod) {
-        status = 'verified'; reason = 'Есть источник и метод проверки';
-      } else if (claimed === 'verified') reason = 'Не указан источник или метод проверки';
-      else if (VALID.has(claimed)) reason = 'Проверка не подтверждена';
+  const explicit = Array.isArray(options.requiredAreas) ? options.requiredAreas : [];
+  const required = new Set(explicit.filter(area=>REQUIRED.includes(area)));
+  const items=[];
+  for(const area of REQUIRED){
+    const entry = records && Object.prototype.hasOwnProperty.call(records,area) ? records[area] : null;
+    const present = entry && typeof entry==='object' && !Array.isArray(entry);
+    let status='not_required', reason='Не требуется на выбранном этапе';
+    if(required.has(area) || present){
+      status='unknown';reason='Проверка пока не выполнена';
+      if(present){
+        if(entry.status==='failed'){status='failed';reason='Зафиксировано инженерное противоречие';}
+        else if(entry.stale===true){reason='Результат требует пересчёта';}
+        else if(entry.status==='verified'){status='verified';reason='Проверка выполнена по заданным исходным данным';}
+        else if(VALID.has(entry.status)){reason='Результат ещё не определён';}
+      }
     }
     items.push({area,status,reason,source:typeof entry?.source==='string'?entry.source:'',method:typeof entry?.method==='string'?entry.method:'',stale:entry?.stale===true});
   }
-  const failed = items.filter(x=>x.status==='failed').length;
-  const unknown = items.filter(x=>x.status==='unknown').length;
+  const failed=items.filter(x=>x.status==='failed').length;
+  const unknown=items.filter(x=>x.status==='unknown').length;
+  const verified=items.filter(x=>x.status==='verified').length;
+  const notRequired=items.filter(x=>x.status==='not_required').length;
   return {
-    status: failed ? 'failed' : unknown ? 'incomplete' : 'documented',
-    items, counts: {verified:items.length-failed-unknown,failed,unknown},
-    // Documentation status only. Independent engineering review remains necessary.
+    status:failed?'failed':unknown?'incomplete':verified?'documented':'not_required',
+    items,counts:{verified,failed,unknown,notRequired},
     installationApproved:false
   };
 }
