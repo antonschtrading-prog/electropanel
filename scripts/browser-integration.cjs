@@ -1412,6 +1412,41 @@ const server=http.createServer((req,res)=>{
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.lines.length),1);
 
+ // End-to-end market-pattern cabinet sizing: five one-module appliances
+ // should offer six positions; choosing must preserve engineering lines,
+ // persist manual positions and allow undo/redo with the four-module floor.
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.lines=Array.from({length:5},(_,i)=>({
+   id:'L'+(i+1),name:'Circuit '+(i+1),power:1,phase:'L1',
+   device:'B10',modules:1,source:'manual',sourceRef:''
+  }));
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  state.railCount=2;state.railCapacity=12;syncBranchDevices(state);
+  lastDesignSnapshot=null;changed();switchView('board');
+ });
+ const capacityChoice=page.locator('[data-apply-cabinet-option="1x6"]');
+ assert.equal(await capacityChoice.count(),1,'small cabinet form factor should be offered');
+ const beforeCabinet=await page.evaluate(()=>JSON.stringify(state.lines));
+ await capacityChoice.click();
+ const appliedCabinet=await page.evaluate(()=>{
+  const imported=normalizeImport(JSON.parse(snapshot()));
+  return {rails:state.railCount,modules:state.railCapacity,
+   savedRails:imported.railCount,savedModules:imported.railCapacity,
+   positions:imported.manualLayoutV1?.length,lines:JSON.stringify(state.lines)};
+ });
+ assert.equal(appliedCabinet.rails,1);
+ assert.equal(appliedCabinet.modules,6);
+ assert.equal(appliedCabinet.savedRails,1);
+ assert.equal(appliedCabinet.savedModules,6);
+ assert.equal(appliedCabinet.positions,5);
+ assert.equal(appliedCabinet.lines,beforeCabinet);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.railCapacity),12);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>state.railCapacity),6);
+ assert.equal(await page.locator('#exportCabinetCapacityBtn').count(),1);
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
