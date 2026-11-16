@@ -1721,6 +1721,7 @@ function epFireControlSetProjectV1(raw){
  const audit=epFireControlAuditV1(state,next);
  if(audit.status==='BLOCKED')throw Error('FIRE_CONTROL_INVALID');
  if(typeof epFireControlDesignV1!=='function'||epFireControlDesignV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_DESIGN_INVALID');
+ if(typeof epFireDinReconcileV1==='function'&&epFireDinReconcileV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_DIN_CONFLICT');
  checkpoint();state.fireControlV1=next;changed();return audit;
 }
 function epFireControlClearProjectV1(){
