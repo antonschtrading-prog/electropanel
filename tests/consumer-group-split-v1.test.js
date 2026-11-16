@@ -96,3 +96,22 @@ test('unassigned consumer and duplicate IDs fail closed before producing any spl
  const p=project();p.loads.push({id:'LD1',circuitId:'L1',powerKw:1});
  assert.equal(plan(p,{maxGroupPowerKw:5}).status,'BLOCKED');
 });
+
+test('apparatus-model binding and fault-current evidences prevent unsafe regrouping',()=>{
+ for(const mutate of [
+  p=>p.boardBindingsV1=[{boardDeviceId:'BD1',modelDeviceId:'MODEL1'}],
+  p=>p.deviceFaultScenariosV1=[{deviceNodeId:'BRANCH:BD1'}],
+  p=>p.calculatedDeviceFaultBindingsV1=[{deviceNodeId:'BRANCH:BD1'}],
+  p=>p.deviceCoordinationEvidenceV1=[{from:'BRANCH:BD1',to:'BRANCH:B2'}]
+ ]){
+  const p=project();mutate(p);
+  const r=plan(p,{maxGroupPowerKw:5});
+  assert.equal(r.proposals.length,0);
+  assert.ok(r.issues.some(x=>x.code==='GROUP_SPLIT_DESIGN_EVIDENCE_LINKED'));
+ }
+});
+test('changing only unsplit line assignments after preview invalidates plan when its membership changes',()=>{
+ const p=project(),preview=plan(p,{maxGroupPowerKw:5});
+ p.loads[2].circuitId='L9';
+ assert.throws(()=>apply(p,preview),/GROUP_SPLIT_PLAN_STALE/);
+});
