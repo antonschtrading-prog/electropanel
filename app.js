@@ -994,6 +994,10 @@ function renderAutomationWorkflowV1(){
    proposals:[],issues:[]}));
  }
  if(typeof epFireControlHtmlV1==='function')target.insertAdjacentHTML('beforeend',epFireControlHtmlV1(state));
+ if(typeof epProjectDeliveryTraceV1==='function'&&typeof epProjectDeliveryTraceHtmlV1==='function'){
+  const trace=epProjectDeliveryTraceV1(state,catalogDevice);
+  target.insertAdjacentHTML('beforeend',epProjectDeliveryTraceHtmlV1(trace));
+ }
 }
 // Fire interface lives in the same project workflow as consumer grouping.
 function epFireControlEditorEventV1(event){
@@ -3075,3 +3079,13 @@ $('projectCatalogWorkbench')?.addEventListener('click',e=>{
  }catch(error){notify(error.message,true);}
 });
 try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}lastDesignSnapshot=structuredCloneCompat(state);render();
+// Project delivery trace export: no mutation of source project.
+document.addEventListener('click',event=>{
+ if(!event.target.closest('#projectDeliveryTraceCsvBtn'))return;
+ try{
+  const report=epProjectDeliveryTraceV1(state,catalogDevice);
+  const csv=epProjectDeliveryTraceCsvV1(report);
+  download(baseName()+'-project-delivery-trace.csv',csv.csv,'text/csv;charset=utf-8');
+  notify('Сквозная трассировка проекта CSV выгружена');
+ }catch(e){notify('Ошибка трассировки: '+e.message);}
+});
