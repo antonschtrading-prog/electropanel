@@ -73,6 +73,10 @@ function epEngineeringPrintV1(bundle){
   'Сравнимость исходных условий','Статус'],
   (sections.faultSourceConvergence?.rows||[]).map(x=>[x.incomingId,x.branchId,
    x.incomingIkMaxKa??'—',x.branchIkMaxKa??'—',x.sourceConditions,x.status]));
+ const groupMergeTable=rows(['Категория','Фаза','Сохраняемый ID цепи',
+  'Объединяемые цепи','Установленная мощность, кВт','Потребителей'],
+  (sections.consumerMerge?.proposals||[]).map(x=>[x.category,x.phase,
+   x.targetCircuitId,(x.sourceCircuitIds||[]).join(', '),x.totalKw,x.consumerCount]));
  const groupSplitTable=rows(['Исходная цепь','Мощность, кВт','Групп после разделения','Состав предложенных групп'],
   (sections.consumerGrouping?.proposals||[]).map(x=>[
    x.circuitId,x.originalTotalKw,x.groups.length,
@@ -236,6 +240,8 @@ function epEngineeringPrintV1(bundle){
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Единый предварительный маршрут: нагрузки, токи и аппараты</h2>'+workflowRows+
   '<p>Предварительные предложения аппаратов не являются утверждённой спецификацией. Параметры источника и потребителей задаёт инженер.</p>'+
+  '<h2>Предложение объединения черновых цепей по категориям инженера</h2>'+groupMergeTable+
+  '<p>Категории указаны инженером. Подбор защиты и кабелей после объединения требуется выполнить отдельно.</p>'+
   '<h2>Предварительное разбиение потребителей по введённому пределу</h2>'+groupSplitTable+
   '<p>Перегруппировка не назначает электрическую защиту и не меняет общие УЗО без инженерного решения.</p>'+
   '<h2>Стадия и применимость проектных проверок</h2>'+designStageTable+
