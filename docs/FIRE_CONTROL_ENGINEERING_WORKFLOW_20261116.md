@@ -61,3 +61,12 @@ The checklist is included in the engineering bundle, overall fire-control gate, 
 
 ### Remaining design work
 A checklist is not a substitute for electrical schematics. Next implementation priorities are real manufacturer contactor/relay/UVR/shunt accessory evidence, terminal pin assignments, control supply topology, electrical interlocks, complete panel DIN geometry, and actual graphical control schematics. Do not promote a review checklist to normative certification.
+
+## Logical interface drawing (SVG) and topology (new integrated stage)
+`epFireControlTopologyV1(project)` constructs typed nodes for external signals, commands, actuators, loads, circuits, control supplies and declared terminals. The graph carries six distinct link types: logical triggers, logical commands, actuator assignments, control supply references, terminal assignments and load-to-circuit associations. It does **not** assert actual wire continuity.
+
+`epFireControlDiagramV1(project)` renders a deterministic SVG view of those declared nodes and relations, with escaped labels, a visible NOT FOR INSTALLATION warning and no inferred manufacturer pin numbers. The browser provides preview and SVG download. The graph relations can also be exported to CSV for engineering review.
+
+Both projections are included in the consolidated gate, engineering evidence bundle and JSON report. Graph construction flags orphan references, reused terminal references, shared actuators, unassigned devices, missing supplies, missing articles, unreviewed assignments, and actuator-specific safety questions. For all schematic outputs, the external fire alarm, evacuation and suppression system design remains out of scope.
+
+**Important distinction:** a symbolic SVG is a real visual output, but it is not yet a standards-compliant electrical control schematic. To reach that stage, the application still needs manufacturer-backed terminal pins and contact functions, explicit supply/protection wiring, return circuits, interlock logic and a checked drawing standard.
