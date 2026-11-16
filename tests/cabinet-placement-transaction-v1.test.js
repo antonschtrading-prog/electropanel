@@ -6,6 +6,7 @@ global.epCabinetPlacementChangeAuditV1=cabinet.epCabinetPlacementChangeAuditV1;
 global.epDinPhysicalEnvelopeV1=require('../din-physical-envelope-v1.js').epDinPhysicalEnvelopeV1;
 const {epDraftBoardPlanV1,epMoveBoardDeviceV1}=require('../draft-board-plan-v1.js');
 global.epDraftBoardPlanV1=epDraftBoardPlanV1;
+global.epMoveBoardDeviceV1=epMoveBoardDeviceV1;
 const {epBoardDragMoveV1}=require('../board-drag-move-v1.js');
 const {epBoardReflowV1}=require('../board-reflow-v1.js');
 const {epBoardRailCountChangeV1}=require('../board-rail-count-v1.js');
