@@ -19,6 +19,8 @@ function epFireControlHtmlV1(project){
  const dinIssues=(din?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+'</li>').join('');
  const gate=typeof epFireControlGateV1==='function'?epFireControlGateV1(project):null;
  const gateRows=(gate?.checks||[]).map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.issueCount)+'</td></tr>').join('');
+ const checklist=typeof epFireControlChecklistV1==='function'?epFireControlChecklistV1(project):null;
+ const checklistRows=(checklist?.checks||[]).map(x=>'<tr><td>'+esc(x.code)+'</td><td>'+esc(x.scope)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.detail)+'</td></tr>').join('');
  const issues=(audit?.issues||[]).map(x=>'<li>'+esc(x.level)+' · '+esc(x.code)+' · '+esc(x.objectId??'')+'</li>').join('');
  return '<details class="ep-fire-control"><summary>Пожарное управление · '+esc(summary)+'</summary>'+
  '<p>Внешняя пожарная система проектируется отдельно. Здесь задаются только сигналы, действия над потребителями и исполнительные интерфейсы щита. Результат — проектный черновик.</p>'+
@@ -35,6 +37,7 @@ function epFireControlHtmlV1(project){
  '<h4>Предварительная спецификация выбранных аппаратов</h4><table><thead><tr><th>Артикул</th><th>Тип</th><th>Количество</th><th>Проверено инженером</th></tr></thead><tbody>'+bomRows+'</tbody></table>'+ 
  '<h4>Согласование каталога и общей DIN-компоновки</h4><p>Каталог: '+esc(catalog?.status??'НЕДОСТУПЕН')+' · DIN: '+esc(din?.status??'НЕДОСТУПЕН')+'</p>'+ 
  '<h4>Инженерная проверка пожарного интерфейса</h4><p>Статус: '+esc(gate?.status??'НЕДОСТУПЕН')+'</p><table><thead><tr><th>Раздел</th><th>Статус</th><th>Замечания</th></tr></thead><tbody>'+gateRows+'</tbody></table>'+ 
+ '<h4>50 критериев инженерной готовности</h4><p>Подтверждено '+esc(checklist?.passed??0)+' из '+esc(checklist?.total??0)+'</p><details><summary>Открыть контрольный лист</summary><table><thead><tr><th>Код</th><th>Раздел</th><th>Статус</th><th>Требование</th></tr></thead><tbody>'+checklistRows+'</tbody></table></details>'+ 
  '<ul>'+issues+designIssues+catalogIssues+dinIssues+'</ul></details>';
 }
 if(typeof module!=='undefined')module.exports={epFireControlHtmlV1};
