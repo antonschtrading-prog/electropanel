@@ -59,6 +59,10 @@ function epBoardReflowV1(project,lookup,options={}){
   if(!actual||actual.railIndex!==p.railIndex||actual.startModule!==p.startModule)
    return fail('REFLOW_POSITION_MISMATCH');
  }
+ if(copy.cabinetGeometryV1&&typeof epCabinetPlacementChangeAuditV1==='function'){
+  const cabinet=epCabinetPlacementChangeAuditV1(project,copy,lookup);
+  if(cabinet.status==='BLOCKED')return fail('REFLOW_CABINET_FIT_CONFLICT',cabinet.newIssues);
+ }
  const changes=positions.filter(p=>{
   const old=devices.find(d=>d.deviceId===p.deviceId);
   return old.railIndex!==p.railIndex||old.startModule!==p.startModule;

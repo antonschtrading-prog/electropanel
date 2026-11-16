@@ -45,6 +45,10 @@ function epBoardRailCountChangeV1(project,newRailCount,lookup,{preserve=true}={}
     return fail('RAIL_CHANGE_MOVED_ANCHOR');
   }
  }
+ if(next.cabinetGeometryV1&&typeof epCabinetPlacementChangeAuditV1==='function'){
+  const fit=epCabinetPlacementChangeAuditV1(project,next,lookup);
+  if(fit.status==='BLOCKED')return fail('RAIL_CHANGE_CABINET_FIT_CONFLICT',fit.newIssues);
+ }
  return {project:next,status:'REVIEW_REQUIRED',code:'RAIL_COUNT_UPDATED',
   from:project.railCount,to:newRailCount,placements:result.placements,cabinetReplanned,
   engineeringApproved:false,ready_for_installation:false};

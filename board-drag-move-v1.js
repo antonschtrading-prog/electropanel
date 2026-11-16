@@ -30,6 +30,10 @@ function epBoardDragMoveV1(project,sourceDeviceId,targetDeviceId,lookup){
  if(!changed||!displaced||changed.railIndex!==target.railIndex||changed.startModule!==target.startModule||
  displaced.railIndex!==source.railIndex||displaced.startModule!==source.startModule)
   return fail('BOARD_DRAG_POSITION_NOT_PRESERVED');
+ if(next.cabinetGeometryV1&&typeof epCabinetPlacementChangeAuditV1==='function'){
+  const cabinet=epCabinetPlacementChangeAuditV1(project,next,lookup);
+  if(cabinet.status==='BLOCKED')return fail('BOARD_DRAG_CABINET_FIT_CONFLICT',cabinet.newIssues);
+ }
  return {project:next,status:'REVIEW_REQUIRED',code:'BOARD_DRAG_SWAPPED',issues:after.issues,
   moved:[sourceDeviceId,targetDeviceId],engineeringApproved:false,ready_for_installation:false};
 }

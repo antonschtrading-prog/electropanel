@@ -98,6 +98,11 @@ function epMoveBoardDeviceV1(project,deviceId,railIndex,startModule,lookup){
  const next=epDraftBoardPlanV1(copy,lookup);
  const blockers=next.issues.filter(x=>x.level==='BLOCKED');
  if(blockers.length)return {project:null,code:blockers[0].code,issues:blockers};
+ if(copy.cabinetGeometryV1&&typeof epCabinetPlacementChangeAuditV1==='function'){
+  const physical=epCabinetPlacementChangeAuditV1(project,copy,lookup);
+  if(physical.status==='BLOCKED')return {project:null,code:'CABINET_MOVE_FIT_CONFLICT',
+   issues:physical.newIssues,engineeringApproved:false};
+ }
  return {project:copy,status:'REVIEW_REQUIRED',code:'POSITION_UPDATED'};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epDraftBoardPlanV1,epMoveBoardDeviceV1};

@@ -163,6 +163,28 @@ function epCabinetFitAuditV1(project,lookup){
  }
  return result();
 }
+// Refuse NEW physical fit conflicts while allowing edits that cure existing errors.
+function epCabinetPlacementChangeAuditV1(before,after,lookup){
+ const accept={status:'REVIEW_REQUIRED',newIssues:[],engineeringApproved:false};
+ if(!before?.cabinetGeometryV1&&!after?.cabinetGeometryV1)return accept;
+ if(typeof epCabinetFitAuditV1!=='function')return {status:'BLOCKED',
+  newIssues:[{code:'CABINET_FIT_ENGINE_UNAVAILABLE',level:'BLOCKED'}],engineeringApproved:false};
+ const old=epCabinetFitAuditV1(before,lookup),next=epCabinetFitAuditV1(after,lookup);
+ const key=x=>[x.code,x.deviceId??'',x.railIndex??'',x.obstacleId??''].join('|');
+ const counts=new Map();
+ for(const item of old.issues.filter(x=>x.level==='BLOCKED')){
+  const id=key(item);counts.set(id,(counts.get(id)||0)+1);
+ }
+ const newly=[];
+ for(const item of next.issues.filter(x=>x.level==='BLOCKED')){
+  const id=key(item),existing=counts.get(id)||0;
+  if(existing)counts.set(id,existing-1);else newly.push(item);
+ }
+ return {status:newly.length?'BLOCKED':'REVIEW_REQUIRED',newIssues:newly,
+  existingBlockers:old.issues.filter(x=>x.level==='BLOCKED').length,
+  remainingBlockers:next.issues.filter(x=>x.level==='BLOCKED').length,
+  engineeringApproved:false};
+}
 function epCabinetGeometryApplyV1(project,data){
  const fail=code=>({project:null,status:'BLOCKED',code,engineeringApproved:false});
  if(!project||typeof project!=='object')return fail('CABINET_PROJECT_INVALID');
@@ -177,4 +199,4 @@ function epCabinetGeometryApplyV1(project,data){
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epCabinetGeometryNormalizeV1,epCabinetGeometryCheckV1,epCabinetAutoZonesV1,
- epCabinetFitAuditV1,epCabinetGeometryApplyV1};
+ epCabinetFitAuditV1,epCabinetPlacementChangeAuditV1,epCabinetGeometryApplyV1};
