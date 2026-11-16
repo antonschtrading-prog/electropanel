@@ -1819,11 +1819,25 @@ $('cabinetGeometryPanel').addEventListener('submit',e=>{
    interiorWidthMm:number('interiorWidthMm'),interiorHeightMm:number('interiorHeightMm'),
    interiorDepthMm:number('interiorDepthMm'),marginMm:number('marginMm'),
    firstRowYMm:number('firstRowYMm'),zoneHeightMm:number('zoneHeightMm'),
-   rowGapMm:number('rowGapMm')},state.railCount,state.railCapacity);
+   rowGapMm:number('rowGapMm'),obstacles:state.cabinetGeometryV1?.obstacles||[]},state.railCount,state.railCapacity);
   if(proposal.status==='BLOCKED')return notify('Размеры корпуса: '+proposal.issues.map(x=>x.code).join(', '),true);
   const saved=epCabinetGeometryApplyV1(state,proposal.geometry);
   if(!saved.project)return notify('Монтажные зоны: '+saved.code,true);
   checkpoint();state=saved.project;changed();notify('Монтажные зоны корпуса сохранены как исходные данные проекта');
+  return;
+ }
+ if(form.matches('[data-cabinet-obstacle]')){
+  e.preventDefault();
+  if(!state.cabinetGeometryV1)return notify('Сначала задайте размеры корпуса',true);
+  const id=String(form.elements.id?.value||'').trim(),kind=String(form.elements.kind?.value||'');
+  const data=JSON.parse(JSON.stringify(state.cabinetGeometryV1));
+  if(!Array.isArray(data.obstacles))data.obstacles=[];
+  if(data.obstacles.some(x=>x.id===id))return notify('Такой код зарезервированной области уже существует',true);
+  data.obstacles.push({id,kind,xMm:number('xMm'),yMm:number('yMm'),
+   widthMm:number('widthMm'),heightMm:number('heightMm')});
+  const saved=epCabinetGeometryApplyV1(state,data);
+  if(!saved.project)return notify('Область не добавлена: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Резерв корпуса '+id+' сохранён');
   return;
  }
  if(form.matches('[data-cabinet-zone]')){
@@ -1840,6 +1854,15 @@ $('cabinetGeometryPanel').addEventListener('submit',e=>{
  }
 });
 $('cabinetGeometryPanel').addEventListener('click',e=>{
+ const remove=e.target.closest('[data-cabinet-obstacle-remove]');
+ if(remove&&state.cabinetGeometryV1){
+  const id=remove.dataset.cabinetObstacleRemove;
+  const data=JSON.parse(JSON.stringify(state.cabinetGeometryV1));
+  data.obstacles=(data.obstacles||[]).filter(x=>x.id!==id);
+  const saved=epCabinetGeometryApplyV1(state,data);
+  if(!saved.project)return notify('Удаление резерва заблокировано: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Резерв корпуса '+id+' удалён');return;
+ }
  if(e.target.id==='cabinetExportSvgBtn'){
   const drawing=typeof epCabinetDrawingSvgV1==='function'?epCabinetDrawingSvgV1(state,catalogDevice):null;
   if(!drawing?.svg)return notify('Чертёж корпуса недоступен: проверьте введённые габариты',true);

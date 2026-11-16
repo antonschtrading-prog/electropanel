@@ -337,3 +337,7 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 
 .ep-cabinet-apparatus,.ep-cabinet-zone-drawing{pointer-events:none}
 #cabinetExportSvgBtn{margin:8px 0}
+
+.ep-cabinet-obstacle{fill:#e8d7ae;stroke:#94723a;stroke-dasharray:3 2;stroke-width:1.5}
+.ep-cabinet-panel [data-cabinet-obstacle] select{padding:8px;border:1px solid #b8c6d0;border-radius:5px;min-width:0;width:100%}
+.ep-cabinet-panel [data-cabinet-obstacle-remove]{margin-inline-start:6px}

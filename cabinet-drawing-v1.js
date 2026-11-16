@@ -19,6 +19,11 @@ function epCabinetDrawingSvgV1(project,lookup){
   '<g class="ep-cabinet-zone-drawing" data-rail="'+z.railIndex+'">'+
   '<rect x="'+n(z.xMm)+'" y="'+n(z.yMm)+'" width="'+n(z.widthMm)+'" height="'+n(z.heightMm)+'" fill="#dcebf2" stroke="#487f9b" stroke-dasharray="5 3" stroke-width="'+n(stroke)+'"/>'+
   '<text x="'+n(z.xMm+font*.55)+'" y="'+n(z.yMm+font*1.3)+'" font-size="'+n(font)+'" fill="#173f57">DIN '+(z.railIndex+1)+'</text></g>').join('');
+ const obstacles=(audit.geometry.obstacles||[]).map(o=>
+  '<g class="ep-cabinet-reserved-drawing" data-obstacle="'+safe(o.id)+'" data-kind="'+safe(o.kind)+'">'+
+  '<rect x="'+n(o.xMm)+'" y="'+n(o.yMm)+'" width="'+n(o.widthMm)+'" height="'+n(o.heightMm)+'" '+
+  'fill="#eddfb5" stroke="#98733f" stroke-dasharray="4 2" stroke-width="'+n(stroke)+'"/>'+
+  '<title>'+safe(o.id)+' · '+safe(o.kind)+' · user-declared reserved zone</title></g>').join('');
  const devices=audit.rows.map(r=>{
   const unknown=r.bodyWidthMm==null||r.bodyHeightMm==null;
   const bodyW=r.bodyWidthMm??r.nominalSlotWidthMm;
@@ -42,7 +47,7 @@ function epCabinetDrawingSvgV1(project,lookup){
   'role="img" aria-label="'+safe(title)+'" data-engineering-approved="false" data-factory-cad="false">'+
   '<title>'+safe(title)+'</title>'+
   '<rect x="0" y="0" width="'+n(width)+'" height="'+n(height)+'" fill="#f8fafb" stroke="#546b78" stroke-width="'+n(stroke*2)+'"/>'+
-  zones+devices+caption+'</svg>';
+  zones+obstacles+devices+caption+'</svg>';
  return {schema:'electropanel.cabinet.drawing.1',status:audit.status,svg,
   declaredWidthMm:width,declaredHeightMm:height,
   issues:audit.issues,engineeringApproved:false,ready_for_installation:false,

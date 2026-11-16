@@ -26,6 +26,20 @@ function epCabinetGeometryUiV1(project,lookup){
     input('heightMm','Высота зоны, мм',z.heightMm,1)+
     '<button class="btn" type="submit">Сохранить зону DIN '+(z.railIndex+1)+'</button></form>').join('')+
   '</details>':'';
+ const obstacles=raw?'<details><summary>Кабель-каналы, клеммные области и резервы ('+
+  (raw.obstacles?.length||0)+')</summary>'+
+  '<ul>'+(raw.obstacles||[]).map(o=>'<li>'+safe(o.id)+' · '+safe(o.kind)+
+   ' · '+o.xMm+' / '+o.yMm+' / '+o.widthMm+' × '+o.heightMm+' мм'+
+   ' <button class="btn tiny" type="button" data-cabinet-obstacle-remove="'+safe(o.id)+'">Удалить</button></li>').join('')+'</ul>'+
+  '<form data-cabinet-obstacle class="ep-cabinet-zone-form">'+
+   '<label>Код области<input name="id" type="text" maxlength="40" pattern="[A-Za-z0-9_-]{1,40}" required placeholder="WD1"></label>'+
+   '<label>Назначение<select name="kind"><option value="WIRE_DUCT">Кабель-канал</option>'+
+   '<option value="TERMINAL_REGION">Клеммная область</option>'+
+   '<option value="RESERVED">Резерв</option></select></label>'+
+   input('xMm','X, мм',null)+input('yMm','Y, мм',null)+
+   input('widthMm','Ширина, мм',null,1)+input('heightMm','Высота, мм',null,1)+
+   '<button class="btn" type="submit">Добавить зарезервированную область</button></form>'+
+   '<p class="muted">Эти зоны — только введённые прямоугольные ограничения. Кабели и настоящие монтажные детали не рассчитываются по ним автоматически.</p></details>':'';
  let schematic='';
  if(raw){
   const W=raw.interior.widthMm,H=raw.interior.heightMm,scale=Math.min(480/W,300/H);
@@ -37,8 +51,11 @@ function epCabinetGeometryUiV1(project,lookup){
   const zones=raw.zones.map(z=>rect(20+z.xMm*scale,20+z.yMm*scale,
    z.widthMm*scale,z.heightMm*scale,'ep-cabinet-zone')+
    '<text x="'+(24+z.xMm*scale)+'" y="'+(35+z.yMm*scale)+'" font-size="11">DIN '+(z.railIndex+1)+'</text>').join('');
+  const reserves=(raw.obstacles||[]).map(o=>rect(20+o.xMm*scale,20+o.yMm*scale,
+   o.widthMm*scale,o.heightMm*scale,'ep-cabinet-obstacle')+
+   '<text x="'+(24+o.xMm*scale)+'" y="'+(34+o.yMm*scale)+'" font-size="10">'+safe(o.id)+'</text>').join('');
   schematic='<div class="ep-cabinet-schematic"><svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема выделенных монтажных зон внутри заданных размеров корпуса" viewBox="0 0 520 340">'+
-   rect(20,20,W*scale,H*scale,'ep-cabinet-interior')+zones+bodies+'</svg>'+
+   rect(20,20,W*scale,H*scale,'ep-cabinet-interior')+zones+reserves+bodies+'</svg>'+
    '<p class="muted">Масштабная схема распределения зон, без учёта крепежа, расстояния до дверцы, клемм и проводов.</p></div>';
  }
  const problems=(fit?.issues||[]).filter(x=>x.level==='BLOCKED');
@@ -51,7 +68,7 @@ function epCabinetGeometryUiV1(project,lookup){
  return '<section class="ep-cabinet-panel"><h3>Геометрия корпуса · черновик</h3>'+
   '<p><strong>'+safe(heading)+'</strong></p><p>Состояние: <strong>'+safe(status)+'</strong> · проверено аппаратов: '+(fit?.rows.length||0)+
   ' · замечаний: '+(fit?.issues.length||0)+'. Совместимость и возможность монтажа не подтверждены.</p>'+
-  schematic+issues+editing+rows+
+  schematic+issues+editing+rows+obstacles+
   (raw?'<button id="cabinetExportSvgBtn" class="btn" type="button">Экспорт схемы корпуса SVG</button>':'')+
   (project?.cabinetGeometryV1?'<button id="cabinetGeometryClearBtn" class="btn" type="button">Очистить модель корпуса</button>':'')+
   '</section>';
