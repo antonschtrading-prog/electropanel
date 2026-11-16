@@ -997,6 +997,8 @@ function renderAutomationWorkflowV1(){
  if(typeof epProjectDeliveryTraceV1==='function'&&typeof epProjectDeliveryTraceHtmlV1==='function'){
   const trace=epProjectDeliveryTraceV1(state,catalogDevice);
   target.insertAdjacentHTML('beforeend',epProjectDeliveryTraceHtmlV1(trace));
+  if(typeof epProjectDeviceIdentityV1==='function'&&typeof epProjectDeviceIdentityHtmlV1==='function')
+   target.insertAdjacentHTML('beforeend',epProjectDeviceIdentityHtmlV1(epProjectDeviceIdentityV1(state,catalogDevice)));
  }
 }
 // Fire interface lives in the same project workflow as consumer grouping.
