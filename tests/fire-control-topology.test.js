@@ -176,3 +176,24 @@ test('graph CSV contains no invented pin number edges',()=>{
 test('graph CSV has no fake relations when unconfigured',()=>{
  const csv=epFireControlTopologyCsvV1({}).csv;assert.ok(!csv.includes('TRIGGER:A1'));
 });
+
+test('topology blocks more than 200 signals',()=>{
+ const p=project();p.fireControlV1.signals=Array.from({length:201},(_,i)=>({...p.fireControlV1.signals[0],id:'S'+i}));
+ assert.ok(topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_SIGNAL_LIMIT'));
+});
+test('topology blocks more than 800 actions',()=>{
+ const p=project();p.fireControlV1.actions=Array.from({length:801},(_,i)=>({...p.fireControlV1.actions[0],id:'A'+i}));
+ assert.ok(topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_ACTION_LIMIT'));
+});
+test('topology blocks more than 800 assignments',()=>{
+ const p=project();p.fireControlV1.design.assignments=Array.from({length:801},(_,i)=>({...p.fireControlV1.design.assignments[0],actionId:'A'+i}));
+ assert.ok(topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_ASSIGNMENT_LIMIT'));
+});
+test('topology blocks non-positive control voltage',()=>{
+ const p=project();p.fireControlV1.design.assignments[0].controlVoltageV=0;
+ assert.ok(topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_CONTROL_VOLTAGE_INVALID'));
+});
+test('topology blocks malformed terminal list',()=>{
+ const p=project();p.fireControlV1.design.assignments[0].terminalIds='T1';
+ assert.ok(topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_TERMINAL_LIST_INVALID'));
+});
