@@ -45,27 +45,37 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
  }
  if(!entries.length)issues.push({code:'NO_DEVICES',level:'BLOCKED'});
  if(issues.some(x=>x.level==='BLOCKED'))return {...blocked('EQUIPMENT_INVALID'),issues};
- const profiles=[{id:'TALL',modulesPerRail:12},{id:'BALANCED',modulesPerRail:18},
-  {id:'WIDE',modulesPerRail:24}];
+ // Catalogue-neutral market-pattern capacity shapes: illustrative availability,
+ // not a guarantee that a model exists from a particular enclosure maker.
+ const shapes=[
+  [1,4],[1,6],[1,8],[1,9],[1,12],[1,15],[1,18],[1,24],
+  [2,9],[2,12],[2,15],[2,18],[2,24],
+  [3,12],[3,18],[3,24],[4,12],[4,18],[4,24],
+  [5,12],[5,18],[5,24],[6,12],[6,18],[6,24],[8,18],[8,24]
+ ];
+ const targetModules=Math.ceil(entries.reduce((n,x)=>n+x.modules,0)*(1+p.reserveFraction));
+ const profiles=shapes.map(([railCount,modulesPerRail])=>({
+  id:railCount+'x'+modulesPerRail,railCount,modulesPerRail,capacityModules:railCount*modulesPerRail
+ })).filter(x=>x.capacityModules>=targetModules)
+  .sort((a,b)=>a.capacityModules-b.capacityModules||a.railCount-b.railCount);
  const options=profiles.map(profile=>{
   const rails=[],unplaced=[];
   // Stable original order, preserving each appliance as an indivisible group.
-  for(const device of entries){
-   if(device.modules>profile.modulesPerRail){unplaced.push(device.deviceId);continue;}
-   let row=rails[rails.length-1];
-   if(!row||row.usedModules+device.modules>profile.modulesPerRail){
-    row={railIndex:rails.length,usedModules:0,devices:[]};rails.push(row);
-   }
+  // Best-fit by width keeps a multi-module appliance intact, even with
+  // awkward widths, and avoids rejecting an option due to input ordering.
+  const sorted=[...entries].sort((a,b)=>b.modules-a.modules||a.deviceId.localeCompare(b.deviceId));
+  for(let r=0;r<profile.railCount;r++)
+   rails.push({railIndex:r,usedModules:0,devices:[]});
+  for(const device of sorted){
+   const row=rails.find(r=>r.usedModules+device.modules<=profile.modulesPerRail);
+   if(!row){unplaced.push(device.deviceId);continue;}
    row.devices.push({deviceId:device.deviceId,startModule:row.usedModules,
     modules:device.modules,article:device.article});
    row.usedModules+=device.modules;
   }
   const used=entries.reduce((s,x)=>s+x.modules,0);
   const target=Math.ceil(used*(1+p.reserveFraction));
-  // Keep reserve in whole unused modular positions, including a new empty row.
-  while(rails.length*profile.modulesPerRail<target&&rails.length<100)
-   rails.push({railIndex:rails.length,usedModules:0,devices:[]});
-  const allocated=rails.length*profile.modulesPerRail;
+  const allocated=profile.capacityModules;
   const depthKnown=entries.every(x=>x.bodyDepthMm!==null);
   const maxDepth=depthKnown?Math.max(...entries.map(x=>x.bodyDepthMm)):null;
   const envelope={
@@ -77,11 +87,11 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   };
   const optionIssues=[
    ...unplaced.map(deviceId=>({code:'DEVICE_EXCEEDS_RAIL_WIDTH',level:'BLOCKED',deviceId})),
-   ...(rails.length>=100&&allocated<target?[{code:'RAIL_LIMIT_EXCEEDED',level:'BLOCKED'}]:[]),
+   ...(allocated<target?[{code:'CAPACITY_RESERVE_UNMET',level:'BLOCKED'}]:[]),
    {code:'CABINET_MOUNTING_WIRING_AND_THERMAL_NOT_VERIFIED',level:'UNKNOWN'},
    ...(depthKnown?[]:[{code:'CABINET_DEPTH_UNKNOWN',level:'UNKNOWN'}])
   ];
-  return {id:profile.id,modulesPerRail:profile.modulesPerRail,railCount:rails.length,
+  return {id:profile.id,capacityModules:profile.capacityModules,modulesPerRail:profile.modulesPerRail,railCount:rails.length,
    rails,usedModules:used,allocatedModules:allocated,reserveModules:allocated-used,
    unplaced,envelope,issues:optionIssues,
    status:optionIssues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',

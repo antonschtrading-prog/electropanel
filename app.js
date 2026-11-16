@@ -1720,7 +1720,52 @@ function renderCabinetGeometryV1(){
  if(target)target.innerHTML=typeof epCabinetGeometryUiV1==='function'?
   epCabinetGeometryUiV1(state,catalogDevice):'Редактор геометрии недоступен.';
 }
+function cabinetCapacityReportV1(){
+ return typeof epUniversalCabinetOptionsV1==='function'?
+  epUniversalCabinetOptionsV1(state,catalogDevice):null;
+}
+function renderCabinetCapacityOptionsV1(){
+ const target=$('cabinetCapacityOptions');if(!target)return;
+ const report=cabinetCapacityReportV1();
+ if(!report||!report.options.length){
+  target.textContent='Нет вариантов: проверьте модули и состав оборудования.';
+  return;
+ }
+ const good=report.options.filter(o=>o.status!=='BLOCKED');
+ const shown=good.slice(0,12);
+ if(!shown.length){target.textContent='В типовых конфигурациях подходящего размещения не найдено.';return;}
+ const selected=state.railCount+'x'+state.railCapacity;
+ target.innerHTML='<p>Аппаратура: <b>'+report.equipmentModules+
+  ' мод.</b> · Резерв по умолчанию: 20%. Варианты являются предварительными.</p>'+
+  '<div class="ep-capacity-options" style="display:flex;gap:8px;flex-wrap:wrap">'+
+  shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
+   '" data-apply-cabinet-option="'+o.id+'">'+o.capacityModules+
+   ' мод. · '+o.railCount+' × '+o.modulesPerRail+
+   ' · свободно '+o.reserveModules+'</button>').join('')+'</div>'+
+  '<p class="mini-warning">Предварительные внутренние размеры (не внешние размеры шкафа). Проверки кабельных вводов и нагрева не выполнены.</p>';
+}
+function applyCabinetCapacityOptionV1(id){
+ const report=cabinetCapacityReportV1();
+ const option=report?.options.find(x=>x.id===id&&x.status==='REVIEW_REQUIRED');
+ if(!option){notify('Вариант недоступен: проверьте состав оборудования и размеры',true);return;}
+ const proposed=structuredCloneCompat(state);
+ proposed.railCapacity=option.modulesPerRail;proposed.railCount=option.railCount;
+ proposed.manualLayoutV1=option.rails.flatMap(rail=>rail.devices.map(d=>({
+  deviceId:d.deviceId,railIndex:rail.railIndex,startModule:d.startModule
+ })));
+ const catalog=new Map(projectCatalogEntries(proposed));
+ const check=typeof epDraftBoardPlanV1==='function'?
+  epDraftBoardPlanV1(proposed,sku=>catalog.get(sku)||null):null;
+ if(!check||check.status==='BLOCKED'||check.placements.length!==report.equipmentCount){
+  notify('Нельзя применить вариант: контроль размещения выявил несоответствие',true);return;
+ }
+ checkpoint();
+ state.railCapacity=proposed.railCapacity;state.railCount=proposed.railCount;
+ state.manualLayoutV1=proposed.manualLayoutV1;
+ changed();notify('Компоновка применена. Электрические аппараты не изменены.');
+}
 function renderBoard(){
+ renderCabinetCapacityOptionsV1();
  renderProjectCatalogWorkbenchV1();
  const board=$('boardCanvas');board.innerHTML='';$('boardTitle').textContent=state.title+' / компоновка';
  const layout=layoutSlots();
@@ -2434,6 +2479,10 @@ $('uploadPlan').onclick=()=>$('planFile').click();$('planFile').addEventListener
  }catch(err){notify(err.message,true);}finally{e.target.value='';}
 });
 
+$('cabinetCapacityOptions')?.addEventListener('click',e=>{
+ const b=e.target.closest('[data-apply-cabinet-option]');
+ if(b)applyCabinetCapacityOptionV1(b.dataset.applyCabinetOption);
+});
 $('undoBtn').onclick=()=>restoreHistory(historyUndo,historyRedo);
 $('redoBtn').onclick=()=>restoreHistory(historyRedo,historyUndo);
 $('taskFileBtn').onclick=()=>$('taskFile').click();

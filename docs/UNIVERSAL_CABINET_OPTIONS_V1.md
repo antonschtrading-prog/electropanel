@@ -23,3 +23,9 @@ Input validation blocks invalid/duplicated device identifiers, unresolved articl
 Do not remove the existing cabinet geometry engine: it remains necessary for fit checking once a candidate enclosure's *usable interior* geometry is known.
 
 This document makes no claim of certified dimensions, enclosure fitting, standards compliance or finished UI integration.
+
+## Market-pattern revision
+
+Candidates now use enumerated row-count × modules-per-row capacity patterns; e.g., 1×6, 2×12, 2×18, 3×12, 3×18. Candidate list is ordered by total capacity, not by fixed TALL/BALANCED/WIDE categories. Orientation is a comparison of configurations for the same electrical equipment. Patterns are examples of commonly marketed capacities, not an exhaustive catalogue or proof a specific manufacturer sells the shape.
+
+The board screen shows fitting choices. Choosing one validates the complete placement through the existing board planner, records a manual layout, and adds an undo checkpoint. Electrical circuits and device nominal ratings are unchanged. Manual layout is included in project JSON. No enclosure SKU, external size or certified fit is inferred.

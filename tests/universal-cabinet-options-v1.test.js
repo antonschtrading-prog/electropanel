@@ -2,9 +2,9 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {epUniversalCabinetOptionsV1:plan}=require('../universal-cabinet-options-v1.js');
 const base=()=>({lines:[{id:'L1',modules:8},{id:'L2',modules:8},{id:'L3',modules:4}]});
-test('three orientation options use identical engineering device input',()=>{
+test('market capacity options use identical engineering device input',()=>{
  const p=base(),original=JSON.stringify(p),r=plan(p);
- assert.equal(r.status,'REVIEW_REQUIRED');assert.deepEqual(r.options.map(o=>o.id),['TALL','BALANCED','WIDE']);
+ assert.equal(r.status,'REVIEW_REQUIRED');assert.ok(r.options.length>=3);assert.equal(r.options[0].capacityModules,24);assert.ok(r.options.some(o=>o.id==='2x12'));
  for(const o of r.options){assert.equal(o.usedModules,20);assert.equal(o.unplaced.length,0);
   assert.ok(o.reserveModules>=4);assert.equal(o.engineeringApproved,false);}
  assert.equal(JSON.stringify(p),original);
@@ -18,8 +18,7 @@ test('never splits an individual multi-module appliance',()=>{
 });
 test('wide device blocks only alternatives that cannot contain it',()=>{
  const r=plan({lines:[{id:'L',modules:19}]});
- assert.equal(r.options[0].status,'BLOCKED');assert.equal(r.options[1].status,'BLOCKED');
- assert.equal(r.options[2].status,'REVIEW_REQUIRED');
+ assert.ok(r.options.every(o=>o.modulesPerRail>=19));assert.ok(r.options.some(o=>o.status==='REVIEW_REQUIRED'));
 });
 test('source article dimension conflict blocks all recommendations',()=>{
  const r=plan({lines:[{id:'L',modules:1,catalogSku:'A'}]},()=>({article:'A',modules:2}));
@@ -52,4 +51,21 @@ test('reserve uses allocated modules and never falsely promises minimum width of
   assert.equal(o.envelope.basis,'ASSUMED_PLANNING_ALLOWANCES_NOT_MANUFACTURER_DIMENSIONS');
   assert.ok(o.envelope.preliminaryUsableWidthMm>=o.envelope.nominalDinSpanMm);
  }
+});
+
+test('five appliances select a six-place compact enclosure pattern',()=>{
+ const r=plan({lines:Array.from({length:5},(_,i)=>({id:'L'+i,modules:1}))},{});
+ assert.equal(r.status,'REVIEW_REQUIRED');assert.equal(r.options[0].capacityModules,6);
+ assert.equal(r.options[0].reserveModules,1);
+});
+test('32 modules plus 10 percent reserve offers both 2x18 and 3x12',()=>{
+ const r=plan({lines:Array.from({length:8},(_,i)=>({id:'L'+i,modules:4}))},null,{reserveFraction:.1});
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.ok(r.options.some(o=>o.id==='2x18'));
+ assert.ok(r.options.some(o=>o.id==='3x12'));
+});
+test('fragmentation never counts as a viable option',()=>{
+ const r=plan({lines:Array.from({length:5},(_,i)=>({id:'L'+i,modules:7}))},null,{reserveFraction:0});
+ const someBlocked=r.options.filter(o=>o.unplaced.length>0);
+ assert.ok(someBlocked.length>0);assert.ok(someBlocked.every(o=>o.status==='BLOCKED'));
 });
