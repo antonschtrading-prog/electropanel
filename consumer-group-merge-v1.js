@@ -96,6 +96,12 @@ function epGroupMergePlanV1(project,rawRules){
    consumers.get(line.id).length>rules.maxConsumersPerCircuit){
    add('GROUP_MERGE_CIRCUIT_CONSUMERS_EXCEED_LIMIT','UNKNOWN',line.id);continue;
   }
+  const branches=(project.branchDevices||[]).filter(x=>x.circuitId===line.id);
+  const hasDinEvidence=(project.dinPlacementsV1||[]).some(x=>x?.deviceId===line.id||
+   branches.some(b=>b.id===x?.deviceId));
+  if(hasDinEvidence){
+   add('GROUP_MERGE_DIN_ARTICLE_PLACEMENT_LINKED','UNKNOWN',line.id);continue;
+  }
   const denied=typeof epGroupSplitAllowedV1==='function'?
    epGroupSplitAllowedV1(project,line):'GROUP_MERGE_SAFETY_AUDIT_UNAVAILABLE';
   if(denied){add('GROUP_MERGE_'+denied,'UNKNOWN',line.id);continue;}
