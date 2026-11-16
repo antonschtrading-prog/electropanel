@@ -70,3 +70,12 @@ A checklist is not a substitute for electrical schematics. Next implementation p
 Both projections are included in the consolidated gate, engineering evidence bundle and JSON report. Graph construction flags orphan references, reused terminal references, shared actuators, unassigned devices, missing supplies, missing articles, unreviewed assignments, and actuator-specific safety questions. For all schematic outputs, the external fire alarm, evacuation and suppression system design remains out of scope.
 
 **Important distinction:** a symbolic SVG is a real visual output, but it is not yet a standards-compliant electrical control schematic. To reach that stage, the application still needs manufacturer-backed terminal pins and contact functions, explicit supply/protection wiring, return circuits, interlock logic and a checked drawing standard.
+
+## Engineer-declared manufacturer terminal pin evidence
+Optional `fireControlV1.design.assignments[].pins` entries bind a previously declared terminal ID to a manufacturer device pin. Every entry declares:
+- `terminalId`: terminal reference already present in `terminalIds`
+- `devicePin`: manufacturer pin marking (e.g. A1, A2), entered by the engineer
+- `role`: one of COIL_A1, COIL_A2, COMMON, NO, NC, TRIP, RETURN, OTHER
+- `verifiedSource`: an HTTPS manufacturer evidence reference supplied by the engineer
+
+Invalid mappings, repeated pins and orphan terminal references are blocked. Explicit mappings add DEVICE_PIN nodes and ENGINEER_DECLARED_PIN_BINDING edges to the logical graph and appear in SVG/CSV. FCHK_50 may pass when all action mappings have such declared evidence. This does **not** verify the URL contents or infer that the full control circuit is correct. It does not approve installation or resolve return wiring, interlocks, protection, ratings or supply compatibility.
