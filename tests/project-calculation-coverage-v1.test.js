@@ -57,3 +57,31 @@ test('invalid declared cable ampacity does not produce false numeric pass',()=>{
  const r=audit({lines:[{id:'L1',catalogSku:'x',overloadInput:{ibA:10,izA:'bad'}}]},()=>sku);
  assert.equal(r.engineeringApproved,false);
 });
+
+test('auto-calculated load Ib is reused without asking engineer to re-enter it',()=>{
+ const p={lines:[{id:'L1',catalogSku:'x',
+  loadCurrentCalculation:{roundedIbA:10,stale:false}}]};
+ const r=audit(p,()=>sku);
+ assert.equal(r.status,'AVAILABLE');assert.equal(r.lines[0].ibSource,'CALCULATED');
+ assert.equal(r.lines[0].ibA,10);
+ assert.ok(!r.issues.some(x=>x.code==='IB_NOT_DECLARED'));
+});
+test('stale calculated Ib cannot silently substitute an absent declared current',()=>{
+ const p={lines:[{id:'L1',catalogSku:'x',
+  loadCurrentCalculation:{roundedIbA:10,stale:true}}]};
+ const r=audit(p,()=>sku);
+ assert.ok(r.issues.some(x=>x.code==='IB_NOT_DECLARED'));
+});
+test('explicitly supplied invalid Iz is blocked; unknown Iz is not',()=>{
+ const p={lines:[{id:'L1',catalogSku:'x',overloadInput:{ibA:10,izA:'bad'}}]};
+ const r=audit(p,()=>sku);assert.equal(r.status,'BLOCKED');
+ assert.ok(r.issues.some(x=>x.code==='IZ_DECLARED_INVALID'));
+ delete p.lines[0].overloadInput.izA;
+ const missing=audit(p,()=>sku);assert.equal(missing.status,'AVAILABLE');
+});
+test('auto-calculated load exceeding selected breaker is still a blocker',()=>{
+ const p={lines:[{id:'L1',catalogSku:'x',
+  loadCurrentCalculation:{roundedIbA:20,stale:false}}]};
+ const r=audit(p,()=>sku);assert.equal(r.status,'BLOCKED');
+ assert.ok(r.issues.some(x=>x.code==='IB_EXCEEDS_SELECTED_IN'));
+});
