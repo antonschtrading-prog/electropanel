@@ -1295,6 +1295,11 @@ const server=http.createServer((req,res)=>{
  await page.locator('.ep-group-merge summary').click();
  await page.locator('#groupMergeMaxKw').fill('6');
  await page.locator('#groupMergeCategories').fill('L1;Розетки\nL2;Розетки');
+ await page.locator('#groupMergeSeparateIds').fill('L2');
+ await page.locator('#groupMergePreviewBtn').click();
+ assert.equal(await page.evaluate(()=>workflowMergePlan?.proposals.length),0,
+  'Dedicated line exclusion must prevent the merge even for matching categories');
+ await page.locator('#groupMergeSeparateIds').fill('');
  await page.locator('#groupMergePreviewBtn').click();
  const mergePreview=await page.evaluate(()=>({
   oldLines:state.lines.length,loads:state.loads.length,
