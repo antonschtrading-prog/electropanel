@@ -1994,7 +1994,15 @@ $('automationFlowPanel').addEventListener('click',e=>{
    throw Error('Изменены правила. Пересчитайте предварительный просмотр');
   const result=epGroupSplitApplyV1(ensureV2(state),workflowSplitPlan);
   if(!result.project)return notify('Нет групп для безопасного разделения');
-  checkpoint();state=result.project;
+  const candidate=ensureV2(result.project);
+  if(typeof epDraftBoardPlanV1==='function'){
+   const board=epDraftBoardPlanV1(candidate,catalogDevice);
+   if((board.issues||[]).some(x=>x.level==='BLOCKED'&&
+     ['RAIL_CAPACITY_EXCEEDED','MANUAL_LAYOUT_OVERLAP',
+      'MANUAL_LAYOUT_OUT_OF_BOUNDS'].includes(x.code)))
+    throw Error('Новое количество аппаратов не помещается в заданную DIN-компоновку');
+  }
+  checkpoint();state=candidate;
   state.consumerGroupSplitRulesV1=freshInput;
   workflowSplitPlan=null;workflowSplitRuleInput=null;changed();
   notify('Разделено исходных групп: '+result.applied+
