@@ -8,7 +8,7 @@ function epFireControlChecklistV1(project){
  const signals=Array.isArray(raw.signals)?raw.signals:[],actions=Array.isArray(raw.actions)?raw.actions:[],
   assignments=Array.isArray(raw.design?.assignments)?raw.design.assignments:[];
  const loads=new Map(loadsList.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
- const lines=new Map(lines.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
+ const lineMap=new Map(lines.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
  const signalMap=new Map(signals.filter(x=>x&&typeof x.id==='string').map(x=>[x.id,x]));
  const assignmentMap=new Map(assignments.filter(x=>x&&typeof x.actionId==='string').map(x=>[x.actionId,x]));
  const checks=[],issues=[];
@@ -27,7 +27,7 @@ function epFireControlChecklistV1(project){
  add('FCHK_04_LOAD_IDS','BLOCKED','PROJECT',null,loadsList.every(x=>idOk(x?.id)),'Consumer IDs valid');
  add('FCHK_05_UNIQUE_LINES','BLOCKED','PROJECT',null,unique(lines.map(x=>x?.id)),'Unique circuits');
  add('FCHK_06_UNIQUE_LOADS','BLOCKED','PROJECT',null,unique(loadsList.map(x=>x?.id)),'Unique consumers');
- add('FCHK_07_LOAD_CIRCUITS','BLOCKED','PROJECT',null,loadsList.every(x=>lines.has(x?.circuitId)),'Consumers assigned to circuits');
+ add('FCHK_07_LOAD_CIRCUITS','BLOCKED','PROJECT',null,loadsList.every(x=>lineMap.has(x?.circuitId)),'Consumers assigned to circuits');
  add('FCHK_08_SIGNAL_LIST','BLOCKED','PROJECT',null,Array.isArray(raw.signals),'Signal list present');
  add('FCHK_09_ACTION_LIST','BLOCKED','PROJECT',null,Array.isArray(raw.actions),'Action list present');
  add('FCHK_10_ASSIGNMENTS_LIST','BLOCKED','PROJECT',null,raw.design===undefined||Array.isArray(raw.design?.assignments),'Design assignment list valid');
