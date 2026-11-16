@@ -20,6 +20,12 @@ function epRestoreProjectExtensionsV2(raw,project){
   };
   const result=walk(value,0);if(JSON.stringify(result).length>limit)throw Error(label+': превышен размер');return result;
  };
+ if(raw.workflowDesignInputsV1!==undefined){
+  if(typeof epWorkflowInputsV1!=='function')
+   throw Error('Модуль единого проектного маршрута недоступен');
+  project.workflowDesignInputsV1=
+   epWorkflowInputsV1(raw.workflowDesignInputsV1);
+ }
  if(raw.designStageV1!==undefined){
   if(!['PRELIMINARY','BOARD_DESIGN','DETAILED'].includes(raw.designStageV1))
    throw Error('Неизвестная стадия проектирования');
