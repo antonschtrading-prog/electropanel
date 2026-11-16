@@ -1742,6 +1742,11 @@ function renderBoard(){
   ['Расчётная применимость не подтверждена (нужна инженерная проверка)',false],
   ['Геометрия корпуса и тепловой режим не подтверждены',false]];
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
+ if(typeof epBoardVisualAuditV1==='function'){
+  const audit=epBoardVisualAuditV1(state,catalogDevice);
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Внешний вид аппаратов: '+audit.verifiedCatalogueFaces+' по каталогу; '+audit.placeholders+' условных</strong></div>');
+  if(audit.issues.some(x=>x.level==='BLOCKED'))$('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line bad">Несоответствие модели и DIN-компоновки — проверьте артикулы и ширину</div>');
+ }
  if(typeof epBoardCapacityReviewV1==='function'){
   const capacity=epBoardCapacityReviewV1(state,catalogDevice);
   const lines=capacity.rails.map(r=>'DIN '+(r.railIndex+1)+': '+r.occupied+'/'+r.capacity+' мод.; свободно '+r.free+', максимальный непрерывный участок '+r.largestFreeRun);
