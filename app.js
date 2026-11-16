@@ -2237,8 +2237,13 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
  const stage=$('designStageSelect')?.value;
  if(!['PRELIMINARY','BOARD_DESIGN','DETAILED'].includes(stage))
   return notify('Некорректная стадия проектирования',true);
- if(state.designStageV1===stage)return;
- checkpoint();state.designStageV1=stage;changed();
+ const designRequirementsV1={selectivity:$('designSelectivityRequested').checked,
+  externalNetwork:$('designExternalNetworkRequested').checked};
+ if((state.designStageV1||'PRELIMINARY')===stage&&
+  JSON.stringify(state.designRequirementsV1||{selectivity:false,externalNetwork:false})===
+   JSON.stringify(designRequirementsV1))return;
+ checkpoint();state.designStageV1=stage;
+ state.designRequirementsV1=designRequirementsV1;changed();
  notify('Стадия проектирования обновлена; необязательные проверки не блокируют щит.');
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
