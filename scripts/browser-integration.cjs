@@ -1007,6 +1007,52 @@ const server=http.createServer((req,res)=>{
  assert.equal(face.bodyWidth,'18');
  assert.equal(face.slotWidth,'18');
  assert.equal(face.approval,false);
+ // Full cabinet model workflow through actual form, undo/redo, JSON persistence and DIN export.
+ assert.equal(await page.locator('#cabinetGeometryPanel [data-cabinet-autoplan]').count(),1);
+ const cabinetInputs={interiorWidthMm:'2000',interiorHeightMm:'1500',interiorDepthMm:'300',
+  marginMm:'50',firstRowYMm:'40',zoneHeightMm:'120',rowGapMm:'35'};
+ for(const [name,value] of Object.entries(cabinetInputs))
+  await page.locator('#cabinetGeometryPanel [data-cabinet-autoplan] [name="'+name+'"]').fill(value);
+ await page.locator('#cabinetGeometryPanel [data-cabinet-autoplan] button[type="submit"]').click();
+ const cabinetSaved=await page.evaluate(()=>{
+  const r=epCabinetFitAuditV1(state,catalogDevice);
+  const saved=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+  const pack=epEngineeringBundleV1(state,catalogDevice);
+  return {source:state.cabinetGeometryV1?.source,zones:state.cabinetGeometryV1?.zones.length,
+   persisted:saved.cabinetGeometryV1?.interior.widthMm,
+   dimensions:state.cabinetGeometryV1?.interior.depthMm,
+   status:r.status,reported:pack.statuses.cabinetFit,
+   approved:r.engineeringApproved};
+ });
+ assert.equal(cabinetSaved.source,'USER_DECLARED',JSON.stringify(cabinetSaved));
+ assert.ok(cabinetSaved.zones>=1);
+ assert.equal(cabinetSaved.persisted,2000);
+ assert.equal(cabinetSaved.dimensions,300);
+ assert.equal(cabinetSaved.status,'REVIEW_REQUIRED');
+ assert.equal(cabinetSaved.reported,'REVIEW_REQUIRED');
+ assert.equal(cabinetSaved.approved,false);
+ assert.ok(await page.locator('#cabinetGeometryPanel .ep-cabinet-schematic svg').count());
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.cabinetGeometryV1===undefined),true);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.interior.widthMm),2000);
+ const cabinetBefore=await page.evaluate(()=>JSON.stringify(state.cabinetGeometryV1));
+ const firstZone=page.locator('#cabinetGeometryPanel [data-cabinet-zone="0"]');
+ await firstZone.locator('[name="xMm"]').fill('60');
+ await firstZone.locator('[name="yMm"]').fill('50');
+ await firstZone.locator('button[type="submit"]').click();
+ assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.zones[0].xMm),60);
+ assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.planning),undefined);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>JSON.stringify(state.cabinetGeometryV1)),cabinetBefore);
+ const cabinetCsvDownload=page.waitForEvent('download');
+ await page.locator('#boardPlacementCsvBtn').click();
+ const cabinetCsv=await cabinetCsvDownload;
+ assert.match(cabinetCsv.suggestedFilename(),/din-placement\.csv$/);
+ const cabinetCsvText=fs.readFileSync(await cabinetCsv.path(),'utf8');
+ assert.match(cabinetCsvText,/cabinet_zone_x_mm/);
+ assert.match(cabinetCsvText,/cabinet_usable_depth_mm/);
+ assert.match(cabinetCsvText,/REVIEW_REQUIRED/);
  // Engineering forms share the board workspace.
  await page.evaluate(()=>switchView('board'));
  await page.locator('#loadCurrentPanel summary').click();
