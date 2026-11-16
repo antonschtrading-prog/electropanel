@@ -20,7 +20,8 @@ const project=()=>({title:'Apparatus actions',lines:[{id:'L1',phase:'L1',catalog
  links:[{from:'SOURCE:MAIN',to:'INCOMING:Q0',conductors:['L1','N']},
  {from:'INCOMING:Q0',to:'BRANCH:BR1',conductors:['L1','N']}]}});
 test('combined evidence matrix is visible in print with per-device gaps and remains draft',()=>{
- const p=project(),before=JSON.stringify(p),b=bundle(p,()=>null);
+ const p=project();p.designRequirementsV1={externalNetwork:true};
+ const before=JSON.stringify(p),b=bundle(p,()=>null);
  assert.equal(b.sections.protectionEvidenceMatrix.rows.length,2);
  assert.ok(b.sections.protectionEvidenceMatrix.rows.some(x=>x.kind==='INCOMING'));
  assert.ok(b.sections.issueRegister.entries.some(x=>x.code==='PROTECTION_MATRIX_INCOMING_MAX_STUDY_REQUIRED'));
