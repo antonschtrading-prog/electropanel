@@ -4,7 +4,7 @@
 // neutral zones, selected devices, routes, RCDs, source paths or calculations.
 function epGroupMergeRulesV1(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||
-  Object.keys(raw).some(x=>!['maxGroupPowerKw','maxConsumersPerCircuit','categories'].includes(x)))
+  Object.keys(raw).some(x=>!['maxGroupPowerKw','maxConsumersPerCircuit','categories','separateCircuitIds'].includes(x)))
   throw Error('GROUP_MERGE_RULES_INVALID');
  if(typeof epGroupSplitRulesV1!=='function')throw Error('GROUP_MERGE_SPLIT_RULES_ENGINE_MISSING');
  const base=epGroupSplitRulesV1({maxGroupPowerKw:raw.maxGroupPowerKw,
@@ -23,7 +23,13 @@ function epGroupMergeRulesV1(raw){
   seen.add(x.circuitId);
   return {circuitId:x.circuitId,category:x.category.trim()};
  });
- return {...base,categories};
+ if(raw.separateCircuitIds===undefined)return {...base,categories};
+ const separate=raw.separateCircuitIds;
+ if(!Array.isArray(separate)||separate.length>400||
+  separate.some(x=>typeof x!=='string'||!x||x.length>40)||
+  new Set(separate).size!==separate.length)
+  throw Error('GROUP_MERGE_SEPARATE_IDS_INVALID');
+ return {...base,categories,separateCircuitIds:separate.slice()};
 }
 function epGroupMergePlanV1(project,rawRules){
  const rules=epGroupMergeRulesV1(rawRules),proposals=[],issues=[];
@@ -55,6 +61,9 @@ function epGroupMergePlanV1(project,rawRules){
   loadIds.add(item.id);consumers.get(item.circuitId).push(item.id);
   powers.set(item.circuitId,powers.get(item.circuitId)+item.powerKw);
  }
+ const dedicated=new Set(rules.separateCircuitIds||[]);
+ for(const id of dedicated)if(!ids.has(id))
+  add('GROUP_MERGE_SEPARATE_CIRCUIT_ORPHAN','BLOCKED',id);
  const categoryPhases=new Map();
  for(const row of rules.categories){
   const line=ids.get(row.circuitId);
@@ -67,6 +76,9 @@ function epGroupMergePlanV1(project,rawRules){
  }
  for(const row of rules.categories){
   const line=ids.get(row.circuitId);if(!line||!['L1','L2','L3','3Ф'].includes(line.phase))continue;
+  if(dedicated.has(line.id)){
+   add('GROUP_MERGE_DEDICATED_LINE_EXCLUDED','UNKNOWN',line.id);continue;
+  }
   if(categoryPhases.get(row.category)?.size!==1){
    add('GROUP_MERGE_CATEGORY_MIXED_PHASE','UNKNOWN',line.id);continue;
   }
@@ -165,6 +177,8 @@ function epGroupMergeHtmlV1(plan){
   esc(rules.maxConsumersPerCircuit??'')+'"></label>'+
   '<label>Категории линий<textarea id="groupMergeCategories" rows="5" spellcheck="false" placeholder="L1;Розетки\nL2;Розетки">'+
   esc(mappings)+'</textarea></label>'+
+  '<label>Отдельные линии, которые запрещено объединять (ID через запятую)<input id="groupMergeSeparateIds" value="'+
+  esc((rules.separateCircuitIds||[]).join(', '))+'" placeholder="L3, L5"></label>'+
   '<div class="mini-actions"><button class="btn" type="button" id="groupMergePreviewBtn">Предпросмотр объединения</button>'+
   '<button class="btn primary" type="button" id="groupMergeApplyBtn"'+
   (plan?.proposals?.length&&plan.status!=='BLOCKED'?'':' disabled')+'>Применить объединение</button></div>'+
