@@ -32,3 +32,17 @@ Open the project automation workflow, expand **Пожарное управлен
 `tests/fire-control-v1.test.js`, `tests/fire-control-integration.test.js`, `tests/fire-control-safety.test.js`, `tests/fire-control-ui-integration.test.js`, `tests/fire-control-trace.test.js`, `tests/fire-control-design.test.js`, `tests/fire-control-schedule.test.js`.
 
 Run from repository root: `node --test tests/fire-control-*.test.js` (requires Node.js with built-in test runner). Do not mark tests passed until a run is observed.
+
+## Integrated catalogue, DIN and export stage
+- `epFireCatalogReconcileV1(project,lookupSku)`: compares the exact engineer-selected SKU to catalogue category, DIN module width, coil voltage and source evidence. A missing SKU blocks this projection; no substitute is selected.
+- `epFireDinReconcileV1(project)`: compares declared fire actuator positions against `dinPlacementsV1` when the project supplies them; flags collisions and rail capacity overflow. Missing full-board layout remains UNKNOWN.
+- `epFireControlGateV1(project,lookupSku)`: consolidates scenario, design, trace, schedule, catalogue and DIN evidence. Never marks a project approved automatically.
+- `epFireControlCsvV1` and `epFireControlBomCsvV1`: export draft control circuit schedules and exact selected-SKU quantities as semicolon-delimited CSV. Spreadsheet formula injection is escaped.
+
+The editor now offers JSON evidence export, control schedule CSV and preliminary BOM CSV. The engineering bundle includes FIRE_CATALOG, FIRE_DIN and FIRE_CONTROL_GATE sections.
+
+### Limitations of catalogue evidence
+Existing curated catalogue records mainly cover protective devices. Do not mislabel an MCB as a contactor or claim that a manufacturer coil voltage is verified when its catalogue record does not contain that field. A manufacturer-specific actuator series and compatible coil still require engineer selection and authoritative evidence.
+
+### Test additions
+`tests/fire-reconciliation.test.js`, `tests/fire-control-export.test.js`, `tests/fire-control-gate.test.js`.
