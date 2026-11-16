@@ -90,14 +90,22 @@ function epEngineeringIssueRegisterHtmlV1(report,selectedId=null){
   ', отложено '+(report.counts.DEFERRED||0)+'</summary>'+
   '<p>Замечания могут повторяться в разных инженерных разделах. Отложенные проверки и происхождение введённых данных не блокируют текущую стадию. Это журнал проектирования, не допуск.</p>'+
   '<div style="overflow-x:auto"><table><thead><tr><th>Уровень</th><th>Раздел</th><th>Проблема</th><th>Что проверить</th><th>Цепь / объект</th></tr></thead><tbody>'+
-  (items||'<tr><td colspan="5">Замечания не перечислены; подтверждение монтажа отсутствует.</td></tr>')+
-  '</tbody></table></div></details>';
+  (items||'<tr><td colspan="5">На текущей стадии нет замечаний; проектные проверки сохраняются.</td></tr>')+
+  '</tbody></table></div>'+
+  (report.deferred?.length?
+   '<details><summary>Отложенные и необязательные проверки · '+esc(report.deferred.length)+'</summary>'+
+   '<div style="overflow-x:auto"><table><thead><tr><th>Раздел</th><th>Проверка</th><th>Цепь</th></tr></thead><tbody>'+
+   report.deferred.slice(0,250).map(x=>'<tr><td>'+esc(x.section)+'</td><td>'+esc(x.code)+
+    '</td><td>'+esc(x.circuitId??x.objectId??'Проект')+'</td></tr>').join('')+
+   '</tbody></table></div></details>':'')+
+  '</details>';
 }
 function epEngineeringIssueRegisterCsvV1(report){
  const q=v=>{let s=String(v??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(s))s="'"+s;
   return '"'+s.replace(/"/g,'""')+'"';};
  return '\uFEFF'+[['Раздел','Уровень','Код','Цепь','Объект'],
-  ...(report?.entries||[]).map(x=>[x.section,x.level,x.code,x.circuitId,x.objectId])]
+  ...(report?.entries||[]).map(x=>[x.section,x.level,x.code,x.circuitId,x.objectId]),
+  ...(report?.deferred||[]).map(x=>[x.section,'DEFERRED',x.code,x.circuitId,x.objectId])]
   .map(row=>row.map(q).join(';')).join('\r\n')+'\r\n';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
