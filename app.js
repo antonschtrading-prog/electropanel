@@ -231,8 +231,8 @@ function devicePreviewHtml(line){
 }
 function deviceAppearance(line){
  const d=catalogDevice(line.catalogSku);
- return d?{type:d.appearance,maker:d.maker,series:d.series,sku:d.sku,mark:d.label}:
- {type:'generic',maker:'DIN',series:'Условный аппарат',sku:'',mark:line.device||'—'};
+ const evidence=epDeviceVisualEvidenceV1(line,d);
+ return {...evidence,type:evidence.appearance};
 }
 
 // v0.6: A line is a CIRCUIT, NOT a load. Branch devices are circuit declarations.
@@ -1724,7 +1724,9 @@ function renderBoard(){
     (x.id===boardId||x.boardDeviceId===boardId))?'stale':'declared'):'unbound';
    d.title+=' · Терминальная схема: '+(modelLink?'связана декларативно':'не связана');
 
-   d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span></span><span class="ep-terminal ep-terminal-bottom"></span>';
+   d.dataset.visualEvidence=visual.source;d.dataset.visualIssues=visual.issues.join(',');
+   d.title+=' · '+(visual.source==='CATALOG_DECLARED'?'Каталожные данные, условный внешний вид':'Нет подтверждённой модели, внешний вид условный');
+   d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span>'+epDeviceVisualEvidenceHtmlV1(visual)+'</span><span class="ep-terminal ep-terminal-bottom"></span>';
    rail.appendChild(d);col+=width;
   }
   board.appendChild(holder);
