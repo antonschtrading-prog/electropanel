@@ -2,6 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {epFireControlWiringV1}=require('../fire-control-wiring-v1');
 const {epFireControlWiringDiagramV1}=require('../fire-control-wiring-diagram-v1');
+const {epFireControlDeclaredWiresCsvV1}=require('../fire-control-export-v1');
 const project=()=>({lines:[{id:'L1'}],loads:[{id:'AC',circuitId:'L1'}],fireControlV1:{
  signals:[{id:'S1',kind:'FIRE',zoneId:'Z1',contactType:'NC'}],
  actions:[{id:'A1',signalId:'S1',loadId:'AC',action:'DISCONNECT',actuator:'CONTACTOR',onSignalLoss:'DEENERGIZED'}],
@@ -178,4 +179,19 @@ test('wiring SVG does not fabricate conductor paths',()=>{
 });
 test('wiring SVG returns source issues for review',()=>{
  assert.ok(epFireControlWiringDiagramV1(project()).issues.some(x=>x.code==='FIRE_WIRING_ELECTRICAL_CONTINUITY_UNVERIFIED'));
+});
+
+test('declared wiring CSV contains wire reference',()=>assert.match(epFireControlDeclaredWiresCsvV1(project()).csv,/WIRE1/));
+test('declared wiring CSV contains source endpoint',()=>assert.match(epFireControlDeclaredWiresCsvV1(project()).csv,/SUPPLY:PS1/));
+test('declared wiring CSV contains target endpoint',()=>assert.match(epFireControlDeclaredWiresCsvV1(project()).csv,/TERMINAL:T1/));
+test('declared wiring CSV contains conductor section',()=>assert.match(epFireControlDeclaredWiresCsvV1(project()).csv,/"1.5"/));
+test('declared wiring CSV contains conductor material',()=>assert.match(epFireControlDeclaredWiresCsvV1(project()).csv,/COPPER/));
+test('declared wiring CSV contains engineer evidence',()=>assert.match(epFireControlDeclaredWiresCsvV1(project()).csv,/https:\/\/example.org\/schematic/));
+test('declared wiring CSV never claims engineering approval',()=>assert.equal(epFireControlDeclaredWiresCsvV1(project()).engineeringApproved,false));
+test('declared wiring CSV never claims installation readiness',()=>assert.equal(epFireControlDeclaredWiresCsvV1(project()).ready_for_installation,false));
+test('declared wiring CSV has header when unconfigured',()=>assert.match(epFireControlDeclaredWiresCsvV1({}).csv,/wire_id/));
+test('declared wiring CSV neutralizes formula injection',()=>{
+ const p=project();p.fireControlV1.wiring.connections[0].verifiedSource='https://example.org';
+ p.fireControlV1.wiring.connections[0].wireReference='=HYPERLINK';
+ const csv=epFireControlDeclaredWiresCsvV1(p).csv;assert.match(csv,/"'=HYPERLINK"/);
 });
