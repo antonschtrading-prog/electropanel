@@ -1038,6 +1038,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.cabinetGeometryV1?.interior.widthMm),2000);
  const cabinetBefore=await page.evaluate(()=>JSON.stringify(state.cabinetGeometryV1));
  const firstZone=page.locator('#cabinetGeometryPanel [data-cabinet-zone="0"]');
+ await page.locator('#cabinetGeometryPanel details').filter({has:firstZone}).locator('summary').click();
  await firstZone.locator('[name="xMm"]').fill('60');
  await firstZone.locator('[name="yMm"]').fill('50');
  await firstZone.locator('button[type="submit"]').click();
@@ -1053,6 +1054,14 @@ const server=http.createServer((req,res)=>{
  assert.match(cabinetCsvText,/cabinet_zone_x_mm/);
  assert.match(cabinetCsvText,/cabinet_usable_depth_mm/);
  assert.match(cabinetCsvText,/REVIEW_REQUIRED/);
+ const cabinetSvgPromise=page.waitForEvent('download');
+ await page.locator('#cabinetExportSvgBtn').click();
+ const cabinetSvg=await cabinetSvgPromise;
+ assert.match(cabinetSvg.suggestedFilename(),/-cabinet-plan-DRAFT\.svg$/);
+ const svgText=fs.readFileSync(await cabinetSvg.path(),'utf8');
+ assert.match(svgText,/data-factory-cad="false"/);
+ assert.match(svgText,/НЕ ПРОИЗВОДСТВЕННЫЙ ЧЕРТЁЖ/);
+ assert.match(svgText,/viewBox="0 0 2000 1500"/);
  // Engineering forms share the board workspace.
  await page.evaluate(()=>switchView('board'));
  await page.locator('#loadCurrentPanel summary').click();
