@@ -1756,7 +1756,13 @@ $('selectedDevice').addEventListener('click',e=>{
 $('boardCanvas').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();renderCircuitGraph();renderEngineeringDiagnosticsV1();});
 $('boardCanvas').addEventListener('dragstart',e=>{const b=e.target.closest('[data-line]');if(!b)return;dragLineId=b.dataset.line;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragLineId);});
 $('boardCanvas').addEventListener('dragover',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId||b.dataset.line===dragLineId)return;e.preventDefault();e.dataTransfer.dropEffect='move';});
-$('boardCanvas').addEventListener('drop',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId)return;e.preventDefault();const id=dragLineId;dragLineId=null;reorderLine(id,b.dataset.line);});
+$('boardCanvas').addEventListener('drop',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId)return;e.preventDefault();const sourceLine=dragLineId;dragLineId=null;
+ const sourceDevice=state.branchDevices?.find(x=>x.circuitId===sourceLine)?.id||sourceLine;
+ const targetDevice=state.branchDevices?.find(x=>x.circuitId===b.dataset.line)?.id||b.dataset.line;
+ const result=epBoardDragMoveV1(state,sourceDevice,targetDevice,catalogDevice);
+ if(!result.project){notify('Перемещение DIN отклонено: '+result.code,true);return;}
+ checkpoint();state=result.project;changed();notify('Аппараты обменялись позициями DIN; порядок линий не изменён');
+});
 $('boardCanvas').addEventListener('dragend',()=>{dragLineId=null;});
 $('selectedDevice').addEventListener('change',e=>{
  if(e.target.id==='catalogTier'){catalogTierFilter=e.target.value;catalogMakerFilter='';catalogSeriesFilter='';renderBoard();return;}
