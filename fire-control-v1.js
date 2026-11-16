@@ -57,6 +57,17 @@ function epFireControlAuditV1(project, raw) {
  }
  for(const [loadId,items] of byLoad) {
   if(items.length>32)issue('FIRE_CONTROL_EXCESSIVE_ACTIONS','BLOCKED',loadId);
+  const actionsByZone=new Map();
+  for(const item of items){
+   const zone=signalMap.get(item.signalId)?.zoneId;
+   if(!zone)continue;
+   if(!actionsByZone.has(zone))actionsByZone.set(zone,new Set());
+   actionsByZone.get(zone).add(item.action);
+  }
+  for(const [zone,commands] of actionsByZone)if(commands.has('DISCONNECT')&&(commands.has('ENABLE')||commands.has('MAINTAIN')))
+   issue('FIRE_CONTROL_ZONE_COMMAND_PRIORITY_REQUIRED','UNKNOWN',loadId);
+  if(new Set(items.map(x=>x.signalId)).size>1&&new Set(items.map(x=>x.action)).size>1)
+   issue('FIRE_CONTROL_MULTISIGNAL_INTERLOCK_REVIEW','UNKNOWN',loadId);
   for(const signalId of new Set(items.map(x=>x.signalId))) {
    const commands=new Set(items.filter(x=>x.signalId===signalId).map(x=>x.action));
    if(commands.has('DISCONNECT')&&(commands.has('ENABLE')||commands.has('MAINTAIN')))
