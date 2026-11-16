@@ -5,7 +5,7 @@
 // shared RCD topology. No cable length or upstream network is required.
 function epGroupSplitRulesV1(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||
-  Object.keys(raw).some(k=>k!=='maxGroupPowerKw'))
+  Object.keys(raw).some(k=>!['maxGroupPowerKw','maxConsumersPerCircuit'].includes(k)))
   throw Error('GROUP_SPLIT_RULES_INVALID');
  const value=raw.maxGroupPowerKw;
  if(value===null||value===undefined||typeof value==='boolean'||typeof value==='object')
@@ -16,7 +16,15 @@ function epGroupSplitRulesV1(raw){
  const n=Number(str);
  if(!Number.isFinite(n)||n<=0||n>100000)
   throw Error('GROUP_SPLIT_MAX_POWER_INVALID');
- return {maxGroupPowerKw:n};
+ const count=raw.maxConsumersPerCircuit;
+ if(count===undefined||count===null||count==='')return {maxGroupPowerKw:n};
+ if(typeof count==='boolean'||typeof count==='object'||
+  !/^[1-9]\d*$/.test(String(count).trim()))
+  throw Error('GROUP_SPLIT_MAX_CONSUMERS_INVALID');
+ const maxConsumersPerCircuit=Number(count);
+ if(!Number.isInteger(maxConsumersPerCircuit)||maxConsumersPerCircuit>1000)
+  throw Error('GROUP_SPLIT_MAX_CONSUMERS_INVALID');
+ return {maxGroupPowerKw:n,maxConsumersPerCircuit};
 }
 function epGroupSplitAllowedV1(project,line){
  const id=line?.id;
@@ -95,7 +103,9 @@ function epGroupSplitPlanV1(project,rawRules){
   }
   if(invalid){issues.push({code:'GROUP_SPLIT_INVALID_CONSUMER_POWER',
     level:'BLOCKED',lineId:line.id});continue;}
-  if(total<=rules.maxGroupPowerKw+1e-9)continue;
+  if(total<=rules.maxGroupPowerKw+1e-9&&
+   (rules.maxConsumersPerCircuit===undefined||
+    loads.length<=rules.maxConsumersPerCircuit))continue;
   const denied=epGroupSplitAllowedV1(project,line);
   if(denied){issues.push({code:denied,level:'UNKNOWN',lineId:line.id});continue;}
   if(loads.some(x=>x.powerKw>rules.maxGroupPowerKw+1e-9)){
@@ -108,7 +118,9 @@ function epGroupSplitPlanV1(project,rawRules){
    String(a.id).localeCompare(String(b.id)));
   const bins=[];
   for(const load of sorted){
-   let bin=bins.find(b=>b.total+load.powerKw<=rules.maxGroupPowerKw+1e-9);
+   let bin=bins.find(b=>b.total+load.powerKw<=rules.maxGroupPowerKw+1e-9&&
+    (rules.maxConsumersPerCircuit===undefined||
+     b.ids.length<rules.maxConsumersPerCircuit));
    if(!bin){bin={total:0,ids:[]};bins.push(bin);}
    bin.ids.push(load.id);bin.total+=load.powerKw;
   }
@@ -179,7 +191,9 @@ function epGroupSplitHtmlV1(plan){
   esc(plan.proposals.length)+'</summary>'+
   '<p class="muted">Только явно заданный предел суммарной установленной мощности. Не объединяет разные линии, не меняет группы УЗО и не подбирает защиту. Это предварительное разбиение, не нормативное решение.</p>'+
   '<label>Предельная суммарная мощность группы, кВт <input id="groupSplitMaxKw" inputmode="decimal" value="'+
-  esc(plan.rules.maxGroupPowerKw)+'"></label><div class="mini-actions">'+
+  esc(plan.rules.maxGroupPowerKw)+'"></label>'+
+  '<label>Максимум потребителей в группе (необязательно) <input id="groupSplitMaxConsumers" inputmode="numeric" value="'+
+  esc(plan.rules.maxConsumersPerCircuit??'')+'"></label><div class="mini-actions">'+
   '<button class="btn" type="button" id="groupSplitPreviewBtn">Предварительный просмотр</button>'+
   '<button class="btn primary" type="button" id="groupSplitApplyBtn"'+
   (plan.proposals.length&&plan.status!=='BLOCKED'?'':' disabled')+'>Применить проверенное разбиение</button></div>'+
