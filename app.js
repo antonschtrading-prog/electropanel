@@ -222,12 +222,26 @@ function faultLineInfo(line){
 function devicePreviewHtml(line){
  if(!line)return '';
  const visual=deviceAppearance(line);
+ const front=epBoardArticleFaceHtmlV2(line,line.id);
+ if(front){
+  const catalog=catalogDevice(line.catalogSku);
+  const asset=typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(catalog):null;
+  return '<div class="ep-preview-wrap"><div class="ep-preview-article ep-preview-article-front">'+front+'</div>'+
+   '<div class="ep-preview-caption"><b>Фасад выбранного аппарата</b><span>'+
+   (asset?.status==='REVIEWED_IMAGE'?'Сверенное изображение артикула; монтаж не подтверждён.':'Оригинальный стилизованный фасад; не фотография и не CAD производителя.')+
+   '</span></div></div>';
+ }
  return '<div class="ep-preview-wrap"><div class="ep-preview-article ep-real-device ep-'+safeText(visual.type)+'" aria-label="Стилизованный фасад '+safeText(visual.maker)+'">'+
  '<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span>'+
  '<span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span>'+
  '<span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||line.id)+'</span>'+
  '<span class="ep-note">'+safeText(line.id)+'</span></span><span class="ep-terminal ep-terminal-bottom"></span></div>'+
  '<div class="ep-preview-caption"><b>Фасад выбранного аппарата</b><span>Оригинальный стилизованный рендер, не фотография и не CAD изготовителя</span></div></div>';
+}
+function epBoardArticleFaceHtmlV2(line,id){
+ const c=catalogDevice(line?.catalogSku);
+ if(!c||typeof epManufacturerVisualHtmlV1!=='function')return '';
+ return '<span class="ep-board-front" aria-hidden="true">'+epManufacturerVisualHtmlV1(c,id||line.id)+'</span>';
 }
 function deviceAppearance(line){
  const d=catalogDevice(line.catalogSku);
@@ -1726,8 +1740,18 @@ function renderBoard(){
    d.title+=' · Терминальная схема: '+(modelLink?'связана декларативно':'не связана');
 
    d.dataset.visualEvidence=visual.source;d.dataset.visualIssues=visual.issues.join(',');
+   const cat=l.catalogSku?catalogDevice(l.catalogSku):null;
+   const asset=cat&&typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(cat):null;
+   const bodyWidth=Number.isFinite(cat?.widthMm)&&cat.widthMm>0?cat.widthMm:null;
+   d.dataset.frontAssetStatus=asset?.status||'STYLIZED_ONLY';
+   d.dataset.nominalSlotWidthMm=String(width*18);
+   d.dataset.bodyWidthMm=bodyWidth===null?'unknown':String(bodyWidth);
+   d.dataset.geometryWidthConflict=String(!!cat&&(cat.modules!==width||(bodyWidth!==null&&bodyWidth>width*18+1e-6)));
+   if(d.dataset.geometryWidthConflict==='true')d.title+=' · Габариты расходятся с DIN';
+   else if(bodyWidth!==null)d.title+=' · Корпус '+bodyWidth+' мм / слот '+(width*18)+' мм';
+   const face=epBoardArticleFaceHtmlV2(l,boardId||l.id);
    d.title+=' · '+(visual.source==='CATALOG_DECLARED'?'Каталожные данные, условный внешний вид':'Нет подтверждённой модели, внешний вид условный');
-   d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span>'+epDeviceVisualEvidenceHtmlV1(visual)+'</span><span class="ep-terminal ep-terminal-bottom"></span>';
+   d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span>'+face+epDeviceVisualEvidenceHtmlV1(visual)+'</span><span class="ep-terminal ep-terminal-bottom"></span>';
    rail.appendChild(d);col+=width;
   }
   board.appendChild(holder);
@@ -1747,6 +1771,12 @@ function renderBoard(){
   const audit=epBoardVisualAuditV1(state,catalogDevice);
   $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Внешний вид аппаратов: '+audit.verifiedCatalogueFaces+' по каталогу; '+audit.placeholders+' условных; проверенных изображений: '+(audit.reviewedManufacturerImages||0)+'</strong></div>');
   if(audit.issues.some(x=>x.level==='BLOCKED'))$('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line bad">Несоответствие модели и DIN-компоновки — проверьте артикулы и ширину</div>');
+ }
+ if(typeof epDraftBoardPlanV1==='function'&&typeof epDinPhysicalEnvelopeV1==='function'){
+  const physical=epDinPhysicalEnvelopeV1(epDraftBoardPlanV1(state,catalogDevice),catalogDevice);
+  const blocked=physical.issues.filter(x=>x.level==='BLOCKED');
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Ширина по каталогу: '+physical.checkedWidths+'; неизвестна: '+physical.missingWidths+'; блокирующих замечаний: '+blocked.length+'</strong></div>');
+  if(blocked.length)$('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line bad">Расхождения геометрии: '+blocked.slice(0,8).map(x=>safeText((x.deviceId||'—')+' '+x.code)).join('; ')+'</div>');
  }
  if(typeof epBoardCapacityReviewV1==='function'){
   const capacity=epBoardCapacityReviewV1(state,catalogDevice);

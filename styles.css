@@ -299,3 +299,16 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-din-physical-summary{font-size:12px;color:#314756}
 .ep-din-physical-issues{margin:8px 0;color:#a33f21}
 @media(max-width:800px){.ep-din-block:has(.ep-manufacturer-front-image){min-height:190px}.ep-manufacturer-front-image{max-height:125px}}
+
+/* Exact article facade in the editable DIN canvas. */
+.ep-board-front{display:block;min-width:0;flex:1;width:100%;overflow:hidden;align-self:stretch}
+.ep-board-front .ep-manufacturer-front,.ep-board-front .ep-manufacturer-front-image{width:100%;height:100%;max-height:96px;object-fit:contain;filter:none}
+.din-apparatus:has(.ep-board-front){height:160px;min-height:160px;padding:3px 2px 5px}
+.din-apparatus .ep-face:has(.ep-board-front){padding:3px 1px;background:transparent;gap:1px}
+.din-apparatus .ep-face:has(.ep-board-front)>.ep-brand,.din-apparatus .ep-face:has(.ep-board-front)>.ep-series,.din-apparatus .ep-face:has(.ep-board-front)>.ep-rating,.din-apparatus .ep-face:has(.ep-board-front)>.ep-rocker{display:none}
+.din-apparatus[data-geometry-width-conflict="true"]{border:2px solid #b63f32}
+.din-apparatus[data-front-asset-status="ASSET_REJECTED"]{border-top:4px dashed #b63f32}
+.ep-preview-article-front{display:block;max-width:280px;width:100%;height:auto;margin:auto}
+.ep-preview-article-front .ep-board-front{min-width:90px;max-width:280px;max-height:320px}
+.ep-preview-article-front .ep-manufacturer-front,.ep-preview-article-front .ep-manufacturer-front-image{max-height:320px;width:100%;height:auto}
+@media(max-width:760px){.din-apparatus:has(.ep-board-front){height:132px;min-height:132px}.ep-board-front .ep-manufacturer-front,.ep-board-front .ep-manufacturer-front-image{max-height:75px}}
