@@ -15,11 +15,16 @@ function epWorkflowInputsV1(raw){
   throw Error('WORKFLOW_INPUTS_INVALID');
  const result={};
  for(const key of ['singleVoltageV','threeVoltageV','powerFactor','efficiency','demandFactor']){
+  const voltage=key.includes('Voltage');
+  const missing=raw[key]===undefined||raw[key]===null||raw[key]==='';
   const n=epWorkflowPositiveV1(raw[key]);
-  if(n===null||n>(key.includes('Voltage')?1500:1))
+  if(voltage&&missing){result[key]=null;continue;}
+  if(n===null||n>(voltage?1500:1))
    throw Error('WORKFLOW_INPUT_'+key.toUpperCase()+'_INVALID');
   result[key]=n;
  }
+ if(result.singleVoltageV===null&&result.threeVoltageV===null)
+  throw Error('WORKFLOW_INPUT_VOLTAGE_REQUIRED');
  return result;
 }
 function epWorkflowLineEstimateV1(line,inputs){
@@ -29,6 +34,8 @@ function epWorkflowLineEstimateV1(line,inputs){
  const power=epWorkflowPositiveV1(line.power??line.powerKw);
  if(power===null)return {status:'NEEDS_POWER',code:'WORKFLOW_POWER_NOT_DECLARED',current:null};
  if(!inputs)return {status:'NEEDS_INPUTS',code:'WORKFLOW_COMMON_INPUTS_NOT_DECLARED',current:null};
+ if((mode==='single_phase'?inputs.singleVoltageV:inputs.threeVoltageV)===null)
+  return {status:'NEEDS_INPUTS',code:'WORKFLOW_RELEVANT_VOLTAGE_NOT_DECLARED',current:null};
  if(typeof epLoadCurrentV1!=='function')
   return {status:'UNAVAILABLE',code:'WORKFLOW_LOAD_ENGINE_UNAVAILABLE',current:null};
  const input={mode,powerKw:power,
@@ -195,8 +202,9 @@ function epWorkflowApplyCurrentsV1(project,rawInputs){
  let current=JSON.parse(JSON.stringify(project));
  const applied=[],skipped=[];
  for(const line of current.lines){
-  const existing=epWorkflowPositiveV1(line.overloadInput?.ibA);
-  if(existing!==null){skipped.push({lineId:line.id,code:'WORKFLOW_EXISTING_CURRENT_PRESERVED'});continue;}
+  const original=line.overloadInput?.ibA;
+  const present=original!==undefined&&original!==null&&String(original).trim()!=='';
+  if(present){skipped.push({lineId:line.id,code:'WORKFLOW_EXISTING_CURRENT_PRESERVED'});continue;}
   const estimate=epWorkflowLineEstimateV1(line,inputs);
   if(estimate.status!=='CALCULATED'){
    skipped.push({lineId:line.id,code:estimate.code});continue;
