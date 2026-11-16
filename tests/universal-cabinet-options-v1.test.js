@@ -69,3 +69,11 @@ test('fragmentation never counts as a viable option',()=>{
  const someBlocked=r.options.filter(o=>o.unplaced.length>0);
  assert.ok(someBlocked.length>0);assert.ok(someBlocked.every(o=>o.status==='BLOCKED'));
 });
+
+test('bound branch SKU takes precedence over line fallback',()=>{
+ const p={lines:[{id:'L1',modules:2,catalogSku:'OLD'}],
+  branchDevices:[{id:'B1',circuitId:'L1',modules:2,catalogSku:'ACTUAL'}]};
+ const r=plan(p,id=>({article:id,modules:2,geometry:{depthMm:65}}));
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.ok(r.options[0].rails[0].devices.some(d=>d.deviceId==='B1'&&d.article==='ACTUAL'));
+});

@@ -14,6 +14,17 @@ function epEngineeringBundleV1(project,lookupSku){
  const bom=section('BOM',typeof epDraftBomV1==='function'?epDraftBomV1:null);
  const board=section('BOARD',typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1:null);
  const cabinetFit=section('CABINET_FIT',typeof epCabinetFitAuditV1==='function'?epCabinetFitAuditV1:null);
+ const cabinetCapacity=section('CABINET_CAPACITY',typeof epUniversalCabinetOptionsV1==='function'?
+  (p,lookup)=>{
+   const report=epUniversalCabinetOptionsV1(p,lookup);
+   const limits=p?.cabinetSizingPreferencesV1||{};
+   return {...report,usableSizeLimits:{...limits},options:report.options.map(o=>{
+    const exceedsWidth=!!limits.maxUsableWidthMm&&o.envelope.preliminaryUsableWidthMm>limits.maxUsableWidthMm;
+    const exceedsHeight=!!limits.maxUsableHeightMm&&o.envelope.preliminaryUsableHeightMm>limits.maxUsableHeightMm;
+    return {...o,withinDeclaredLimits:!exceedsWidth&&!exceedsHeight};
+   }),selectedLayout:{railCount:p.railCount,modulesPerRail:p.railCapacity},
+    confirmedCabinetFit:false,engineeringApproved:false};
+  }:null);
  const engineering=section('GATE',typeof epEngineeringGateV1==='function'?epEngineeringGateV1:null);
  const projectCatalogItems=catalog?Object.entries(catalog.articles).map(([id,device])=>({id,device})):
   typeof EP_CATALOG==='object'?Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[];
@@ -152,7 +163,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const boardCapacity=section('BOARD_CAPACITY_REVIEW',typeof epBoardCapacityReviewV1==='function'?epBoardCapacityReviewV1:null);
  const deviceIdentity=section('PROJECT_DEVICE_IDENTITY',typeof epProjectDeviceIdentityV1==='function'?epProjectDeviceIdentityV1:null);
  const deliveryTrace=section('PROJECT_DELIVERY_TRACE',typeof epProjectDeliveryTraceV1==='function'?epProjectDeliveryTraceV1:null);
- const sections={cabinetFit,boardCapacity,deviceIdentity,deliveryTrace,fireControl,fireControlBill,fireControlTrace,fireControlDesign,fireControlSchedule,fireCatalog,fireDin,fireGate,fireChecklist,fireTopology,fireDiagram,fireWiring,fireWiringDiagram,fireContinuity,workflowPreview,consumerGrouping,consumerMerge,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const sections={cabinetFit,cabinetCapacity,boardCapacity,deviceIdentity,deliveryTrace,fireControl,fireControlBill,fireControlTrace,fireControlDesign,fireControlSchedule,fireCatalog,fireDin,fireGate,fireChecklist,fireTopology,fireDiagram,fireWiring,fireWiringDiagram,fireContinuity,workflowPreview,consumerGrouping,consumerMerge,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));

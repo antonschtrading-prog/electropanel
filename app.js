@@ -1763,7 +1763,12 @@ function applyCabinetCapacityOptionV1(id){
     (lim.maxUsableHeightMm&&option.envelope.preliminaryUsableHeightMm>lim.maxUsableHeightMm)){
   notify('Предварительная компоновка превышает указанные полезные размеры',true);return;
  }
+ const changedShape=state.railCount!==option.railCount||state.railCapacity!==option.modulesPerRail;
+ if(changedShape&&state.cabinetGeometryV1&&
+  !confirm('Текущие заданные размеры и монтажные зоны корпуса будут сняты с компоновки. Продолжить? Изменение можно отменить.'))
+  return;
  const proposed=structuredCloneCompat(state);
+ if(changedShape)delete proposed.cabinetGeometryV1;
  proposed.railCapacity=option.modulesPerRail;proposed.railCount=option.railCount;
  proposed.manualLayoutV1=option.rails.flatMap(rail=>rail.devices.map(d=>({
   deviceId:d.deviceId,railIndex:rail.railIndex,startModule:d.startModule
@@ -1777,7 +1782,9 @@ function applyCabinetCapacityOptionV1(id){
  checkpoint();
  state.railCapacity=proposed.railCapacity;state.railCount=proposed.railCount;
  state.manualLayoutV1=proposed.manualLayoutV1;
- changed();notify('Компоновка применена. Электрические аппараты не изменены.');
+ if(changedShape)delete state.cabinetGeometryV1;
+ changed();notify('Компоновка применена. Электрические аппараты не изменены.'+
+  (changedShape?' Проверьте монтажные зоны корпуса заново.':''));
 }
 function renderBoard(){
  renderCabinetCapacityOptionsV1();

@@ -33,3 +33,9 @@ The board screen shows fitting choices. Choosing one validates the complete plac
 Acceptance: small cabinet pattern 1×6, saved manual rail positions, unchanged circuit data, undo/redo and JSON roundtrip are exercised in the Chromium integration test. The board also exports a clearly marked draft, manufacturer-neutral capacity recommendation JSON.
 
 The board offers optional maximum *usable interior* width/height limits (not exterior cabinet dimensions). Values survive project JSON/undo/redo and are applied to preliminary candidate envelopes only. No claims of verified manufacturer fit.
+
+## Cross-view and existing geometric evidence (2026-11-17)
+
+The engineering bundle now carries a cabinetCapacity section with options, usable-space constraints and the board's selected rail configuration. Print HTML includes a preliminary capacity table. Existing cabinet fit audit remains separate evidence.
+
+A rail shape change cannot silently retain incompatible user-declared cabinetGeometryV1. The application requests confirmation before removing the old geometry. Cancellation makes no changes. Approval clears it in an undoable checkpoint, with circuit ratings retained; users must redeclare the usable mounting zones. No manufacturer enclosure is assumed.

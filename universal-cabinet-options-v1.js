@@ -41,7 +41,7 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    issues.push({code:'BRANCH_BINDING_INVALID',level:'BLOCKED',deviceId:l?.id});continue;}
   const b=matching?.[0];
   if(b&&b.modules!==l.modules)issues.push({code:'BRANCH_MODULES_CONFLICT',level:'BLOCKED',deviceId:b.id});
-  push(l,b?.id??l?.id,l?.catalogSku,b?.modules??l?.modules);
+  push(l,b?.id??l?.id,b?.catalogSku||l?.catalogSku,b?.modules??l?.modules);
  }
  if(!entries.length)issues.push({code:'NO_DEVICES',level:'BLOCKED'});
  if(issues.some(x=>x.level==='BLOCKED'))return {...blocked('EQUIPMENT_INVALID'),issues};

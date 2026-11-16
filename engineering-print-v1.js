@@ -207,6 +207,16 @@ function epEngineeringPrintV1(bundle){
    x.widthMm??'—',x.heightMm??'—',x.depthMm??'—',x.poleConfiguration||'Не указана',
    x.icnKa??'—',x.icnVoltageV??'—',x.icnStandard||'—',x.icuKa??'—',x.icuVoltageV??'—',x.residualCurrentMa??'—',
    x.residualType||'—',x.source||'Не указан',x.sourceReviewedAt||'Не записано']));
+ const capacity=sections.cabinetCapacity||{};
+ const capacityRows=rows(['Вместимость','Ряды','Модулей на DIN','Резерв','Полезная ширина (предв.), мм',
+  'Полезная высота (предв.), мм','Полезная глубина (предв.), мм','Ограничения'],
+  (capacity.options||[]).filter(o=>o.status!=='BLOCKED').slice(0,16).map(o=>[
+   o.capacityModules,o.railCount,o.modulesPerRail,o.reserveModules,
+   o.envelope?.preliminaryUsableWidthMm??'—',
+   o.envelope?.preliminaryUsableHeightMm??'—',
+   o.envelope?.preliminaryUsableDepthMm??'НЕИЗВЕСТНА',
+   o.withinDeclaredLimits===false?'Превышены':'Требует проверки'
+  ]));
  const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
  const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
@@ -245,6 +255,8 @@ function epEngineeringPrintV1(bundle){
   '<h2>Предварительное разбиение потребителей по введённому пределу</h2>'+groupSplitTable+
   '<p>Перегруппировка не назначает электрическую защиту и не меняет общие УЗО без инженерного решения.</p>'+
   '<h2>Стадия и применимость проектных проверок</h2>'+designStageTable+
+  '<h2>Варианты вместимости и предварительной компоновки корпуса</h2>'+capacityRows+
+  '<p>Это не паспортные размеры конкретного щита. Приведён только расчёт полезного монтажного пространства с условными отступами. Кабельные вводы, температурный режим, аппараты и конструкция корпуса требуют проверки.</p>'+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
   '<h2>Связи защитных аппаратов · топология, селективность не доказана</h2>'+protectionTopologyTable+protectionTopologyIssues+
