@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {epFireControlWiringV1}=require('../fire-control-wiring-v1');
+const {epFireControlWiringDiagramV1}=require('../fire-control-wiring-diagram-v1');
 const project=()=>({lines:[{id:'L1'}],loads:[{id:'AC',circuitId:'L1'}],fireControlV1:{
  signals:[{id:'S1',kind:'FIRE',zoneId:'Z1',contactType:'NC'}],
  actions:[{id:'A1',signalId:'S1',loadId:'AC',action:'DISCONNECT',actuator:'CONTACTOR',onSignalLoss:'DEENERGIZED'}],
@@ -125,4 +126,56 @@ test('wiring retains no certification despite all connection categories',()=>{
  for(const [i,purpose] of ['RETURN','PROTECTIVE_DEVICE','INTERLOCK'].entries())
  p.fireControlV1.wiring.connections.push({...w,id:'W'+(i+2),wireReference:'WIRE'+(i+2),purpose,from:{kind:'JUNCTION',id:'J'+i}});
  assert.equal(result(p).engineeringApproved,false);
+});
+
+test('wiring SVG is generated from declared connection',()=>{
+ const r=epFireControlWiringDiagramV1(project());assert.match(r.svg,/SUPPLY:PS1/);assert.match(r.svg,/TERMINAL:T1/);
+});
+test('wiring SVG preserves declared wire reference',()=>{
+ assert.match(epFireControlWiringDiagramV1(project()).svg,/WIRE1/);
+});
+test('wiring SVG preserves connection purpose',()=>{
+ assert.match(epFireControlWiringDiagramV1(project()).svg,/CONTROL_SUPPLY/);
+});
+test('wiring SVG is clearly marked as draft',()=>{
+ assert.match(epFireControlWiringDiagramV1(project()).svg,/NOT FOR INSTALLATION/);
+});
+test('wiring SVG never declares installation readiness',()=>{
+ assert.equal(epFireControlWiringDiagramV1(project()).ready_for_installation,false);
+});
+test('wiring SVG never declares engineering approval',()=>{
+ assert.equal(epFireControlWiringDiagramV1(project()).engineeringApproved,false);
+});
+test('wiring SVG empty for unconfigured project',()=>{
+ assert.equal(epFireControlWiringDiagramV1({}).svg,'');
+});
+test('wiring SVG has fixed width and dynamic height',()=>{
+ assert.match(epFireControlWiringDiagramV1(project()).svg,/viewBox="0 0 1000/);
+});
+test('wiring SVG deterministic for same inputs',()=>{
+ const p=project();assert.equal(epFireControlWiringDiagramV1(p).svg,epFireControlWiringDiagramV1(p).svg);
+});
+test('wiring SVG does not mutate project',()=>{
+ const p=project(),before=JSON.stringify(p);epFireControlWiringDiagramV1(p);assert.equal(JSON.stringify(p),before);
+});
+test('wiring SVG safely escapes engineer supplied labels',()=>{
+ const p=project();p.fireControlV1.wiring.connections[0].wireReference='<script>';
+ const svg=epFireControlWiringDiagramV1(p).svg;
+ assert.ok(!svg.includes('<script>'));
+});
+test('wiring SVG does not render invalid endpoints',()=>{
+ const p=project();p.fireControlV1.wiring.connections[0].to={kind:'TERMINAL',id:'bad id'};
+ assert.equal(epFireControlWiringDiagramV1(p).total,0);
+});
+test('wiring SVG renders 2 declared connections',()=>{
+ const p=project(),w=p.fireControlV1.wiring.connections[0];
+ p.fireControlV1.wiring.connections.push({...w,id:'W2',wireReference:'WIRE2',from:{kind:'TERMINAL',id:'T2'}});
+ assert.equal(epFireControlWiringDiagramV1(p).total,2);
+});
+test('wiring SVG does not fabricate conductor paths',()=>{
+ const p=project();p.fireControlV1.wiring.connections=[];
+ assert.equal(epFireControlWiringDiagramV1(p).total,0);
+});
+test('wiring SVG returns source issues for review',()=>{
+ assert.ok(epFireControlWiringDiagramV1(project()).issues.some(x=>x.code==='FIRE_WIRING_ELECTRICAL_CONTINUITY_UNVERIFIED'));
 });
