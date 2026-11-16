@@ -193,5 +193,6 @@ test('declared wiring CSV has header when unconfigured',()=>assert.match(epFireC
 test('declared wiring CSV neutralizes formula injection',()=>{
  const p=project();p.fireControlV1.wiring.connections[0].verifiedSource='https://example.org';
  p.fireControlV1.wiring.connections[0].wireReference='=HYPERLINK';
- const csv=epFireControlDeclaredWiresCsvV1(p).csv;assert.match(csv,/"'=HYPERLINK"/);
+ const report=epFireControlDeclaredWiresCsvV1(p);
+ assert.equal(report.status,'BLOCKED');assert.ok(!report.csv.includes('"=HYPERLINK"'));
 });
