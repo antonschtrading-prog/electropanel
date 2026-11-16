@@ -1996,7 +1996,10 @@ $('automationFlowPanel').addEventListener('click',e=>{
    throw Error('Изменены правила. Пересчитайте предварительный просмотр');
   const result=epGroupSplitApplyV1(ensureV2(state),workflowSplitPlan);
   if(!result.project)return notify('Нет групп для безопасного разделения');
-  const candidate=ensureV2(result.project);
+  const candidate=result.project;
+  syncBranchDevices(candidate);
+  candidate.branchModelVersion=1;
+  ensureV2(candidate);
   if(typeof epDraftBoardPlanV1==='function'){
    const board=epDraftBoardPlanV1(candidate,catalogDevice);
    if((board.issues||[]).some(x=>x.level==='BLOCKED'&&
