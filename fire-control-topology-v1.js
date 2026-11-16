@@ -61,6 +61,14 @@ function epFireControlTopologyV1(project){
     else{terminalOwners.set(term,a.id);addNode(term,'TERMINAL',terminalId);addEdge('TERMINAL:'+a.id+':'+terminalId,term,device,'TERMINAL_ASSIGNMENT');}
    }
    else issue('FIRE_TOPOLOGY_TERMINALS_MISSING','UNKNOWN',a.id);
+   if(Array.isArray(entry.pins))for(const pin of entry.pins){
+    if(!pin||typeof pin.terminalId!=='string'||typeof pin.devicePin!=='string')continue;
+    const pinNode='PIN:'+entry.deviceId+':'+pin.devicePin;
+    if(!nodeIds.has(pinNode))addNode(pinNode,'DEVICE_PIN',pin.devicePin,{deviceId:entry.deviceId,role:pin.role,source:pin.verifiedSource??null});
+    if(nodeIds.has('TERM:'+pin.terminalId))addEdge('PINLINK:'+a.id+':'+pin.terminalId,'TERM:'+pin.terminalId,pinNode,'ENGINEER_DECLARED_PIN_BINDING',{evidenceSource:pin.verifiedSource??null});
+    else issue('FIRE_TOPOLOGY_PIN_TERMINAL_ORPHAN','BLOCKED',a.id);
+   }
+
    if(entry.wireReference){
     if(wireOwners.has(entry.wireReference))issue('FIRE_TOPOLOGY_WIRE_REFERENCE_REUSED','UNKNOWN',a.id);
     wireOwners.set(entry.wireReference,a.id);
@@ -79,7 +87,8 @@ function epFireControlTopologyV1(project){
  for(const [id,ids] of deviceActions)if(ids.length>1)issue('FIRE_TOPOLOGY_SHARED_ACTUATOR_REVIEW','UNKNOWN',id);
  if(!signals.length)issue('FIRE_TOPOLOGY_NO_EXTERNAL_SIGNALS','UNKNOWN');
  if(!actions.length)issue('FIRE_TOPOLOGY_NO_COMMANDS','UNKNOWN');
- issue('FIRE_TOPOLOGY_MANUFACTURER_PIN_MAPPING_NOT_VERIFIED','UNKNOWN');
+ if(!actions.length||actions.some(a=>{const pins=assignMap.get(a?.id)?.pins;return !Array.isArray(pins)||!pins.length||pins.some(p=>typeof p?.verifiedSource!=='string'||!p.verifiedSource.startsWith('https://'));}))
+  issue('FIRE_TOPOLOGY_MANUFACTURER_PIN_MAPPING_NOT_VERIFIED','UNKNOWN');
  issue('FIRE_TOPOLOGY_CONTACT_ELECTRICAL_POLARITY_NOT_VERIFIED','UNKNOWN');
  issue('FIRE_TOPOLOGY_CONTROL_CABLE_SIZING_NOT_VERIFIED','UNKNOWN');
  issue('FIRE_TOPOLOGY_PROTECTION_OF_CONTROL_SUPPLY_NOT_VERIFIED','UNKNOWN');
