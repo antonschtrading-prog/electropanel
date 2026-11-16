@@ -68,7 +68,7 @@ function epFireControlContinuityV1(project){
   if(!purposes.has('INTERLOCK'))add('FIRE_CONTINUITY_INTERLOCK_NOT_DECLARED','UNKNOWN',action.id);
   if(!signals.includes('SIGNAL:'+action.signalId))add('FIRE_CONTINUITY_COMMAND_SIGNAL_DISCONNECTED','UNKNOWN',action.id);
   if(!protections.length)add('FIRE_CONTINUITY_PROTECTIVE_ENDPOINT_ABSENT','UNKNOWN',action.id);
-  if(dangling.length)add('FIRE_CONTINUITY_DANGLING_ENDPOINTS_REVIEW','UNKNOWN',action.id);
+  if(dangling.length||wires.length===0)add('FIRE_CONTINUITY_DANGLING_ENDPOINTS_REVIEW','UNKNOWN',action.id);
   if(groups.length>1)add('FIRE_CONTINUITY_MULTIPLE_COMPONENTS_REVIEW','UNKNOWN',action.id);
   if(supplies.length>1)add('FIRE_CONTINUITY_MULTIPLE_SUPPLIES_REVIEW','UNKNOWN',action.id);
   if(purposes.has('ACTUATOR_COIL')&&!declaredPins.length)add('FIRE_CONTINUITY_COIL_PIN_MISSING','UNKNOWN',action.id);
