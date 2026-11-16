@@ -9,6 +9,7 @@ const demoCommercial = () => ({schema:'electropanel.web.preview.1',title:'Ком
  {id:'L2',name:'Розеточная группа',power:3.8,phase:'L2',device:'C16',modules:1,source:'demo'},
  {id:'L3',name:'Кондиционирование',power:4.5,phase:'3Ф',device:'C16',modules:3,source:'demo'},
  {id:'L4',name:'Вентиляция',power:1.5,phase:'L3',device:'C16',modules:1,source:'demo'}],plan:null,changedAt:new Date().toISOString()});
+let workflowPreviewInputs=null;
 let state = initial(); let lastDesignSnapshot=null; let lastDesignImpact=null; let selectedLine = null; let currentView = 'overview'; let pendingRows = []; let planPreviewUrl = null; const MAX_LINES=400;
 const historyUndo=[], historyRedo=[]; let dragLineId=null; const MAX_HISTORY=30;
 const SOURCES=Object.freeze({manual:'Ручной ввод',tz:'Техническое задание',csv:'Импорт CSV',demo:'Учебный пример',unknown:'Источник неизвестен'});
@@ -962,8 +963,18 @@ function phaseSummary(){
 function getPhasePercentages(){const r=phaseSummary(),max=Math.max(r.L1,r.L2,r.L3,0.001);return [['L1',r.L1/max*100,r.L1],['L2',r.L2/max*100,r.L2],['L3',r.L3/max*100,r.L3]];}
 
 function issues(){const r=[];if(!state.title.trim())r.push('Не указано название проекта.');if(state.earthing==='UNKNOWN')r.push('Не выбрана система заземления.');if(state.lines.length===0)r.push('Нет отходящих линий.');for(const l of state.lines){if(!l.name.trim())r.push(`У линии ${l.id} не указано назначение.`);if(!(Number(l.power)>0))r.push(`Для «${l.name||l.id}» не задана положительная мощность.`);if(!l.device)r.push(`Для «${l.name||l.id}» не обозначен защитный аппарат.`);if(!l.phase)r.push(`Для «${l.name||l.id}» не указана фаза.`);}const placement=layoutSlots();if(placement.unplaced.length)r.push('Не размещены аппараты: '+placement.unplaced.map(x=>x.id).join(', ')+'.');r.push('Нет проверенных исходных данных для выбора кабелей, проверки КЗ, автоматического отключения и селективности.');r.push('Данные паспортов аппаратов и корпуса не сверены с изготовителями.');if(state.sharedDevices?.length)r.push('Групповые УЗО: требуется проверка схемы нейтралей, паспортов аппаратов и условий защиты.');for(const x of documentReadiness().blockers){if(!r.includes(x))r.push(x);}return r}
-function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderEngineeringDiagnosticsV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
+function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();renderAutomationWorkflowV1();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderEngineeringDiagnosticsV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
 
+function renderAutomationWorkflowV1(){
+ const target=$('automationFlowPanel');if(!target)return;
+ if(typeof epWorkflowPreviewV1!=='function'||typeof epWorkflowHtmlV1!=='function'){
+  target.textContent='Единый проектный маршрут недоступен.';return;
+ }
+ const inputs=workflowPreviewInputs||state.workflowDesignInputsV1||null;
+ const catalog=projectCatalogEntries().map(([id,device])=>({id,device}));
+ const report=epWorkflowPreviewV1(state,catalogDevice,catalog,inputs);
+ target.innerHTML=epWorkflowHtmlV1(report,inputs);
+}
 function renderEngineeringDiagnosticsV1(){
  const impactHolder=$('designChangeImpactPanel');
  if(impactHolder)impactHolder.textContent=lastDesignImpact?.affected?.length?
