@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const ctx=vm.createContext({module:{exports:{}}});
-for(const f of ['fire-control-v1.js','fire-control-trace-v1.js','fire-control-design-v1.js','fire-control-schedule-v1.js','fire-control-export-v1.js'])
+for(const f of ['fire-control-v1.js','fire-control-trace-v1.js','fire-control-design-v1.js','fire-control-schedule-v1.js','fire-control-checklist-v1.js','fire-control-export-v1.js'])
  vm.runInContext(fs.readFileSync(path.join(__dirname,'..',f),'utf8'),ctx);
 const project=()=>({lines:[{id:'L1'}],loads:[{id:'AC',circuitId:'L1'}],fireControlV1:{signals:[{id:'S1',kind:'FIRE',zoneId:'Z1',contactType:'NC'}],
  actions:[{id:'A1',loadId:'AC',signalId:'S1',action:'DISCONNECT',actuator:'CONTACTOR',onSignalLoss:'DEENERGIZED'}],
@@ -26,4 +26,24 @@ test('CSV export handles unconfigured project without inventing rows',()=>{
 test('browser exposes CSV actions',()=>{
  const src=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
  assert.match(src,/fireControlWiringCsvBtn/);assert.match(src,/fireControlBomCsvBtn/);
+});
+
+test('checklist CSV contains 50 unique criterion rows',()=>{
+ const p=project();p.dinPlacementsV1=[];p.railCapacity=12;
+ const r=ctx.epFireControlChecklistCsvV1(p);
+ assert.equal(r.total,50);assert.equal(r.csv.split('\r\n').filter(x=>x.startsWith('"FCHK_')).length,50);
+});
+test('checklist CSV includes missing terminal mapping as unresolved',()=>{
+ const r=ctx.epFireControlChecklistCsvV1(project());
+ assert.match(r.csv,/FCHK_50_TERMINAL_PIN_MAPPING/);
+ assert.match(r.csv,/REVIEW_REQUIRED/);
+});
+test('checklist CSV is explicitly not approved',()=>{
+ const r=ctx.epFireControlChecklistCsvV1(project());
+ assert.equal(r.engineeringApproved,false);assert.equal(r.ready_for_installation,false);
+});
+test('application exposes checklist CSV download action',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+ assert.match(src,/fireControlChecklistCsvBtn/);
+ assert.match(src,/epFireControlChecklistCsvV1\(state\)/);
 });
