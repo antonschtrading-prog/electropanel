@@ -16,12 +16,12 @@ test('fire-linked group cannot be split without explicit redesign',()=>{
  assert.equal(ctx.epGroupSplitAllowedV1(p,p.lines[0]),'GROUP_SPLIT_FIRE_CONTROL_LINKED');
 });
 test('project extension restoration preserves declared fire interface',()=>{
- const ctx=load(['fire-control-v1.js','project-state-v2.js']);
+ const ctx=load(['fire-control-v1.js','fire-control-design-v1.js','project-state-v2.js']);
  const p=project();ctx.epRestoreProjectExtensionsV2({fireControlV1:control()},p);
  assert.equal(p.fireControlV1.actions[0].loadId,'AC1');
 });
 test('project extension restoration rejects orphaned fire interface',()=>{
- const ctx=load(['fire-control-v1.js','project-state-v2.js']);
+ const ctx=load(['fire-control-v1.js','fire-control-design-v1.js','project-state-v2.js']);
  const bad=control();bad.actions[0].loadId='MISSING';
  assert.throws(()=>ctx.epRestoreProjectExtensionsV2({fireControlV1:bad},project()),/FIRE_CONTROL_IMPORT_INVALID/);
 });
