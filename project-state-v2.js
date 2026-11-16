@@ -61,6 +61,10 @@ function epRestoreProjectExtensionsV2(raw,project){
    throw Error('Некорректные требования к необязательным проверкам');
   project.designRequirementsV1=clone(raw.designRequirementsV1,'designRequirementsV1',2000);
  }
+ if(raw.cabinetGeometryV1!==undefined){
+  if(typeof epCabinetGeometryNormalizeV1!=='function')throw Error('CABINET_GEOMETRY_MODULE_MISSING');
+  project.cabinetGeometryV1=epCabinetGeometryNormalizeV1(raw.cabinetGeometryV1);
+ }
  if(raw.projectExtensionsVersion!==undefined&&raw.projectExtensionsVersion!==1)
   throw Error('Неподдерживаемая версия расширений проекта');
  const objects=['evidence','network','enclosure','dinEvidence'];

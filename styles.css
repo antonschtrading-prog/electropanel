@@ -316,3 +316,21 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 /* Prioritize actual device image on the constrained editable DIN slot. */
 .din-apparatus .ep-board-front{order:-1}
 .ep-board-front svg,.ep-board-front img{pointer-events:none}
+
+/* User-declared cabinet geometry and rail-zone editor. */
+.ep-cabinet-panel{margin:10px 0;padding:12px;border:1px solid var(--border,#d1dce4);border-radius:9px;background:#f9fbfd;color:#253e4c}
+.ep-cabinet-panel h3{margin:0 0 7px;font-size:15px}
+.ep-cabinet-panel details{margin:8px 0;padding:7px;border:1px solid #d1dce4;border-radius:6px}
+.ep-cabinet-panel summary{cursor:pointer;font-weight:650}
+.ep-cabinet-form,.ep-cabinet-zone-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px;margin-top:9px}
+.ep-cabinet-form label,.ep-cabinet-zone-form label{display:flex;flex-direction:column;font-size:11px;gap:4px}
+.ep-cabinet-form input,.ep-cabinet-zone-form input{max-width:100%;min-width:0;padding:8px;border:1px solid #b8c6d0;border-radius:5px}
+.ep-cabinet-form button,.ep-cabinet-zone-form button{grid-column:1/-1}
+.ep-cabinet-schematic{overflow:hidden}
+.ep-cabinet-schematic svg{width:100%;max-width:520px;background:#fff;border:1px solid #cbd4db;border-radius:7px;display:block}
+.ep-cabinet-interior{fill:#f4f7fa;stroke:#647b8a;stroke-width:2}
+.ep-cabinet-zone{fill:#d7ebf9;stroke:#5a8db1;stroke-width:1.5;stroke-dasharray:4 2}
+.ep-cabinet-device{fill:#60a9bc99;stroke:#36748b}
+.ep-cabinet-device-bad{fill:#ce563799;stroke:#a52a21}
+.ep-cabinet-problems{color:#ae4731}
+@media(max-width:760px){.ep-cabinet-panel{padding:8px}.ep-cabinet-form,.ep-cabinet-zone-form{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -1715,6 +1715,11 @@ function boardPositionForm(line){
  if(!item)return '<p>Аппарат не размещён: проверьте вместимость и каталог.</p>';
  return '<form data-board-position="'+safeText(item.deviceId)+'" class="ep-position-form"><strong>Позиция на DIN</strong><label>Рейка<input name="rail" type="number" min="1" max="'+state.railCount+'" value="'+(item.railIndex+1)+'" required></label><label>Первый модуль<input name="slot" type="number" min="1" max="'+state.railCapacity+'" value="'+(item.startModule+1)+'" required></label><button class="btn tiny">Переместить</button></form><button type="button" id="resetBoardPositions" class="btn tiny">Автокомпоновка всего щита</button>';
 }
+function renderCabinetGeometryV1(){
+ const target=$('cabinetGeometryPanel');
+ if(target)target.innerHTML=typeof epCabinetGeometryUiV1==='function'?
+  epCabinetGeometryUiV1(state,catalogDevice):'Редактор геометрии недоступен.';
+}
 function renderBoard(){
  renderProjectCatalogWorkbenchV1();
  const board=$('boardCanvas');board.innerHTML='';$('boardTitle').textContent=state.title+' / компоновка';
@@ -1778,6 +1783,11 @@ function renderBoard(){
   $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Ширина по каталогу: '+physical.checkedWidths+'; неизвестна: '+physical.missingWidths+'; блокирующих замечаний: '+blocked.length+'</strong></div>');
   if(blocked.length)$('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line bad">Расхождения геометрии: '+blocked.slice(0,8).map(x=>safeText((x.deviceId||'—')+' '+x.code)).join('; ')+'</div>');
  }
+ if(typeof epCabinetFitAuditV1==='function'){
+  const cabinet=epCabinetFitAuditV1(state,catalogDevice);
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Монтажные зоны корпуса: '+safeText(cabinet.status)+'</strong> · замечаний: '+cabinet.issues.length+'</div>');
+ }
+ renderCabinetGeometryV1();
  if(typeof epBoardCapacityReviewV1==='function'){
   const capacity=epBoardCapacityReviewV1(state,catalogDevice);
   const lines=capacity.rails.map(r=>'DIN '+(r.railIndex+1)+': '+r.occupied+'/'+r.capacity+' мод.; свободно '+r.free+', максимальный непрерывный участок '+r.largestFreeRun);
@@ -1796,6 +1806,43 @@ $('selectedDevice').addEventListener('submit',e=>{
 $('selectedDevice').addEventListener('click',e=>{
  if(e.target.id!=='resetBoardPositions')return;
  checkpoint();delete state.manualLayoutV1;changed();notify('Восстановлена автоматическая компоновка');
+});
+$('cabinetGeometryPanel').addEventListener('submit',e=>{
+ const form=e.target;
+ const number=name=>{
+  const s=String(form.elements[name]?.value??'').trim().replace(',','.');
+  return s===''?NaN:Number(s);
+ };
+ if(form.matches('[data-cabinet-autoplan]')){
+  e.preventDefault();
+  const proposal=epCabinetAutoZonesV1({
+   interiorWidthMm:number('interiorWidthMm'),interiorHeightMm:number('interiorHeightMm'),
+   interiorDepthMm:number('interiorDepthMm'),marginMm:number('marginMm'),
+   firstRowYMm:number('firstRowYMm'),zoneHeightMm:number('zoneHeightMm'),
+   rowGapMm:number('rowGapMm')},state.railCount,state.railCapacity);
+  if(proposal.status==='BLOCKED')return notify('Размеры корпуса: '+proposal.issues.map(x=>x.code).join(', '),true);
+  const saved=epCabinetGeometryApplyV1(state,proposal.geometry);
+  if(!saved.project)return notify('Монтажные зоны: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Монтажные зоны корпуса сохранены как исходные данные проекта');
+  return;
+ }
+ if(form.matches('[data-cabinet-zone]')){
+  e.preventDefault();
+  if(!state.cabinetGeometryV1)return;
+  const index=Number(form.dataset.cabinetZone),data=JSON.parse(JSON.stringify(state.cabinetGeometryV1));
+  const zone=data.zones.find(x=>x.railIndex===index);
+  if(!zone)return notify('Монтажная зона отсутствует',true);
+  for(const key of ['xMm','yMm','widthMm','heightMm'])zone[key]=number(key);
+  delete data.planning; // manual edits supersede the automatic spacing recipe
+  const saved=epCabinetGeometryApplyV1(state,data);
+  if(!saved.project)return notify('Ошибка монтажной зоны: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Монтажная зона DIN '+(index+1)+' обновлена');
+ }
+});
+$('cabinetGeometryPanel').addEventListener('click',e=>{
+ if(e.target.id!=='cabinetGeometryClearBtn'||!state.cabinetGeometryV1)return;
+ checkpoint();delete state.cabinetGeometryV1;changed();
+ notify('Геометрия корпуса очищена. Аппараты и расчёты сохранены');
 });
 $('boardChecks').addEventListener('click',e=>{
  if(!e.target.closest('#boardPlacementCsvBtn'))return;
