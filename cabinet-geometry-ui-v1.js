@@ -52,6 +52,7 @@ function epCabinetGeometryUiV1(project,lookup){
   '<p><strong>'+safe(heading)+'</strong></p><p>Состояние: <strong>'+safe(status)+'</strong> · проверено аппаратов: '+(fit?.rows.length||0)+
   ' · замечаний: '+(fit?.issues.length||0)+'. Совместимость и возможность монтажа не подтверждены.</p>'+
   schematic+issues+editing+rows+
+  (raw?'<button id="cabinetExportSvgBtn" class="btn" type="button">Экспорт схемы корпуса SVG</button>':'')+
   (project?.cabinetGeometryV1?'<button id="cabinetGeometryClearBtn" class="btn" type="button">Очистить модель корпуса</button>':'')+
   '</section>';
 }

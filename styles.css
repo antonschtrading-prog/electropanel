@@ -334,3 +334,6 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-cabinet-device-bad{fill:#ce563799;stroke:#a52a21}
 .ep-cabinet-problems{color:#ae4731}
 @media(max-width:760px){.ep-cabinet-panel{padding:8px}.ep-cabinet-form,.ep-cabinet-zone-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.ep-cabinet-apparatus,.ep-cabinet-zone-drawing{pointer-events:none}
+#cabinetExportSvgBtn{margin:8px 0}

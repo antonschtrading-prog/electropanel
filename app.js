@@ -1840,6 +1840,13 @@ $('cabinetGeometryPanel').addEventListener('submit',e=>{
  }
 });
 $('cabinetGeometryPanel').addEventListener('click',e=>{
+ if(e.target.id==='cabinetExportSvgBtn'){
+  const drawing=typeof epCabinetDrawingSvgV1==='function'?epCabinetDrawingSvgV1(state,catalogDevice):null;
+  if(!drawing?.svg)return notify('Чертёж корпуса недоступен: проверьте введённые габариты',true);
+  download(baseName()+'-cabinet-plan-DRAFT.svg',drawing.svg,'image/svg+xml;charset=utf-8');
+  notify('Экспортирован предварительный чертёж корпуса (не заводская модель)');
+  return;
+ }
  if(e.target.id!=='cabinetGeometryClearBtn'||!state.cabinetGeometryV1)return;
  checkpoint();delete state.cabinetGeometryV1;changed();
  notify('Геометрия корпуса очищена. Аппараты и расчёты сохранены');

@@ -21,3 +21,6 @@ No physical manufacturing tolerances, exact DIN mounting offset, front plate dep
 
 ## Dependency and issue tracking
 A change to declared cabinet geometry invalidates only enclosure design evidence, not unrelated load, protection or cable arithmetic. `cabinetFit` is a separate engineering bundle and consolidated issue-register section. During preliminary circuit planning, absence of cabinet data is deferred; an invalid declared cabinet geometry remains a blocking issue at every stage.
+
+## SVG draft drawing
+The separate `cabinet-drawing-v1.js` creates a mm-scaled SVG from declared interior and band coordinates and uses catalogue body dimensions only where known. Unknown body size is outlined as an explicit placeholder; no manufacturer model or shop-drawing accuracy is claimed. The board UI exports this as `-cabinet-plan-DRAFT.svg` independently of the existing board SVG.
