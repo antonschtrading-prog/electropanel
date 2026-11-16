@@ -47,7 +47,7 @@ test('SVG escapes untrusted SVG attribute text',()=>{
  const svg=epFireControlDiagramV1(p).svg;assert.match(svg,/&amp;quot;/);
 });
 test('SVG has unique stable viewbox',()=>{
- const svg=epFireControlDiagramV1(project()).svg;assert.match(svg,/viewBox="0 0 1200/);
+ const svg=epFireControlDiagramV1(project()).svg;assert.match(svg,/viewBox="0 0 1400/);
 });
 test('SVG is deterministic for identical inputs',()=>{
  const p=project();assert.equal(epFireControlDiagramV1(p).svg,epFireControlDiagramV1(p).svg);
@@ -196,4 +196,30 @@ test('topology blocks non-positive control voltage',()=>{
 test('topology blocks malformed terminal list',()=>{
  const p=project();p.fireControlV1.design.assignments[0].terminalIds='T1';
  assert.ok(topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_TERMINAL_LIST_INVALID'));
+});
+
+test('explicit pin evidence produces device-pin node',()=>{
+ const p=project();p.fireControlV1.design.assignments[0].pins=[{terminalId:'T1',devicePin:'A1',role:'COIL_A1',verifiedSource:'https://manufacturer.example/k1'}];
+ assert.equal(node(p,'PIN:K1:A1').role,'COIL_A1');
+});
+test('explicit pin evidence produces terminal-to-pin relation',()=>{
+ const p=project();p.fireControlV1.design.assignments[0].pins=[{terminalId:'T1',devicePin:'A1',role:'COIL_A1',verifiedSource:'https://manufacturer.example/k1'}];
+ const e=edge(p,'PINLINK:A1:T1');assert.equal(e.from,'TERM:T1');assert.equal(e.to,'PIN:K1:A1');
+});
+test('pin evidence preserves manufacturer source',()=>{
+ const p=project();p.fireControlV1.design.assignments[0].pins=[{terminalId:'T1',devicePin:'A1',role:'COIL_A1',verifiedSource:'https://manufacturer.example/k1'}];
+ assert.equal(edge(p,'PINLINK:A1:T1').evidenceSource,'https://manufacturer.example/k1');
+});
+test('pin evidence appears in SVG',()=>{
+ const p=project();p.fireControlV1.design.assignments[0].pins=[{terminalId:'T1',devicePin:'A1',role:'COIL_A1',verifiedSource:'https://manufacturer.example/k1'}];
+ assert.match(epFireControlDiagramV1(p).svg,/DEVICE_PIN/);
+});
+test('unmapped actions keep pin review requirement',()=>{
+ const p=project();p.fireControlV1.design.assignments[0].pins=[{terminalId:'T1',devicePin:'A1',role:'COIL_A1',verifiedSource:'https://manufacturer.example/k1'}];
+ assert.ok(topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_MANUFACTURER_PIN_MAPPING_NOT_VERIFIED'));
+});
+test('all mapped actions resolve pin-mapping review but not overall readiness',()=>{
+ const p=project();for(const e of p.fireControlV1.design.assignments)e.pins=[{terminalId:e.terminalIds[0],devicePin:'A1',role:'COIL_A1',verifiedSource:'https://manufacturer.example/'+e.deviceId}];
+ assert.ok(!topo(p).issues.some(x=>x.code==='FIRE_TOPOLOGY_MANUFACTURER_PIN_MAPPING_NOT_VERIFIED'));
+ assert.equal(topo(p).engineeringApproved,false);
 });
