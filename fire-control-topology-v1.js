@@ -18,6 +18,9 @@ function epFireControlTopologyV1(project){
  const raw=project.fireControlV1,signals=Array.isArray(raw.signals)?raw.signals:[],
   actions=Array.isArray(raw.actions)?raw.actions:[],
   assignments=Array.isArray(raw.design?.assignments)?raw.design.assignments:[];
+ if(signals.length>200)issue('FIRE_TOPOLOGY_SIGNAL_LIMIT','BLOCKED');
+ if(actions.length>800)issue('FIRE_TOPOLOGY_ACTION_LIMIT','BLOCKED');
+ if(assignments.length>800)issue('FIRE_TOPOLOGY_ASSIGNMENT_LIMIT','BLOCKED');
  const signalMap=new Map(),loadMap=new Map(),lineMap=new Map(),assignMap=new Map();
  for(const s of signals)if(s&&typeof s.id==='string'){
   signalMap.set(s.id,s);
@@ -65,6 +68,8 @@ function epFireControlTopologyV1(project){
   }else issue('FIRE_TOPOLOGY_DEVICE_UNASSIGNED','UNKNOWN',a.id);
   if(!entry.articleSku)issue('FIRE_TOPOLOGY_ARTICLE_UNSELECTED','UNKNOWN',a.id);
   if(!entry.reviewed)issue('FIRE_TOPOLOGY_ASSIGNMENT_UNREVIEWED','UNKNOWN',a.id);
+  if(entry.controlVoltageV!==undefined&&(!Number.isFinite(entry.controlVoltageV)||entry.controlVoltageV<=0||entry.controlVoltageV>1000))issue('FIRE_TOPOLOGY_CONTROL_VOLTAGE_INVALID','BLOCKED',a.id);
+  if(entry.terminalIds!==undefined&&!Array.isArray(entry.terminalIds))issue('FIRE_TOPOLOGY_TERMINAL_LIST_INVALID','BLOCKED',a.id);
   if(a.actuator==='SHUNT_TRIP')issue('FIRE_TOPOLOGY_SHUNT_PULSE_LOGIC_UNVERIFIED','UNKNOWN',a.id);
   if(a.actuator==='UNDERVOLTAGE_RELEASE')issue('FIRE_TOPOLOGY_UVR_CONTINUITY_UNVERIFIED','UNKNOWN',a.id);
   if(a.action==='ENABLE')issue('FIRE_TOPOLOGY_RESTART_INTERLOCK_UNVERIFIED','UNKNOWN',a.id);
