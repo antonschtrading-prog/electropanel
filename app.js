@@ -1002,8 +1002,15 @@ function epFireControlEditorEventV1(event){
  const exportBtn=event.target.closest('#fireControlExportBtn');
  const wiringCsv=event.target.closest('#fireControlWiringCsvBtn');
  const bomCsv=event.target.closest('#fireControlBomCsvBtn');
- if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv)return;
+ const checklistCsv=event.target.closest('#fireControlChecklistCsvBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv)return;
  try{
+  if(checklistCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlChecklistCsvV1(state);
+   download(baseName()+'-fire-checklist-50.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Контрольный лист 50 критериев выгружен');
+  }
   if(wiringCsv||bomCsv){
    if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
    const report=wiringCsv?epFireControlCsvV1(state):epFireControlBomCsvV1(state);
