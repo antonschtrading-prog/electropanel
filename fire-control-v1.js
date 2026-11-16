@@ -9,7 +9,7 @@ function epFireControlAuditV1(project, raw) {
   issue('FIRE_CONTROL_INPUT_INVALID');return done();
  }
  const {signals,actions}=raw;
- if(Object.keys(raw).some(k=>!['signals','actions','version'].includes(k))||raw.version!==undefined&&raw.version!==1)issue('FIRE_CONTROL_SCHEMA_INVALID');
+ if(Object.keys(raw).some(k=>!['signals','actions','version','design'].includes(k))||raw.version!==undefined&&raw.version!==1)issue('FIRE_CONTROL_SCHEMA_INVALID');
  if(!Array.isArray(signals)||!Array.isArray(actions)||signals.length>200||actions.length>800) {
   issue('FIRE_CONTROL_LIST_INVALID');return done();
  }
