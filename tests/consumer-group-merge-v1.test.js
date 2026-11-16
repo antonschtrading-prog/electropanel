@@ -141,3 +141,36 @@ test('no available merge disables mutation control',()=>{
  assert.equal(r.proposals.length,0);
  assert.match(html(r),/id="groupMergeApplyBtn" disabled/);
 });
+
+test('engineer-declared dedicated circuit never merges with another eligible category peer',()=>{
+ const p=project();
+ const protectedRules={...options(),separateCircuitIds:['L2']};
+ const r=plan(p,protectedRules);
+ assert.equal(r.proposals.length,0);
+ assert.ok(r.issues.some(x=>x.code==='GROUP_MERGE_DEDICATED_LINE_EXCLUDED'));
+ assert.equal(rules(protectedRules).separateCircuitIds[0],'L2');
+ const htmlText=html(r);
+ assert.ok(htmlText.includes('groupMergeSeparateIds'));
+});
+test('orphan dedicated ID blocks and cannot be applied silently',()=>{
+ const p=project();
+ const r=plan(p,{...options(),separateCircuitIds:['UNKNOWN']});
+ assert.equal(r.status,'BLOCKED');
+ assert.ok(r.issues.some(x=>x.code==='GROUP_MERGE_SEPARATE_CIRCUIT_ORPHAN'));
+ assert.throws(()=>apply(p,r),/GROUP_MERGE_PLAN_STALE/);
+});
+test('duplicate or forged exclusion IDs are invalid',()=>{
+ for(const data of [
+  {...options(),separateCircuitIds:['L2','L2']},
+  {...options(),separateCircuitIds:['L2',5]},
+  {...options(),separateCircuitIds:'L2'},
+  {...options(),separateCircuitIds:Array(401).fill('L2')}
+ ]){
+  assert.throws(()=>rules(data),/GROUP_MERGE_SEPARATE_IDS_INVALID/);
+ }
+});
+test('exclusion added after preview rejects stale merger even with same grouping category',()=>{
+ const p=project(),preview=plan(p,options());
+ preview.rules={...preview.rules,separateCircuitIds:['L2']};
+ assert.throws(()=>apply(p,preview),/GROUP_MERGE_PLAN_STALE/);
+});
