@@ -1,5 +1,27 @@
 # Electropanel — accelerated integrated delivery backlog
 
+> **Scope override, approved 2026-11-16:** [Two-stage product scope](APPROVED_TWO_STAGE_PRODUCT_SCOPE_20261116.md) supersedes any backlog language that makes transformer/TP design, external supply modelling, proof-of-origin metadata, full cable lengths, or per-device independent fault-study records mandatory. The primary deliverable is calculated load grouping → single-line diagram → editable visually accurate panel → BOM/installation design documentation. Floor-plan cable routing and cable-quantity takeoff are a separate optional second stage. Do not add pricing, estimating, purchasing, crew management or physical/lab verification.
+
+## Immediate product-first implementation queue (not yet delivered)
+
+- [ ] P0: Classify validation requirements by requested output and stage; stop global mandatory evidence gates.
+- [ ] P0: Remove source-document-only UNKNOWN issues for otherwise valid engineer-entered data.
+- [ ] P0: Remove compulsory transformer/external-network study from project creation and acceptance.
+- [ ] P0: Make cable route length optional and defer length-dependent checks only.
+- [ ] P0: Convert manual phase/N/PE/terminal declarations to derived links from one editable logical electrical model.
+- [ ] P0: Complete the consumer table → load and group calculations → apparatus selection flow.
+- [ ] P0: Generate one-line diagram from the same current project model; retain manual corrections.
+- [ ] P0: Generate/refresh board DIN layout and material BOM from that same model.
+- [ ] P0: Add an existing-panel-first entry path and reverse diagram generation.
+- [ ] P1: Catalogue exact manufacturer series/article and module geometry; safe article replacement.
+- [ ] P1: Device-front visuals, drag/reorder, busbars and L/N/PE visualization with electrical consistency checking.
+- [ ] P1: Ingest consumer spreadsheets and review recognized inputs from drawings.
+- [ ] P2: Optional floor-plan binding, branch route annotation/editing, lengths and cable takeoff.
+- [ ] Acceptance: first-stage exports work without a floor plan, cable lengths, input-evidence references, or TP details.
+- [ ] Acceptance: second-stage drawing/lengths update on routing change without silently altering board circuit identities.
+- [ ] Acceptance: full Node, validation, Chromium and final SHA status before marking a cycle complete.
+
+
 This is the **implementation and acceptance backlog**, not a claim that the listed work is completed.
 Work in coherent 50–60 individually verifiable engineering and acceptance tasks per substantial development cycle when dependencies permit; these are not necessarily 50–60 new features or commits. Preserve existing modules. Every final HEAD needs validation, full Node tests and real Chromium smoke tests.
 
