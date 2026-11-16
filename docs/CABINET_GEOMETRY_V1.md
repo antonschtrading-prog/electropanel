@@ -32,3 +32,5 @@ The cabinet editor now allows adding/removing user-declared reserved zones by st
 
 ## Placement transaction safety
 Moving a DIN apparatus, exchanging two equal-width apparatuses, reflowing/compacting rails or resizing the rail count now compares cabinet fit blockers before/after the proposed change. The operation is atomically rejected if it would introduce a **new** physical fit conflict (e.g. a tall apparatus moved into a shorter declared installation band), while existing unrelated issues can be resolved progressively. No line allocation, current calculation, source or unrelated position is mutated upon rejection. Missing manufacturer body geometry still remains UNKNOWN.
+
+The read-only DIN preview now shows the same cabinet fit status and allocated band size per row as the editable cabinet panel. The SVG export warning caption is kept inside the declared drawing width, including narrow user-declared cabinets.

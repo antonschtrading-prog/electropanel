@@ -8,6 +8,8 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
   return '<p>Параметры щита некорректны. Размещение заблокировано.</p>';
  const physical=typeof epDinPhysicalEnvelopeV1==='function'?epDinPhysicalEnvelopeV1(p,lookupSku):null;
  const physicalById=new Map((physical?.rows||[]).map(x=>[x.deviceId,x]));
+ const cabinet=typeof epCabinetFitAuditV1==='function'?epCabinetFitAuditV1(project,lookupSku):null;
+ const cabinetZones=new Map((cabinet?.geometry?.zones||[]).map(z=>[z.railIndex,z]));
  const byRail=Array.from({length:p.rails},()=>[]);
  for(const d of (Array.isArray(p.placements)?p.placements:[]))if(d&&byRail[d.railIndex])byRail[d.railIndex].push(d);
  const branchMap=new Map((Array.isArray(project?.branchDevices)?project.branchDevices:[]).filter(x=>x&&typeof x==='object').map(x=>[x.id,x.circuitId]));
@@ -60,8 +62,9 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    cursor=d.startModule+d.modules;
   }
   if(cursor<p.capacityPerRail)blocks+='<div class="ep-din-empty" style="grid-column:span '+(p.capacityPerRail-cursor)+'" aria-label="Свободные модули '+(p.capacityPerRail-cursor)+'"></div>';
+  const zone=cabinetZones.get(index);
   return '<section class="ep-din-rail-section"><h4>DIN '+(index+1)+' · '+used+'/'+p.capacityPerRail+
-   ' мод. · свободно '+(p.capacityPerRail-used)+'</h4>'+
+   ' мод. · свободно '+(p.capacityPerRail-used)+(zone?' · монтажная зона '+safe(zone.widthMm)+' × '+safe(zone.heightMm)+' мм':'')+'</h4>'+
    '<div class="ep-din-module-grid" style="--ep-din-columns:'+p.capacityPerRail+'" role="img" aria-label="Предварительная рейка DIN '+(index+1)+'">'+blocks+'</div>'+
    '<details><summary>Позиции аппаратов</summary><ol>'+entries+'</ol></details></section>';
  }).join('');
@@ -71,6 +74,7 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
   '<p><strong>Предварительный план: '+safe(p.status)+'</strong>. Только геометрическое размещение; монтаж не подтверждён.</p>'+
   railRows+'<p>Блокирующих ошибок: '+errors.length+'; неопределённостей: '+warnings.length+'.</p>'+
   (errors.length?'<ul>'+errors.slice(0,30).map(x=>'<li>'+safe(x.code)+(x.id?' · '+safe(x.id):'')+'</li>').join('')+'</ul>':'')+
+  (cabinet?'<p class="ep-cabinet-preview-summary">Корпус: '+safe(cabinet.status)+'; заявленные полезные размеры: '+(cabinet.geometry?cabinet.geometry.interior.widthMm+' × '+cabinet.geometry.interior.heightMm+' × '+cabinet.geometry.interior.depthMm+' мм':'не заданы')+'; блокирующих замечаний: '+cabinet.issues.filter(x=>x.level==='BLOCKED').length+'.</p>':'')+
   (physical?'<p class="ep-din-physical-summary">Габаритная ширина по каталогу: '+physical.checkedWidths+' аппаратов; неизвестная ширина: '+physical.missingWidths+'; блокирующих замечаний: '+physical.issues.filter(x=>x.level==='BLOCKED').length+'.</p>':'')+
   (physical&&physical.issues.some(x=>x.level==='BLOCKED')?'<details class="ep-din-physical-issues"><summary>Противоречия физических габаритов</summary><ul>'+physical.issues.filter(x=>x.level==='BLOCKED').slice(0,30).map(x=>'<li>'+safe(x.code)+' · '+safe(x.deviceId||'—')+'</li>').join('')+'</ul></details>':'')+
   '<p>Проверка нагрева, зазоров, проводников и совместимости корпуса не выполнена.</p></div>';

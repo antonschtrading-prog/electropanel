@@ -38,8 +38,8 @@ function epCabinetDrawingSvgV1(project,lookup){
    '</g>';
  }).join('');
  const warn='ЭСКИЗ · НЕ ПРОИЗВОДСТВЕННЫЙ ЧЕРТЁЖ · монтаж не подтверждён';
- const textSize=Math.max(4,Math.min(14,width/36));
- const caption='<text x="'+n(Math.min(width-2,textSize/2))+'" y="'+n(height-Math.max(2,textSize))+
+ const textSize=Math.max(2,Math.min(14,width/36,width/(warn.length*0.62)));
+ const caption='<text x="'+n(Math.max(2,width-5))+'" y="'+n(height-Math.max(2,textSize))+
   '" font-size="'+n(textSize)+'" text-anchor="end" fill="#832c23">'+safe(warn)+'</text>';
  const title='Пропорциональная схема корпуса с пользовательскими внутренними размерами. '+width+'×'+height+' мм. '+(blocked?'Выявлены блокирующие замечания. ':'')+warn;
  const svg='<?xml version="1.0" encoding="UTF-8"?>\n'+
