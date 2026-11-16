@@ -1003,8 +1003,15 @@ function epFireControlEditorEventV1(event){
  const wiringCsv=event.target.closest('#fireControlWiringCsvBtn');
  const bomCsv=event.target.closest('#fireControlBomCsvBtn');
  const checklistCsv=event.target.closest('#fireControlChecklistCsvBtn');
- if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv)return;
+ const svgBtn=event.target.closest('#fireControlSvgBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn)return;
  try{
+  if(svgBtn){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlDiagramV1(state);
+   download(baseName()+'-fire-interface-draft.svg',report.svg,'image/svg+xml;charset=utf-8');
+   return notify('Черновая логическая схема SVG выгружена');
+  }
   if(checklistCsv){
    if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
    const report=epFireControlChecklistCsvV1(state);
@@ -1022,7 +1029,7 @@ function epFireControlEditorEventV1(event){
    const report={schema:'electropanel.fire.report.draft.1',projectTitle:state.title,
     audit:epFireControlAuditV1(state,state.fireControlV1),trace:epFireControlTraceV1(state),
     design:epFireControlDesignV1(state),schedule:epFireControlScheduleV1(state),
-    catalogue:epFireCatalogReconcileV1(state),din:epFireDinReconcileV1(state),checklist:epFireControlChecklistV1(state),gate:epFireControlGateV1(state),
+    catalogue:epFireCatalogReconcileV1(state),din:epFireDinReconcileV1(state),checklist:epFireControlChecklistV1(state),topology:epFireControlTopologyV1(state),diagram:epFireControlDiagramV1(state),gate:epFireControlGateV1(state),
     engineeringApproved:false,ready_for_installation:false};
    download(baseName()+'-fire-control-draft.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
    return notify('Черновой отчёт пожарного управления выгружен');
