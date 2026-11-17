@@ -14,7 +14,7 @@ function epCabinetCapacityCsvV1(report,limits={}){
     !Array.isArray(report.options)||report.status==='BLOCKED')return fail('CABINET_CSV_INPUT_INVALID');
  if(!limits||typeof limits!=='object'||Array.isArray(limits)||
   Object.keys(limits).some(key=>!['maxUsableWidthMm','maxUsableHeightMm','maxUsableDepthMm'].includes(key)||
-   typeof limits[key]!=='number'||!Number.isFinite(limits[key])||limits[key]<=0))
+   limits[key]!==null&&(typeof limits[key]!=='number'||!Number.isFinite(limits[key])||limits[key]<=0)))
   return fail('CABINET_CSV_LIMITS_INVALID');
  const rows=[cols],issues=[];
  const summary={considered:0,withinLimits:0,exceedsLimits:0,unknownDimensions:0};
