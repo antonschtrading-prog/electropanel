@@ -375,3 +375,7 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-front-gallery-card[data-width-conflict="true"] small{color:#923523;font-weight:700}
 
 .ep-front-gallery-card button{font-size:11px;padding:6px 9px;min-height:30px;margin-top:auto;width:100%;border-radius:7px}
+
+.ep-front-gallery-audit{font-size:12px;line-height:1.5;margin:8px 0;padding:8px 10px;border-left:3px solid #6c8799;background:rgba(110,145,166,.07)}
+.ep-front-gallery-audit[data-front-audit-status="BLOCKED"]{border-left-color:#b74637;background:rgba(183,70,55,.06)}
+.ep-front-gallery-audit[data-front-audit-status="REVIEW_REQUIRED"]{border-left-color:#9b7c3d}
