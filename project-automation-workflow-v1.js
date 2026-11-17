@@ -126,7 +126,7 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'DRAFT',
   rows,issues,steps,summary,engineeringApproved:false,ready_for_installation:false});
  const steps=[],summary={circuits:0,consumers:0,calculated:0,missingInput:0,
-  manualCurrentPreserved:0,protectiveCandidates:0,assignedArticles:0,
+  manualCurrentPreserved:0,staleLinkedCurrents:0,protectiveCandidates:0,assignedArticles:0,
   unknownPhase:0,knownPowerKw:0,unassignedLoads:0,occupiedModules:null};
  if(!project||!Array.isArray(project.lines)||project.lines.length>400||
    !Array.isArray(project.loads)||!Array.isArray(project.sharedDevices)){
@@ -149,6 +149,21 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   if(!line||typeof line.id!=='string'){add('WORKFLOW_LINE_INVALID','BLOCKED');continue;}
   const estimate=epWorkflowLineEstimateV1(line,inputs);
   const existing=epWorkflowPositiveV1(line.overloadInput?.ibA);
+  const linked=line.loadCurrentCalculation;
+  const linkedCurrent=linked?.powerSource==='circuit'&&existing!==null;
+  // A previously linked Ib is not a safe input to new protective shortlist
+  // proposals when its calculation provenance has become stale, or when the
+  // currently previewed common inputs differ from its original calculation.
+  const changedInputs=linkedCurrent&&estimate.status==='CALCULATED'&&
+   (linked.mode!==estimate.calculation.mode||
+    Object.entries(estimate.calculation.inputs).some(([key,value])=>
+     Number(linked.inputs?.[key])!==Number(value)));
+  const staleLinked=!!linkedCurrent&&(linked.stale===true||changedInputs||
+   Number(existing)!==Number(linked.roundedIbA));
+  if(staleLinked){
+   summary.staleLinkedCurrents++;
+   add('WORKFLOW_LINKED_CURRENT_REVIEW_REQUIRED','UNKNOWN',line.id);
+  }
   const current=existing??estimate.current;
   const power=epWorkflowPositiveV1(line.power??line.powerKw);
   if(power!==null){
@@ -163,7 +178,7 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   else summary.missingInput++;
   const hypothetical={...line,overloadInput:{...(line.overloadInput||{}),
    ...(current!==null?{ibA:current}:{})}};
-  const selection=typeof epProtectiveDeviceShortlistV1==='function'?
+  const selection=!staleLinked&&typeof epProtectiveDeviceShortlistV1==='function'?
    epProtectiveDeviceShortlistV1(hypothetical,catalog):null;
   const candidates=(selection?.candidates||[]).filter(x=>x.status!=='REJECTED');
   if(candidates.length)summary.protectiveCandidates++;
@@ -174,9 +189,11 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   rows.push({lineId:line.id,name:line.name??line.id,
    consumers:consumers.map(x=>({id:x.id,name:x.name,powerKw:x.powerKw})),
    phase:line.phase??null,
-   powerKw:power,ibA:current,ibSource:existing!==null?'EXISTING':
+   powerKw:power,ibA:current,ibSource:staleLinked?'STALE_LINKED_CURRENT':
+    existing!==null?'EXISTING':
     estimate.status==='CALCULATED'?'CALCULATED_PREVIEW':'NOT_AVAILABLE',
-   calculationStatus:estimate.status,calculationCode:estimate.code,
+   calculationStatus:staleLinked?'STALE_REVIEW':estimate.status,
+   calculationCode:staleLinked?'WORKFLOW_LINKED_CURRENT_REVIEW_REQUIRED':estimate.code,
    proposedSku:candidate?.sku??null,proposedStatus:candidate?.status??null,
    proposalCaution:candidate?.caution||[],
    selectedSku:line.catalogSku??null,selectedInCandidates:!!selected,
@@ -206,7 +223,7 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   }catch(_){add('WORKFLOW_'+label+'_ERROR','BLOCKED');}
  }
  summary.occupiedModules=board?.placements?.reduce((sum,x)=>sum+x.modules,0)??null;
- steps.push({key:'LOADS',status:summary.missingInput||summary.unknownPhase?'PARTIAL':'READY',
+ steps.push({key:'LOADS',status:summary.missingInput||summary.unknownPhase||summary.staleLinkedCurrents?'PARTIAL':'READY',
   count:summary.calculated+summary.manualCurrentPreserved});
  steps.push({key:'APPARATUS',status:summary.assignedArticles===summary.circuits?'SELECTED':
    summary.protectiveCandidates?'CANDIDATES':'PENDING',count:summary.protectiveCandidates});
@@ -352,6 +369,7 @@ function epWorkflowHtmlV1(report,stored={}){
   ', потребителей: '+esc(report?.summary?.consumers??0)+
   ', расчетов Ib: '+esc(report?.summary?.calculated??0)+
   ', уже заданных токов: '+esc(report?.summary?.manualCurrentPreserved??0)+
+  ', требующих пересчёта Ib: '+esc(report?.summary?.staleLinkedCurrents??0)+
   ', предложений аппаратов: '+esc(report?.summary?.protectiveCandidates??0)+
   '.</p><p class="muted">Сверка потребителей: отсутствующие цепи — '+
   esc(report?.summary?.consumerReconciliation?.orphanConsumers??0)+
