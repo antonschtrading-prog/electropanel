@@ -19,11 +19,17 @@ function buildSite(root=path.resolve(__dirname,'..'),output=path.join(root,'dist
  const imageFiles=[];
  if(references.includes('manufacturer-visual-library-v1.js')){
   const lib=require(path.join(root,'manufacturer-visual-library-v1.js'));
-  const intake=require(path.join(root,'manufacturer-front-intake-v1.js'));
+  const intake=require('../manufacturer-front-intake-v1.js');
   const catalogue=require(path.join(root,'catalog.js')).EP_CATALOG;
   const report=intake.auditManufacturerFrontAssets(root,catalogue,
    lib.EP_MANUFACTURER_FRONT_ASSETS_V1,lib.epManufacturerFrontResolveV1,lib.epManufacturerFrontKeyV1);
-  if(!report.ok)throw Error('Manufacturer asset intake rejected: '+report.issues.join('; '));
+  if(!report.ok){
+   const first=report.issues[0]||'UNKNOWN';
+   if(first.startsWith('FILE_MISSING:'))throw Error('Missing/empty published asset: '+first);
+   if(first.startsWith('CATALOG_MATCH_COUNT:'))throw Error('Unlinked manufacturer image article: '+first);
+   if(first.startsWith('IMAGE_REUSED:'))throw Error('Manufacturer image duplicated: '+first);
+   throw Error('Manufacturer asset rejected: '+report.issues.join('; '));
+  }
   imageFiles.push(...report.files);
  }
  files.push(...imageFiles);
