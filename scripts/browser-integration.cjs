@@ -1592,7 +1592,7 @@ const server=http.createServer((req,res)=>{
   const b=epDraftBoardPlanV1(state,catalogDevice);
   return {summary:epCabinetConnectionProximityV1(state,b.placements).summary,
    lines:JSON.stringify(state.lines),topology:JSON.stringify(state.protectionLinks),
-   positions:JSON.stringify(state.manualLayoutV1||[])};
+   positions:JSON.stringify(normalizeImport(JSON.parse(snapshot())).manualLayoutV1||[])};
  });
  await page.locator('#cabinetGroupReflowBtn').click();
  const afterGroupReflow=await page.evaluate(()=>{
