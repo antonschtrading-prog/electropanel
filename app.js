@@ -2180,7 +2180,7 @@ function renderBoard(){
    if(renderedFront){
     d.classList.add('ep-catalog-front-active');
     d.innerHTML='<span class="ep-front-viewport">'+renderedFront+'</span>'+
-     '<span class="ep-front-meta">'+face+epDeviceVisualEvidenceHtmlV1(visual)+'</span>';
+     '<span class="ep-front-meta">'+epDeviceVisualEvidenceHtmlV1(visual)+'</span>';
    }else{
     d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span>'+face+epDeviceVisualEvidenceHtmlV1(visual)+'</span><span class="ep-terminal ep-terminal-bottom"></span>';
    }
