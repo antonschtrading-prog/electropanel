@@ -110,3 +110,21 @@ test('preview reports exact module delta and moved apparatus count',()=>{
  assert.equal(r.preview.relocationCount,r.preview.relocatedDeviceIds.length);
  assert.ok(r.preview.relocationCount>0);
 });
+
+test('BOM delta reports removal and addition of exact article quantities',()=>{
+ const r=replace(project(),'B1','WIDE',catalogue);
+ assert.deepEqual(r.preview.bomChanges,[
+  {sku:'OLD',oldQuantity:1,newQuantity:0,delta:-1},
+  {sku:'WIDE',oldQuantity:0,newQuantity:1,delta:1}
+ ]);
+ assert.equal(r.preview.bomDistinctArticlesBefore,2);
+ assert.equal(r.preview.bomDistinctArticlesAfter,2);
+});
+test('replacement with a shared article updates quantities rather than duplicating BOM',()=>{
+ const p=project();p.branchDevices[1].catalogSku='WIDE';
+ p.lines[1].catalogSku='WIDE';p.lines[1].modules=2;p.branchDevices[1].modules=2;
+ const r=replace(p,'B1','WIDE',catalogue);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.ok(r.preview.bomChanges.some(x=>x.sku==='WIDE'&&x.newQuantity===2));
+ assert.equal(r.preview.bomDistinctArticlesAfter,1);
+});
