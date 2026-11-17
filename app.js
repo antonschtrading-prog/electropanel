@@ -3182,6 +3182,7 @@ $('automationFlowPanel').addEventListener('click',e=>{
  if(!preview&&!apply&&!choose&&!exportCsv)return;
  try{
   if(exportCsv){
+   if(!epRequireDraftDocumentExport())return;
    const inputs=workflowPreviewInputs||state.workflowDesignInputsV1||null;
    const catalogue=projectCatalogEntries().map(([id,device])=>({id,device}));
    const report=epWorkflowPreviewV1(state,catalogDevice,catalogue,inputs);
@@ -3958,7 +3959,22 @@ $('exportCircuitTraceSvgBtn').addEventListener('click',()=>{
  if(!svg)return notify('Не удалось сформировать SVG проводников',true);
  download(baseName()+'_'+selectedLine+'_conductors_DRAFT.svg',svg,'image/svg+xml;charset=utf-8');
 });
+// Central export gate: block mutually inconsistent drawings/specifications.
+// UNKNOWN evidence stays exportable as DRAFT; missing cable routes are not a gate.
+function epDraftDocumentExportGate(){
+ if(typeof epEngineeringBundleV1!=='function')return {allowed:false,reason:'Сквозная проверка недоступна'};
+ const bundle=epEngineeringBundleV1(state,catalogDevice);
+ const cross=bundle?.sections?.crossView;
+ if(!cross||cross.status==='BLOCKED')return {allowed:false,reason:'Несогласованные схема, аппараты и спецификация'};
+ return {allowed:true,bundle};
+}
+function epRequireDraftDocumentExport(){
+ const gate=epDraftDocumentExportGate();
+ if(!gate.allowed)notify('Экспорт остановлен: '+gate.reason+'. Проверьте сквозной аудит.',true);
+ return gate.allowed;
+}
 $('exportSingleLineSvgBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epSingleLineDraftV1!=='function'||typeof epSingleLineSvgV1!=='function')
   return notify('Однолинейная схема недоступна',true);
  const report=epSingleLineDraftV1(state,catalogDevice);
@@ -4130,10 +4146,12 @@ $('exportEngineeringBundleBtn').addEventListener('click',()=>{
   JSON.stringify(epEngineeringBundleV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
 });
 $('exportDraftBomCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epDraftBomV1!=='function'||typeof epDraftBomCsvV1!=='function')return notify('Спецификация недоступна',true);
  download(baseName()+'_equipment_BOM_DRAFT.csv',epDraftBomCsvV1(epDraftBomV1(state,catalogDevice)),'text/csv;charset=utf-8');
 });
 $('exportDraftBomJsonBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epDraftBomV1!=='function')return notify('Спецификация недоступна',true);
  download(baseName()+'_equipment_BOM_DRAFT.json',JSON.stringify(epDraftBomV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
 });
