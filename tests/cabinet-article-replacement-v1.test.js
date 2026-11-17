@@ -97,3 +97,16 @@ test('invalid inputs are rejected without throwing',()=>{
  for(const sku of ['',null,2,'x'.repeat(201)])assert.equal(replace(project(),'B1',sku,catalogue).status,'BLOCKED');
  assert.equal(replace(null,'B1','WIDE',catalogue).status,'BLOCKED');
 });
+
+test('unchanged SKU is a no-op and cannot create undo history',()=>{
+ const r=replace(project(),'B1','OLD',catalogue);
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.code,'REPLACEMENT_ARTICLE_UNCHANGED');
+ assert.equal(r.project,null);
+});
+test('preview reports exact module delta and moved apparatus count',()=>{
+ const r=replace(project(),'B1','WIDE',catalogue);
+ assert.equal(r.preview.moduleDelta,1);
+ assert.equal(r.preview.relocationCount,r.preview.relocatedDeviceIds.length);
+ assert.ok(r.preview.relocationCount>0);
+});
