@@ -1522,6 +1522,14 @@ const server=http.createServer((req,res)=>{
  await page.locator('#cabinetCapacityTotal').selectOption('48');
  assert.equal(await page.locator('[data-apply-cabinet-option="2x18"]').count(),0);
  assert.ok((await page.locator('#cabinetCapacityOptions button').count())>=1);
+ // A re-render must not attach duplicate reserve-change listeners.
+ await page.evaluate(()=>{renderBoard();renderBoard();renderBoard();});
+ const undoBefore=await page.evaluate(()=>historyUndo.length);
+ await page.locator('#cabinetReservePercent').fill('15');
+ await page.locator('#cabinetReservePercent').blur();
+ const undoAfter=await page.evaluate(()=>historyUndo.length);
+ assert.equal(undoAfter,undoBefore+1,'reserve edit must create one checkpoint');
+ assert.equal(await page.evaluate(()=>state.cabinetSizingPreferencesV1.reservePercent),15);
 
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}

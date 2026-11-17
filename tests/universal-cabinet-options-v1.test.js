@@ -102,3 +102,15 @@ test('exact packing is deterministic on repeated evaluation and does not mutate 
  const before=JSON.stringify(d),one=epCabinetPackDevicesV1(d,3,10),two=epCabinetPackDevicesV1(d,3,10);
  assert.deepEqual(one,two);assert.equal(JSON.stringify(d),before);
 });
+
+test('real 36-module pattern is rescued when descending greedy packing fails',()=>{
+ const widths=[2,2,2,3,7,8,11];
+ const r=plan({lines:widths.map((modules,i)=>({id:'L'+i,modules}))},
+  null,{reserveFraction:0});
+ const shape=r.options.find(o=>o.id==='3x12');
+ assert.ok(shape,'three rows of twelve are available');
+ assert.equal(shape.status,'REVIEW_REQUIRED');
+ assert.equal(shape.packingMethod,'PACKED_EXACT');
+ assert.equal(shape.unplaced.length,0);
+ assert.equal(shape.rails.flatMap(x=>x.devices).length,7);
+});
