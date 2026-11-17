@@ -60,3 +60,12 @@ test('unprovided consumer power is not guessed and is marked in report',()=>{
  assert.equal(b.sections.consumerReconciliation.rows[0].powerComplete,false);
  assert.match(print(b),/Не все мощности заданы/);
 });
+
+test('workflow controls expose an accessible consumer reconciliation export',()=>{
+ const r=workflow.epWorkflowPreviewV1(sample(),()=>null,[],{
+  singleVoltageV:230,threeVoltageV:400,powerFactor:0.9,efficiency:1,demandFactor:1
+ });
+ const html=workflow.epWorkflowHtmlV1(r,{});
+ assert.match(html,/id="workflowConsumerCsvBtn"/);
+ assert.match(html,/Сверка потребителей CSV/);
+});
