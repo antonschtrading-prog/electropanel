@@ -39,3 +39,21 @@ test('SVG gradient reference matches its unique definition',()=>{
  const id=svg.match(/linearGradient id="([^"]+)"/)[1];
  assert.match(svg,new RegExp('url\\(#'+id+'\\)'));
 });
+
+test('series-specific original markers are stable and change across product lines',()=>{
+ const device={maker:'ABB',sku:'A',kind:'MCB',modules:1,poles:1,widthMm:18};
+ const series=['S200','S300','S800','F200','DS201','SH200'];
+ const markers=series.map(name=>{
+  const svg=epCatalogFrontSvgV1({...device,series:name},'B1');
+  const marker=svg.match(/data-series-marker="([0-3])"/)?.[1];
+  assert.ok(marker!==undefined);
+  assert.equal(svg,epCatalogFrontSvgV1({...device,series:name},'B1'));
+  return marker;
+ });
+ assert.ok(new Set(markers).size>=2);
+});
+test('series marker does not insert raw catalogue markup',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'ABB',series:'<script>x</script>',sku:'A',modules:1});
+ assert.doesNotMatch(svg,/<script>/);
+ assert.match(svg,/data-series-marker="[0-3]"/);
+});
