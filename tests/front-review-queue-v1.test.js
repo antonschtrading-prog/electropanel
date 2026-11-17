@@ -87,3 +87,12 @@ test("queue has stable disclaimer code",()=>assert.ok(run().code==='FRONT_QUEUE_
 test("queue has priority summary even when filtered",()=>assert.ok(run([base],{filter:'REVIEWED_IMAGE'}).counts.unverified===1));
 test("queue reports page two as empty",()=>assert.ok(run([base],{page:1,pageSize:1}).visible===0));
 test("queue status is review required",()=>assert.ok(run().status==='REVIEW_REQUIRED'));
+
+test('nominal DIN fit does not downgrade reviewed image priority',()=>assert.equal(run([{...base,frontStatus:'REVIEWED_IMAGE'}]).items[0].priority,5));
+test('reviewed image with unknown geometry still requires action',()=>assert.equal(run([{...base,frontStatus:'REVIEWED_IMAGE',geometryStatus:'UNKNOWN'}],{filter:'ACTION_REQUIRED'}).total,1));
+test('reviewed image with width conflict still requires action',()=>assert.equal(run([{...base,frontStatus:'REVIEWED_IMAGE',geometryStatus:'EXCEEDS_DIN_SLOT'}],{filter:'ACTION_REQUIRED'}).total,1));
+test('duplicate device ID is critical',()=>assert.equal(run([{...base,issues:['LEDGER_DUPLICATE_DEVICE_ID']}]).items[0].priority,1));
+test('mismatched catalogue identity is critical',()=>assert.equal(run([{...base,issues:['LEDGER_ARTICLE_MISMATCH']}]).items[0].priority,1));
+test('incomplete manufacturer identity is critical',()=>assert.equal(run([{...base,issues:['LEDGER_IDENTITY_INCOMPLETE']}]).items[0].priority,1));
+test('reviewed image with unresolved identity remains actionable',()=>assert.equal(run([{...base,frontStatus:'REVIEWED_IMAGE',issues:['LEDGER_ARTICLE_MISMATCH']}],{filter:'ACTION_REQUIRED'}).total,1));
+test('nominal DIN fit without issues does not require action when reviewed',()=>assert.equal(run([{...base,frontStatus:'REVIEWED_IMAGE'}],{filter:'ACTION_REQUIRED'}).total,0));
