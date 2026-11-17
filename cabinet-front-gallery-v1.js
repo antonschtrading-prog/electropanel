@@ -80,10 +80,11 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   missingArticles:rows.filter(r=>r.status==='MISSING_ARTICLE').length,
   unknownGeometry:rows.filter(r=>r.geometryStatus==='UNKNOWN').length};
  return {schema:'electropanel.cabinet.front.gallery.1',
-  status:rows.some(r=>r.status==='MISSING_ARTICLE'||r.status==='ASSET_REJECTED'||
+  status:rows.length===0?'UNKNOWN':rows.some(r=>r.status==='MISSING_ARTICLE'||r.status==='ASSET_REJECTED'||
    r.geometryStatus==='EXCEEDS_DIN_SLOT'||r.issues.includes('FRONT_GALLERY_IDENTITY_INCOMPLETE')||
    r.issues.includes('FRONT_GALLERY_DUPLICATE_DEVICE_ID'))?'BLOCKED':'REVIEW_REQUIRED',
-  code:'FRONT_GALLERY_PRELIMINARY',rows,groups,totals,
+  code:rows.length===0?'FRONT_GALLERY_NO_ARTICLES':'FRONT_GALLERY_PRELIMINARY',
+  rows,groups,totals,
   engineeringApproved:false,manufacturerCabinetFitVerified:false};
 }
 if(typeof module!=='undefined'&&module.exports)
