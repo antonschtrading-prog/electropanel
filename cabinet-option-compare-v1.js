@@ -67,10 +67,12 @@ function epCabinetOptionCompareV1(report,options={}){
  rows.sort((a,b)=>Number(b.eligible)-Number(a.eligible)||a.score-b.score||
   a.capacityModules-b.capacityModules||a.id.localeCompare(b.id));
  const eligible=rows.filter(x=>x.eligible);
+ const movementKnown=preference!=='stability'||eligible.some(x=>x.movedDevices!==null);
  return {schema:'electropanel.cabinet.option.compare.1',
-  status:eligible.length?'REVIEW_REQUIRED':'BLOCKED',
-  code:eligible.length?'OPTION_COMPARE_PRELIMINARY':'OPTION_COMPARE_NO_ELIGIBLE',
-  preference,recommendedId:eligible[0]?.id??null,rows,
+  status:!eligible.length?'BLOCKED':movementKnown?'REVIEW_REQUIRED':'UNKNOWN',
+  code:!eligible.length?'OPTION_COMPARE_NO_ELIGIBLE':movementKnown?
+   'OPTION_COMPARE_PRELIMINARY':'OPTION_COMPARE_MOVEMENT_UNAVAILABLE',
+  preference,recommendedId:movementKnown?eligible[0]?.id??null:null,rows,
   totals:{candidates:rows.length,eligible:eligible.length,rejected:rows.length-eligible.length},
   engineeringApproved:false,manufacturerCabinetFitVerified:false};
 }
