@@ -3503,6 +3503,12 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   if(verified.status==='BLOCKED'||verified.summary.moved!==preview.summary.moved){
    notify('Проверка компоновки не пройдена',true);return;
   }
+  const geometryFresh=typeof epCabinetApparatusGeometryV1==='function'?
+   epCabinetApparatusGeometryV1(state,verified,catalogDevice):null;
+  if(geometryFresh?.status==='BLOCKED'||
+   JSON.stringify(geometryFresh?.rows??null)!==JSON.stringify(selected.geometry?.rows??null)){
+   notify('Каталожные габариты изменились — повторите предпросмотр',true);return;
+  }
   if(!confirm('Применить '+verified.summary.moved+' перестановок DIN? Электрические связи не изменятся.'))return;
   checkpoint();state.manualLayoutV1=fresh.project.manualLayoutV1;changed();
   panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
