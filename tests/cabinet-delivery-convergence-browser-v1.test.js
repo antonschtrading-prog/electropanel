@@ -214,7 +214,7 @@ test('cross rail optimizer requires confirmation and history checkpoint',()=>{
  const i=app.indexOf("$('cabinetCrossRailOptimizeBtn')?.addEventListener");
  assert.ok(i>0);
  const block=app.slice(i,app.indexOf("$('cabinetGroupReflowBtn')?.addEventListener",i));
- assert.match(block,/epCabinetCrossRailOptimizeV1\(state,catalogDevice\)/);
+ assert.match(block,/epCabinetCrossRailOptimizeV1\(state,catalogDevice,\{strategy:selected.strategy\}\)/);
  assert.match(block,/confirm\(/);
  assert.match(block,/checkpoint\(\)/);
  assert.match(block,/state.manualLayoutV1=fresh.project.manualLayoutV1/);
@@ -275,4 +275,14 @@ test('cross rail preview renders current and proposed rails separately',()=>{
 test('cross rail preview invalidates on any project mutation',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.match(app,/const cabinetCrossRailFingerprintV1=\(\)=>JSON.stringify\(state\)/);
+});
+
+test('multi-alternative selector is populated from verified proposals',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-reflow-alternatives-v1.js"')<html.indexOf('src="app.js"'));
+ assert.match(app,/epCabinetReflowAlternativesV1\(state,catalogDevice\)/);
+ assert.match(app,/select.setAttribute\('aria-label','Вариант компоновки DIN'\)/);
+ assert.match(app,/select.addEventListener\('change',renderVariant\)/);
+ assert.match(app,/strategy:selected.strategy/);
 });
