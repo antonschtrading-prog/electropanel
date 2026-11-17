@@ -9,7 +9,8 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
  if(!reconciliation||!Array.isArray(reconciliation.rows)||
   typeof lookup!=='function'||typeof resolveImage!=='function')
   return empty('FRONT_GALLERY_INPUT_INVALID');
- const articles=new Map(),cache=new Map();
+ const articles=new Map(),cache=new Map(),seenDevices=new Set();
+ const duplicatedDeviceIds=new Set();
  const lookupOnce=sku=>{
   if(cache.has(sku))return cache.get(sku);
   let item=null,failed=false;
@@ -22,7 +23,11 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   if(!articles.has(sku))articles.set(sku,{sku,deviceIds:[],count:0});
   const entry=articles.get(sku);
   entry.count++;
-  if(r.deviceId!==null&&r.deviceId!==undefined)entry.deviceIds.push(String(r.deviceId));
+  if(r.deviceId!==null&&r.deviceId!==undefined){
+   const id=String(r.deviceId);
+   if(seenDevices.has(id))duplicatedDeviceIds.add(id);
+   seenDevices.add(id);entry.deviceIds.push(id);
+  }
  }
  const rows=[...articles.values()].map(a=>{
   const {item,failed}=lookupOnce(a.sku);
@@ -45,6 +50,8 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   if(asset?.status==='REVIEWED_IMAGE'&&!reviewedImage)
    issues.push('FRONT_GALLERY_REVIEWED_IMAGE_PATH_INVALID');
   if(item&&(!item.maker||!item.series))issues.push('FRONT_GALLERY_IDENTITY_INCOMPLETE');
+  if(a.deviceIds.some(id=>duplicatedDeviceIds.has(id)))
+   issues.push('FRONT_GALLERY_DUPLICATE_DEVICE_ID');
   if(geometryStatus==='UNKNOWN')issues.push('FRONT_GALLERY_GEOMETRY_UNKNOWN');
   if(geometryStatus==='EXCEEDS_DIN_SLOT')issues.push('FRONT_GALLERY_BODY_EXCEEDS_DIN_SLOT');
   return {sku:a.sku,count:a.count,deviceIds:a.deviceIds.sort(),status,
@@ -74,7 +81,8 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   unknownGeometry:rows.filter(r=>r.geometryStatus==='UNKNOWN').length};
  return {schema:'electropanel.cabinet.front.gallery.1',
   status:rows.some(r=>r.status==='MISSING_ARTICLE'||r.status==='ASSET_REJECTED'||
-   r.geometryStatus==='EXCEEDS_DIN_SLOT'||r.issues.includes('FRONT_GALLERY_IDENTITY_INCOMPLETE'))?'BLOCKED':'REVIEW_REQUIRED',
+   r.geometryStatus==='EXCEEDS_DIN_SLOT'||r.issues.includes('FRONT_GALLERY_IDENTITY_INCOMPLETE')||
+   r.issues.includes('FRONT_GALLERY_DUPLICATE_DEVICE_ID'))?'BLOCKED':'REVIEW_REQUIRED',
   code:'FRONT_GALLERY_PRELIMINARY',rows,groups,totals,
   engineeringApproved:false,manufacturerCabinetFitVerified:false};
 }
