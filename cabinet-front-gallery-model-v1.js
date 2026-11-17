@@ -15,13 +15,14 @@ function epCabinetFrontGalleryModelV1(rows,lookup,options={}){
  const bySku=new Map();
  for(const row of rows){
   const sku=row?.boardSku;
-  if(typeof sku!=='string'||!sku.trim()||sku.length>200||bySku.has(sku))continue;
+  if(typeof sku!=='string'||!sku.trim()||sku.length>200)continue;
+  if(bySku.has(sku)){bySku.get(sku).quantity++;continue;}
   let device=null;
   try{device=lookup(sku);}catch(_){device=null;}
   const makerName=typeof device?.maker==='string'?device.maker:'';
   const series=typeof device?.series==='string'?device.series:'';
   const kind=typeof device?.kind==='string'?device.kind:'';
-  bySku.set(sku,{sku,maker:makerName,series,kind,device:device||null,
+  bySku.set(sku,{sku,maker:makerName,series,kind,quantity:1,device:device||null,
    status:device?'CATALOGUE_FOUND':'CATALOGUE_MISSING'});
  }
  const all=[...bySku.values()].sort((a,b)=>
