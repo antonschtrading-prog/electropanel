@@ -3368,13 +3368,7 @@ $('exportCabinetMissingDimensionsBtn')?.addEventListener('click',()=>{
 });
 // Preview and application are intentionally separate. A changed project invalidates the proposal.
 let cabinetCrossRailPreviewSnapshotV1=null;
-const cabinetCrossRailFingerprintV1=()=>JSON.stringify({
- railCount:state.railCount,railCapacity:state.railCapacity,
- lines:state.lines,branchDevices:state.branchDevices,sharedDevices:state.sharedDevices,
- manualLayoutV1:state.manualLayoutV1,protectionLinks:state.protectionLinks,
- deviceSupplyV1:state.deviceSupplyV1,cabinetGeometryV1:state.cabinetGeometryV1,
- catalogAssignments:state.catalogAssignments
-});
+const cabinetCrossRailFingerprintV1=()=>JSON.stringify(state);
 $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
  const panel=$('cabinetCrossRailPreview');
  if(!panel)return;
