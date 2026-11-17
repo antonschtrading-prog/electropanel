@@ -2057,8 +2057,10 @@ function renderCabinetArticleReconciliationV1(){
   proposed={candidate,signature:JSON.stringify(state)};
   result.textContent='Проверено: '+candidate.preview.previousSku+' → '+candidate.preview.nextSku+
    '. Изменение ширины: '+candidate.preview.moduleDelta+' мод.; переместятся аппараты: '+
-   candidate.preview.relocationCount+'; позиций спецификации изменится: '+
-   candidate.preview.bomChanges.length+'. Для сохранения нажмите «Применить».';
+   candidate.preview.relocationCount+' ('+(candidate.preview.relocatedDeviceIds.join(', ')||'нет')+
+   '); изменения спецификации: '+
+   (candidate.preview.bomChanges.map(x=>x.sku+' '+(x.delta>0?'+':'')+x.delta).join(', ')||'нет')+
+   '. Для сохранения нажмите «Применить».';
   applyButton.disabled=false;
  });
  applyButton.addEventListener('click',()=>{
