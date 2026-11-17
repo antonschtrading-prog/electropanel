@@ -66,3 +66,11 @@ test('invalid calendar dates cannot be used as manufacturer review evidence',()=
  const r=lib.epManufacturerFrontResolveV1(d,{'abb|a1':{...a,reviewedAt:'2026-02-30'}});
  assert.equal(r.status,'ASSET_REJECTED');
 });
+
+test('future-dated review cannot establish manufacturer visual provenance',()=>{
+ const future='2999-01-01';
+ const r=lib.epManufacturerFrontResolveV1(d,{'abb|a1':{...a,reviewedAt:future}});
+ assert.equal(r.status,'ASSET_REJECTED');
+ assert.ok(r.issues.includes('FRONT_SOURCE_NOT_REVIEWED'));
+ assert.equal(r.engineeringApproved,false);
+});
