@@ -58,7 +58,7 @@ test('no catalogue article stays unknown rather than treated as 18mm verified bo
 test('invalid calendar date or future source review is never counted as reviewed',()=>{
  for(const date of ['2026-02-30','2099-01-01','not-a-date']){
   const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
-  const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+  const r=audit(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:80,depthMm:70,
    sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:date}));
   assert.equal(r.sourceReviewed,0);
   assert.equal(r.rows[0].sourceReviewedAt,null);
@@ -69,7 +69,7 @@ test('invalid calendar date or future source review is never counted as reviewed
 });
 test('valid reviewed source date remains visible without implying cabinet approval',()=>{
  const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
- const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+ const r=audit(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:80,depthMm:70,
   sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2026-11-14',
   source:'https://example.org/datasheet'}));
  assert.equal(r.sourceReviewed,1);
@@ -118,7 +118,7 @@ test('missing body width is unknown and not inferred from module count',()=>{
 
 test('unclassified catalogue sources never inflate manufacturer coverage',()=>{
  const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
- const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+ const r=audit(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:80,depthMm:70,
   sourceReviewedAt:'2026-11-14',source:'https://example.org/unknown'}));
  assert.equal(r.sourceReviewed,0);
  assert.equal(r.sourceCoverage.reviewed,0);
@@ -126,7 +126,7 @@ test('unclassified catalogue sources never inflate manufacturer coverage',()=>{
 });
 test('manufacturer mirror without URL is not counted as reviewed evidence',()=>{
  const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
- const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+ const r=audit(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:80,depthMm:70,
   sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2026-11-14'}));
  assert.equal(r.sourceReviewed,0);
  assert.equal(r.sourceCoverage.reviewed,0);
