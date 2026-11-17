@@ -35,6 +35,8 @@ function epCabinetMissingGeometryCsvV1(project,lookup){
    missing.push('SOURCE_CATEGORY');
   if(row.issues.includes('APPARATUS_EVIDENCE_SOURCE_LINK_MISSING'))
    missing.push('VALID_SOURCE_LINK');
+  if(row.issues.includes('APPARATUS_EVIDENCE_SOURCE_URL_INVALID'))
+   missing.push('CORRECT_SOURCE_URL');
   if(row.issues.includes('APPARATUS_EVIDENCE_SOURCE_REVIEW_DATE_INVALID'))
    missing.push('CORRECT_REVIEW_DATE');
   // Even a complete body cuboid has no actual terminal coordinate data.
