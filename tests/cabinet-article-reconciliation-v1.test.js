@@ -56,3 +56,27 @@ test('mismatched catalogue identity is not counted as a matched device',()=>{
  assert.equal(r.status,'BLOCKED');
  assert.equal(r.counts.matched,0);
 });
+
+test('catalogue lookup is snapshotted once per article across all three reports',()=>{
+ const counts=new Map();
+ const p=project();
+ const r=reconcile(p,sku=>{
+  counts.set(sku,(counts.get(sku)||0)+1);
+  return {...lookup(sku),sku:counts.get(sku)===1?sku:'INCONSISTENT'};
+ });
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.counts.matched,1);
+ assert.equal(counts.get('NEW'),1);
+});
+test('unstable catalogue data cannot introduce cross-report identity drift',()=>{
+ let counter=0;
+ const r=reconcile(project(),sku=>({...lookup(sku),label:'Snapshot '+(++counter)}));
+ assert.equal(r.counts.matched,1);
+ assert.equal(counter,1);
+});
+test('lookup exceptions are cached within a reconciliation pass',()=>{
+ let calls=0;
+ const r=reconcile(project(),()=>{calls++;throw Error('offline');});
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(calls,1);
+});
