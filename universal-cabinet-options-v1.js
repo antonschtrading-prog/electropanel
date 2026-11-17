@@ -98,6 +98,11 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   id:railCount+'x'+modulesPerRail,railCount,modulesPerRail,capacityModules:railCount*modulesPerRail
  })).filter(x=>x.capacityModules>=targetModules)
   .sort((a,b)=>a.capacityModules-b.capacityModules||a.railCount-b.railCount);
+ const variantsBySize=new Map();
+ for(const profile of profiles){
+  const list=variantsBySize.get(profile.capacityModules)||[];
+  list.push(profile);variantsBySize.set(profile.capacityModules,list);
+ }
  const options=profiles.map(profile=>{
   const packed=epCabinetPackDevicesV1(entries,profile.railCount,profile.modulesPerRail);
   const {rails,unplaced}=packed;
@@ -120,7 +125,11 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    {code:'CABINET_MOUNTING_WIRING_AND_THERMAL_NOT_VERIFIED',level:'UNKNOWN'},
    ...(depthKnown?[]:[{code:'CABINET_DEPTH_UNKNOWN',level:'UNKNOWN'}])
   ];
-  return {id:profile.id,capacityModules:profile.capacityModules,modulesPerRail:profile.modulesPerRail,railCount:rails.length,
+  const ordered=variantsBySize.get(profile.capacityModules);
+  const order=ordered.findIndex(x=>x.id===profile.id);
+  const orientation=ordered.length===1?'ONLY':
+   order===0?'WIDE':order===ordered.length-1?'TALL':'BALANCED';
+  return {id:profile.id,orientation,capacityModules:profile.capacityModules,modulesPerRail:profile.modulesPerRail,railCount:rails.length,
    rails,packingMethod:packed.status,usedModules:used,allocatedModules:allocated,reserveModules:allocated-used,
    unplaced,envelope,issues:optionIssues,
    status:optionIssues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',

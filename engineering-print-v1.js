@@ -208,10 +208,10 @@ function epEngineeringPrintV1(bundle){
    x.icnKa??'—',x.icnVoltageV??'—',x.icnStandard||'—',x.icuKa??'—',x.icuVoltageV??'—',x.residualCurrentMa??'—',
    x.residualType||'—',x.source||'Не указан',x.sourceReviewedAt||'Не записано']));
  const capacity=sections.cabinetCapacity||{};
- const capacityRows=rows(['Вместимость','Ряды','Модулей на DIN','Резерв','Полезная ширина (предв.), мм',
+ const capacityRows=rows(['Вместимость','Вариант','Ряды','Модулей на DIN','Резерв','Полезная ширина (предв.), мм',
   'Полезная высота (предв.), мм','Полезная глубина (предв.), мм','Ограничения'],
   (capacity.options||[]).filter(o=>o.status!=='BLOCKED').slice(0,16).map(o=>[
-   o.capacityModules,o.railCount,o.modulesPerRail,o.reserveModules,
+   o.capacityModules,({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Не определён'),o.railCount,o.modulesPerRail,o.reserveModules,
    o.envelope?.preliminaryUsableWidthMm??'—',
    o.envelope?.preliminaryUsableHeightMm??'—',
    o.envelope?.preliminaryUsableDepthMm??'НЕИЗВЕСТНА',

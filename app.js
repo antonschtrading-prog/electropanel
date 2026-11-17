@@ -1768,7 +1768,7 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   '<div class="ep-capacity-options" style="display:flex;gap:8px;flex-wrap:wrap">'+
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
    '" data-apply-cabinet-option="'+o.id+'">'+o.capacityModules+
-   ' мод. · '+o.railCount+' × '+o.modulesPerRail+
+   ' мод. · '+({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Вариант')+' · '+o.railCount+' × '+o.modulesPerRail+
    ' · свободно '+o.reserveModules+' · полезное ~'+
    Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
    Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+

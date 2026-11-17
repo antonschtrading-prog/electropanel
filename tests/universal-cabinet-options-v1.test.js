@@ -114,3 +114,12 @@ test('real 36-module pattern is rescued when descending greedy packing fails',()
  assert.equal(shape.unplaced.length,0);
  assert.equal(shape.rails.flatMap(x=>x.devices).length,7);
 });
+
+test('equal-capacity patterns have meaningful tall/wide orientation labels',()=>{
+ const r=plan({lines:Array.from({length:8},(_,i)=>({id:'L'+i,modules:4}))},
+  null,{reserveFraction:.1});
+ const group=r.options.filter(x=>x.capacityModules===36);
+ assert.equal(group.find(x=>x.id==='2x18').orientation,'WIDE');
+ assert.equal(group.find(x=>x.id==='3x12').orientation,'TALL');
+ assert.ok(r.options.every(x=>['ONLY','WIDE','TALL','BALANCED'].includes(x.orientation)));
+});
