@@ -1573,6 +1573,43 @@ const server=http.createServer((req,res)=>{
  assert.equal(undoAfter.lastReserve,10,'undo must restore reserve immediately before editing');
  assert.equal(undoAfter.currentReserve,15);
 
+ // Explicitly improve declared connections on the same DIN without
+ // modifying the protective topology or catalogue assignments.
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.railCount=1;state.railCapacity=8;
+  state.lines=Array.from({length:4},(_,i)=>({
+   id:'L'+(i+1),name:'Line '+(i+1),phase:'L1',power:1,modules:1,
+   device:'B10',source:'manual',sourceRef:''
+  }));
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  syncBranchDevices(state);
+  state.protectionLinks=[{upstreamLineId:'L1',downstreamLineId:'L4'}];
+  delete state.cabinetGeometryV1;
+  lastDesignSnapshot=null;changed();switchView('board');
+ });
+ const beforeGroupReflow=await page.evaluate(()=>{
+  const b=epDraftBoardPlanV1(state,catalogDevice);
+  return {summary:epCabinetConnectionProximityV1(state,b.placements).summary,
+   lines:JSON.stringify(state.lines),topology:JSON.stringify(state.protectionLinks)};
+ });
+ await page.locator('#cabinetGroupReflowBtn').click();
+ const afterGroupReflow=await page.evaluate(()=>{
+  const b=epDraftBoardPlanV1(state,catalogDevice);
+  return {summary:epCabinetConnectionProximityV1(state,b.placements).summary,
+   lines:JSON.stringify(state.lines),topology:JSON.stringify(state.protectionLinks),
+   positions:state.manualLayoutV1?.length};
+ });
+ assert.ok(afterGroupReflow.summary.nominalDistanceModules<
+  beforeGroupReflow.summary.nominalDistanceModules);
+ assert.equal(afterGroupReflow.lines,beforeGroupReflow.lines);
+ assert.equal(afterGroupReflow.topology,beforeGroupReflow.topology);
+ assert.equal(afterGroupReflow.positions,4);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>state.manualLayoutV1?.length??0),0);
+ await page.locator('#redoBtn').click();
+ assert.equal(await page.evaluate(()=>state.manualLayoutV1.length),4);
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
