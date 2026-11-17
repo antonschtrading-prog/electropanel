@@ -35,7 +35,9 @@ function epCabinetFrontGalleryModelV1(rows,lookup,options={}){
     }catch(_){frontStatus='ASSET_REJECTED';}
    }
   }
-  bySku.set(sku,{sku,maker:makerName,series,kind,quantity:1,device:device||null,
+  const widthConflict=Number.isInteger(device?.modules)&&device.modules>0&&
+   Number.isFinite(device?.widthMm)&&device.widthMm>device.modules*18+0.05;
+  bySku.set(sku,{sku,maker:makerName,series,kind,quantity:1,widthConflict,device:device||null,
    status:device?'CATALOGUE_FOUND':'CATALOGUE_MISSING',frontStatus});
  }
  const all=[...bySku.values()].sort((a,b)=>
@@ -45,6 +47,7 @@ function epCabinetFrontGalleryModelV1(rows,lookup,options={}){
  const evidenceSummary={REVIEWED_IMAGE:0,STYLIZED_ONLY:0,ASSET_REJECTED:0,CATALOGUE_MISSING:0};
  for(const entry of all)evidenceSummary[entry.frontStatus]++;
  const installedDevices=all.reduce((sum,entry)=>sum+entry.quantity,0);
+ const widthConflicts=all.filter(x=>x.widthConflict).length;
  const filtered=all.filter(x=>(!evidence||x.frontStatus===evidence)&&
   (!maker||x.maker.toLocaleLowerCase()===maker)&&
   (!search||[x.sku,x.maker,x.series,x.kind].join(' ').toLocaleLowerCase().includes(search)));
@@ -53,7 +56,7 @@ function epCabinetFrontGalleryModelV1(rows,lookup,options={}){
   code:'FRONT_GALLERY_PREVIEW_ONLY',items:filtered.slice(start,start+pageSize),
   total:filtered.length,visible:Math.min(pageSize,Math.max(0,filtered.length-start)),
   hasMore:start+pageSize<filtered.length,page,pageSize,makerOptions,
-  allArticles:all.length,installedDevices,evidenceSummary,engineeringApproved:false};
+  allArticles:all.length,installedDevices,widthConflicts,evidenceSummary,engineeringApproved:false};
 }
 if(typeof module!=='undefined'&&module.exports)
  module.exports={epCabinetFrontGalleryModelV1};
