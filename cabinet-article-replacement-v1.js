@@ -52,14 +52,22 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
  }else if(target.kind==='line'&&Array.isArray(copy.branchDevices)&&
   copy.branchDevices.some(b=>b?.circuitId===deviceId))
   return reject('REPLACEMENT_SELECT_BRANCH_DEVICE');
- const before=epDraftBoardPlanV1(project,stableLookup);
- const after=epDraftBoardPlanV1(copy,stableLookup);
+ let before,after;
+ try{
+  before=epDraftBoardPlanV1(project,stableLookup);
+  after=epDraftBoardPlanV1(copy,stableLookup);
+ }catch(_){return reject('REPLACEMENT_LAYOUT_ENGINE_FAILED');}
  if(after.status==='BLOCKED')return reject('REPLACEMENT_LAYOUT_BLOCKED',after.issues);
- const reconciliation=epCabinetArticleReconciliationV1(copy,stableLookup);
+ let reconciliation;
+ try{reconciliation=epCabinetArticleReconciliationV1(copy,stableLookup);}
+ catch(_){return reject('REPLACEMENT_RECONCILIATION_ENGINE_FAILED');}
  if(reconciliation.status==='BLOCKED')
   return reject('REPLACEMENT_RECONCILIATION_BLOCKED',reconciliation.issues);
- const originalBom=typeof epDraftBomV1==='function'?epDraftBomV1(project,stableLookup):null;
- const updatedBom=typeof epDraftBomV1==='function'?epDraftBomV1(copy,stableLookup):null;
+ let originalBom=null,updatedBom=null;
+ try{
+  originalBom=typeof epDraftBomV1==='function'?epDraftBomV1(project,stableLookup):null;
+  updatedBom=typeof epDraftBomV1==='function'?epDraftBomV1(copy,stableLookup):null;
+ }catch(_){return reject('REPLACEMENT_BOM_ENGINE_FAILED');}
  const bomChanges=[];
  if(originalBom&&updatedBom){
   const original=new Map(originalBom.items.map(x=>[x.key,x.quantity]));
