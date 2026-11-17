@@ -38,6 +38,8 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const poles=Number.isInteger(device?.poles)&&device.poles>0?Math.min(device.poles,8):1;
  const modules=Number.isInteger(device?.modules)&&device.modules>0?Math.min(device.modules,24):poles;
  const geometryKnown=Number.isFinite(device?.widthMm)&&device.widthMm>0&&device.widthMm<=modules*18+0.001;
+ const widthStatus=!Number.isFinite(device?.widthMm)||device.widthMm<=0?'UNKNOWN':
+  device.widthMm>modules*18+0.05?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
  const evidenceVerified=device?.verificationStatus==='VERIFIED'&&geometryKnown;
  const visualNote=evidenceVerified?'Эскиз, не официальный фасад':'Условный эскиз · геометрия/паспорт не подтверждены';
  const width=Math.max(92,Math.min(480,Math.round((geometryKnown?device.widthMm:modules*18)*5.1)));
@@ -103,7 +105,7 @@ function epCatalogFrontSvgV1(device,deviceId=''){
   Number.isInteger(device?.poles)?device.poles+' полюса, конфигурация не указана':'Полюса не заявлены');
  const legend=esc('Иллюстрация '+(device?.maker||'Условный вид')+' '+series+' '+(device?.sku||deviceId)+
   '. Полюса: '+poleLabel+(rated==='—'?'':'. Обозначение номинала: '+rated)+'. '+visualNote);
- return '<svg class="ep-manufacturer-front" data-device-kind="'+esc(breaker)+'" data-appearance-family="'+esc(family)+'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+legend+'">'+
+ return '<svg class="ep-manufacturer-front" data-device-kind="'+esc(breaker)+'" data-appearance-family="'+esc(family)+'" data-modules="'+modules+'" data-width-status="'+widthStatus+'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="'+legend+'">'+
  '<defs><linearGradient id="ep-body-'+gradientId+'" x1="0" x2="1"><stop stop-color="#e7e9eb"/><stop offset=".18" stop-color="#fff"/><stop offset=".83" stop-color="#f7f8f9"/><stop offset="1" stop-color="#d7dade"/></linearGradient></defs>'+
  '<rect x="1" y="1" width="'+(width-2)+'" height="238" rx="7" fill="url(#ep-body-'+gradientId+')" stroke="#b9c1c7" stroke-width="2"/>'+
  terminal+'<rect x="5" y="25" width="'+(width-10)+'" height="86" rx="3" fill="'+palette.label+'"/>'+
