@@ -51,3 +51,9 @@ test('sorts matched first',()=>assert.equal(run().rows[0].id,'large'));
 test('available width pass',()=>assert.equal(run().rows[0].checks[0].result,'PASS'));
 test('available depth pass',()=>assert.equal(run().rows[0].checks[2].result,'PASS'));
 test('known depth failure',()=>{const c=candidates();c[0].usableInterior.depthMm=80;assert.equal(match(preview(),geo(),c).rows.find(r=>r.id==='large').checks[2].result,'FAIL')});
+
+test('undefined known depth fails closed',()=>{const g=geo();delete g.summary.maxKnownDepthMm;assert.equal(match(preview(),g,candidates()).status,'BLOCKED')});
+test('undefined missing dimensions fails closed',()=>{const g=geo();delete g.summary.missingDimensions;assert.equal(match(preview(),g,candidates()).status,'BLOCKED')});
+test('NaN known depth fails closed',()=>{const g=geo();g.summary.maxKnownDepthMm=NaN;assert.equal(match(preview(),g,candidates()).status,'BLOCKED')});
+test('negative missing count fails closed',()=>{const g=geo();g.summary.missingDimensions=-1;assert.equal(match(preview(),g,candidates()).status,'BLOCKED')});
+test('mismatched apparatus identities fail closed',()=>{const g=geo();g.rows[0].deviceId='OTHER';assert.equal(match(preview(),g,candidates()).status,'BLOCKED')});
