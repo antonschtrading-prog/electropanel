@@ -109,3 +109,12 @@ test('bulk migration uses one catalogue snapshot for all devices and reports',()
  assert.equal(calls.get('NEW'),1);
  assert.equal(calls.get('KEEP'),1);
 });
+
+test('bulk migration rejects ambiguous or oversized source and destination SKUs',()=>{
+ for(const sku of [' OLD','OLD ','',' '.repeat(3),'X'.repeat(201)]){
+  assert.equal(bulk(project(),sku,'NEW',catalogue).status,'BLOCKED');
+ }
+ for(const sku of [' NEW','NEW ','','X'.repeat(201)]){
+  assert.equal(bulk(project(),'OLD',sku,catalogue).status,'BLOCKED');
+ }
+});
