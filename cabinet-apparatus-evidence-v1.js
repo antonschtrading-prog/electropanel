@@ -28,6 +28,11 @@ function epCabinetApparatusEvidenceV1(project,lookup){
  if(geometry?.status==='BLOCKED')add('APPARATUS_EVIDENCE_CABINET_GEOMETRY_INVALID','BLOCKED');
  const zones=new Map((geometry?.geometry?.zones||[]).map(x=>[x.railIndex,x]));
  const dim=(v)=>typeof v==='number'&&Number.isFinite(v)&&v>0?v:null;
+ const validSourceUrl=v=>{
+  if(typeof v!=='string'||!v||/[\\s\\u0000-\\u001f]/.test(v))return false;
+  try{const u=new URL(v);return u.protocol==='https:'&&!!u.hostname&&
+   !u.username&&!u.password&&!u.hash;}catch(_){return false;}
+ };
  const validReviewDate=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
   const t=Date.parse(v+'T00:00:00Z');return Number.isFinite(t)&&
    new Date(t).toISOString().slice(0,10)===v&&t<=Date.now();};
@@ -47,7 +52,7 @@ function epCabinetApparatusEvidenceV1(project,lookup){
   const review=validReviewDate(d?.sourceReviewedAt)?d.sourceReviewedAt:null;
   const sourceType=typeof d?.sourceType==='string'&&d.sourceType?d.sourceType:
    d?'SOURCE_CATEGORY_NOT_DECLARED':'NO_ARTICLE';
-  const evidenceSource=typeof d?.source==='string'&&/^https:\/\//.test(d.source)?d.source:null;
+  const evidenceSource=validSourceUrl(d?.source)?d.source:null;
   const codes=[];
   const issue=(code,level='UNKNOWN')=>{codes.push(code);add(code,level,p.deviceId);};
   if(!p.article)issue('APPARATUS_EVIDENCE_ARTICLE_NOT_SELECTED');
@@ -60,6 +65,8 @@ function epCabinetApparatusEvidenceV1(project,lookup){
   if(sourceType==='MANUFACTURER_DATASHEET_MIRROR'&&evidenceSource===null)
    issue('APPARATUS_EVIDENCE_SOURCE_LINK_MISSING');
   if(sourceType==='PROJECT_DECLARATION')issue('APPARATUS_EVIDENCE_USER_ENTERED_UNVERIFIED');
+  if(sourceType==='SOURCE_CATEGORY_NOT_DECLARED')issue('APPARATUS_EVIDENCE_SOURCE_CATEGORY_MISSING');
+  if(d?.source!=null&&evidenceSource===null)issue('APPARATUS_EVIDENCE_SOURCE_URL_INVALID');
   if(width!==null&&width>slotWidth+1e-6)issue('APPARATUS_EVIDENCE_NOMINAL_SLOT_WIDTH_EXCEEDED','BLOCKED');
   if(zone&&remainingZoneWidthMm!==null&&remainingZoneWidthMm< -1e-6)
    issue('APPARATUS_EVIDENCE_SLOT_OUTSIDE_RAIL_BAND','BLOCKED');
