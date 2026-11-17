@@ -1732,6 +1732,7 @@ function cabinetCapacityReportV1(){
 let cabinetCapacitySelectedTotalV1=null;
 let cabinetCapacityInputSignatureV1=null;
 let cabinetOptionPreferenceV1='balanced';
+let cabinetOptionShowAllCapacitiesV1=false;
 function renderCabinetCapacityOptionsV1(){
  const target=$('cabinetCapacityOptions');if(!target)return;
  const report=cabinetCapacityReportV1();
@@ -1794,7 +1795,7 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   epCabinetOptionCompareV1(report,{preference:cabinetOptionPreferenceV1,
    excludedIds:report.options.filter(o=>!eligibleIds.has(o.id)).map(o=>o.id)}):null;
  const ranking=new Map((comparison?.rows||[]).map((r,i)=>[r.id,{...r,rank:i+1}]));
- const shown=good.filter(o=>o.capacityModules===cabinetCapacitySelectedTotalV1)
+ const shown=good.filter(o=>cabinetOptionShowAllCapacitiesV1||o.capacityModules===cabinetCapacitySelectedTotalV1)
   .sort((a,b)=>(ranking.get(a.id)?.score??0)-(ranking.get(b.id)?.score??0));
  if(!shown.length){
   const causes=constraintReport?.excluded.flatMap(x=>x.reasons)||[];
@@ -1811,7 +1812,8 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   ['wide','Широкий корпус'],['tall','Высокий корпус'],
   ['connections','Группировка связей']].map(([key,label])=>'<option value="'+key+'"'+
    (cabinetOptionPreferenceV1===key?' selected':'')+'>'+label+'</option>').join('')+
-  '</select></label>'+ '<p>Аппаратура: <b>'+report.equipmentModules+
+  '</select></label><label class="ep-cabinet-option-all"><input type="checkbox" data-cabinet-show-all'+
+  '"'+(cabinetOptionShowAllCapacitiesV1?' checked':'')+'> Показать все вместимости</label>'+ '<p>Аппаратура: <b>'+report.equipmentModules+
   ' мод.</b> · Минимальный резерв: '+(limits.reservePercent??20)+'%. Выбрана вместимость '+cabinetCapacitySelectedTotalV1+' мест; доступных типоразмеров: '+totals.length+'.</p>'+
   '<div class="ep-capacity-options" style="display:flex;gap:8px;flex-wrap:wrap">'+
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
@@ -3180,6 +3182,27 @@ $('uploadPlan').onclick=()=>$('planFile').click();$('planFile').addEventListener
  }catch(err){notify(err.message,true);}finally{e.target.value='';}
 });
 
+$('exportCabinetCompareCsvBtn')?.addEventListener('click',()=>{
+ const report=cabinetCapacityReportV1(),limits=state.cabinetSizingPreferencesV1||{};
+ if(!report||typeof epCabinetOptionCompareV1!=='function'||
+    typeof epCabinetOptionCompareCsvV1!=='function'){
+  notify('Сравнение вариантов корпуса недоступно',true);return;
+ }
+ const constrained=typeof epCabinetOptionConstraintsV1==='function'?
+  epCabinetOptionConstraintsV1(report,{
+   maxUsableWidthMm:limits.maxUsableWidthMm??null,
+   maxUsableHeightMm:limits.maxUsableHeightMm??null,
+   maxUsableDepthMm:limits.maxUsableDepthMm??null}):null;
+ if(!constrained){notify('Ограничения корпуса не проверены',true);return;}
+ const eligible=new Set(constrained.eligible.map(x=>x.optionId));
+ const comparison=epCabinetOptionCompareV1(report,{preference:cabinetOptionPreferenceV1,
+  excludedIds:report.options.filter(o=>!eligible.has(o.id)).map(o=>o.id)});
+ if(comparison.code==='OPTION_COMPARE_INPUT_INVALID'||comparison.code==='OPTION_COMPARE_VARIANT_INVALID'){
+  notify('Невозможно сформировать сравнение вариантов',true);return;
+ }
+ download(baseName()+'_cabinet_options_comparison.csv',
+  epCabinetOptionCompareCsvV1(comparison),'text/csv;charset=utf-8');
+});
 $('exportCabinetCapacityCsvBtn')?.addEventListener('click',()=>{
  const report=cabinetCapacityReportV1();
  const result=typeof epCabinetCapacityCsvV1==='function'?
@@ -3282,6 +3305,9 @@ $('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
 $('cabinetCapacityOptions')?.addEventListener('change',e=>{
  if(e.target.matches('[data-cabinet-option-preference]')){
   cabinetOptionPreferenceV1=e.target.value;renderCabinetCapacityOptionsV1();
+ }
+ if(e.target.matches('[data-cabinet-show-all]')){
+  cabinetOptionShowAllCapacitiesV1=e.target.checked;renderCabinetCapacityOptionsV1();
  }
 });
 $('cabinetCapacityOptions')?.addEventListener('click',e=>{
