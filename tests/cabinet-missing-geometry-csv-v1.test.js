@@ -45,3 +45,26 @@ test('supplier CSV carries missing source and independent body geometry evidence
  assert.match(r.csv,/"22.5"/);
  assert.equal(r.ready_for_installation,false);
 });
+
+test('supplier checklist requests independent evidence for user declarations',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=csv(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+  sourceType:'PROJECT_DECLARATION',source:'https://example.org/user'}));
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.match(r.csv,/INDEPENDENT_MANUFACTURER_EVIDENCE/);
+ assert.match(r.csv,/DIN_MOUNT_OFFSET/);
+ assert.equal(r.ready_for_installation,false);
+});
+test('supplier checklist requests source classification when absent',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=csv(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70}));
+ assert.match(r.csv,/SOURCE_CATEGORY/);
+ assert.equal(r.engineeringApproved,false);
+});
+test('missing manufacturer mirror URL has an explicit supplier request',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=csv(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+  sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2026-11-14'}));
+ assert.match(r.csv,/VALID_SOURCE_LINK/);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+});
