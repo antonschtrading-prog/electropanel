@@ -93,3 +93,14 @@ test('gallery blocks articles without a declared manufacturer or series',()=>{
   assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_IDENTITY_INCOMPLETE')));
  }
 });
+
+test('gallery never accepts a reviewed image with an untrusted or missing path',()=>{
+ for(const src of [undefined,'https://bad.example/image.png','../x.png',
+  'assets/device-fronts/x.svg','assets/device-fronts/x.png?x=1']){
+  const r=gallery(audit,device,()=>({status:'REVIEWED_IMAGE',image:{src}}));
+  assert.equal(r.status,'BLOCKED');
+  assert.equal(r.totals.reviewedImages,0);
+  assert.equal(r.totals.rejectedImages,2);
+  assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_REVIEWED_IMAGE_PATH_INVALID')));
+ }
+});
