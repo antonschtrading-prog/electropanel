@@ -18,7 +18,9 @@ function epCabinetMissingGeometryCsvV1(project,lookup){
   engineeringApproved:false,ready_for_installation:false});
  if(typeof epCabinetApparatusEvidenceV1!=='function')return fail('MISSING_GEOMETRY_EVIDENCE_MODULE');
  const r=epCabinetApparatusEvidenceV1(project,lookup);
- if(r.status==='BLOCKED')return fail('MISSING_GEOMETRY_INPUT_BLOCKED');
+ // Retain actionable article rows even when a geometry conflict blocks installation.
+ // An empty blocked CSV would conceal precisely the data a supplier must correct.
+ if(r.status==='BLOCKED'&&!(r.rows||[]).length)return fail('MISSING_GEOMETRY_INPUT_BLOCKED');
  let count=0;
  for(const row of r.rows){
   const missing=[];
@@ -46,8 +48,9 @@ function epCabinetMissingGeometryCsvV1(project,lookup){
   count++;
  }
  if(!count)issues.push({code:'MISSING_GEOMETRY_NO_APPARATUS',level:'UNKNOWN'});
+ if(r.status==='BLOCKED')issues.push({code:'MISSING_GEOMETRY_INPUT_BLOCKED',level:'BLOCKED'});
  return {schema:'electropanel.cabinet.missing.geometry.csv.1',
-  csv:'\uFEFF'+lines.join('\r\n')+'\r\n',status:'REVIEW_REQUIRED',
+  csv:'\uFEFF'+lines.join('\r\n')+'\r\n',status:r.status==='BLOCKED'?'BLOCKED':'REVIEW_REQUIRED',
   rows:count,issues,engineeringApproved:false,ready_for_installation:false};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epCabinetMissingGeometryCsvV1};
