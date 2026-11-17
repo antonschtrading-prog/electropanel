@@ -2002,6 +2002,19 @@ function renderCabinetArticleReconciliationV1(){
   const caption=document.createElement('p');
   caption.textContent='Каталожные SVG — авторские эскизы, не фотографии изделий. Фотографии отображаются только при зарегистрированных правах и проверенном артикуле.';
   gallery.appendChild(caption);
+  if(frontReport){
+   const audit=document.createElement('p');audit.className='ep-front-gallery-audit';
+   const totals=frontReport.totals;
+   audit.textContent='Сверка фасадов: '+totals.apparatus+' аппаратов / '+
+    totals.articles+' артикулов; проверенных изображений '+totals.reviewedImages+
+    '; авторских эскизов '+totals.vectorSketches+
+    '; отклонённых изображений '+totals.rejectedImages+
+    '; отсутствуют в каталоге '+totals.missingArticles+
+    '; габариты неизвестны у '+totals.unknownGeometry+' артикулов.'+
+    (frontReport.status==='BLOCKED'?' Есть блокирующие несоответствия.':'');
+   audit.dataset.frontAuditStatus=frontReport.status;
+   gallery.appendChild(audit);
+  }
   const controls=document.createElement('div');controls.className='ep-front-gallery-controls';
   const search=document.createElement('input');search.type='search';
   search.maxLength=200;search.placeholder='Поиск: артикул, серия, тип';
