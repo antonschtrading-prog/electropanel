@@ -11,14 +11,15 @@ function epCabinetFrontInventoryCsvV1(rows,lookup,resolve){
   const safe=/^[=+@\-\t\r\n]/.test(raw)?"'"+raw:raw;
   return '"'+safe.replace(/"/g,'""')+'"';
  };
- const columns=['article','manufacturer','series','kind','modules','poles',
+ const columns=['article','quantity','manufacturer','series','kind','modules','poles',
   'body_width_mm','front_status','front_issues','image_source','product_evidence',
   'installation_approved'];
- const seen=new Set(),data=[];
+ const seen=new Map(),data=[];
  for(const row of rows){
   const sku=row?.boardSku;
-  if(typeof sku!=='string'||!sku.trim()||seen.has(sku))continue;
-  seen.add(sku);
+  if(typeof sku!=='string'||!sku.trim())continue;
+  if(seen.has(sku)){data[seen.get(sku)][1]++;continue;}
+  seen.set(sku,data.length);
   let item=null,asset=null;
   try{item=lookup(sku);if(item)asset=resolve(item);}
   catch(_){item=null;asset=null;}
@@ -26,7 +27,7 @@ function epCabinetFrontInventoryCsvV1(rows,lookup,resolve){
    'REVIEWED_IMAGE':asset?.status==='ASSET_REJECTED'?'ASSET_REJECTED':'STYLIZED_ONLY';
   const issues=!item?'ARTICLE_NOT_IN_CATALOGUE':Array.isArray(asset?.issues)?
    asset.issues.join('|'):'';
-  data.push([sku,item?.maker,item?.series,item?.kind,item?.modules,item?.poles,
+  data.push([sku,1,item?.maker,item?.series,item?.kind,item?.modules,item?.poles,
    item?.widthMm,status,issues,asset?.image?.src,asset?.image?.productEvidenceUrl,'NO']);
  }
  data.sort((a,b)=>String(a[0]).localeCompare(String(b[0]),'ru'));
