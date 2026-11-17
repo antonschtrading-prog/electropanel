@@ -3369,6 +3369,69 @@ $('exportCabinetMissingDimensionsBtn')?.addEventListener('click',()=>{
 // Preview and application are intentionally separate. A changed project invalidates the proposal.
 let cabinetCrossRailPreviewSnapshotV1=null;
 const cabinetCrossRailFingerprintV1=()=>JSON.stringify(state);
+// Independent enclosure fit exploration for the CURRENT DIN layout; never moves devices.
+$('cabinetCompareCurrentBtn')?.addEventListener('click',()=>{
+ const panel=$('cabinetCurrentEnclosurePanel');
+ if(!panel)return;
+ panel.replaceChildren();
+ const raw=$('cabinetEnclosureCandidatesInput')?.value.trim()??'';
+ const parsed=typeof epCabinetEnclosureInputV1==='function'?epCabinetEnclosureInputV1(raw):null;
+ if(!parsed||parsed.status==='BLOCKED'||!parsed.items.length){
+  notify('Укажите хотя бы один корректный корпус с полезными размерами',true);return;
+ }
+ const fingerprint=cabinetCrossRailFingerprintV1();
+ const report=typeof epCabinetCurrentEnclosureV1==='function'?
+  epCabinetCurrentEnclosureV1(state,catalogDevice,parsed.items):null;
+ if(!report||report.status==='BLOCKED'){
+  notify('Сравнение текущего щита невозможно: '+(report?.code??'модуль недоступен'),true);return;
+ }
+ const h=document.createElement('h4');h.textContent='Сравнение корпусов с текущим щитом';
+ const summary=document.createElement('p');
+ summary.textContent='DIN-реек: '+report.board.railCount+' · аппаратов: '+report.board.devices+
+  ' · известны полные габариты: '+report.geometry.knownDimensions+
+  ' · нет полных габаритов: '+report.geometry.missingDimensions+
+  '. Перемещения аппаратов не выполнялись.';
+ panel.append(h,summary);
+ const list=document.createElement('ul');
+ const statusText={PRELIMINARY_MATCH:'предварительно подходит',
+  REJECTED:'не подходит',UNVERIFIED:'недостаточно данных'};
+ const axisText={width:'ширина',height:'высота',depth:'глубина',rails:'DIN-рейки'};
+ for(const row of report.review.rows){
+  const li=document.createElement('li');
+  const deficits=row.deficits.map(x=>axisText[x.axis]+': не хватает '+
+   (x.missingMm??x.missingCount)+(x.axis==='rails'?' шт.':' мм'));
+  li.textContent=row.id+' — '+statusText[row.status]+
+   (deficits.length?' · '+deficits.join('; '):'')+
+   (row.requests.length?' · нужны сведения: '+row.requests.join(', '):'');
+  list.appendChild(li);
+ }
+ panel.appendChild(list);
+ const note=document.createElement('p');
+ note.textContent='Только условные полезные размеры. Реальные крепления, проводка, клеммы и тепловые условия не подтверждены.';
+ panel.appendChild(note);
+ const isFresh=()=>cabinetCrossRailFingerprintV1()===fingerprint&&
+  ($('cabinetEnclosureCandidatesInput')?.value.trim()??'')===raw;
+ const exporter=(label,suffix,build,mime)=>{
+  const b=document.createElement('button');b.className='btn';b.type='button';b.textContent=label;
+  b.addEventListener('click',()=>{
+   if(!isFresh()){
+    panel.replaceChildren();
+    notify('Проект или данные корпусов изменились — повторите сравнение',true);return;
+   }
+   const content=build();
+   if(!content){notify('Экспорт сравнения недоступен',true);return;}
+   download(baseName()+suffix,content,mime);
+  });
+  panel.appendChild(b);
+ };
+ exporter('Сравнение корпусов CSV','_current_enclosure_checks.csv',
+  ()=>epCabinetEnclosureMatchCsvV1(report.match)?.csv,'text/csv;charset=utf-8');
+ exporter('Недостающие сведения для поставщика CSV','_current_enclosure_supplier.csv',
+  ()=>epCabinetEnclosureReviewCsvV1(report.review)?.csv,'text/csv;charset=utf-8');
+ exporter('Протокол сравнения JSON','_current_enclosure_review.json',
+  ()=>JSON.stringify(report,null,2),'application/json;charset=utf-8');
+});
+
 $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
  const panel=$('cabinetCrossRailPreview');
  if(!panel)return;

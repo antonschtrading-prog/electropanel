@@ -1812,6 +1812,48 @@ const server=http.createServer((req,res)=>{
  assert.match(await evidenceDetails.innerText(),/SE-A9F73110/);
  assert.match(await evidenceDetails.innerText(),/Неизвестна/);
 
+
+ // Independent current-layout enclosure comparison (no proposed DIN movement).
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.railCount=1;state.railCapacity=6;
+  state.lines=[{id:'CAB1',name:'Selected apparatus',power:1,phase:'L1',
+   modules:1,device:'B10',catalogSku:'SE-A9F73110',source:'manual',sourceRef:''}];
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  syncBranchDevices(state);
+  state.branchDevices[0].catalogSku='SE-A9F73110';
+  lastDesignSnapshot=null;changed();switchView('board');
+ });
+ const currentBoardSnapshot=await page.evaluate(()=>JSON.stringify(state));
+ const candidateText='LARGE; Demo; L-01; 400; 500; 200; 1\nSMALL; Demo; S-01; 90; 120; 50; 1';
+ await page.locator('#cabinetEnclosureCandidatesInput').fill(candidateText);
+ await page.locator('#cabinetCompareCurrentBtn').click();
+ const currentText=await page.locator('#cabinetCurrentEnclosurePanel').innerText();
+ assert.match(currentText,/Сравнение корпусов с текущим щитом/);
+ assert.match(currentText,/LARGE — предварительно подходит/);
+ assert.match(currentText,/SMALL — не подходит/);
+ assert.match(currentText,/не хватает/);
+ assert.match(currentText,/Перемещения аппаратов не выполнялись/);
+ assert.equal(await page.evaluate(()=>JSON.stringify(state)),currentBoardSnapshot,
+  'Enclosure comparison must not mutate the current board');
+ assert.equal(await page.locator('#cabinetCurrentEnclosurePanel button').count(),3);
+ const currentCsvDownload=page.waitForEvent('download');
+ await page.locator('#cabinetCurrentEnclosurePanel button').nth(0).click();
+ assert.match((await currentCsvDownload).suggestedFilename(),/_current_enclosure_checks\.csv$/);
+ const supplierCsvDownload=page.waitForEvent('download');
+ await page.locator('#cabinetCurrentEnclosurePanel button').nth(1).click();
+ assert.match((await supplierCsvDownload).suggestedFilename(),/_current_enclosure_supplier\.csv$/);
+ const currentJsonDownload=page.waitForEvent('download');
+ await page.locator('#cabinetCurrentEnclosurePanel button').nth(2).click();
+ assert.match((await currentJsonDownload).suggestedFilename(),/_current_enclosure_review\.json$/);
+ await page.locator('#cabinetEnclosureCandidatesInput').fill('NEW; Demo; N-01; 500; 600; 250; 1');
+ await page.locator('#cabinetCurrentEnclosurePanel button').first().click();
+ assert.equal(await page.locator('#cabinetCurrentEnclosurePanel button').count(),0,
+  'Changing candidates invalidates the prior export');
+ await page.locator('#cabinetCompareCurrentBtn').click();
+ assert.match(await page.locator('#cabinetCurrentEnclosurePanel').innerText(),
+  /NEW — предварительно подходит/);
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
