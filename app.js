@@ -2085,6 +2085,54 @@ function renderCabinetArticleReconciliationV1(){
    });
    gallery.appendChild(exportEvidence);
   }
+  if(typeof epFrontEvidenceLedgerV1==='function'&&typeof epFrontReviewQueueV1==='function'){
+   const queueBox=document.createElement('section');queueBox.className='ep-front-review-queue';
+   const heading=document.createElement('h4');heading.textContent='Очередь проверки фасадов и габаритов';
+   const summary=document.createElement('p');summary.setAttribute('aria-live','polite');
+   const filter=document.createElement('select');filter.setAttribute('aria-label','Фильтр очереди проверки');
+   for(const [value,label] of [['ACTION_REQUIRED','Требуют действий'],['ALL','Все артикулы'],
+    ['CATALOGUE_MISSING','Нет артикула'],['ASSET_REJECTED','Изображение отклонено'],
+    ['STYLIZED_ONLY','Только эскиз'],['REVIEWED_IMAGE','Изображение проверено'],
+    ['EXCEEDS_DIN_SLOT','Шире DIN-места'],['UNKNOWN','Габариты неизвестны']]){
+    const opt=document.createElement('option');opt.value=value;opt.textContent=label;filter.appendChild(opt);
+   }
+   const list=document.createElement('ol');list.className='ep-front-review-items';
+   const exportQueue=document.createElement('button');exportQueue.type='button';
+   exportQueue.textContent='Скачать очередь проверки CSV';
+   const refreshQueue=()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const ledger=epFrontEvidenceLedgerV1(fresh.rows,catalogDevice,epManufacturerFrontResolveV1);
+    const queue=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100});
+    summary.textContent='Всего требующих внимания: '+(queue.counts.unverified+queue.counts.rejected+
+     queue.counts.missing)+'; проблемы габаритов: '+queue.counts.geometry+
+     '; проверенных изображений: '+queue.counts.reviewed+'. Это не разрешение на монтаж.';
+    list.replaceChildren();
+    for(const item of queue.items){
+     const li=document.createElement('li');
+     li.textContent=item.maker+' '+item.series+' '+item.sku+' ×'+item.quantity+': '+item.actions.join('; ');
+     list.appendChild(li);
+    }
+    if(queue.hasMore){const li=document.createElement('li');
+     li.textContent='Показаны первые 100 записей. Полный перечень доступен в CSV.';list.appendChild(li);}
+   };
+   filter.addEventListener('change',refreshQueue);
+   exportQueue.addEventListener('click',()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const ledger=epFrontEvidenceLedgerV1(fresh.rows,catalogDevice,epManufacturerFrontResolveV1);
+    const queue=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100});
+    const all=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100,page:0});
+    const items=[...all.items];
+    for(let page=1;page<50&&page*100<all.total;page++){
+     const next=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100,page});
+     items.push(...next.items);
+    }
+    const result=epFrontReviewQueueCsvV1({...queue,items});
+    if(!result.csv){notify('Очередь проверки недоступна',true);return;}
+    download(baseName()+'_front_review_queue.csv',result.csv,'text/csv;charset=utf-8');
+   });
+   queueBox.append(heading,filter,summary,list,exportQueue);gallery.appendChild(queueBox);
+   refreshQueue();
+  }
   const evidenceSummary=document.createElement('p');evidenceSummary.className='ep-front-gallery-evidence';
   if(initial?.evidenceSummary){
    const e=initial.evidenceSummary;
