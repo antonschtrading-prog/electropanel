@@ -96,3 +96,22 @@ test('nominal device coordinates are relative to the declared installation band'
  assert.equal(r.rows[0].remainingZoneWidthMm,42);
  assert.equal(r.status,'REVIEW_REQUIRED');
 });
+
+test('actual body edge is independently reported in a declared mounting zone',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}],
+  cabinetGeometryV1:{version:1,source:'USER_DECLARED',
+   interior:{widthMm:120,heightMm:150,depthMm:100},
+   zones:[{railIndex:0,xMm:20,yMm:10,widthMm:40,heightMm:100}]}};
+ const r=audit(p,()=>({sku:'C',modules:1,widthMm:17.5,heightMm:85,depthMm:70}));
+ assert.equal(r.rows[0].actualBodyEndXMm,37.5);
+ assert.equal(r.rows[0].remainingBodyZoneWidthMm,22.5);
+ assert.equal(r.rows[0].remainingZoneWidthMm,22);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+});
+test('missing body width is unknown and not inferred from module count',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=audit(p,()=>({sku:'C',modules:1,heightMm:85,depthMm:70}));
+ assert.equal(r.rows[0].actualBodyEndXMm,null);
+ assert.equal(r.rows[0].remainingBodyZoneWidthMm,null);
+ assert.equal(r.dimensionCoverage.incomplete,1);
+});
