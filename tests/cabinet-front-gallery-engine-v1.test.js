@@ -104,3 +104,12 @@ test('gallery never accepts a reviewed image with an untrusted or missing path',
   assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_REVIEWED_IMAGE_PATH_INVALID')));
  }
 });
+
+test('gallery uses the same 0.05 mm DIN width tolerance as board visual checks',()=>{
+ const within=gallery(audit,sku=>({...device(sku),widthMm:device(sku).modules*18+0.04}),
+  ()=>({status:'STYLIZED_ONLY'}));
+ assert.equal(within.status,'REVIEW_REQUIRED');
+ const beyond=gallery(audit,sku=>({...device(sku),widthMm:device(sku).modules*18+0.06}),
+  ()=>({status:'STYLIZED_ONLY'}));
+ assert.equal(beyond.status,'BLOCKED');
+});
