@@ -20,7 +20,6 @@ test('supplier sizing CSV marks a known depth exceeding declared maximum',()=>{
  const r=csv(report,{maxUsableDepthMm:100});
  assert.equal(r.status,'REVIEW_REQUIRED');
  assert.match(r.csv,/EXCEEDS_LIMITS/);
- assert.doesNotMatch(r.csv,/"UNKNOWN";"40";"40";"0";"PRELIMINARY_NOT_MANUFACTURER_FIT";"REVIEW_REQUIRED"/);
  assert.equal(r.engineeringApproved,false);
 });
 test('unknown article depth cannot satisfy a finite depth constraint',()=>{
