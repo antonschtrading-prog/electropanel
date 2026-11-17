@@ -88,3 +88,14 @@ test('failed image evidence resolver does not crash gallery',()=>{
  assert.equal(r.total,1);
  assert.equal(r.items[0].frontStatus,'ASSET_REJECTED');
 });
+
+test('gallery summary separates article coverage from installed device count',()=>{
+ const r=model([{boardSku:'A'},{boardSku:'A'},{boardSku:'B'},{boardSku:'X'}],
+  sku=>sku==='X'?null:{sku,maker:'ABB',series:'S'},
+  {resolve:d=>({status:d.sku==='A'?'REVIEWED_IMAGE':'ASSET_REJECTED'})});
+ assert.equal(r.allArticles,3);
+ assert.equal(r.installedDevices,4);
+ assert.deepEqual(r.evidenceSummary,{
+  REVIEWED_IMAGE:1,STYLIZED_ONLY:0,ASSET_REJECTED:1,CATALOGUE_MISSING:1
+ });
+});
