@@ -32,6 +32,20 @@ function epCabinetArticleBulkReplacementV1(project,oldSku,newSku,lookup){
  if(final.placements.some(p=>p.article===oldSku))
   return reject('BULK_REPLACEMENT_INCOMPLETE');
  const originalById=new Map(board.placements.map(x=>[x.deviceId,x]));
+ const beforeModules=board.placements.reduce((sum,x)=>sum+x.modules,0);
+ const afterModules=final.placements.reduce((sum,x)=>sum+x.modules,0);
+ const bomChanges=[];
+ if(typeof epDraftBomV1==='function'){
+  let oldBom,newBom;
+  try{oldBom=epDraftBomV1(project,lookup);newBom=epDraftBomV1(copy,lookup);}
+  catch(_){return reject('BULK_REPLACEMENT_BOM_FAILED');}
+  const oldQuantities=new Map(oldBom.items.map(x=>[x.key,x.quantity]));
+  const newQuantities=new Map(newBom.items.map(x=>[x.key,x.quantity]));
+  for(const sku of [...new Set([...oldQuantities.keys(),...newQuantities.keys()])].sort()){
+   const before=oldQuantities.get(sku)||0,after=newQuantities.get(sku)||0;
+   if(before!==after)bomChanges.push({sku,oldQuantity:before,newQuantity:after,delta:after-before});
+  }
+ }
  const moved=final.placements.filter(x=>{
   const before=originalById.get(x.deviceId);
   return before&&(before.railIndex!==x.railIndex||before.startModule!==x.startModule);
@@ -39,7 +53,8 @@ function epCabinetArticleBulkReplacementV1(project,oldSku,newSku,lookup){
  return {schema:'electropanel.cabinet.article.bulk.replacement.1',
   status:'REVIEW_REQUIRED',code:'BULK_REPLACEMENT_PREVIEW_READY',
   project:copy,preview:{oldSku,newSku,replacedDeviceIds:ids,
-   replacedCount:ids.length,steps,relocatedDeviceIds:moved,
+   replacedCount:ids.length,steps,beforeModules,afterModules,
+   moduleDelta:afterModules-beforeModules,bomChanges,relocatedDeviceIds:moved,
    relocatedCount:moved.length,finalPlacementCount:final.placements.length,
    engineeringApproved:false},issues:[],engineeringApproved:false,
   ready_for_installation:false,manufacturerCabinetFitVerified:false};
