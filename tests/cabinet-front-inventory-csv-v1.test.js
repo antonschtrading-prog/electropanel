@@ -40,5 +40,11 @@ test('inventory is UTF-8 BOM CSV with CRLF and semicolon columns',()=>{
  const r=csv(rows,lookup,resolve);
  assert.equal(r.csv.charCodeAt(0),0xFEFF);
  assert.ok(r.csv.includes('\r\n'));
- assert.ok(r.csv.includes('"article";"manufacturer"'));
+ assert.ok(r.csv.includes('"article";"quantity";"manufacturer"'));
+});
+
+test('inventory records quantity of repeated installed SKU',()=>{
+ const r=csv(rows,lookup,resolve);
+ const line=r.csv.split('\r\n').find(x=>x.startsWith('"ABB-S200";'));
+ assert.match(line,/^"ABB-S200";"2";/);
 });
