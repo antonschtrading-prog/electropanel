@@ -244,7 +244,7 @@ test('cross rail preview keeps apply separate from proposal generation',()=>{
  const block=app.slice(start,end);
  assert.match(block,/Применить предложенную компоновку/);
  assert.match(block,/cabinetCrossRailFingerprintV1\(\)!==fingerprint/);
- assert.match(block,/const fresh=epCabinetCrossRailOptimizeV1\(state,catalogDevice\)/);
+ assert.match(block,/const fresh=epCabinetCrossRailOptimizeV1\(state,catalogDevice,\{strategy:selected.strategy\}\)/);
  assert.match(block,/confirm\(/);
  assert.match(block,/checkpoint\(\)/);
  assert.ok(block.indexOf('checkpoint();')>block.indexOf("apply.addEventListener('click'"));
