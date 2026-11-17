@@ -51,3 +51,5 @@ The initial first-fit-decreasing allocator is not a proof of non-fit. A memoized
 The selector compares all known row distributions for a chosen standard-pattern total (e.g., 36 = 2×18 versus 3×12). No arbitrary 'first 12 options' cutoff can hide the alternate orientation. When inputs/constraints change, the selector falls back to the closest eligible total. This is a draft shortlist, not a catalogue of actual enclosure products.
 
 Orientation labels are *comparative within the same modular capacity*, not assertions about external manufacturer cabinet proportions: the variant with fewer rails is 'wide', with more rails 'tall', intermediate rows are 'balanced', and sole variants are labelled uniquely.
+
+The selected comparison capacity is ephemeral UI state. It is reset when the equipment input signature or declared sizing preferences change; this avoids hiding the nearest small enclosure when switching between separate projects. The selected total remains stable across unrelated redraws.

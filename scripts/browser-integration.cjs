@@ -1520,6 +1520,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.locator('[data-apply-cabinet-option="2x18"]').count(),1);
  assert.equal(await page.locator('[data-apply-cabinet-option="3x12"]').count(),1);
  await page.locator('#cabinetCapacityTotal').selectOption('48');
+ assert.equal(await page.locator('#cabinetCapacityTotal').inputValue(),'48');
  assert.equal(await page.locator('[data-apply-cabinet-option="2x18"]').count(),0);
  assert.ok((await page.locator('#cabinetCapacityOptions button').count())>=1);
  // A re-render must not attach duplicate reserve-change listeners.

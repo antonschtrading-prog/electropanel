@@ -1725,6 +1725,7 @@ function cabinetCapacityReportV1(){
   epUniversalCabinetOptionsV1(state,catalogDevice,{reserveFraction:(state.cabinetSizingPreferencesV1?.reservePercent??20)/100}):null;
 }
 let cabinetCapacitySelectedTotalV1=null;
+let cabinetCapacityInputSignatureV1=null;
 function renderCabinetCapacityOptionsV1(){
  const target=$('cabinetCapacityOptions');if(!target)return;
  const report=cabinetCapacityReportV1();
@@ -1733,6 +1734,15 @@ function renderCabinetCapacityOptionsV1(){
   return;
  }
  const limits=state.cabinetSizingPreferencesV1||{};
+ const signature=JSON.stringify([
+  state.title,state.lines.map(l=>[l.id,l.modules,l.catalogSku]),
+  (state.sharedDevices||[]).map(d=>[d.id,d.modules,d.catalogSku]),
+  limits.reservePercent??20,limits.maxUsableWidthMm??null,limits.maxUsableHeightMm??null
+ ]);
+ if(signature!==cabinetCapacityInputSignatureV1){
+  cabinetCapacityInputSignatureV1=signature;
+  cabinetCapacitySelectedTotalV1=null;
+ }
  const reserveInput=$('cabinetReservePercent');
  if(reserveInput&&document.activeElement!==reserveInput)
   reserveInput.value=String(limits.reservePercent??20);
