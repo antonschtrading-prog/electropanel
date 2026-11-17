@@ -128,3 +128,15 @@ test('replacement with a shared article updates quantities rather than duplicati
  assert.ok(r.preview.bomChanges.some(x=>x.sku==='WIDE'&&x.newQuantity===2));
  assert.equal(r.preview.bomDistinctArticlesAfter,1);
 });
+
+test('replacement reads each catalogue article once for deterministic impact analysis',()=>{
+ const calls=new Map();
+ const r=replace(project(),'B1','WIDE',sku=>{
+  calls.set(sku,(calls.get(sku)||0)+1);
+  return {...catalogue(sku),label:'Read '+calls.get(sku)};
+ });
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(calls.get('WIDE'),1);
+ assert.equal(calls.get('OLD'),1);
+ assert.equal(calls.get('OLD2'),1);
+});
