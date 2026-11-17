@@ -1837,7 +1837,7 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>'+ 
    '<button type="button" class="btn" data-preview-cabinet-option="'+o.id+'">Просмотр '+o.id+'</button>').join('')+'</div>'+
   '<p class="muted">Предварительный приоритет: '+
-  (comparison?.recommendedId||good[0]?.id||'не определён')+'. Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
+  (comparison?.recommendedId||(cabinetOptionPreferenceV1==='stability'?'не определён (нет подтверждённых данных о перестановках)':good[0]?.id)||'не определён')+'. Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
   '. Неизвестная глубина не проходит заданный предел глубины.</p>'+
   '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';
  const previewTarget=$('cabinetOptionPreview');
