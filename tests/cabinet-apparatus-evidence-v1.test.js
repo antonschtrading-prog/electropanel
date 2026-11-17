@@ -115,3 +115,20 @@ test('missing body width is unknown and not inferred from module count',()=>{
  assert.equal(r.rows[0].remainingBodyZoneWidthMm,null);
  assert.equal(r.dimensionCoverage.incomplete,1);
 });
+
+test('unclassified catalogue sources never inflate manufacturer coverage',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+  sourceReviewedAt:'2026-11-14',source:'https://example.org/unknown'}));
+ assert.equal(r.sourceReviewed,0);
+ assert.equal(r.sourceCoverage.reviewed,0);
+ assert.equal(r.sourceCoverage.total,1);
+});
+test('manufacturer mirror without URL is not counted as reviewed evidence',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+  sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2026-11-14'}));
+ assert.equal(r.sourceReviewed,0);
+ assert.equal(r.sourceCoverage.reviewed,0);
+ assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_LINK_MISSING'));
+});
