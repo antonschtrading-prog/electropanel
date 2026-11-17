@@ -1733,12 +1733,14 @@ let cabinetCapacitySelectedTotalV1=null;
 let cabinetCapacityInputSignatureV1=null;
 let cabinetOptionPreferenceV1='balanced';
 let cabinetOptionShowAllCapacitiesV1=false;
+let cabinetOptionPreviewIdV1=null;
 function renderCabinetCapacityOptionsV1(){
  const target=$('cabinetCapacityOptions');if(!target)return;
  const report=cabinetCapacityReportV1();
  if(!report||!report.options.length){
   target.textContent='Нет вариантов: проверьте модули и состав оборудования.';
   const diagram=$('cabinetSpaceDiagram');if(diagram)diagram.replaceChildren();
+  const preview=$('cabinetOptionPreview');if(preview)preview.replaceChildren();
   const select=$('cabinetCapacityTotal');if(select){select.replaceChildren();select.disabled=true;}
   return;
  }
@@ -1753,6 +1755,7 @@ function renderCabinetCapacityOptionsV1(){
  if(signature!==cabinetCapacityInputSignatureV1){
   cabinetCapacityInputSignatureV1=signature;
   cabinetCapacitySelectedTotalV1=null;
+  cabinetOptionPreviewIdV1=null;
  }
  for(const [id,field,def] of [['cabinetWiringCorridor','wiringCorridorMm',40],
   ['cabinetTerminalReserve','terminalReserveMm',0],
@@ -1826,14 +1829,47 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
     ', не размещено '+o.connectionProximity.unresolved:'')+
    ' · полезное ~'+
    Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
-   Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+
+   Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>'+ 
+   '<button type="button" class="btn" data-preview-cabinet-option="'+o.id+'">Просмотр '+o.id+'</button>').join('')+'</div>'+
   '<p class="muted">Предварительный приоритет: '+
   (comparison?.recommendedId||good[0]?.id||'не определён')+'. Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
   '. Неизвестная глубина не проходит заданный предел глубины.</p>'+
   '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';
+ const previewTarget=$('cabinetOptionPreview');
+ if(previewTarget){
+  const previewOption=shown.find(o=>o.id===cabinetOptionPreviewIdV1)||shown.find(o=>o.id===selected)||shown[0];
+  if(!shown.some(o=>o.id===cabinetOptionPreviewIdV1))cabinetOptionPreviewIdV1=previewOption.id;
+  const preview=typeof epCabinetOptionPreviewV1==='function'?
+   epCabinetOptionPreviewV1(state,previewOption,catalogDevice):null;
+  previewTarget.replaceChildren();
+  const heading=document.createElement('h4');heading.textContent='Предварительный просмотр: '+previewOption.id;
+  const summary=document.createElement('p');
+  if(preview?.status==='REVIEW_REQUIRED'){
+   const x=preview.summary;
+   summary.textContent='Аппаратов: '+x.devices+'; изменят позицию: '+x.moved+
+    '; перейдут на другую DIN-рейку: '+x.changedRails+
+    '; изменение вместимости: '+(x.capacityDelta>=0?'+':'')+x.capacityDelta+
+    ' мод.; свободно: '+x.freeModules+
+    (x.geometryResetRequired?'. Заданные монтажные зоны будут сброшены.':'')+
+    '. Предварительная схема, не монтажный чертёж.';
+   const list=document.createElement('details'),title=document.createElement('summary');
+   title.textContent='Показать перемещения аппаратов ('+x.moved+')';list.appendChild(title);
+   const ul=document.createElement('ul');
+   for(const row of preview.rows.filter(r=>r.changed).slice(0,100)){
+    const li=document.createElement('li');
+    li.textContent=row.deviceId+': DIN '+(row.fromRail+1)+' / '+(row.fromSlot+1)+
+     ' → DIN '+(row.toRail+1)+' / '+(row.toSlot+1);
+    ul.appendChild(li);
+   }
+   list.appendChild(ul);previewTarget.append(heading,summary,list);
+  }else{
+   summary.textContent='Просмотр недоступен: '+(preview?.code||'движок отсутствует');
+   previewTarget.append(heading,summary);
+  }
+ }
  const space=$('cabinetSpaceDiagram');
  if(space){
-  const example=shown.find(o=>o.id===selected)||shown[0];
+  const example=shown.find(o=>o.id===cabinetOptionPreviewIdV1)||shown.find(o=>o.id===selected)||shown[0];
   if(typeof epCabinetSpaceDiagramV1==='function')
    space.innerHTML=epCabinetSpaceDiagramV1(example);
   else space.textContent='';
@@ -3311,6 +3347,8 @@ $('cabinetCapacityOptions')?.addEventListener('change',e=>{
  }
 });
 $('cabinetCapacityOptions')?.addEventListener('click',e=>{
+ const preview=e.target.closest('[data-preview-cabinet-option]');
+ if(preview){cabinetOptionPreviewIdV1=preview.dataset.previewCabinetOption;renderCabinetCapacityOptionsV1();return;}
  const b=e.target.closest('[data-apply-cabinet-option]');
  if(b)applyCabinetCapacityOptionV1(b.dataset.applyCabinetOption);
 });
