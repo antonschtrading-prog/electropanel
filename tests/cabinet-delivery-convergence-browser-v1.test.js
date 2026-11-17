@@ -225,3 +225,38 @@ test('cross rail optimization does not change electrical links in UI',()=>{
  const block=app.slice(i,app.indexOf("$('cabinetGroupReflowBtn')?.addEventListener",i));
  assert.doesNotMatch(block,/state.protectionLinks\s*=|state.deviceSupplyV1\s*=/);
 });
+
+test('cross rail preview adapter loads before app',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-reflow-preview-v1.js"')<html.indexOf('src="app.js"'));
+ assert.match(html,/id="cabinetCrossRailPreview" aria-live="polite"/);
+});
+test('cross rail preview uses existing nominal DIN renderer',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/epCabinetReflowPreviewV1\(state,proposal,catalogDevice\)/);
+ assert.match(app,/epCabinetOptionDinSvgV1\(preview\)/);
+ assert.match(app,/epCabinetOptionPreviewCsvV1\(preview\)/);
+});
+test('cross rail preview keeps apply separate from proposal generation',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const start=app.indexOf("$('cabinetCrossRailOptimizeBtn')?.addEventListener");
+ const end=app.indexOf("$('cabinetGroupReflowBtn')?.addEventListener",start);
+ const block=app.slice(start,end);
+ assert.match(block,/Применить предложенную компоновку/);
+ assert.match(block,/cabinetCrossRailFingerprintV1\(\)!==fingerprint/);
+ assert.match(block,/const fresh=epCabinetCrossRailOptimizeV1\(state,catalogDevice\)/);
+ assert.match(block,/confirm\(/);
+ assert.match(block,/checkpoint\(\)/);
+ assert.ok(block.indexOf('checkpoint();')>block.indexOf("apply.addEventListener('click'"));
+});
+test('cross rail preview offers independent CSV and SVG downloads',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/Скачать перемещения CSV/);
+ assert.match(app,/Скачать эскиз SVG/);
+ assert.match(app,/_cross_rail_preview.csv/);
+ assert.match(app,/_cross_rail_preview.svg/);
+});
+test('cross rail proposal clears after successful apply',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/panel.replaceChildren\(\);cabinetCrossRailPreviewSnapshotV1=null;/);
+});
