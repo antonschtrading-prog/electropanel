@@ -1490,6 +1490,7 @@ const server=http.createServer((req,res)=>{
   changed();
  });
  await page.evaluate(()=>window.confirm=()=>false);
+ await page.locator('#cabinetCapacityTotal').selectOption('8');
  const alternative=page.locator('[data-apply-cabinet-option="1x8"]');
  assert.equal(await alternative.count(),1);
  await alternative.click();
