@@ -155,3 +155,24 @@ test('missing branch circuit fails safely before calculating replacement',()=>{
  assert.equal(r.status,'BLOCKED');
  assert.equal(r.code,'REPLACEMENT_BRANCH_CIRCUIT_MISSING');
 });
+
+test('declared cabinet mounting conflict blocks apparatus replacement',()=>{
+ const p=project();p.cabinetGeometryV1={declared:true};
+ const previous=global.epCabinetPlacementChangeAuditV1;
+ global.epCabinetPlacementChangeAuditV1=()=>({status:'BLOCKED',
+  newIssues:[{code:'CABINET_BODY_OVERLAP',level:'BLOCKED'}]});
+ try{
+  const r=replace(p,'B1','WIDE',catalogue);
+  assert.equal(r.status,'BLOCKED');
+  assert.equal(r.code,'REPLACEMENT_GEOMETRY_CONFLICT');
+  assert.equal(r.project,null);
+  assert.equal(r.issues[0].code,'CABINET_BODY_OVERLAP');
+ }finally{global.epCabinetPlacementChangeAuditV1=previous;}
+});
+test('nonblocking cabinet geometry audit permits preliminary replacement',()=>{
+ const p=project();p.cabinetGeometryV1={declared:true};
+ const previous=global.epCabinetPlacementChangeAuditV1;
+ global.epCabinetPlacementChangeAuditV1=()=>({status:'REVIEW_REQUIRED',newIssues:[]});
+ try{assert.equal(replace(p,'B1','WIDE',catalogue).status,'REVIEW_REQUIRED');}
+ finally{global.epCabinetPlacementChangeAuditV1=previous;}
+});
