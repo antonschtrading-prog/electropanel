@@ -3397,9 +3397,18 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   ' · переходов между рейками: '+preview.summary.changedRails+
   '. Электрические связи не изменяются.';
  panel.append(heading,summary);
- if(typeof epCabinetOptionDinSvgV1==='function'){
-  const diagram=document.createElement('div');diagram.className='ep-cabinet-din-visual';
-  diagram.innerHTML=epCabinetOptionDinSvgV1(preview);panel.appendChild(diagram);
+ if(typeof epCabinetBeforeAfterSvgV1==='function'){
+  const pair=epCabinetBeforeAfterSvgV1(preview);
+  if(pair.status==='REVIEW_REQUIRED'){
+   const grid=document.createElement('div');grid.className='ep-cabinet-before-after';
+   for(const [title,markup] of [['Сейчас',pair.before],['Предлагается',pair.after]]){
+    const section=document.createElement('section');section.className='ep-cabinet-din-visual';
+    const h=document.createElement('h5');h.textContent=title;
+    const diagram=document.createElement('div');diagram.innerHTML=markup;
+    section.append(h,diagram);grid.appendChild(section);
+   }
+   panel.appendChild(grid);
+  }
  }
  const list=document.createElement('details'),label=document.createElement('summary');
  label.textContent='Перечень перестановок ('+preview.summary.moved+')';
