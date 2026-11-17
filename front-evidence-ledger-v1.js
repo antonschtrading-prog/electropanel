@@ -7,13 +7,17 @@ function epFrontEvidenceLedgerV1(rows,lookup,resolve){
   engineeringApproved:false});
  if(!Array.isArray(rows)||rows.length>5000||typeof lookup!=='function'||typeof resolve!=='function')
   return fail('LEDGER_INPUT_INVALID');
- const map=new Map();
+ const map=new Map(),duplicateIds=new Set(),seenIds=new Set();
  for(const row of rows){
   const sku=typeof row?.boardSku==='string'?row.boardSku.trim():'';
   if(!sku||sku.length>200)continue;
   if(!map.has(sku))map.set(sku,{sku,quantity:0,ids:new Set()});
   const entry=map.get(sku);entry.quantity++;
-  if(row.deviceId!==null&&row.deviceId!==undefined)entry.ids.add(String(row.deviceId));
+  if(row.deviceId!==null&&row.deviceId!==undefined){
+   const id=String(row.deviceId);
+   if(seenIds.has(id))duplicateIds.add(id);
+   seenIds.add(id);entry.ids.add(id);
+  }
  }
  const entries=[...map.values()].map(item=>{
   let device=null,asset=null,lookupFailed=false,resolveFailed=false;
@@ -23,12 +27,14 @@ function epFrontEvidenceLedgerV1(rows,lookup,resolve){
   if(!device)issues.push(lookupFailed?'LEDGER_LOOKUP_FAILED':'LEDGER_ARTICLE_MISSING');
   if(resolveFailed)issues.push('LEDGER_RESOLVE_FAILED');
   if(device&&device.sku!==item.sku)issues.push('LEDGER_ARTICLE_MISMATCH');
+  if([...item.ids].some(id=>duplicateIds.has(id)))issues.push('LEDGER_DUPLICATE_DEVICE_ID');
+  if(device&&(!device.maker||!device.series||!device.kind))issues.push('LEDGER_IDENTITY_INCOMPLETE');
   const frontStatus=!device?'CATALOGUE_MISSING':resolveFailed?'ASSET_REJECTED':
    asset?.status==='REVIEWED_IMAGE'&&typeof asset.image?.src==='string'&&
    /^assets\/device-fronts\/[a-z0-9][a-z0-9_-]{0,95}\.(png|jpe?g|webp)$/i.test(asset.image.src)?
    'REVIEWED_IMAGE':asset?.status==='REVIEWED_IMAGE'||asset?.status==='ASSET_REJECTED'?
    'ASSET_REJECTED':'STYLIZED_ONLY';
-  if(frontStatus==='ASSET_REJECTED')issues.push(...(Array.isArray(asset?.issues)?asset.issues:['LEDGER_ASSET_REJECTED']));
+  if(frontStatus==='ASSET_REJECTED')issues.push(...(Array.isArray(asset?.issues)&&asset.issues.length?asset.issues:['LEDGER_ASSET_REJECTED']));
   const modules=Number.isInteger(device?.modules)&&device.modules>0?device.modules:null;
   const widthMm=Number.isFinite(device?.widthMm)&&device.widthMm>0?device.widthMm:null;
   const slotMm=modules===null?null:modules*18;
@@ -52,12 +58,12 @@ function epFrontEvidenceLedgerV1(rows,lookup,resolve){
   unknownWidth:entries.filter(x=>x.geometryStatus==='UNKNOWN').length,
   widthConflicts:entries.filter(x=>x.geometryStatus==='EXCEEDS_DIN_SLOT').length};
  return {schema:'electropanel.front.evidence.ledger.1',
-  status:totals.rejected||totals.missing||totals.widthConflicts||entries.some(x=>x.issues.includes('LEDGER_ARTICLE_MISMATCH'))?
+  status:totals.rejected||totals.missing||totals.widthConflicts||entries.some(x=>x.issues.includes('LEDGER_ARTICLE_MISMATCH')||x.issues.includes('LEDGER_DUPLICATE_DEVICE_ID')||x.issues.includes('LEDGER_IDENTITY_INCOMPLETE'))?
    'BLOCKED':'REVIEW_REQUIRED',code:'LEDGER_NOT_ENGINEERING_APPROVAL',entries,totals,engineeringApproved:false};
 }
 function epFrontEvidenceLedgerCsvV1(ledger){
  if(!ledger||!Array.isArray(ledger.entries))return {status:'BLOCKED',csv:null,code:'LEDGER_EXPORT_INVALID'};
- const q=x=>{const s=String(x??'');return '"'+(/^[=+@\-\t\r\n]/.test(s)?"'"+s:s).replace(/"/g,'""')+'"';};
+ const q=x=>{const s=String(x??'');return '"'+(/^[\s\uFEFF\u200B]*[=+@\-]/.test(s)||/^[\t\r\n]/.test(s)?"'"+s:s).replace(/"/g,'""')+'"';};
  const columns=['article','quantity','manufacturer','series','kind','modules','body_width_mm','slot_width_mm',
   'geometry_status','front_status','image_path','product_evidence','image_review_date','issues','engineering_approved'];
  const data=ledger.entries.map(x=>[x.sku,x.quantity,x.maker,x.series,x.kind,x.modules,x.widthMm,x.slotMm,
