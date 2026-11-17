@@ -421,3 +421,14 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 
 .ep-cabinet-din-visual{margin:10px 0;padding:8px;border:1px solid #d4e0e8;border-radius:8px;background:#fff;overflow-x:auto}
 .ep-cabinet-din-visual svg{min-width:280px;height:auto}
+
+/* Explicit, non-destructive cross-DIN proposal comparison. */
+#cabinetCrossRailPreview:not(:empty){margin:12px 0;padding:12px;border:1px solid #b7cbd8;border-radius:10px;background:#f6fafd;min-width:0}
+#cabinetCrossRailPreview h4{margin:0 0 6px;font-size:14px;color:#264b62}
+#cabinetCrossRailPreview p{font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+#cabinetCrossRailPreview details{margin:8px 0;font-size:12px}
+#cabinetCrossRailPreview summary{cursor:pointer;font-weight:600}
+#cabinetCrossRailPreview ul{max-height:200px;overflow:auto;padding-left:22px;overflow-wrap:anywhere}
+#cabinetCrossRailPreview li{padding:3px 0}
+#cabinetCrossRailPreview .btn{margin:4px 6px 4px 0}
+@media(max-width:520px){#cabinetCrossRailPreview:not(:empty){padding:9px}#cabinetCrossRailPreview .btn{max-width:100%;white-space:normal}}
