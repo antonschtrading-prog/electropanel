@@ -1026,6 +1026,10 @@ const server=http.createServer((req,res)=>{
  assert.ok(await page.locator('.ep-front-gallery-card').count()>0);
  const makerOptions=await page.locator('.ep-front-gallery-controls select option').allTextContents();
  assert.ok(makerOptions.includes('Все производители'));
+ const inventoryExport=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Скачать ведомость фасадов CSV'}).click();
+ const inventoryDownload=await inventoryExport;
+ assert.match(inventoryDownload.suggestedFilename(),/_front_inventory\.csv$/);
  // Full cabinet model workflow through actual form, undo/redo, JSON persistence and DIN export.
  assert.equal(await page.locator('#cabinetGeometryPanel [data-cabinet-autoplan]').count(),1);
  const cabinetInputs={interiorWidthMm:'2000',interiorHeightMm:'1500',interiorDepthMm:'300',
