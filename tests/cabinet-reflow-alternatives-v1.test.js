@@ -40,3 +40,29 @@ test('preview count equals changes',()=>assert.ok(result().alternatives.every(v=
 test('no phantom devices',()=>assert.ok(result().alternatives.every(v=>v.preview.summary.devices===3)));
 test('original rail count retained',()=>assert.ok(result().alternatives.every(v=>v.proposal.project.railCount===2)));
 test('original rail capacity retained',()=>assert.ok(result().alternatives.every(v=>v.proposal.project.railCapacity===3)));
+
+test('enclosure comparison integrates with DIN alternatives',()=>{
+ global.epCabinetApparatusGeometryV1=require('../cabinet-apparatus-geometry-v1').epCabinetApparatusGeometryV1;
+ global.epCabinetEnclosureMatchV1=require('../cabinet-enclosure-match-v1').epCabinetEnclosureMatchV1;
+ const r=run(project(),()=>null,{enclosures:[{id:'CAB',
+  usableInterior:{widthMm:400,heightMm:500,depthMm:150},railCapacity:2}]});
+ assert.ok(r.alternatives.length>0);
+ assert.ok(r.alternatives.every(v=>v.enclosure&&v.enclosure.rows.length===1));
+ assert.ok(r.alternatives.every(v=>v.enclosure.confirmedFit===false));
+});
+test('incomplete apparatus catalogue prevents certified enclosure selection',()=>{
+ global.epCabinetApparatusGeometryV1=require('../cabinet-apparatus-geometry-v1').epCabinetApparatusGeometryV1;
+ global.epCabinetEnclosureMatchV1=require('../cabinet-enclosure-match-v1').epCabinetEnclosureMatchV1;
+ const r=run(project(),()=>null,{enclosures:[{id:'CAB',
+  usableInterior:{widthMm:400,heightMm:500,depthMm:150},railCapacity:2}]});
+ assert.ok(r.alternatives.every(v=>v.enclosure.recommendedId===null));
+});
+test('invalid enclosure candidate list blocks variants without mutating project',()=>{
+ global.epCabinetApparatusGeometryV1=require('../cabinet-apparatus-geometry-v1').epCabinetApparatusGeometryV1;
+ global.epCabinetEnclosureMatchV1=require('../cabinet-enclosure-match-v1').epCabinetEnclosureMatchV1;
+ const p=project(),before=JSON.stringify(p);
+ const r=run(p,()=>null,{enclosures:[{id:'CAB',usableInterior:{widthMm:-1}}]});
+ assert.equal(r.alternatives.length,0);
+ assert.equal(r.status,'UNKNOWN');
+ assert.equal(JSON.stringify(p),before);
+});
