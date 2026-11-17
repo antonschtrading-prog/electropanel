@@ -1429,7 +1429,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await capacityChoice.count(),1,'small cabinet form factor should be offered');
  assert.equal(await page.locator('#cabinetSpaceDiagram svg').count(),1,
   'Preliminary interior-space diagram must be visible');
- assert.match(await page.locator('#cabinetSpaceDiagram').innerText(),/Глубина|глубина|условн|Условн/);
+ assert.match(await page.locator('#cabinetSpaceDiagram').innerText(),/Зелёный|клемм/);
  await page.locator('#cabinetTerminalReserve').fill('60');
  await page.locator('#cabinetTerminalReserve').blur();
  const sizingModel=await page.evaluate(()=>{
