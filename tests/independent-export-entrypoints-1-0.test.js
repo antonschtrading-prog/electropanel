@@ -11,23 +11,19 @@ const handlers=[
  ['BOM CSV',"$('exportDraftBomCsvBtn').addEventListener",'_equipment_BOM_DRAFT.csv'],
  ['BOM JSON',"$('exportDraftBomJsonBtn').addEventListener",'_equipment_BOM_DRAFT.json']
 ];
-for(const [name,marker,filename] of handlers)test('source characterization: '+name+' exports draft without cross-view gate',()=>{
+for(const [name,marker,filename] of handlers)test('source characterization: '+name+' requires shared cross-view gate before draft export',()=>{
  const body=findHandler(name,marker);
  assert.ok(body.includes('download('));
  assert.ok(body.includes(filename));
- assert.ok(!body.includes('epCrossViewAuditV1'));
- assert.ok(!body.includes('epEngineeringBundleV1'));
- assert.ok(!body.includes('sections.crossView'));
- assert.ok(!body.includes('overallStatus'));
+ assert.ok(body.includes('if(!epRequireDraftDocumentExport())return;'));
 });
-test('source characterization: workflow CSV export does not gate BLOCKED workflow',()=>{
+test('source contract: workflow CSV export requires shared gate',()=>{
  const start=app.indexOf("const exportCsv=e.target.closest('#workflowExportCsvBtn')");
  assert.ok(start>=0);
  const section=app.slice(start,start+1000);
  assert.ok(section.includes('epWorkflowPreviewV1('));
  assert.ok(section.includes('epWorkflowCsvV1(report)'));
- assert.ok(!section.includes("report.status==='BLOCKED'"));
- assert.ok(!section.includes("report.status === 'BLOCKED'"));
+ assert.ok(section.includes('if(!epRequireDraftDocumentExport())return;'));
 });
 test('source control: DIN placement CSV independently checks BLOCKED',()=>{
  const section=findHandler('DIN',"$('boardChecks').addEventListener('click',e=>{\n if(!e.target.closest('#boardPlacementCsvBtn'))return;");
@@ -47,19 +43,28 @@ test('source contract: no export filename is represented as an approved installa
   assert.ok(body.includes(filename));
  }
 });
-test('source characterization: schematic export does not check schematic BLOCKED',()=>{
+test('source contract: schematic export checks shared cross-view gate',()=>{
  const body=findHandler('schematic',"$('exportSingleLineSvgBtn').addEventListener");
  assert.ok(body.includes('const report=epSingleLineDraftV1('));
- assert.ok(!body.includes("report.status==='BLOCKED'"));
- assert.ok(!body.includes("report.status === 'BLOCKED'"));
+ assert.ok(body.includes('if(!epRequireDraftDocumentExport())return;'));
 });
-test('source characterization: BOM CSV export does not check BOM BLOCKED',()=>{
+test('source contract: BOM CSV export checks shared cross-view gate',()=>{
  const body=findHandler('BOM',"$('exportDraftBomCsvBtn').addEventListener");
  assert.ok(body.includes('epDraftBomV1(state,catalogDevice)'));
- assert.ok(!body.includes("status==='BLOCKED'"));
+ assert.ok(body.includes('if(!epRequireDraftDocumentExport())return;'));
 });
-test('source characterization: BOM JSON export does not check BOM BLOCKED',()=>{
+test('source contract: BOM JSON export checks shared cross-view gate',()=>{
  const body=findHandler('BOM',"$('exportDraftBomJsonBtn').addEventListener");
  assert.ok(body.includes('epDraftBomV1(state,catalogDevice)'));
- assert.ok(!body.includes("status==='BLOCKED'"));
+ assert.ok(body.includes('if(!epRequireDraftDocumentExport())return;'));
+});
+
+test('shared export gate rejects blocked cross-view and missing audit',()=>{
+ const start=app.indexOf('function epDraftDocumentExportGate(){');
+ assert.ok(start>=0);
+ const section=app.slice(start,app.indexOf('\nfunction epRequireDraftDocumentExport()',start));
+ assert.ok(section.includes('epEngineeringBundleV1(state,catalogDevice)'));
+ assert.ok(section.includes('bundle?.sections?.crossView'));
+ assert.ok(section.includes("cross.status==='BLOCKED'"));
+ assert.ok(section.includes("!cross||"));
 });
