@@ -59,6 +59,11 @@ function epEngineeringBundleV1(project,lookupSku){
   typeof epWorkflowPreviewV1==='function'?
    (p,lookup)=>epWorkflowPreviewV1(p,lookup,projectCatalogItems,p?.workflowDesignInputsV1): 
    p=>({status:'UNKNOWN',issues:[],rows:[],steps:[],engineeringApproved:false}));
+ // Separate detailed data; issue register already receives warnings from workflowPreview.
+ const consumerReconciliation=section('CONSUMER_RECONCILIATION',
+  typeof epWorkflowConsumerAuditV1==='function'?
+   p=>{const audit=epWorkflowConsumerAuditV1(p);
+    return {...audit,auditIssues:audit.issues,issues:[]};}:null);
  const consumerMerge=section('CONSUMER_MERGE',
   p=>p?.consumerGroupMergeRulesV1&&typeof epGroupMergePlanV1==='function'?
    epGroupMergePlanV1(p,p.consumerGroupMergeRulesV1):{
@@ -175,7 +180,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const boardCapacity=section('BOARD_CAPACITY_REVIEW',typeof epBoardCapacityReviewV1==='function'?epBoardCapacityReviewV1:null);
  const deviceIdentity=section('PROJECT_DEVICE_IDENTITY',typeof epProjectDeviceIdentityV1==='function'?epProjectDeviceIdentityV1:null);
  const deliveryTrace=section('PROJECT_DELIVERY_TRACE',typeof epProjectDeliveryTraceV1==='function'?epProjectDeliveryTraceV1:null);
- const sections={cabinetFit,cabinetCapacity,cabinetConnectionProximity,cabinetConnectionSpace,cabinetApparatusEvidence,boardCapacity,deviceIdentity,deliveryTrace,fireControl,fireControlBill,fireControlTrace,fireControlDesign,fireControlSchedule,fireCatalog,fireDin,fireGate,fireChecklist,fireTopology,fireDiagram,fireWiring,fireWiringDiagram,fireContinuity,workflowPreview,consumerGrouping,consumerMerge,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const sections={cabinetFit,cabinetCapacity,cabinetConnectionProximity,cabinetConnectionSpace,cabinetApparatusEvidence,boardCapacity,deviceIdentity,deliveryTrace,fireControl,fireControlBill,fireControlTrace,fireControlDesign,fireControlSchedule,fireCatalog,fireDin,fireGate,fireChecklist,fireTopology,fireDiagram,fireWiring,fireWiringDiagram,fireContinuity,workflowPreview,consumerReconciliation,consumerGrouping,consumerMerge,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));

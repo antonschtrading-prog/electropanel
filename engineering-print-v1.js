@@ -89,6 +89,12 @@ function epEngineeringPrintV1(bundle){
   (sections.workflowPreview?.rows||[]).map(x=>[x.lineId,x.name,x.phase??'—',
    x.powerKw??'—',x.ibA??'—',x.ibSource,x.selectedSku??'—',
    x.proposedSku??'—',x.calculationStatus]));
+ const consumerAudit=sections.consumerReconciliation;
+ const consumerAuditTable=rows(['Цепь','Количество потребителей',
+  'Суммарная мощность потребителей, кВт','Мощность линии, кВт','Сверка'],
+  (consumerAudit?.rows||[]).map(x=>[
+   x.lineId,x.consumerCount,x.powerComplete?x.consumerPowerKw:'Не все мощности заданы',
+   x.declaredPowerKw??'Не задана',x.comparison]));
  const protectionDecisionRows=sections.protectionDecision?.rows||[];
  const protectionDecisionTable=rows(['Цепь','Артикул','Ib≤In','In≤Iz','Ikmax≤Icn',
   'Ik,max, кА','Icn, кА','Ik,min, А','Времятоковая огибающая',
@@ -276,6 +282,8 @@ function epEngineeringPrintV1(bundle){
   '<p>Проект: '+esc(bundle?.projectTitle||'Без названия')+' · Состояние: '+esc(status)+'</p>'+
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Единый предварительный маршрут: нагрузки, токи и аппараты</h2>'+workflowRows+
+  '<h3>Сверка мощностей потребителей и электрических линий</h3>'+consumerAuditTable+
+  '<p>Сумма заявленных мощностей не обязана равняться расчётной мощности линии при коэффициентах спроса, режимах и инженерных корректировках. Несовпадение — запрос на проверку, не автоматическое изменение данных.</p>'+
   '<p>Предварительные предложения аппаратов не являются утверждённой спецификацией. Параметры источника и потребителей задаёт инженер.</p>'+
   '<h2>Предложение объединения черновых цепей по категориям инженера</h2>'+groupMergeTable+
   '<p>Категории указаны инженером. Подбор защиты и кабелей после объединения требуется выполнить отдельно.</p>'+

@@ -54,7 +54,7 @@ function epWorkflowConsumerAuditV1(project){
  const issues=[],byCircuit=new Map(),seenCircuits=new Set(),seenLoads=new Set();
  const summary={matchedConsumers:0,orphanConsumers:0,duplicateConsumers:0,
   invalidConsumerPower:0,powerDisagreements:0,unrepresentedCircuits:0};
- if(!project||!Array.isArray(project.lines)||!Array.isArray(project.loads))
+ if(!project||!Array.isArray(project.lines)||!Array.isArray(project.loads)||project.lines.length>400||project.loads.length>10000)
   return {status:'BLOCKED',issues:[{code:'WORKFLOW_CONSUMER_MODEL_INVALID',level:'BLOCKED',lineId:null}],summary,rows:[],engineeringApproved:false,ready_for_installation:false};
  for(const line of project.lines){
   if(!line||typeof line.id!=='string'||!line.id.trim()||seenCircuits.has(line.id)){
@@ -103,12 +103,23 @@ function epWorkflowConsumerAuditV1(project){
   }else row.comparison='MATCH';
  }
  return {schema:'electropanel.workflow.consumers.audit.1',
-  status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':issues.length?'REVIEW':'MATCHED',
+  status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':issues.length||summary.unrepresentedCircuits?'REVIEW':'MATCHED',
   issues,summary,rows:[...byCircuit.values()],
   method:'DECLARED_KW_COMPARISON_ONLY',autoGroupApplied:false,
   engineeringApproved:false,ready_for_installation:false};
 }
 
+function epWorkflowConsumerAuditCsvV1(audit){
+ const cell=value=>{
+  let s=String(value??'');
+  if(/^[\\s\\u0000-\\u001f]*[=+@-]/.test(s))s="'"+s;
+  return '"'+s.replace(/"/g,'""')+'"';
+ };
+ const data=[['Circuit ID','Consumer count','Consumer sum kW','Declared circuit kW','Comparison']];
+ for(const r of audit?.rows||[])data.push([r.lineId,r.consumerCount,
+  r.powerComplete?r.consumerPowerKw:'UNKNOWN',r.declaredPowerKw??'UNKNOWN',r.comparison]);
+ return '\uFEFF'+data.map(row=>row.map(cell).join(';')).join('\r\n')+'\r\n';
+}
 function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  const issues=[],rows=[],add=(code,level='UNKNOWN',lineId=null)=>issues.push({code,level,lineId});
  const result=()=>({schema:'electropanel.project.workflow.draft.1',
@@ -362,6 +373,6 @@ function epWorkflowCsvV1(report){
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epWorkflowPositiveV1,epWorkflowInputsV1,epWorkflowLineEstimateV1,
- epWorkflowConsumerAuditV1,
+ epWorkflowConsumerAuditV1,epWorkflowConsumerAuditCsvV1,
  epWorkflowPreviewV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
  epWorkflowArticleChoiceV1,epWorkflowPhaseSuggestionsV1,epWorkflowCsvV1};
