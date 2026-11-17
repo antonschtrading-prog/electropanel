@@ -3377,8 +3377,17 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   typeof epCabinetReflowPreviewV1!=='function'){
   notify('Предпросмотр межрядной оптимизации недоступен',true);return;
  }
+ let enclosureCandidates=[];
+ const enclosureText=$('cabinetEnclosureCandidatesInput')?.value.trim()??'';
+ if(enclosureText){
+  try{enclosureCandidates=JSON.parse(enclosureText);}
+  catch(_){notify('Неверный JSON перечня корпусов',true);return;}
+  if(!Array.isArray(enclosureCandidates)||enclosureCandidates.length>100){
+   notify('Список корпусов должен быть массивом не более 100 позиций',true);return;
+  }
+ }
  const alternatives=typeof epCabinetReflowAlternativesV1==='function'?
-  epCabinetReflowAlternativesV1(state,catalogDevice):null;
+  epCabinetReflowAlternativesV1(state,catalogDevice,{enclosures:enclosureCandidates}):null;
  if(!alternatives||alternatives.status==='BLOCKED'){
   notify('Сравнение альтернатив недоступно',true);return;
  }
