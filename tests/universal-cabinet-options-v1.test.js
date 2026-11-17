@@ -255,3 +255,30 @@ test('invalid branch collection sizes are rejected at input boundary',()=>{
  const p={lines:[{id:'L1',modules:1}],branchDevices:Array(501).fill(null)};
  assert.equal(plan(p).status,'BLOCKED');
 });
+
+test('preliminary shortlist excludes blocked patterns and selects first viable capacity',()=>{
+ const r=plan({lines:[{id:'L',modules:19}]},null,{reserveFraction:0});
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.ok(r.preliminaryShortlist.length>0);
+ assert.ok(r.preliminaryShortlist.length<=5);
+ assert.equal(r.preliminaryOptionId,r.preliminaryShortlist[0].optionId);
+ assert.ok(r.preliminaryShortlist.every(x=>{
+  const option=r.options.find(o=>o.id===x.optionId);
+  return option.status==='REVIEW_REQUIRED'&&x.confirmedCabinetFit===false;
+ }));
+ assert.ok(r.options.some(o=>o.status==='BLOCKED'));
+});
+test('no feasible enclosure yields empty shortlist and no preliminary selection',()=>{
+ const r=plan({lines:[{id:'L',modules:1,catalogSku:'A'}]},
+  ()=>({article:'A',modules:1,heightMm:999,depthMm:60}));
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.preliminaryOptionId,null);
+ assert.deepEqual(r.preliminaryShortlist,[]);
+});
+test('shortlist order is deterministic and never implies manufacturer enclosure dimensions',()=>{
+ const p={lines:[{id:'A',modules:4},{id:'B',modules:4}]};
+ const a=plan(p),b=plan(p);
+ assert.deepEqual(a.preliminaryShortlist,b.preliminaryShortlist);
+ assert.equal(a.preliminaryOptionId,b.preliminaryOptionId);
+ assert.ok(a.preliminaryShortlist.every(x=>x.usableDepthEstimateMm===null));
+});
