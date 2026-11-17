@@ -25,8 +25,15 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
  const target=matches[0];
  if(target.kind==='line'&&copy.branchDevices?.some(b=>b?.circuitId===deviceId))
   return reject('REPLACEMENT_SELECT_BRANCH_DEVICE');
+ const snapshot=new Map();
+ const stableLookup=sku=>{
+  if(snapshot.has(sku))return snapshot.get(sku);
+  const value=lookup(sku);
+  const frozen=value&&typeof value==='object'?JSON.parse(JSON.stringify(value)):value;
+  snapshot.set(sku,frozen);return frozen;
+ };
  let catalogue;
- try{catalogue=lookup(nextSku);}catch(_){return reject('REPLACEMENT_CATALOGUE_LOOKUP_FAILED');}
+ try{catalogue=stableLookup(nextSku);}catch(_){return reject('REPLACEMENT_CATALOGUE_LOOKUP_FAILED');}
  if(!catalogue||typeof catalogue!=='object')return reject('REPLACEMENT_ARTICLE_UNKNOWN');
  if(catalogue.sku&&catalogue.sku!==nextSku)return reject('REPLACEMENT_ARTICLE_ID_MISMATCH');
  if(!Number.isInteger(catalogue.modules)||catalogue.modules<1||catalogue.modules>200)
@@ -45,14 +52,14 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
  }else if(target.kind==='line'&&Array.isArray(copy.branchDevices)&&
   copy.branchDevices.some(b=>b?.circuitId===deviceId))
   return reject('REPLACEMENT_SELECT_BRANCH_DEVICE');
- const before=epDraftBoardPlanV1(project,lookup);
- const after=epDraftBoardPlanV1(copy,lookup);
+ const before=epDraftBoardPlanV1(project,stableLookup);
+ const after=epDraftBoardPlanV1(copy,stableLookup);
  if(after.status==='BLOCKED')return reject('REPLACEMENT_LAYOUT_BLOCKED',after.issues);
- const reconciliation=epCabinetArticleReconciliationV1(copy,lookup);
+ const reconciliation=epCabinetArticleReconciliationV1(copy,stableLookup);
  if(reconciliation.status==='BLOCKED')
   return reject('REPLACEMENT_RECONCILIATION_BLOCKED',reconciliation.issues);
- const originalBom=typeof epDraftBomV1==='function'?epDraftBomV1(project,lookup):null;
- const updatedBom=typeof epDraftBomV1==='function'?epDraftBomV1(copy,lookup):null;
+ const originalBom=typeof epDraftBomV1==='function'?epDraftBomV1(project,stableLookup):null;
+ const updatedBom=typeof epDraftBomV1==='function'?epDraftBomV1(copy,stableLookup):null;
  const bomChanges=[];
  if(originalBom&&updatedBom){
   const original=new Map(originalBom.items.map(x=>[x.key,x.quantity]));
