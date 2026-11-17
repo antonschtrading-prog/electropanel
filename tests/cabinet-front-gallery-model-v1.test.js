@@ -114,3 +114,28 @@ test('missing body width is unknown, not a fabricated width conflict',()=>{
  assert.equal(r.widthConflicts,0);
  assert.equal(r.items[0].widthConflict,false);
 });
+
+test('geometry filter isolates DIN width conflicts and unknown manufacturer body',()=>{
+ const data=[{boardSku:'WIDE'},{boardSku:'UNKNOWN'},{boardSku:'OK'}];
+ const get=sku=>({sku,maker:'ABB',series:'S200',modules:1,
+  widthMm:sku==='WIDE'?20:sku==='OK'?18:null});
+ const wide=model(data,get,{geometry:'EXCEEDS_DIN_SLOT'});
+ assert.equal(wide.total,1);assert.equal(wide.items[0].sku,'WIDE');
+ const unknown=model(data,get,{geometry:'UNKNOWN'});
+ assert.equal(unknown.total,1);assert.equal(unknown.items[0].sku,'UNKNOWN');
+ const within=model(data,get,{geometry:'DECLARED_WITHIN_SLOT'});
+ assert.equal(within.total,1);assert.equal(within.items[0].sku,'OK');
+});
+test('geometry filter rejects unknown values without inventing a review',()=>{
+ assert.equal(model(rows,lookup,{geometry:'VERIFIED'}).code,
+  'FRONT_GALLERY_GEOMETRY_FILTER_INVALID');
+});
+test('gallery combines maker, evidence and geometry filters',()=>{
+ const r=model([{boardSku:'A'},{boardSku:'B'},{boardSku:'C'}],
+  sku=>({sku,maker:sku==='C'?'IEK':'ABB',series:'S',modules:1,
+   widthMm:sku==='A'?20:18}),{
+   maker:'ABB',geometry:'EXCEEDS_DIN_SLOT',
+   evidence:'STYLIZED_ONLY',resolve:()=>({status:'STYLIZED_ONLY'})
+  });
+ assert.equal(r.total,1);assert.equal(r.items[0].sku,'A');
+});
