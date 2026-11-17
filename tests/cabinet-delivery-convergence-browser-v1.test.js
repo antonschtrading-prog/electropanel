@@ -118,3 +118,32 @@ test('all-capacities toggle preserves manual selection',()=>{
  assert.match(app,/cabinetOptionShowAllCapacitiesV1=e.target.checked/);
  assert.match(app,/cabinetOptionShowAllCapacitiesV1\|\|o.capacityModules===cabinetCapacitySelectedTotalV1/);
 });
+
+test('DIN option preview script is loaded before app',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-option-preview-v1.js"')<html.indexOf('src="app.js"'));
+});
+test('option preview has an accessible live region',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.match(html,/id="cabinetOptionPreview" aria-live="polite"/);
+});
+test('option preview renders movement counts without applying',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/epCabinetOptionPreviewV1\(state,previewOption,catalogDevice\)/);
+ assert.match(app,/изменят позицию/);
+ assert.match(app,/перейдут на другую DIN-рейку/);
+});
+test('option preview has separate action from apply',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/data-preview-cabinet-option/);
+ assert.match(app,/cabinetOptionPreviewIdV1=preview.dataset.previewCabinetOption/);
+ assert.match(app,/data-apply-cabinet-option/);
+});
+test('option preview shows each changed apparatus via textContent',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/li.textContent=row.deviceId/);
+});
+test('option preview updates the existing DIN space diagram',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/shown.find\(o=>o.id===cabinetOptionPreviewIdV1\)/);
+});
