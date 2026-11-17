@@ -165,7 +165,7 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    spacePlan
   };
   const optionIssues=[
-   ...unplaced.map(deviceId=>({code:packed.status==='UNPROVEN'?'PACKING_NOT_VERIFIED':'DEVICE_NOT_PACKABLE_IN_PATTERN',level:packed.status==='UNPROVEN'?'UNKNOWN':'BLOCKED',deviceId})),
+   ...unplaced.map(deviceId=>({code:packed.status==='UNPROVEN'?'PACKING_NOT_VERIFIED':'DEVICE_NOT_PACKABLE_IN_PATTERN',level:'BLOCKED',deviceId})),
    ...(packed.status==='UNPROVEN'?[{code:'PACKING_SEARCH_LIMIT',level:'UNKNOWN'}]:[]),
    ...(allocated<target?[{code:'CAPACITY_RESERVE_UNMET',level:'BLOCKED'}]:[]),
    {code:'CABINET_MOUNTING_WIRING_AND_THERMAL_NOT_VERIFIED',level:'UNKNOWN'},
