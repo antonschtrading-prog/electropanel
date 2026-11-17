@@ -3377,15 +3377,13 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   typeof epCabinetReflowPreviewV1!=='function'){
   notify('Предпросмотр межрядной оптимизации недоступен',true);return;
  }
- let enclosureCandidates=[];
  const enclosureText=$('cabinetEnclosureCandidatesInput')?.value.trim()??'';
- if(enclosureText){
-  try{enclosureCandidates=JSON.parse(enclosureText);}
-  catch(_){notify('Неверный JSON перечня корпусов',true);return;}
-  if(!Array.isArray(enclosureCandidates)||enclosureCandidates.length>100){
-   notify('Список корпусов должен быть массивом не более 100 позиций',true);return;
-  }
+ const parsedEnclosures=typeof epCabinetEnclosureInputV1==='function'?
+  epCabinetEnclosureInputV1(enclosureText):null;
+ if(!parsedEnclosures||parsedEnclosures.status==='BLOCKED'){
+  notify('Некорректные данные корпусов: '+(parsedEnclosures?.code??'недоступно'),true);return;
  }
+ const enclosureCandidates=parsedEnclosures.items;
  const alternatives=typeof epCabinetReflowAlternativesV1==='function'?
   epCabinetReflowAlternativesV1(state,catalogDevice,{enclosures:enclosureCandidates}):null;
  if(!alternatives||alternatives.status==='BLOCKED'){
