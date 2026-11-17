@@ -156,3 +156,20 @@ Trace actual application handlers for BOM CSV, schematic print/export and engine
 ### CI
 - Audit SHA `591dfa79e09f996dbf71615ff9cabab61d40b7f0`: all three workflows completed SUCCESS, including browser integration.
 - Audit SHA with the new cross-view guard tests and this report requires fresh CI confirmation.
+
+## Export entry-point regression characterization
+
+`tests/independent-export-entrypoints-1-0.test.js` adds **10 source-level contracts** against actual shipped `app.js` handlers:
+- Three independent draft export handlers (schematic SVG, BOM CSV, BOM JSON) bypass the existing cross-view bundle gate.
+- Workflow CSV export does not check aggregate `BLOCKED`.
+- DIN placement CSV is a positive control that does reject its own `BLOCKED` result.
+- Engineering bundle export is a positive control that serializes the full bundle.
+- Draft filenames explicitly identify draft output.
+- Schematic SVG and BOM CSV/JSON do not check their own reports' `BLOCKED` statuses.
+
+These tests intentionally characterize **present behavior**, not desired acceptance. A production fix should update these tests to assert guarded exports instead of retaining bypass behavior. No app code is modified by this audit.
+
+**Independent audit suite: 71 tests** (previous 61 + 10). Fresh GitHub Actions confirmation required for this revision.
+
+### Important PR integration note
+GitHub currently reports audit PR #14 `mergeable:false`. This may indicate conflicts with the concurrently advancing integration branch. No merge or force update was attempted; inspect and rebase with explicit conflict resolution before integration.
