@@ -43,3 +43,13 @@ test('CSV does not mutate input and is deterministic',()=>{
  assert.deepEqual(csv(p),csv(p));
  assert.equal(JSON.stringify(p),before);
 });
+
+test('CSV includes exact-article photo provenance fields when reviewed',()=>{
+ const p=report();p.rows[0].imageSourceUrl='https://example.org/abb';
+ p.rows[0].imageReviewedAt='2026-11-17';
+ const result=csv(p).csv;
+ assert.match(result,/"image_source_url"/);
+ assert.match(result,/"image_reviewed_at"/);
+ assert.match(result,/"https:\/\/example.org\/abb"/);
+ assert.match(result,/"2026-11-17"/);
+});
