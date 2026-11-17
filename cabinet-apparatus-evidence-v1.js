@@ -26,6 +26,9 @@ function epCabinetApparatusEvidenceV1(project,lookup){
  if(geometry?.status==='BLOCKED')add('APPARATUS_EVIDENCE_CABINET_GEOMETRY_INVALID','BLOCKED');
  const zones=new Map((geometry?.geometry?.zones||[]).map(x=>[x.railIndex,x]));
  const dim=(v)=>typeof v==='number'&&Number.isFinite(v)&&v>0?v:null;
+ const validReviewDate=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
+  const t=Date.parse(v+'T00:00:00Z');return Number.isFinite(t)&&
+   new Date(t).toISOString().slice(0,10)===v&&t<=Date.now();};
  for(const p of board.placements||[]){
   let d=null;
   try{d=p.article&&typeof lookup==='function'?lookup(p.article):null;}
@@ -36,9 +39,9 @@ function epCabinetApparatusEvidenceV1(project,lookup){
   const startX=zone?zone.xMm+p.startModule*18:null;
   const nominalEndX=startX===null?null:startX+slotWidth;
   const remainingZoneWidthMm=zone?zone.xMm+zone.widthMm-nominalEndX:null;
-  const validReviewDate=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
-   const t=Date.parse(v+'T00:00:00Z');return Number.isFinite(t)&&
-    new Date(t).toISOString().slice(0,10)===v&&t<=Date.now();};
+  const actualBodyEndXMm=startX===null||width===null?null:startX+width;
+  const remainingBodyZoneWidthMm=zone&&actualBodyEndXMm!==null?
+   zone.xMm+zone.widthMm-actualBodyEndXMm:null;
   const review=validReviewDate(d?.sourceReviewedAt)?d.sourceReviewedAt:null;
   const sourceType=typeof d?.sourceType==='string'&&d.sourceType?d.sourceType:
    d?'SOURCE_CATEGORY_NOT_DECLARED':'NO_ARTICLE';
@@ -58,6 +61,8 @@ function epCabinetApparatusEvidenceV1(project,lookup){
   if(width!==null&&width>slotWidth+1e-6)issue('APPARATUS_EVIDENCE_NOMINAL_SLOT_WIDTH_EXCEEDED','BLOCKED');
   if(zone&&remainingZoneWidthMm!==null&&remainingZoneWidthMm< -1e-6)
    issue('APPARATUS_EVIDENCE_SLOT_OUTSIDE_RAIL_BAND','BLOCKED');
+  if(zone&&remainingBodyZoneWidthMm!==null&&remainingBodyZoneWidthMm< -1e-6)
+   issue('APPARATUS_EVIDENCE_BODY_OUTSIDE_RAIL_BAND','BLOCKED');
   if(zone&&height!==null&&height>zone.heightMm+1e-6)
    issue('APPARATUS_EVIDENCE_DECLARED_RAIL_BAND_HEIGHT_EXCEEDED','BLOCKED');
   if(geometry?.geometry&&depth!==null&&depth>geometry.geometry.interior.depthMm+1e-6)
@@ -67,7 +72,8 @@ function epCabinetApparatusEvidenceV1(project,lookup){
    sourceType,sourceReviewedAt:review,sourceUrl:evidenceSource,
    bodyWidthMm:width,bodyHeightMm:height,bodyDepthMm:depth,
    nominalSlotWidthMm:slotWidth,nominalStartXMm:startX,nominalEndXMm:nominalEndX,
-   remainingZoneWidthMm,nominalRailBandHeightMm:zone?.heightMm??null,
+   remainingZoneWidthMm,actualBodyEndXMm,remainingBodyZoneWidthMm,
+   nominalRailBandHeightMm:zone?.heightMm??null,
    declaredUsableDepthMm:geometry?.geometry?.interior?.depthMm??null,
    actualTerminalCoordinates:null,actualDinMountingOffset:null,
    bodyDimensionsComplete:width!==null&&height!==null&&depth!==null,
