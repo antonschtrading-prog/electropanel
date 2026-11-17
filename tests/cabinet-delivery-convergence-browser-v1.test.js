@@ -101,3 +101,20 @@ test('cabinet option highlights recommendation and does not autoapply it',()=>{
  assert.match(app,/comparison\?\.recommendedId===o.id/);
  assert.match(app,/data-apply-cabinet-option/);
 });
+
+test('cabinet option CSV is available in board interface',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.match(html,/id="exportCabinetCompareCsvBtn"/);
+ assert.ok(html.indexOf('cabinet-option-compare-csv-v1.js')<html.indexOf('src="app.js"'));
+});
+test('cabinet comparison export uses constrained options',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/exportCabinetCompareCsvBtn/);
+ assert.match(app,/epCabinetOptionCompareCsvV1\(comparison\)/);
+ assert.match(app,/excludedIds:report.options.filter/);
+});
+test('all-capacities toggle preserves manual selection',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/cabinetOptionShowAllCapacitiesV1=e.target.checked/);
+ assert.match(app,/cabinetOptionShowAllCapacitiesV1\|\|o.capacityModules===cabinetCapacitySelectedTotalV1/);
+});
