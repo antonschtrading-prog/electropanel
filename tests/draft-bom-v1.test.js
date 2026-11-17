@@ -41,3 +41,14 @@ test('BOM retains declared body geometry in data, CSV and HTML without inferring
  assert.match(html(report),/Ш×В×Г, мм/);
  assert.equal(report.engineeringApproved,false);
 });
+
+test('selected branch article overrides circuit fallback in BOM quantities',()=>{
+ const x=p();x.branchDevices=[{id:'B1',circuitId:'L1',modules:1,catalogSku:'NEW'},
+  {id:'B2',circuitId:'L2',modules:1,catalogSku:'A'}];
+ const r=bom(x,k=>k==='NEW'?{...lookup('A'),sku:'NEW'}:lookup(k));
+ assert.equal(r.items.find(x=>x.key==='NEW').quantity,1);
+ assert.equal(r.items.find(x=>x.key==='A').quantity,1);
+ assert.equal(r.devices.find(x=>x.id==='B1').sku,'NEW');
+ assert.ok(r.issues.some(x=>x.code==='BRANCH_SKU_OVERRIDES_LINE_FALLBACK'));
+ assert.equal(r.ready_for_installation,false);
+});
