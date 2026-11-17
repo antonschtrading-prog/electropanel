@@ -2014,6 +2014,18 @@ function renderCabinetArticleReconciliationV1(){
     (frontReport.status==='BLOCKED'?' Есть блокирующие несоответствия.':'');
    audit.dataset.frontAuditStatus=frontReport.status;
    gallery.appendChild(audit);
+   if(typeof epCabinetFrontAuditCsvV1==='function'){
+    const exportAudit=document.createElement('button');exportAudit.type='button';
+    exportAudit.textContent='Скачать проверку фасадов и DIN CSV';
+    exportAudit.addEventListener('click',()=>{
+     const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+     const current=epCabinetFrontGalleryV1(fresh,catalogDevice,epManufacturerFrontResolveV1);
+     const result=epCabinetFrontAuditCsvV1(current);
+     if(!result.csv){notify('Экспорт проверки фасадов недоступен',true);return;}
+     download(baseName()+'_front_din_audit.csv',result.csv,'text/csv;charset=utf-8');
+    });
+    gallery.appendChild(exportAudit);
+   }
   }
   const controls=document.createElement('div');controls.className='ep-front-gallery-controls';
   const search=document.createElement('input');search.type='search';
