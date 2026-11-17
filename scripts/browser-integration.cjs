@@ -1591,7 +1591,8 @@ const server=http.createServer((req,res)=>{
  const beforeGroupReflow=await page.evaluate(()=>{
   const b=epDraftBoardPlanV1(state,catalogDevice);
   return {summary:epCabinetConnectionProximityV1(state,b.placements).summary,
-   lines:JSON.stringify(state.lines),topology:JSON.stringify(state.protectionLinks)};
+   lines:JSON.stringify(state.lines),topology:JSON.stringify(state.protectionLinks),
+   positions:JSON.stringify(state.manualLayoutV1||[])};
  });
  await page.locator('#cabinetGroupReflowBtn').click();
  const afterGroupReflow=await page.evaluate(()=>{
@@ -1606,7 +1607,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(afterGroupReflow.topology,beforeGroupReflow.topology);
  assert.equal(afterGroupReflow.positions,4);
  await page.locator('#undoBtn').click();
- assert.equal(await page.evaluate(()=>state.manualLayoutV1?.length??0),0);
+ assert.equal(await page.evaluate(()=>JSON.stringify(state.manualLayoutV1||[])),beforeGroupReflow.positions);
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.manualLayoutV1.length),4);
 
