@@ -83,3 +83,14 @@ test('blocked cabinet body conflict retains supplier article rows',()=>{
  assert.ok(r.issues.some(x=>x.code==='MISSING_GEOMETRY_INPUT_BLOCKED'));
  assert.equal(r.ready_for_installation,false);
 });
+
+test('supplier schedule explicitly requests correction of malformed evidence URLs',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=csv(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:80,depthMm:70,
+  sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2026-11-14',
+  source:'https://user:pass@example.org/datasheet'}));
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.match(r.csv,/SOURCE_URL\\|VALID_SOURCE_LINK\\|CORRECT_SOURCE_URL/);
+ assert.doesNotMatch(r.csv,/user:pass/);
+ assert.equal(r.ready_for_installation,false);
+});
