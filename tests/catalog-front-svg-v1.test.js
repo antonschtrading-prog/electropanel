@@ -69,3 +69,31 @@ test('SVG limits oversized accessibility text from untrusted catalogue metadata'
  assert.ok(svg.length<4000);
  assert.doesNotMatch(svg,/M{501}/);
 });
+
+test('SPD surge protection sketch has a dedicated visual indicator',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'ABB',series:'OVR',kind:'SPD',modules:2,poles:2});
+ assert.match(svg,/data-spd-indicator="true"/);
+ assert.doesNotMatch(svg,/data-generic-face="true"/);
+});
+test('AFDD fire-protective breaker sketch includes a test control',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'ABB',series:'S-ARC1',kind:'AFDD',modules:2,poles:2});
+ assert.match(svg,/data-test-control="true"/);
+ assert.match(svg,/data-lever="true"/);
+});
+test('time relay sketch includes an original timer dial',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'Hager',series:'EZN',kind:'TIMER',modules:1,poles:1});
+ assert.match(svg,/data-timer-dial="true"/);
+});
+test('thermostat sketch includes an original adjustment dial',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'IEK',series:'RT',kind:'THERMOSTAT',modules:2});
+ assert.match(svg,/data-thermostat-dial="true"/);
+});
+test('signal lamp sketch uses a dedicated lamp marker',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'Legrand',series:'SIGNAL',kind:'SIGNAL',modules:1});
+ assert.match(svg,/data-signal-lamp="true"/);
+});
+test('LED power supply sketch uses cooling vents and no invented output rating',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'Mean Well',series:'HDR',kind:'LED_PSU',modules:3});
+ assert.match(svg,/data-vent="true"/);
+ assert.match(svg,/DC OUT · not rated/);
+});
