@@ -3,7 +3,9 @@
 // No device-terminal coordinates, heat flow or manufacturer CAD are inferred.
 function epCabinetApparatusEvidenceV1(project,lookup){
  const issues=[],rows=[],add=(code,level='UNKNOWN',deviceId=null)=>issues.push({code,level,deviceId});
- const hasTraceableSource=x=>x.sourceType==='MANUFACTURER_DATASHEET_MIRROR'&&
+ const recognizedSources=new Set(['MANUFACTURER_DATASHEET_MIRROR',
+  'MANUFACTURER_DATASHEET_OFFICIAL','MANUFACTURER_PRODUCT_PAGE','MANUFACTURER_CATALOG']);
+ const hasTraceableSource=x=>recognizedSources.has(x.sourceType)&&
   x.sourceReviewedAt!==null&&x.sourceUrl!==null;
  const finish=()=>({schema:'electropanel.cabinet.apparatus.evidence.1',
   status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',
@@ -62,10 +64,13 @@ function epCabinetApparatusEvidenceV1(project,lookup){
   if(review===null)issue('APPARATUS_EVIDENCE_SOURCE_NOT_REVIEWED');
   if(d?.sourceReviewedAt!=null&&!validReviewDate(d.sourceReviewedAt))
    issue('APPARATUS_EVIDENCE_SOURCE_REVIEW_DATE_INVALID');
-  if(sourceType==='MANUFACTURER_DATASHEET_MIRROR'&&evidenceSource===null)
+  if(recognizedSources.has(sourceType)&&evidenceSource===null)
    issue('APPARATUS_EVIDENCE_SOURCE_LINK_MISSING');
   if(sourceType==='PROJECT_DECLARATION')issue('APPARATUS_EVIDENCE_USER_ENTERED_UNVERIFIED');
   if(sourceType==='SOURCE_CATEGORY_NOT_DECLARED')issue('APPARATUS_EVIDENCE_SOURCE_CATEGORY_MISSING');
+  if(sourceType!=='NO_ARTICLE'&&sourceType!=='PROJECT_DECLARATION'&&
+   !recognizedSources.has(sourceType)&&sourceType!=='SOURCE_CATEGORY_NOT_DECLARED')
+   issue('APPARATUS_EVIDENCE_SOURCE_CATEGORY_UNRECOGNIZED');
   if(d?.source!=null&&evidenceSource===null)issue('APPARATUS_EVIDENCE_SOURCE_URL_INVALID');
   if(width!==null&&width>slotWidth+1e-6)issue('APPARATUS_EVIDENCE_NOMINAL_SLOT_WIDTH_EXCEEDED','BLOCKED');
   if(zone&&remainingZoneWidthMm!==null&&remainingZoneWidthMm< -1e-6)
