@@ -379,3 +379,14 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-front-gallery-audit{font-size:12px;line-height:1.5;margin:8px 0;padding:8px 10px;border-left:3px solid #6c8799;background:rgba(110,145,166,.07)}
 .ep-front-gallery-audit[data-front-audit-status="BLOCKED"]{border-left-color:#b74637;background:rgba(183,70,55,.06)}
 .ep-front-gallery-audit[data-front-audit-status="REVIEW_REQUIRED"]{border-left-color:#9b7c3d}
+
+/* Manufacturer evidence review queue: responsive, readable and non-blocking. */
+.ep-front-review-queue{margin:12px 0;padding:12px;border:1px solid #cdd9e1;border-radius:10px;background:#f7fafc;display:grid;gap:8px;min-width:0}
+.ep-front-review-queue h4{font-size:14px;margin:0;color:#294656}
+.ep-front-review-queue select{min-height:38px;max-width:340px;width:100%}
+.ep-front-review-queue p{margin:0;font-size:12px;line-height:1.5;color:#536c7a}
+.ep-front-review-items{margin:0;padding-left:22px;max-height:250px;overflow-y:auto;overflow-wrap:anywhere}
+.ep-front-review-items li{padding:5px 2px;font-size:12px;line-height:1.45;border-bottom:1px solid #e1e9ee}
+.ep-front-review-items li:last-child{border-bottom:0}
+.ep-front-review-queue button{justify-self:start;max-width:100%;white-space:normal}
+@media(max-width:520px){.ep-front-review-queue{padding:9px}.ep-front-review-queue select,.ep-front-review-queue button{width:100%;max-width:none}.ep-front-review-items{max-height:200px}}
