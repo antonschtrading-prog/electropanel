@@ -58,6 +58,12 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
   after=epDraftBoardPlanV1(copy,stableLookup);
  }catch(_){return reject('REPLACEMENT_LAYOUT_ENGINE_FAILED');}
  if(after.status==='BLOCKED')return reject('REPLACEMENT_LAYOUT_BLOCKED',after.issues);
+ if(project.cabinetGeometryV1&&typeof epCabinetPlacementChangeAuditV1==='function'){
+  let audit;
+  try{audit=epCabinetPlacementChangeAuditV1(project,copy,stableLookup);}
+  catch(_){return reject('REPLACEMENT_GEOMETRY_AUDIT_FAILED');}
+  if(audit?.status==='BLOCKED')return reject('REPLACEMENT_GEOMETRY_CONFLICT',audit.newIssues||audit.issues||[]);
+ }
  let reconciliation;
  try{reconciliation=epCabinetArticleReconciliationV1(copy,stableLookup);}
  catch(_){return reject('REPLACEMENT_RECONCILIATION_ENGINE_FAILED');}
