@@ -1,0 +1,32 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const app=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+const css=fs.readFileSync(path.join(__dirname,'../styles.css'),'utf8');
+const section=app.slice(app.indexOf('function renderCabinetArticleReconciliationV1()'),
+ app.indexOf('function renderBoard(){'));
+test('gallery is derived from actual board article identities',()=>{
+ assert.match(section,/new Set\(report\.rows\.map\(x=>x\.boardSku\)/);
+ assert.match(section,/Фасады аппаратов в проекте/);
+ assert.match(section,/for\(const sku of skus\.slice\(0,12\)\)/);
+ assert.match(section,/catalogDevice\(sku\)/);
+});
+test('gallery uses same manufacturer front renderer as DIN board',()=>{
+ assert.match(section,/epManufacturerVisualHtmlV1\(item,'gallery-'\+sku\)/);
+ assert.match(section,/epManufacturerFrontResolveV1\(item\)/);
+});
+test('gallery does not claim generated SVG is manufacturer photography',()=>{
+ assert.match(section,/Каталожные SVG — авторские эскизы, не фотографии/);
+ assert.match(section,/Авторский эскиз/);
+ assert.match(section,/Изображение отклонено/);
+});
+test('gallery uses textContent for catalogue metadata and limits card count',()=>{
+ assert.match(section,/title\.textContent=/);
+ assert.match(section,/code\.textContent=sku/);
+ assert.match(section,/status\.textContent=/);
+ assert.match(section,/Показаны первые 12/);
+});
+test('gallery is responsive on narrow mobile screens',()=>{
+ assert.match(css,/\.ep-front-gallery\{/);
+ assert.match(css,/@media\(max-width:520px\)\{\.ep-front-gallery/);
+});
