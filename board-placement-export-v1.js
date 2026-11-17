@@ -7,7 +7,9 @@ function epBoardPlacementCsvV1(project,lookup){
   'declared_related_on_same_rail','declared_related_across_rails','connection_proximity_status',
   'nearest_declared_wire_duct','nominal_duct_distance_mm',
   'nearest_declared_terminal_region','nominal_terminal_region_distance_mm',
-  'actual_terminal_access_verified'];
+  'actual_terminal_access_verified','body_dimension_source_type',
+ 'body_dimension_source_reviewed_at','body_dimensions_complete',
+ 'actual_terminal_coordinates_verified'];
  const quote=x=>{
   let s=String(x??'');
   if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;
@@ -35,6 +37,9 @@ function epBoardPlacementCsvV1(project,lookup){
  const space=typeof epCabinetConnectionSpaceV1==='function'?
   epCabinetConnectionSpaceV1(project,lookup):null;
  const spaceById=new Map((space?.rows||[]).map(x=>[x.deviceId,x]));
+ const apparatus=typeof epCabinetApparatusEvidenceV1==='function'?
+  epCabinetApparatusEvidenceV1(project,lookup):null;
+ const dimensionsById=new Map((apparatus?.rows||[]).map(x=>[x.deviceId,x]));
  const lines=[cols.map(quote).join(';')];
  for(const p of board.placements||[]){
   const row=byDevice.get(p.deviceId);
@@ -56,16 +61,21 @@ function epBoardPlacementCsvV1(project,lookup){
    spaceById.get(p.deviceId)?.nearestWireDuct?.distanceMm??'UNKNOWN',
    spaceById.get(p.deviceId)?.nearestTerminalRegion?.regionId??'UNDECLARED',
    spaceById.get(p.deviceId)?.nearestTerminalRegion?.distanceMm??'UNKNOWN',
+   'NO',dimensionsById.get(p.deviceId)?.sourceType??'NOT_CHECKED',
+   dimensionsById.get(p.deviceId)?.sourceReviewedAt??'NOT_REVIEWED',
+   dimensionsById.get(p.deviceId)?.bodyDimensionsComplete?'YES':'NO',
    'NO'].map(quote).join(';'));
  }
  for(const issue of board.issues||[])issues.push({code:issue.code,level:issue.level,id:issue.id??null});
  for(const issue of physical?.issues||[])if(issue.code!=='DIN_ENCLOSURE_CLEARANCES_NOT_CHECKED')
   issues.push({code:issue.code,level:issue.level,id:issue.deviceId??null});
+ for(const issue of apparatus?.issues||[])if(issue.level==='BLOCKED')
+  issues.push({code:issue.code,level:issue.level,id:issue.deviceId??null});
  for(const issue of space?.issues||[])if(issue.level==='BLOCKED')
   issues.push({code:issue.code,level:issue.level,id:issue.deviceId??null});
  for(const issue of cabinet?.issues||[])if(issue.code!=='CABINET_HARDWARE_MOUNTING_CLEARANCES_UNVERIFIED'&&issue.code!=='CABINET_GEOMETRY_NOT_DECLARED')
   issues.push({code:issue.code,level:issue.level,id:issue.deviceId??null});
- return {csv:lines.join('\r\n')+'\r\n',status:board.status==='BLOCKED'||physical?.status==='BLOCKED'||cabinet?.status==='BLOCKED'||space?.status==='BLOCKED'?'BLOCKED':'REVIEW_REQUIRED',
+ return {csv:lines.join('\r\n')+'\r\n',status:board.status==='BLOCKED'||physical?.status==='BLOCKED'||cabinet?.status==='BLOCKED'||space?.status==='BLOCKED'||apparatus?.status==='BLOCKED'?'BLOCKED':'REVIEW_REQUIRED',
   issues,engineeringApproved:false,ready_for_installation:false};
 }
 if(typeof module!=='undefined')module.exports={epBoardPlacementCsvV1};

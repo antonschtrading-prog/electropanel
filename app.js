@@ -1910,10 +1910,45 @@ function renderCabinetAccessReviewV1(){
   target.appendChild(details);
  }
 }
+function renderCabinetArticleEvidenceV1(){
+ const target=$('cabinetArticleEvidence');if(!target)return;
+ if(typeof epCabinetApparatusEvidenceV1!=='function'){
+  target.textContent='Проверка паспортных габаритов недоступна.';return;
+ }
+ const r=epCabinetApparatusEvidenceV1(state,catalogDevice);
+ target.replaceChildren();
+ const intro=document.createElement('p');
+ intro.textContent='Данные аппаратов по выбранным артикулам: '+r.rows.length+
+  '; ширина указана у '+r.knownDimensions.width+
+  ', высота у '+r.knownDimensions.height+
+  ', глубина у '+r.knownDimensions.depth+
+  '. Точки подключения и монтажные смещения не подтверждены.';
+ target.appendChild(intro);
+ if(!r.rows.length)return;
+ const details=document.createElement('details'),summary=document.createElement('summary');
+ summary.textContent='Паспортные габариты и происхождение данных';
+ details.appendChild(summary);
+ const table=document.createElement('table'),head=document.createElement('tr');
+ for(const text of ['Аппарат','Артикул','Ширина','Высота','Глубина','Источник','Дата сверки','Статус']){
+  const th=document.createElement('th');th.textContent=text;head.appendChild(th);
+ }
+ const thead=document.createElement('thead');thead.appendChild(head);table.appendChild(thead);
+ const tbody=document.createElement('tbody');
+ for(const row of r.rows.slice(0,100)){
+  const tr=document.createElement('tr');
+  const columns=[row.deviceId,row.articleId??'Не выбран',row.bodyWidthMm??'Неизвестна',
+   row.bodyHeightMm??'Неизвестна',row.bodyDepthMm??'Неизвестна',
+   row.sourceType,row.sourceReviewedAt??'Не проверено',row.status];
+  for(const value of columns){const td=document.createElement('td');td.textContent=String(value);tr.appendChild(td);}
+  tbody.appendChild(tr);
+ }
+ table.appendChild(tbody);details.appendChild(table);target.appendChild(details);
+}
 function renderBoard(){
  renderCabinetCapacityOptionsV1();
  renderBoardConnectionAdvisoryV1();
  renderCabinetAccessReviewV1();
+ renderCabinetArticleEvidenceV1();
  renderProjectCatalogWorkbenchV1();
  const board=$('boardCanvas');board.innerHTML='';$('boardTitle').textContent=state.title+' / компоновка';
  const layout=layoutSlots();

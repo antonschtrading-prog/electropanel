@@ -14,6 +14,8 @@ function epEngineeringBundleV1(project,lookupSku){
  const bom=section('BOM',typeof epDraftBomV1==='function'?epDraftBomV1:null);
  const board=section('BOARD',typeof epDraftBoardPlanV1==='function'?epDraftBoardPlanV1:null);
  const cabinetFit=section('CABINET_FIT',typeof epCabinetFitAuditV1==='function'?epCabinetFitAuditV1:null);
+ const cabinetApparatusEvidence=section('CABINET_APPARATUS_EVIDENCE',
+  typeof epCabinetApparatusEvidenceV1==='function'?epCabinetApparatusEvidenceV1:null);
  const cabinetConnectionSpace=section('CABINET_CONNECTION_SPACE',
   typeof epCabinetConnectionSpaceV1==='function'?epCabinetConnectionSpaceV1:null);
  const cabinetConnectionProximity=section('CABINET_CONNECTION_PROXIMITY',
@@ -173,7 +175,7 @@ function epEngineeringBundleV1(project,lookupSku){
  const boardCapacity=section('BOARD_CAPACITY_REVIEW',typeof epBoardCapacityReviewV1==='function'?epBoardCapacityReviewV1:null);
  const deviceIdentity=section('PROJECT_DEVICE_IDENTITY',typeof epProjectDeviceIdentityV1==='function'?epProjectDeviceIdentityV1:null);
  const deliveryTrace=section('PROJECT_DELIVERY_TRACE',typeof epProjectDeliveryTraceV1==='function'?epProjectDeliveryTraceV1:null);
- const sections={cabinetFit,cabinetCapacity,cabinetConnectionProximity,cabinetConnectionSpace,boardCapacity,deviceIdentity,deliveryTrace,fireControl,fireControlBill,fireControlTrace,fireControlDesign,fireControlSchedule,fireCatalog,fireDin,fireGate,fireChecklist,fireTopology,fireDiagram,fireWiring,fireWiringDiagram,fireContinuity,workflowPreview,consumerGrouping,consumerMerge,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
+ const sections={cabinetFit,cabinetCapacity,cabinetConnectionProximity,cabinetConnectionSpace,cabinetApparatusEvidence,boardCapacity,deviceIdentity,deliveryTrace,fireControl,fireControlBill,fireControlTrace,fireControlDesign,fireControlSchedule,fireCatalog,fireDin,fireGate,fireChecklist,fireTopology,fireDiagram,fireWiring,fireWiringDiagram,fireContinuity,workflowPreview,consumerGrouping,consumerMerge,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
