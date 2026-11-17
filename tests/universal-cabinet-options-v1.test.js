@@ -215,3 +215,43 @@ test('direct DIN packing rejects duplicate device IDs before assigning rails',()
  assert.deepEqual(r.rails,[]);
  assert.ok(r.issues.some(x=>x.code==='PACKING_INPUT_INVALID'));
 });
+
+test('selected body width larger than declared DIN slots blocks enclosure selection',()=>{
+ const p={lines:[{id:'L',modules:1,catalogSku:'A'}]};
+ const r=plan(p,()=>({article:'A',modules:1,widthMm:19,heightMm:85,depthMm:70}));
+ assert.equal(r.status,'BLOCKED');
+ assert.deepEqual(r.options,[]);
+ assert.ok(r.issues.some(x=>x.code==='ARTICLE_BODY_EXCEEDS_NOMINAL_DIN_SLOT'));
+});
+test('body envelope dimensions must be positive finite numbers when supplied',()=>{
+ const p={lines:[{id:'L',modules:1,catalogSku:'A'}]};
+ for(const key of ['widthMm','heightMm','depthMm']){
+  for(const value of [NaN,Infinity,-1,0,'85']){
+   const r=plan(p,()=>({article:'A',modules:1,[key]:value}));
+   assert.equal(r.status,'BLOCKED',key+':'+value);
+   assert.equal(r.options.length,0);
+  }
+ }
+});
+test('body width exactly equal to nominal DIN slots remains a preliminary option',()=>{
+ const r=plan({lines:[{id:'L',modules:2,catalogSku:'A'}]},
+  ()=>({article:'A',modules:2,widthMm:36,heightMm:85,depthMm:70}));
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.ok(r.options.some(o=>o.status==='REVIEW_REQUIRED'));
+ assert.equal(r.confirmedCabinetFit,false);
+});
+test('orphan branch devices and duplicate branch identifiers block candidate generation',()=>{
+ const p={lines:[{id:'L1',modules:1}],branchDevices:[
+  {id:'B1',circuitId:'L1',modules:1},{id:'B2',circuitId:'OTHER',modules:1}]};
+ const a=plan(p);
+ assert.equal(a.status,'BLOCKED');
+ assert.ok(a.issues.some(x=>x.code==='BRANCH_ORPHAN_OR_INVALID'));
+ const b=plan({lines:[{id:'L1',modules:1},{id:'L2',modules:1}],
+  branchDevices:[{id:'B',circuitId:'L1',modules:1},{id:'B',circuitId:'L2',modules:1}]});
+ assert.equal(b.status,'BLOCKED');
+ assert.ok(b.issues.some(x=>x.code==='BRANCH_ID_INVALID_OR_DUPLICATE'));
+});
+test('invalid branch collection sizes are rejected at input boundary',()=>{
+ const p={lines:[{id:'L1',modules:1}],branchDevices:Array(501).fill(null)};
+ assert.equal(plan(p).status,'BLOCKED');
+});
