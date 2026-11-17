@@ -4,7 +4,7 @@
 function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
  const empty=(code)=>({schema:'electropanel.cabinet.front.gallery.1',status:'BLOCKED',
   code,rows:[],groups:[],totals:{articles:0,apparatus:0,reviewedImages:0,
-   vectorSketches:0,rejectedImages:0,missingArticles:0,unknownGeometry:0},
+   vectorSketches:0,rejectedImages:0,missingArticles:0,unknownGeometry:0,widthConflicts:0},
   engineeringApproved:false,manufacturerCabinetFitVerified:false});
  if(!reconciliation||!Array.isArray(reconciliation.rows)||
   typeof lookup!=='function'||typeof resolveImage!=='function')
@@ -70,17 +70,19 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   const key=[row.maker||'Неизвестный производитель',row.series||'Серия не указана'].join(' / ');
   let group=groups.find(x=>x.key===key);
   if(!group){group={key,maker:row.maker,series:row.series,articles:0,apparatus:0,
-   reviewedImages:0,unknownGeometry:0};groups.push(group);}
+   reviewedImages:0,unknownGeometry:0,widthConflicts:0};groups.push(group);}
   group.articles++;group.apparatus+=row.count;
   if(row.status==='REVIEWED_IMAGE')group.reviewedImages++;
   if(row.geometryStatus==='UNKNOWN')group.unknownGeometry++;
+  if(row.geometryStatus==='EXCEEDS_DIN_SLOT')group.widthConflicts++;
  }
  const totals={articles:rows.length,apparatus:rows.reduce((n,r)=>n+r.count,0),
   reviewedImages:rows.filter(r=>r.status==='REVIEWED_IMAGE').length,
   vectorSketches:rows.filter(r=>r.status==='STYLIZED_ONLY').length,
   rejectedImages:rows.filter(r=>r.status==='ASSET_REJECTED').length,
   missingArticles:rows.filter(r=>r.status==='MISSING_ARTICLE').length,
-  unknownGeometry:rows.filter(r=>r.geometryStatus==='UNKNOWN').length};
+  unknownGeometry:rows.filter(r=>r.geometryStatus==='UNKNOWN').length,
+  widthConflicts:rows.filter(r=>r.geometryStatus==='EXCEEDS_DIN_SLOT').length};
  return {schema:'electropanel.cabinet.front.gallery.1',
   status:rows.length===0?'UNKNOWN':rows.some(r=>r.status==='MISSING_ARTICLE'||r.status==='ASSET_REJECTED'||
    r.geometryStatus==='EXCEEDS_DIN_SLOT'||r.issues.includes('FRONT_GALLERY_IDENTITY_INCOMPLETE')||
