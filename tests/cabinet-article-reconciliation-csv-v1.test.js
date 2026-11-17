@@ -11,7 +11,7 @@ test('CSV preserves article mismatch evidence and DIN location',()=>{
  assert.equal(r.rowCount,1);
  assert.equal(r.issueCount,1);
  assert.match(r.csv,/CABINET_ARTICLE_BOM_SKU_MISMATCH/);
- assert.match(r.csv,/board_sku;?/);
+ assert.match(r.csv,/"board_sku"/);
  assert.match(r.csv,/"B1";"A";"B";"A";"2";"0";"3"/);
  assert.equal(r.ready_for_installation,false);
 });
