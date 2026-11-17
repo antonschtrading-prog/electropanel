@@ -1,5 +1,45 @@
 'use strict';
 // Manufacturer-neutral preliminary enclosure planning. No cabinet SKU or certified fit is inferred.
+// Bounded exact packing fallback. FFD is fast, but can falsely reject a feasible
+// set of indivisible apparatuses. Memoized DFS is complete unless budget expires.
+function epCabinetPackDevicesV1(entries,railCount,capacity,nodeLimit=60000){
+ const sorted=[...entries].sort((a,b)=>b.modules-a.modules||a.deviceId.localeCompare(b.deviceId));
+ const rails=Array.from({length:railCount},(_,railIndex)=>({railIndex,usedModules:0,devices:[]}));
+ const add=(row,d)=>{row.devices.push({deviceId:d.deviceId,startModule:row.usedModules,
+  modules:d.modules,article:d.article});row.usedModules+=d.modules;};
+ const greedyMissing=[];
+ for(const d of sorted){
+  const row=rails.find(r=>r.usedModules+d.modules<=capacity);
+  if(row)add(row,d);else greedyMissing.push(d.deviceId);
+ }
+ if(!greedyMissing.length)return {status:'PACKED',rails,unplaced:[]};
+ if(sorted.some(d=>d.modules>capacity)||sorted.reduce((s,d)=>s+d.modules,0)>railCount*capacity)
+  return {status:'IMPOSSIBLE',rails,unplaced:greedyMissing};
+ const free=Array(railCount).fill(capacity),assigned=Array(sorted.length).fill(-1),
+  seen=new Set(),suffix=Array(sorted.length+1).fill(0);
+ for(let i=sorted.length-1;i>=0;i--)suffix[i]=suffix[i+1]+sorted[i].modules;
+ let nodes=0,exhausted=false;
+ function visit(i){
+  if(i===sorted.length)return true;
+  if(++nodes>nodeLimit){exhausted=true;return false;}
+  if(free.reduce((a,b)=>a+b,0)<suffix[i])return false;
+  const key=i+'|'+[...free].sort((a,b)=>b-a).join(',');
+  if(seen.has(key))return false;
+  const width=sorted[i].modules,tried=new Set();
+  for(let r=0;r<free.length;r++){
+   if(free[r]<width||tried.has(free[r]))continue;
+   tried.add(free[r]);free[r]-=width;assigned[i]=r;
+   if(visit(i+1))return true;
+   free[r]+=width;assigned[i]=-1;
+   if(exhausted)return false;
+  }
+  seen.add(key);return false;
+ }
+ if(!visit(0))return {status:exhausted?'UNPROVEN':'IMPOSSIBLE',rails,unplaced:greedyMissing};
+ const resolved=Array.from({length:railCount},(_,railIndex)=>({railIndex,usedModules:0,devices:[]}));
+ sorted.forEach((d,i)=>add(resolved[assigned[i]],d));
+ return {status:'PACKED_EXACT',rails:resolved,unplaced:[]};
+}
 function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
  const blocked=(code)=>({schema:'electropanel.universal.cabinet.options.1',status:'BLOCKED',
   issues:[{code,level:'BLOCKED'}],options:[],engineeringApproved:false,confirmedCabinetFit:false});
@@ -59,20 +99,8 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
  })).filter(x=>x.capacityModules>=targetModules)
   .sort((a,b)=>a.capacityModules-b.capacityModules||a.railCount-b.railCount);
  const options=profiles.map(profile=>{
-  const rails=[],unplaced=[];
-  // Stable original order, preserving each appliance as an indivisible group.
-  // Best-fit by width keeps a multi-module appliance intact, even with
-  // awkward widths, and avoids rejecting an option due to input ordering.
-  const sorted=[...entries].sort((a,b)=>b.modules-a.modules||a.deviceId.localeCompare(b.deviceId));
-  for(let r=0;r<profile.railCount;r++)
-   rails.push({railIndex:r,usedModules:0,devices:[]});
-  for(const device of sorted){
-   const row=rails.find(r=>r.usedModules+device.modules<=profile.modulesPerRail);
-   if(!row){unplaced.push(device.deviceId);continue;}
-   row.devices.push({deviceId:device.deviceId,startModule:row.usedModules,
-    modules:device.modules,article:device.article});
-   row.usedModules+=device.modules;
-  }
+  const packed=epCabinetPackDevicesV1(entries,profile.railCount,profile.modulesPerRail);
+  const {rails,unplaced}=packed;
   const used=entries.reduce((s,x)=>s+x.modules,0);
   const target=Math.ceil(used*(1+p.reserveFraction));
   const allocated=profile.capacityModules;
@@ -86,13 +114,14 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    basis:'ASSUMED_PLANNING_ALLOWANCES_NOT_MANUFACTURER_DIMENSIONS'
   };
   const optionIssues=[
-   ...unplaced.map(deviceId=>({code:'DEVICE_EXCEEDS_RAIL_WIDTH',level:'BLOCKED',deviceId})),
+   ...unplaced.map(deviceId=>({code:packed.status==='UNPROVEN'?'PACKING_NOT_VERIFIED':'DEVICE_NOT_PACKABLE_IN_PATTERN',level:'BLOCKED',deviceId})),
+   ...(packed.status==='UNPROVEN'?[{code:'PACKING_SEARCH_LIMIT',level:'UNKNOWN'}]:[]),
    ...(allocated<target?[{code:'CAPACITY_RESERVE_UNMET',level:'BLOCKED'}]:[]),
    {code:'CABINET_MOUNTING_WIRING_AND_THERMAL_NOT_VERIFIED',level:'UNKNOWN'},
    ...(depthKnown?[]:[{code:'CABINET_DEPTH_UNKNOWN',level:'UNKNOWN'}])
   ];
   return {id:profile.id,capacityModules:profile.capacityModules,modulesPerRail:profile.modulesPerRail,railCount:rails.length,
-   rails,usedModules:used,allocatedModules:allocated,reserveModules:allocated-used,
+   rails,packingMethod:packed.status,usedModules:used,allocatedModules:allocated,reserveModules:allocated-used,
    unplaced,envelope,issues:optionIssues,
    status:optionIssues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',
    engineeringApproved:false,confirmedCabinetFit:false};
@@ -103,4 +132,4 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   options,issues,engineeringApproved:false,confirmedCabinetFit:false,
   note:'Draft nominal DIN packing only. Preliminary usable interior envelope assumes user-adjustable allowances; external cabinet dimensions, thermal and wiring fit require separate review.'};
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epUniversalCabinetOptionsV1};
+if(typeof module!=='undefined'&&module.exports)module.exports={epUniversalCabinetOptionsV1,epCabinetPackDevicesV1};

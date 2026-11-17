@@ -41,3 +41,7 @@ The engineering bundle now carries a cabinetCapacity section with options, usabl
 A rail shape change cannot silently retain incompatible user-declared cabinetGeometryV1. The application requests confirmation before removing the old geometry. Cancellation makes no changes. Approval clears it in an undoable checkpoint, with circuit ratings retained; users must redeclare the usable mounting zones. No manufacturer enclosure is assumed.
 
 Reserved capacity is user-adjustable (0–50%, integer percent), persisted with width/height preferences, and interpreted as minimum whole-module free capacity. The same reserve assumption applies to the interactive picker and exported engineering bundle.
+
+## Packing correctness and UI lifecycle
+
+The initial first-fit-decreasing allocator is not a proof of non-fit. A memoized, bounded exact bin-packing search is now used whenever first-fit fails. A complete search may prove impossible; if the search budget is exhausted, the candidate is explicitly not verified and is never presented as an accepted fit. Complete apparatuses are never split between rows. Repeated rendering does not register duplicate reserve-change handlers.

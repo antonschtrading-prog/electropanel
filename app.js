@@ -1735,15 +1735,6 @@ function renderCabinetCapacityOptionsV1(){
  const reserveInput=$('cabinetReservePercent');
  if(reserveInput&&document.activeElement!==reserveInput)
   reserveInput.value=String(limits.reservePercent??20);
- $('cabinetReservePercent')?.addEventListener('change',e=>{
- const val=Number(e.target.value);
- if(e.target.value.trim()===''||!Number.isInteger(val)||val<0||val>50){
-  notify('Резерв должен быть целым числом от 0 до 50%',true);
-  e.target.value=state.cabinetSizingPreferencesV1?.reservePercent??20;return;
- }
- checkpoint();state.cabinetSizingPreferencesV1={
-  ...(state.cabinetSizingPreferencesV1||{}),reservePercent:val};changed();
-});
 for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   ['cabinetHeightLimit','maxUsableHeightMm']]){
   const input=$(id);if(input&&document.activeElement!==input)
@@ -2542,6 +2533,15 @@ $('exportCabinetCapacityBtn')?.addEventListener('click',()=>{
   usableSizeLimits:state.cabinetSizingPreferencesV1||null,
   ...report,reviewRequired:true,manufacturerSelected:false
  },null,2),'application/json;charset=utf-8');
+});
+ $('cabinetReservePercent')?.addEventListener('change',e=>{
+ const val=Number(e.target.value);
+ if(e.target.value.trim()===''||!Number.isInteger(val)||val<0||val>50){
+  notify('Резерв должен быть целым числом от 0 до 50%',true);
+  e.target.value=state.cabinetSizingPreferencesV1?.reservePercent??20;return;
+ }
+ checkpoint();state.cabinetSizingPreferencesV1={
+  ...(state.cabinetSizingPreferencesV1||{}),reservePercent:val};changed();
 });
 for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
  ['cabinetHeightLimit','maxUsableHeightMm']]){

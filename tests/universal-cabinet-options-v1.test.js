@@ -77,3 +77,28 @@ test('bound branch SKU takes precedence over line fallback',()=>{
  assert.equal(r.status,'REVIEW_REQUIRED');
  assert.ok(r.options[0].rails[0].devices.some(d=>d.deviceId==='B1'&&d.article==='ACTUAL'));
 });
+
+test('exact search recovers an arrangement greedy-first-fit falsely rejects',()=>{
+ const {epCabinetPackDevicesV1}=require('../universal-cabinet-options-v1.js');
+ const widths=[2,2,2,3,5,6,9];
+ const devices=widths.map((modules,i)=>({deviceId:'P'+i,modules,article:null}));
+ const result=epCabinetPackDevicesV1(devices,3,10);
+ assert.equal(result.status,'PACKED_EXACT');
+ assert.deepEqual(result.unplaced,[]);
+ assert.equal(result.rails.reduce((n,r)=>n+r.usedModules,0),29);
+ assert.ok(result.rails.every(r=>r.usedModules<=10));
+ for(const id of devices.map(x=>x.deviceId))
+  assert.equal(result.rails.flatMap(r=>r.devices).filter(d=>d.deviceId===id).length,1);
+});
+test('bounded search never asserts impossibility after budget exhaustion',()=>{
+ const {epCabinetPackDevicesV1}=require('../universal-cabinet-options-v1.js');
+ const devices=[2,2,2,3,5,6,9].map((modules,i)=>({deviceId:'P'+i,modules}));
+ const report=epCabinetPackDevicesV1(devices,3,10,1);
+ assert.equal(report.status,'UNPROVEN');
+});
+test('exact packing is deterministic on repeated evaluation and does not mutate input',()=>{
+ const {epCabinetPackDevicesV1}=require('../universal-cabinet-options-v1.js');
+ const d=[2,2,2,3,5,6,9].map((modules,i)=>({deviceId:'P'+i,modules}));
+ const before=JSON.stringify(d),one=epCabinetPackDevicesV1(d,3,10),two=epCabinetPackDevicesV1(d,3,10);
+ assert.deepEqual(one,two);assert.equal(JSON.stringify(d),before);
+});
