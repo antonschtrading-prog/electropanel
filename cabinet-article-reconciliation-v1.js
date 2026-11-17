@@ -9,11 +9,25 @@ function epCabinetArticleReconciliationV1(project,lookup){
   engineeringApproved:false,ready_for_installation:false});
  if(!project||typeof epDraftBoardPlanV1!=='function'||typeof epDraftBomV1!=='function'||
   typeof epBoardVisualAuditV1!=='function')return fail('CABINET_ARTICLE_ENGINES_UNAVAILABLE');
+ const catalogueSnapshot=new Map();
+ const stableLookup=sku=>{
+  if(catalogueSnapshot.has(sku)){
+   const entry=catalogueSnapshot.get(sku);
+   if(entry.failed)throw Error('Catalogue lookup failed');
+   return entry.value;
+  }
+  try{
+   const value=typeof lookup==='function'?lookup(sku):null;
+   const snapshot=value&&typeof value==='object'?JSON.parse(JSON.stringify(value)):value;
+   catalogueSnapshot.set(sku,{value:snapshot,failed:false});
+   return snapshot;
+  }catch(_){catalogueSnapshot.set(sku,{failed:true});throw Error('Catalogue lookup failed');}
+ };
  let board,bom,visual;
  try{
-  board=epDraftBoardPlanV1(project,lookup);
-  bom=epDraftBomV1(project,lookup);
-  visual=epBoardVisualAuditV1(project,lookup);
+  board=epDraftBoardPlanV1(project,stableLookup);
+  bom=epDraftBomV1(project,stableLookup);
+  visual=epBoardVisualAuditV1(project,stableLookup);
  }catch(_){return fail('CABINET_ARTICLE_RECONCILIATION_FAILED');}
  const boardById=new Map(),bomById=new Map(),visualById=new Map();
  const add=(code,id,level='BLOCKED')=>issues.push({code,deviceId:id,level});
