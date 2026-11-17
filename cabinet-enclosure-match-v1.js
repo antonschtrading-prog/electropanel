@@ -20,7 +20,13 @@ function epCabinetEnclosureMatchV1(preview,geometry,enclosures,settings={}){
   preview.rails.some(r=>!Number.isInteger(r.capacity)||r.capacity<1||r.capacity>200))
   return fail('ENCLOSURE_MATCH_PREVIEW_INVALID');
  const pitch=geometry.summary?.assumedModulePitchMm;
- if(!Number.isFinite(pitch)||pitch<15||pitch>25)return fail('ENCLOSURE_MATCH_GEOMETRY_INVALID');
+ const missing=geometry.summary?.missingDimensions;
+ const knownDepth=geometry.summary?.maxKnownDepthMm;
+ if(!Number.isFinite(pitch)||pitch<15||pitch>25||
+  !Number.isInteger(missing)||missing<0||missing>geometry.rows.length||
+  (knownDepth!==null&&(!Number.isFinite(knownDepth)||knownDepth<=0||knownDepth>2000))||
+  geometry.rows.some((r,i)=>r?.deviceId!==preview.rows[i]?.deviceId))
+  return fail('ENCLOSURE_MATCH_GEOMETRY_INVALID');
  const requiredWidth=Math.max(...preview.rails.map(r=>r.capacity*pitch))+cfg.sideAllowanceMm*2;
  const requiredHeight=railCount*cfg.railPitchMm+cfg.verticalAllowanceMm*2;
  const maxDepth=geometry.summary.maxKnownDepthMm;
