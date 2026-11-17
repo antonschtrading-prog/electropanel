@@ -40,7 +40,8 @@ function epManufacturerFrontResolveV1(device,library=EP_MANUFACTURER_FRONT_ASSET
    issues.push('FRONT_RIGHTS_NOT_DOCUMENTED');
   const date=a.reviewedAt;
   const dateValid=typeof date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(date)&&
-   Number.isFinite(Date.parse(date+'T00:00:00Z'))&&new Date(date+'T00:00:00Z').toISOString().slice(0,10)===date;
+   Number.isFinite(Date.parse(date+'T00:00:00Z'))&&new Date(date+'T00:00:00Z').toISOString().slice(0,10)===date&&
+   Date.parse(date+'T00:00:00Z')<=Date.now();
   if(!epManufacturerFrontHttpsV1(a.productEvidenceUrl)||!dateValid)
    issues.push('FRONT_SOURCE_NOT_REVIEWED');
  }
