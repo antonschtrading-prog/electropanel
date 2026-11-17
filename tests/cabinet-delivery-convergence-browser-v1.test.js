@@ -89,7 +89,7 @@ test('cabinet sizing offers five user-controlled ranking priorities',()=>{
 });
 test('cabinet sizing ranks eligible shapes and preserves capacity filter',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
- assert.match(app,/good.filter\(o=>o.capacityModules===cabinetCapacitySelectedTotalV1\)/);
+ assert.match(app,/good.filter\(o=>cabinetOptionShowAllCapacitiesV1\|\|o.capacityModules===cabinetCapacitySelectedTotalV1\)/);
  assert.match(app,/ranking.get\(a.id\)/);
 });
 test('cabinet ranking preference changes without editing project state',()=>{
