@@ -17,8 +17,12 @@ function epEngineeringBundleV1(project,lookupSku){
  const cabinetCapacity=section('CABINET_CAPACITY',typeof epUniversalCabinetOptionsV1==='function'?
   (p,lookup)=>{
    const limits=p?.cabinetSizingPreferencesV1||{};
-   const report=epUniversalCabinetOptionsV1(p,lookup,
-    {reserveFraction:(limits.reservePercent??20)/100});
+   const report=epUniversalCabinetOptionsV1(p,lookup,{
+    reserveFraction:(limits.reservePercent??20)/100,
+    wiringCorridorMm:limits.wiringCorridorMm??40,
+    terminalReserveMm:limits.terminalReserveMm??0,
+    sideWiringCorridorMm:limits.sideWiringCorridorMm??40
+   });
    return {...report,usableSizeLimits:{...limits},options:report.options.map(o=>{
     const exceedsWidth=!!limits.maxUsableWidthMm&&o.envelope.preliminaryUsableWidthMm>limits.maxUsableWidthMm;
     const exceedsHeight=!!limits.maxUsableHeightMm&&o.envelope.preliminaryUsableHeightMm>limits.maxUsableHeightMm;

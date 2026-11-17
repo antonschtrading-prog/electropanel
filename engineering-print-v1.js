@@ -209,12 +209,15 @@ function epEngineeringPrintV1(bundle){
    x.residualType||'—',x.source||'Не указан',x.sourceReviewedAt||'Не записано']));
  const capacity=sections.cabinetCapacity||{};
  const capacityRows=rows(['Вместимость','Вариант','Ряды','Модулей на DIN','Резерв','Полезная ширина (предв.), мм',
-  'Полезная высота (предв.), мм','Полезная глубина (предв.), мм','Ограничения'],
+  'Полезная высота (предв.), мм','Полезная глубина (предв.), мм',
+  'Кабельный коридор на ряд, мм','Резерв клемм, мм','Ограничения'],
   (capacity.options||[]).filter(o=>o.status!=='BLOCKED').slice(0,16).map(o=>[
    o.capacityModules,({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Не определён'),o.railCount,o.modulesPerRail,o.reserveModules,
    o.envelope?.preliminaryUsableWidthMm??'—',
    o.envelope?.preliminaryUsableHeightMm??'—',
    o.envelope?.preliminaryUsableDepthMm??'НЕИЗВЕСТНА',
+   o.envelope?.spacePlan?.wiringCorridorPerRailMm??'—',
+   o.envelope?.spacePlan?.terminalReserveMm??'—',
    o.withinDeclaredLimits===false?'Превышены':'Требует проверки'
   ]));
  const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],

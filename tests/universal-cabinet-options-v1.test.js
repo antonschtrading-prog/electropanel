@@ -123,3 +123,20 @@ test('equal-capacity patterns have meaningful tall/wide orientation labels',()=>
  assert.equal(group.find(x=>x.id==='3x12').orientation,'TALL');
  assert.ok(r.options.every(x=>['ONLY','WIDE','TALL','BALANCED'].includes(x.orientation)));
 });
+
+test('per-row wiring corridor and terminal reservation are distinct transparent assumptions',()=>{
+ const r=plan({lines:[{id:'A',modules:2}]},null,
+  {wiringCorridorMm:50,terminalReserveMm:80,sideWiringCorridorMm:30});
+ const a=r.options.find(o=>o.id==='1x4');
+ assert.equal(a.envelope.preliminaryUsableHeightMm,430);
+ assert.equal(a.envelope.spacePlan.apparatusBandHeightMm,100);
+ assert.equal(a.envelope.spacePlan.rowZones[0].wiringCorridor.heightMm,50);
+ assert.equal(a.envelope.spacePlan.rowZones[0].apparatusBand.yMm,150);
+ assert.equal(a.envelope.spacePlan.sideWiringCorridorMm,30);
+ assert.equal(a.envelope.spacePlan.source,'ASSUMED_NOT_MANUFACTURER_CAD');
+ assert.ok(a.issues.some(i=>i.code==='TERMINAL_AND_CABLE_CORRIDORS_ASSUMED'));
+});
+test('reject wiring corridor wider than row pitch or side margin',()=>{
+ assert.equal(plan(base(),null,{wiringCorridorMm:125}).status,'BLOCKED');
+ assert.equal(plan(base(),null,{sideWiringCorridorMm:80}).status,'BLOCKED');
+});

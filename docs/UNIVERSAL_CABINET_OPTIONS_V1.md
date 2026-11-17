@@ -53,3 +53,7 @@ The selector compares all known row distributions for a chosen standard-pattern 
 Orientation labels are *comparative within the same modular capacity*, not assertions about external manufacturer cabinet proportions: the variant with fewer rails is 'wide', with more rails 'tall', intermediate rows are 'balanced', and sole variants are labelled uniquely.
 
 The selected comparison capacity is ephemeral UI state. It is reset when the equipment input signature or declared sizing preferences change; this avoids hiding the nearest small enclosure when switching between separate projects. The selected total remains stable across unrelated redraws.
+
+## Preliminary mounting-space allocation (2026-11-17)
+
+The planner allocates a **declared design allowance**, not a normative clearance: a wiring corridor (default 40 mm) for each DIN row inside a 150 mm planning pitch, a terminal reserve at the top/bottom of the overall usable height (default 0 mm additional), and lateral cabling corridors (default 40 mm on each side, within the existing 70 mm side allowance). The row's remaining 110 mm is only a nominal apparatus mounting band. The cabinet useful-height estimate grows by the terminal reservation; width remains the nominal module span plus the total declared side allowance, avoiding double counting cable corridors. No power-loss, conductor bend radius, DIN fitting offset, actual panel depth, usable area under covers, ventilation or IP rating is computed. A verified body depth can support only a preliminary depth estimate; missing depths remain unknown.

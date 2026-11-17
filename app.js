@@ -1722,7 +1722,12 @@ function renderCabinetGeometryV1(){
 }
 function cabinetCapacityReportV1(){
  return typeof epUniversalCabinetOptionsV1==='function'?
-  epUniversalCabinetOptionsV1(state,catalogDevice,{reserveFraction:(state.cabinetSizingPreferencesV1?.reservePercent??20)/100}):null;
+  epUniversalCabinetOptionsV1(state,catalogDevice,{
+   reserveFraction:(state.cabinetSizingPreferencesV1?.reservePercent??20)/100,
+   wiringCorridorMm:state.cabinetSizingPreferencesV1?.wiringCorridorMm??40,
+   terminalReserveMm:state.cabinetSizingPreferencesV1?.terminalReserveMm??0,
+   sideWiringCorridorMm:state.cabinetSizingPreferencesV1?.sideWiringCorridorMm??40
+  }):null;
 }
 let cabinetCapacitySelectedTotalV1=null;
 let cabinetCapacityInputSignatureV1=null;
@@ -1737,11 +1742,18 @@ function renderCabinetCapacityOptionsV1(){
  const signature=JSON.stringify([
   state.title,state.lines.map(l=>[l.id,l.modules,l.catalogSku]),
   (state.sharedDevices||[]).map(d=>[d.id,d.modules,d.catalogSku]),
-  limits.reservePercent??20,limits.maxUsableWidthMm??null,limits.maxUsableHeightMm??null
+  limits.reservePercent??20,limits.wiringCorridorMm??40,limits.terminalReserveMm??0,
+  limits.sideWiringCorridorMm??40,limits.maxUsableWidthMm??null,limits.maxUsableHeightMm??null
  ]);
  if(signature!==cabinetCapacityInputSignatureV1){
   cabinetCapacityInputSignatureV1=signature;
   cabinetCapacitySelectedTotalV1=null;
+ }
+ for(const [id,field,def] of [['cabinetWiringCorridor','wiringCorridorMm',40],
+  ['cabinetTerminalReserve','terminalReserveMm',0],
+  ['cabinetSideWiring','sideWiringCorridorMm',40]]){
+  const input=$(id);if(input&&document.activeElement!==input)
+   input.value=String(limits[field]??def);
  }
  const reserveInput=$('cabinetReservePercent');
  if(reserveInput&&document.activeElement!==reserveInput)
@@ -1782,7 +1794,14 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    ' · свободно '+o.reserveModules+' · полезное ~'+
    Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
    Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+
-  '<p class="mini-warning">Предварительные внутренние размеры (не внешние размеры шкафа). Проверки кабельных вводов и нагрева не выполнены.</p>';
+  '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';
+ const space=$('cabinetSpaceDiagram');
+ if(space){
+  const example=shown.find(o=>o.id===selected)||shown[0];
+  if(typeof epCabinetSpaceDiagramV1==='function')
+   space.innerHTML=epCabinetSpaceDiagramV1(example);
+  else space.textContent='';
+ }
 }
 function applyCabinetCapacityOptionV1(id){
  const report=cabinetCapacityReportV1();
@@ -2320,7 +2339,11 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
  if(x.cabinetSizingPreferencesV1!==undefined){
   const c=x.cabinetSizingPreferencesV1;
   if(!c||typeof c!=='object'||Array.isArray(c)||
-    Object.keys(c).some(k=>!['maxUsableWidthMm','maxUsableHeightMm','reservePercent'].includes(k))||
+    Object.keys(c).some(k=>!['maxUsableWidthMm','maxUsableHeightMm','reservePercent',
+     'wiringCorridorMm','terminalReserveMm','sideWiringCorridorMm'].includes(k))||
+    (c.wiringCorridorMm!==undefined&&(!Number.isInteger(c.wiringCorridorMm)||c.wiringCorridorMm<0||c.wiringCorridorMm>120))||
+    (c.terminalReserveMm!==undefined&&(!Number.isInteger(c.terminalReserveMm)||c.terminalReserveMm<0||c.terminalReserveMm>500))||
+    (c.sideWiringCorridorMm!==undefined&&(!Number.isInteger(c.sideWiringCorridorMm)||c.sideWiringCorridorMm<0||c.sideWiringCorridorMm>70))||
     (c.reservePercent!==undefined&&(!Number.isInteger(c.reservePercent)||c.reservePercent<0||c.reservePercent>50))||
     ['maxUsableWidthMm','maxUsableHeightMm'].some(k=>
      c[k]!==null&&c[k]!==undefined&&(!Number.isInteger(c[k])||c[k]<1||c[k]>10000)))
@@ -2328,7 +2351,10 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
   p.cabinetSizingPreferencesV1={
    maxUsableWidthMm:c.maxUsableWidthMm??null,
    maxUsableHeightMm:c.maxUsableHeightMm??null,
-   reservePercent:c.reservePercent??20};
+   reservePercent:c.reservePercent??20,
+   wiringCorridorMm:c.wiringCorridorMm??40,
+   terminalReserveMm:c.terminalReserveMm??0,
+   sideWiringCorridorMm:c.sideWiringCorridorMm??40};
  }
  return p;}
 function parseCSV(text){
@@ -2561,7 +2587,20 @@ $('exportCabinetCapacityBtn')?.addEventListener('click',()=>{
   ...report,reviewRequired:true,manufacturerSelected:false
  },null,2),'application/json;charset=utf-8');
 });
- $('cabinetReservePercent')?.addEventListener('change',e=>{
+ for(const [id,field,min,max] of [['cabinetWiringCorridor','wiringCorridorMm',0,120],
+ ['cabinetTerminalReserve','terminalReserveMm',0,500],
+ ['cabinetSideWiring','sideWiringCorridorMm',0,70]]){
+ $(id)?.addEventListener('change',e=>{
+  const value=e.target.value.trim(),number=Number(value);
+  if(!value||!Number.isInteger(number)||number<min||number>max){
+   notify('Недопустимое значение предварительной монтажной зоны',true);
+   e.target.value=state.cabinetSizingPreferencesV1?.[field]??(field==='terminalReserveMm'?0:40);return;
+  }
+  checkpoint();state.cabinetSizingPreferencesV1={
+   ...(state.cabinetSizingPreferencesV1||{}),[field]:number};changed();
+ });
+}
+$('cabinetReservePercent')?.addEventListener('change',e=>{
  const val=Number(e.target.value);
  if(e.target.value.trim()===''||!Number.isInteger(val)||val<0||val>50){
   notify('Резерв должен быть целым числом от 0 до 50%',true);

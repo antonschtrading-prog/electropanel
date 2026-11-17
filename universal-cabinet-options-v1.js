@@ -47,13 +47,15 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
     !Array.isArray(project.sharedDevices??[])||(project.sharedDevices??[]).length>500||
     !settings||typeof settings!=='object'||Array.isArray(settings))return blocked('INPUT_INVALID');
  const defaults={reserveFraction:0.2,sideAllowanceMm:70,topBottomAllowanceMm:100,
-  rowPitchMm:150,depthAllowanceMm:60};
+  rowPitchMm:150,depthAllowanceMm:60,
+  wiringCorridorMm:40,terminalReserveMm:0,sideWiringCorridorMm:40};
  const p={...defaults,...settings};
  if(Object.keys(settings).some(k=>!Object.hasOwn(defaults,k))||
     !Number.isFinite(p.reserveFraction)||p.reserveFraction<0||p.reserveFraction>1||
     ![p.sideAllowanceMm,p.topBottomAllowanceMm,p.rowPitchMm,p.depthAllowanceMm].every(x=>
       typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=1000)||
-    p.rowPitchMm<50)return blocked('SETTINGS_INVALID');
+    p.rowPitchMm<50||p.wiringCorridorMm>p.rowPitchMm-30||
+    p.sideWiringCorridorMm>p.sideAllowanceMm)return blocked('SETTINGS_INVALID');
  const entries=[],issues=[],seen=new Set();
  const branches=Array.isArray(project.branchDevices)?project.branchDevices:null;
  const push=(d,id,sku,declared)=>{
@@ -111,18 +113,42 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   const allocated=profile.capacityModules;
   const depthKnown=entries.every(x=>x.bodyDepthMm!==null);
   const maxDepth=depthKnown?Math.max(...entries.map(x=>x.bodyDepthMm)):null;
+  const rowZones=Array.from({length:rails.length},(_,railIndex)=>({
+   railIndex,
+   wiringCorridor:{xMm:0,yMm:p.topBottomAllowanceMm+railIndex*p.rowPitchMm,
+    widthMm:profile.modulesPerRail*18+2*p.sideAllowanceMm,
+    heightMm:p.wiringCorridorMm},
+   apparatusBand:{xMm:p.sideAllowanceMm,
+    yMm:p.topBottomAllowanceMm+railIndex*p.rowPitchMm+p.wiringCorridorMm,
+    widthMm:profile.modulesPerRail*18,
+    heightMm:p.rowPitchMm-p.wiringCorridorMm}
+  }));
+  const spacePlan={
+   source:'ASSUMED_NOT_MANUFACTURER_CAD',
+   sideWiringCorridorMm:p.sideWiringCorridorMm,
+   wiringCorridorPerRailMm:p.wiringCorridorMm,
+   terminalReserveMm:p.terminalReserveMm,
+   topBottomAllowanceMm:p.topBottomAllowanceMm,
+   rowPitchMm:p.rowPitchMm,
+   apparatusBandHeightMm:p.rowPitchMm-p.wiringCorridorMm,
+   rowZones,
+   assumptions:['WIRING_CORRIDOR_NOT_ROUTED','TERMINAL_REGION_NOT_SIZED_FROM_EQUIPMENT',
+    'HEAT_DISSIPATION_NOT_ASSESSED','DIN_MOUNTING_OFFSETS_UNVERIFIED']
+  };
   const envelope={
    nominalDinSpanMm:profile.modulesPerRail*18,
    preliminaryUsableWidthMm:profile.modulesPerRail*18+2*p.sideAllowanceMm,
-   preliminaryUsableHeightMm:rails.length*p.rowPitchMm+2*p.topBottomAllowanceMm,
+   preliminaryUsableHeightMm:rails.length*p.rowPitchMm+2*p.topBottomAllowanceMm+p.terminalReserveMm,
    preliminaryUsableDepthMm:maxDepth===null?null:maxDepth+p.depthAllowanceMm,
-   basis:'ASSUMED_PLANNING_ALLOWANCES_NOT_MANUFACTURER_DIMENSIONS'
+   basis:'ASSUMED_PLANNING_ALLOWANCES_NOT_MANUFACTURER_DIMENSIONS',
+   spacePlan
   };
   const optionIssues=[
    ...unplaced.map(deviceId=>({code:packed.status==='UNPROVEN'?'PACKING_NOT_VERIFIED':'DEVICE_NOT_PACKABLE_IN_PATTERN',level:'BLOCKED',deviceId})),
    ...(packed.status==='UNPROVEN'?[{code:'PACKING_SEARCH_LIMIT',level:'UNKNOWN'}]:[]),
    ...(allocated<target?[{code:'CAPACITY_RESERVE_UNMET',level:'BLOCKED'}]:[]),
    {code:'CABINET_MOUNTING_WIRING_AND_THERMAL_NOT_VERIFIED',level:'UNKNOWN'},
+   {code:'TERMINAL_AND_CABLE_CORRIDORS_ASSUMED',level:'UNKNOWN'},
    ...(depthKnown?[]:[{code:'CABINET_DEPTH_UNKNOWN',level:'UNKNOWN'}])
   ];
   const ordered=variantsBySize.get(profile.capacityModules);
