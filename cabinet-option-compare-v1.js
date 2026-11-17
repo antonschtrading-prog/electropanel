@@ -17,7 +17,7 @@ function epCabinetOptionCompareV1(report,options={}){
  const excludedSet=new Set(excluded),seen=new Set();
  const rows=[];
  for(const o of report.options){
-  if(!o||typeof o.id!=='string'||seen.has(o.id)||!Number.isInteger(o.capacityModules)||
+  if(!o||typeof o.id!=='string'||!o.id.trim()||seen.has(o.id)||!Number.isInteger(o.capacityModules)||
    !Number.isInteger(o.railCount)||!Number.isInteger(o.modulesPerRail)||
    o.capacityModules!==o.railCount*o.modulesPerRail||
    !Number.isFinite(o.envelope?.preliminaryUsableWidthMm)||
