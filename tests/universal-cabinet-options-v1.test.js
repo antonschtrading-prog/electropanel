@@ -207,3 +207,11 @@ test('zero routing and terminal allowances are valid declared assumptions',()=>{
  assert.equal(r.options[0].envelope.spacePlan.wiringCorridorPerRailMm,0);
  assert.equal(r.options[0].envelope.spacePlan.terminalReserveMm,0);
 });
+
+test('direct DIN packing rejects duplicate device IDs before assigning rails',()=>{
+ const {epCabinetPackDevicesV1:pack}=require('../universal-cabinet-options-v1.js');
+ const r=pack([{deviceId:'D1',modules:1},{deviceId:'D1',modules:2}],2,12);
+ assert.equal(r.status,'INVALID');
+ assert.deepEqual(r.rails,[]);
+ assert.ok(r.issues.some(x=>x.code==='PACKING_INPUT_INVALID'));
+});
