@@ -1995,6 +1995,62 @@ function renderCabinetArticleReconciliationV1(){
   }
   details.append(heading,list);target.appendChild(details);
  }
+ const editor=document.createElement('details');
+ const editorTitle=document.createElement('summary');
+ editorTitle.textContent='Заменить аппарат с предварительной проверкой';
+ editor.appendChild(editorTitle);
+ const row=document.createElement('div');row.className='form-grid';
+ const idLabel=document.createElement('label');idLabel.textContent='Аппарат';
+ const idSelect=document.createElement('select');
+ for(const item of report.rows){
+  if(!item.deviceId)continue;
+  const option=document.createElement('option');option.value=item.deviceId;
+  option.textContent=item.deviceId+' · '+(item.boardSku||'без артикула');
+  idSelect.appendChild(option);
+ }
+ idLabel.appendChild(idSelect);
+ const skuLabel=document.createElement('label');skuLabel.textContent='Новый артикул';
+ const skuInput=document.createElement('input');skuInput.type='text';
+ skuInput.maxLength=200;skuInput.placeholder='Артикул из каталога проекта';
+ skuLabel.appendChild(skuInput);
+ row.append(idLabel,skuLabel);editor.appendChild(row);
+ const previewButton=document.createElement('button');previewButton.type='button';
+ previewButton.textContent='Проверить замену';
+ const applyButton=document.createElement('button');applyButton.type='button';
+ applyButton.textContent='Применить проверенную замену';applyButton.disabled=true;
+ const result=document.createElement('p');result.setAttribute('aria-live','polite');
+ let proposed=null;
+ const invalidate=()=>{proposed=null;applyButton.disabled=true;result.textContent='';};
+ idSelect.addEventListener('change',invalidate);
+ skuInput.addEventListener('input',invalidate);
+ previewButton.addEventListener('click',()=>{
+  proposed=null;applyButton.disabled=true;
+  if(typeof epCabinetArticleReplacementV1!=='function'){
+   result.textContent='Модуль замены недоступен.';return;
+  }
+  const candidate=epCabinetArticleReplacementV1(state,idSelect.value,skuInput.value.trim(),catalogDevice);
+  if(candidate.status!=='REVIEW_REQUIRED'){
+   result.textContent='Замена отклонена: '+candidate.code;return;
+  }
+  proposed={candidate,signature:JSON.stringify(state)};
+  result.textContent='Проверено: '+candidate.preview.previousSku+' → '+candidate.preview.nextSku+
+   '. Переместятся аппараты: '+candidate.preview.relocatedDeviceIds.length+
+   '. Для сохранения нажмите «Применить».';
+  applyButton.disabled=false;
+ });
+ applyButton.addEventListener('click',()=>{
+  if(!proposed||proposed.signature!==JSON.stringify(state)){
+   invalidate();result.textContent='Проект изменён. Проверьте замену повторно.';return;
+  }
+  const checked=epCabinetArticleReplacementV1(state,idSelect.value,skuInput.value.trim(),catalogDevice);
+  if(checked.status!=='REVIEW_REQUIRED'){
+   invalidate();result.textContent='Замена не прошла повторную проверку.';return;
+  }
+  checkpoint();state=checked.project;changed();
+  notify('Артикул заменён. Компоновка и спецификация пересчитаны.');
+ });
+ editor.append(previewButton,applyButton,result);
+ target.appendChild(editor);
 }
 function renderBoard(){
  renderCabinetCapacityOptionsV1();
