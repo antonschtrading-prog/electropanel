@@ -52,8 +52,12 @@ test('vector front escapes untrusted catalogue labels and cannot inject markup',
  assert.match(svg,/&amp;/);
 });
 test('SVG is original illustration when no rights-reviewed image exists',()=>{
- const html=epManufacturerVisualHtmlV1(device('ABB','S200'),'B1');
- assert.match(html,/<svg /);
- assert.doesNotMatch(html,/<img /);
- assert.match(html,/aria-label="Иллюстрация/);
+ const previous=global.epCatalogFrontSvgV1;
+ global.epCatalogFrontSvgV1=epCatalogFrontSvgV1;
+ try{
+  const markup=epManufacturerVisualHtmlV1(device('ABB','S200'),'B1');
+  assert.match(markup,/<svg /);
+  assert.doesNotMatch(markup,/<img /);
+  assert.match(markup,/aria-label="Иллюстрация/);
+ }finally{global.epCatalogFrontSvgV1=previous;}
 });
