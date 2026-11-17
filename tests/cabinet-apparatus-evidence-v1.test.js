@@ -54,3 +54,26 @@ test('no catalogue article stays unknown rather than treated as 18mm verified bo
  assert.equal(r.rows[0].bodyWidthMm,null);
  assert.equal(r.actualMountingPositionVerified,false);
 });
+
+test('invalid calendar date or future source review is never counted as reviewed',()=>{
+ for(const date of ['2026-02-30','2099-01-01','not-a-date']){
+  const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+  const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+   sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:date}));
+  assert.equal(r.sourceReviewed,0);
+  assert.equal(r.rows[0].sourceReviewedAt,null);
+  assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_REVIEW_DATE_INVALID'));
+  assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_LINK_MISSING'));
+  assert.equal(r.engineeringApproved,false);
+ }
+});
+test('valid reviewed source date remains visible without implying cabinet approval',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=audit(p,()=>({sku:'C',widthMm:18,heightMm:80,depthMm:70,
+  sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2026-11-14',
+  source:'https://example.org/datasheet'}));
+ assert.equal(r.sourceReviewed,1);
+ assert.equal(r.rows[0].sourceReviewedAt,'2026-11-14');
+ assert.equal(r.rows[0].sourceUrl,'https://example.org/datasheet');
+ assert.equal(r.ready_for_installation,false);
+});
