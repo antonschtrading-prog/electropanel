@@ -3179,8 +3179,14 @@ $('automationFlowPanel').addEventListener('click',e=>{
  const apply=e.target.closest('#workflowApplyCurrentsBtn');
  const choose=e.target.closest('[data-workflow-article][data-workflow-line]');
  const exportCsv=e.target.closest('#workflowExportCsvBtn');
- if(!preview&&!apply&&!choose&&!exportCsv)return;
+ const exportConsumerCsv=e.target.closest('#workflowConsumerCsvBtn');
+ if(!preview&&!apply&&!choose&&!exportCsv&&!exportConsumerCsv)return;
  try{
+  if(exportConsumerCsv){
+   const audit=epWorkflowConsumerAuditV1(state);
+   return download(baseName()+'_consumers_DRAFT.csv',
+    epWorkflowConsumerAuditCsvV1(audit),'text/csv;charset=utf-8');
+  }
   if(exportCsv){
    const inputs=workflowPreviewInputs||state.workflowDesignInputsV1||null;
    const catalogue=projectCatalogEntries().map(([id,device])=>({id,device}));

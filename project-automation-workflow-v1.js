@@ -331,6 +331,7 @@ function epWorkflowHtmlV1(report,stored={}){
   '<button id="workflowPreviewBtn" class="btn" type="button">Пересчитать предварительный маршрут</button>'+
   '<button id="workflowApplyCurrentsBtn" class="btn primary" type="button">Рассчитать недостающие Ib</button>'+ 
   '<button id="workflowExportCsvBtn" class="btn" type="button">Ведомость маршрута CSV</button>'+
+  '<button id="workflowConsumerCsvBtn" class="btn" type="button">Сверка потребителей CSV</button>'+
   '</div><div class="muted">'+stages+'</div>'+
   '<p class="muted">Линий: '+esc(report?.summary?.circuits??0)+
   ', потребителей: '+esc(report?.summary?.consumers??0)+
