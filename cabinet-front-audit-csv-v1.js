@@ -13,11 +13,12 @@ function epCabinetFrontAuditCsvV1(report){
  };
  const columns=['sku','maker','series','kind','apparatus_count','device_ids',
   'modules','body_width_mm','nominal_slot_width_mm','geometry_status',
-  'front_evidence_status','issue_codes','report_status','engineering_approved'];
+  'front_evidence_status','image_source_url','image_reviewed_at','issue_codes',
+  'report_status','engineering_approved'];
  const lines=[columns,...report.rows.map(r=>[
   r.sku,r.maker,r.series,r.kind,r.count,(r.deviceIds||[]).join('|'),
   r.modules,r.widthMm,r.nominalSlotWidthMm,r.geometryStatus,
-  r.status,(r.issues||[]).join('|'),report.status,'NO'
+  r.status,r.imageSourceUrl,r.imageReviewedAt,(r.issues||[]).join('|'),report.status,'NO'
  ])];
  return {schema:'electropanel.cabinet.front.audit.csv.1',status:report.status,
   csv:'\uFEFF'+lines.map(r=>r.map(safe).join(';')).join('\r\n')+'\r\n',
