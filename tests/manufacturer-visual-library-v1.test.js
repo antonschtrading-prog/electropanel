@@ -74,3 +74,10 @@ test('future-dated review cannot establish manufacturer visual provenance',()=>{
  assert.ok(r.issues.includes('FRONT_SOURCE_NOT_REVIEWED'));
  assert.equal(r.engineeringApproved,false);
 });
+
+test('registry entry must resolve to its own exact manufacturer article key',()=>{
+ const wrong={...a,maker:'Schneider Electric'};
+ const r=lib.epManufacturerFrontResolveV1(d,{'abb|a1':wrong});
+ assert.equal(r.status,'ASSET_REJECTED');
+ assert.ok(r.issues.includes('FRONT_ARTICLE_IDENTITY_MISMATCH'));
+});
