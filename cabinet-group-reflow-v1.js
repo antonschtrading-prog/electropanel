@@ -41,10 +41,15 @@ function epCabinetGroupReflowV1(project,lookup){
    }
    if(!improved)break;
   }
-  let startModule=0;
-  for(const p of arr){
-   positions.push({deviceId:p.deviceId,railIndex,startModule});
-   startModule+=p.modules;
+  if(best===initial){
+   for(const p of row)
+    positions.push({deviceId:p.deviceId,railIndex,startModule:p.startModule});
+  }else{
+   let startModule=0;
+   for(const p of arr){
+    positions.push({deviceId:p.deviceId,railIndex,startModule});
+    startModule+=p.modules;
+   }
   }
   newOrders.push({railIndex,beforeScore:initial,afterScore:best});
  }

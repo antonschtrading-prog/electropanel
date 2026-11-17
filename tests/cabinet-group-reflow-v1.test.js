@@ -5,7 +5,7 @@ global.epCabinetConnectionProximityV1=require('../cabinet-connection-proximity-v
 const {epCabinetGroupReflowV1:reflow}=require('../cabinet-group-reflow-v1.js');
 const fixture=()=>({railCount:1,railCapacity:8,lines:[
  {id:'L1',modules:1},{id:'L2',modules:1},{id:'L3',modules:1},{id:'L4',modules:1}],
- sharedDevices:[],branchDevices:[],protectionLinks:[
+ sharedDevices:[],protectionLinks:[
  {upstreamLineId:'L1',downstreamLineId:'L4'}]});
 test('explicit reflow shortens declared connection gap without changing circuits',()=>{
  const p=fixture(),orig=JSON.stringify(p),r=reflow(p);
