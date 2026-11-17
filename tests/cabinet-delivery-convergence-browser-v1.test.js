@@ -185,3 +185,21 @@ test('DIN SVG export regenerates from the current option and project',()=>{
  assert.match(app,/_din_preview_/);
  assert.match(app,/image\/svg\+xml;charset=utf-8/);
 });
+
+test('cabinet impact evaluator loads before application',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-option-impact-v1.js"')<html.indexOf('src="app.js"'));
+});
+test('cabinet selection includes minimum-movement preference',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/\['stability','Минимум перестановок'\]/);
+ assert.match(app,/epCabinetOptionImpactV1\(state,report,catalogDevice/);
+});
+test('cabinet selection displays actual movement count',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/impact\?\.rows.find\(r=>r.id===o.id\)\?\.moved/);
+});
+test('cabinet comparison export includes impact-aware ranking',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/impactRows:impact\?\.rows\|\|\[\]/);
+});
