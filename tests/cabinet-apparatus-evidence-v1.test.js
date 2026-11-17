@@ -153,3 +153,30 @@ test('unclassified evidence has an actionable provenance issue',()=>{
  assert.equal(r.sourceReviewed,0);
  assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_CATEGORY_MISSING'));
 });
+
+test('official datasheets, manufacturer catalogues and product pages count as traceable sources',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L',modules:1,catalogSku:'A'}]};
+ for(const sourceType of ['MANUFACTURER_DATASHEET_OFFICIAL',
+  'MANUFACTURER_PRODUCT_PAGE','MANUFACTURER_CATALOG']){
+  const r=audit(p,()=>({sku:'A',modules:1,widthMm:18,heightMm:85,depthMm:70,
+   sourceType,sourceReviewedAt:'2026-11-14',source:'https://manufacturer.example/data'}));
+  assert.equal(r.sourceCoverage.reviewed,1,sourceType);
+  assert.equal(r.sourceReviewed,1,sourceType);
+  assert.equal(r.ready_for_installation,false);
+ }
+});
+test('unknown source categories never count as manufacturer-reviewed evidence',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L',modules:1,catalogSku:'A'}]};
+ const r=audit(p,()=>({sku:'A',modules:1,widthMm:18,heightMm:85,depthMm:70,
+  sourceType:'SOCIAL_MEDIA_POST',sourceReviewedAt:'2026-11-14',
+  source:'https://example.org/post'}));
+ assert.equal(r.sourceReviewed,0);
+ assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_CATEGORY_UNRECOGNIZED'));
+});
+test('manufacturer product page without valid URL is explicitly incomplete',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L',modules:1,catalogSku:'A'}]};
+ const r=audit(p,()=>({sku:'A',modules:1,widthMm:18,heightMm:85,depthMm:70,
+  sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-14'}));
+ assert.equal(r.sourceReviewed,0);
+ assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_LINK_MISSING'));
+});
