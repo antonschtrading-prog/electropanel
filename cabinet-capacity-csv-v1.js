@@ -26,7 +26,7 @@ function epCabinetCapacityCsvV1(report,limits={}){
    ['DEPTH',env.preliminaryUsableDepthMm,limits.maxUsableDepthMm]];
   const reasons=[];
   for(const [axis,value,max] of dimensions){
-   if(max===undefined)continue;
+   if(max==null)continue;
    if(typeof value!=='number'||!Number.isFinite(value)||value<=0)
     reasons.push(axis+'_UNKNOWN');
    else if(value>max)reasons.push(axis+'_EXCEEDS_LIMIT');
