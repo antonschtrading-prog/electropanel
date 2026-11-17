@@ -1867,6 +1867,18 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
     visual.innerHTML=epCabinetOptionDinSvgV1(preview);previewTarget.appendChild(visual);
    }
    previewTarget.appendChild(list);
+   if(typeof epCabinetOptionPreviewCsvV1==='function'){
+    const exportBtn=document.createElement('button');exportBtn.type='button';
+    exportBtn.className='btn';exportBtn.textContent='Скачать перемещения DIN CSV';
+    exportBtn.addEventListener('click',()=>{
+     const latest=cabinetCapacityReportV1()?.options.find(o=>o.id===previewOption.id);
+     if(!latest){notify('Вариант больше не доступен',true);return;}
+     const data=epCabinetOptionPreviewCsvV1(epCabinetOptionPreviewV1(state,latest,catalogDevice));
+     if(!data.csv){notify('Не удалось экспортировать перемещения',true);return;}
+     download(baseName()+'_din_positions_'+previewOption.id+'.csv',data.csv,'text/csv;charset=utf-8');
+    });
+    previewTarget.appendChild(exportBtn);
+   }
   }else{
    summary.textContent='Просмотр недоступен: '+(preview?.code||'движок отсутствует');
    previewTarget.append(heading,summary);
