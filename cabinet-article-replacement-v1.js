@@ -7,7 +7,8 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
   status:'BLOCKED',code,issues,project:null,preview:null,
   engineeringApproved:false,ready_for_installation:false});
  if(!project||!Array.isArray(project.lines)||typeof deviceId!=='string'||
-  !deviceId.trim()||typeof nextSku!=='string'||!nextSku.trim()||
+  !deviceId.trim()||deviceId!==deviceId.trim()||typeof nextSku!=='string'||
+  !nextSku.trim()||nextSku!==nextSku.trim()||
   nextSku.length>200||typeof lookup!=='function')
   return reject('REPLACEMENT_INPUT_INVALID');
  if(typeof epCabinetArticleReconciliationV1!=='function'||
