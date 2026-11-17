@@ -1,0 +1,72 @@
+'use strict';
+// A deterministic project-only manufacturer/series visual index. No manufacturer
+// image is treated as approved geometry or electrical evidence.
+function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
+ const empty=(code)=>({schema:'electropanel.cabinet.front.gallery.1',status:'BLOCKED',
+  code,rows:[],groups:[],totals:{articles:0,apparatus:0,reviewedImages:0,
+   vectorSketches:0,rejectedImages:0,missingArticles:0,unknownGeometry:0},
+  engineeringApproved:false,manufacturerCabinetFitVerified:false});
+ if(!reconciliation||!Array.isArray(reconciliation.rows)||
+  typeof lookup!=='function'||typeof resolveImage!=='function')
+  return empty('FRONT_GALLERY_INPUT_INVALID');
+ const articles=new Map(),cache=new Map();
+ const lookupOnce=sku=>{
+  if(cache.has(sku))return cache.get(sku);
+  let item=null,failed=false;
+  try{item=lookup(sku);}catch(_){failed=true;}
+  const value={item,failed};cache.set(sku,value);return value;
+ };
+ for(const r of reconciliation.rows){
+  const sku=typeof r?.boardSku==='string'?r.boardSku.trim():'';
+  if(!sku)continue;
+  if(!articles.has(sku))articles.set(sku,{sku,deviceIds:[],count:0});
+  const entry=articles.get(sku);
+  entry.count++;
+  if(r.deviceId!==null&&r.deviceId!==undefined)entry.deviceIds.push(String(r.deviceId));
+ }
+ const rows=[...articles.values()].map(a=>{
+  const {item,failed}=lookupOnce(a.sku);
+  let asset=null;
+  try{asset=item?resolveImage(item):null;}catch(_){asset={status:'ASSET_REJECTED',issues:['FRONT_RESOLVER_FAILED']};}
+  const status=failed||!item?'MISSING_ARTICLE':
+   asset?.status==='REVIEWED_IMAGE'?'REVIEWED_IMAGE':
+   asset?.status==='ASSET_REJECTED'?'ASSET_REJECTED':'STYLIZED_ONLY';
+  const modules=Number.isInteger(item?.modules)&&item.modules>0?item.modules:null;
+  const widthMm=Number.isFinite(item?.widthMm)&&item.widthMm>0?item.widthMm:null;
+  const nominalSlotWidthMm=modules===null?null:modules*18;
+  const geometryStatus=widthMm===null||nominalSlotWidthMm===null?'UNKNOWN':
+   widthMm>nominalSlotWidthMm+0.001?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
+  return {sku:a.sku,count:a.count,deviceIds:a.deviceIds.sort(),status,
+   maker:typeof item?.maker==='string'?item.maker:'',
+   series:typeof item?.series==='string'?item.series:'',
+   kind:typeof item?.kind==='string'?item.kind:'',
+   modules,widthMm,nominalSlotWidthMm,geometryStatus,
+   imageSrc:status==='REVIEWED_IMAGE'?asset.image?.src||null:null,
+   issues:status==='MISSING_ARTICLE'?['FRONT_GALLERY_CATALOGUE_MISSING']:
+    asset?.issues||[],engineeringApproved:false};
+ }).sort((a,b)=>a.maker.localeCompare(b.maker)||a.series.localeCompare(b.series)||
+  a.sku.localeCompare(b.sku));
+ const groups=[];
+ for(const row of rows){
+  const key=[row.maker||'Неизвестный производитель',row.series||'Серия не указана'].join(' / ');
+  let group=groups.find(x=>x.key===key);
+  if(!group){group={key,maker:row.maker,series:row.series,articles:0,apparatus:0,
+   reviewedImages:0,unknownGeometry:0};groups.push(group);}
+  group.articles++;group.apparatus+=row.count;
+  if(row.status==='REVIEWED_IMAGE')group.reviewedImages++;
+  if(row.geometryStatus==='UNKNOWN')group.unknownGeometry++;
+ }
+ const totals={articles:rows.length,apparatus:rows.reduce((n,r)=>n+r.count,0),
+  reviewedImages:rows.filter(r=>r.status==='REVIEWED_IMAGE').length,
+  vectorSketches:rows.filter(r=>r.status==='STYLIZED_ONLY').length,
+  rejectedImages:rows.filter(r=>r.status==='ASSET_REJECTED').length,
+  missingArticles:rows.filter(r=>r.status==='MISSING_ARTICLE').length,
+  unknownGeometry:rows.filter(r=>r.geometryStatus==='UNKNOWN').length};
+ return {schema:'electropanel.cabinet.front.gallery.1',
+  status:rows.some(r=>r.status==='MISSING_ARTICLE'||r.status==='ASSET_REJECTED'||
+   r.geometryStatus==='EXCEEDS_DIN_SLOT')?'BLOCKED':'REVIEW_REQUIRED',
+  code:'FRONT_GALLERY_PRELIMINARY',rows,groups,totals,
+  engineeringApproved:false,manufacturerCabinetFitVerified:false};
+}
+if(typeof module!=='undefined'&&module.exports)
+ module.exports={epCabinetFrontGalleryV1};
