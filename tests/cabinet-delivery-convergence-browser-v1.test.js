@@ -147,3 +147,20 @@ test('option preview updates the existing DIN space diagram',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.match(app,/shown.find\(o=>o.id===cabinetOptionPreviewIdV1\)/);
 });
+
+test('DIN SVG and CSV modules load before app',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ for(const name of ['cabinet-option-din-svg-v1.js','cabinet-option-preview-csv-v1.js'])
+  assert.ok(html.indexOf('src="'+name+'"')<html.indexOf('src="app.js"'));
+});
+test('DIN preview renders SVG apparatus diagram',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/epCabinetOptionDinSvgV1\(preview\)/);
+ assert.match(app,/ep-cabinet-din-visual/);
+});
+test('DIN preview export regenerates against current project',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/Скачать перемещения DIN CSV/);
+ assert.match(app,/epCabinetOptionPreviewCsvV1\(epCabinetOptionPreviewV1\(state,latest,catalogDevice\)\)/);
+ assert.match(app,/_din_positions_/);
+});
