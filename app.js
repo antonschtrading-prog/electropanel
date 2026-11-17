@@ -2024,13 +2024,13 @@ function renderCabinetArticleReconciliationV1(){
   let page=0;
   const refresh=()=>{
    const result=epCabinetFrontGalleryModelV1(report.rows,catalogDevice,{
-    search:search.value,maker:makerFilter.value,page:0,pageSize:Math.min(48,(page+1)*12)
+    search:search.value,maker:makerFilter.value,page,pageSize:12
    });
-   grid.replaceChildren();
+   if(page===0)grid.replaceChildren();
    if(result.status==='BLOCKED'){
     count.textContent='Не удалось сформировать список фасадов';more.hidden=true;return;
    }
-   count.textContent='Показано '+result.items.length+' из '+result.total+
+   count.textContent='Показано '+(page*12+result.items.length)+' из '+result.total+
     ' артикулов (всего в проекте '+result.allArticles+')';
    for(const entry of result.items){
     const sku=entry.sku,item=entry.device;
@@ -2068,7 +2068,7 @@ function renderCabinetArticleReconciliationV1(){
     if(!item){const code=document.createElement('span');code.textContent=sku;card.append(art,code);}
     grid.appendChild(card);
    }
-   if(!result.items.length)grid.textContent='Нет аппаратов по заданным фильтрам';
+   if(!result.items.length&&page===0)grid.textContent='Нет аппаратов по заданным фильтрам';
    more.hidden=!result.hasMore;
   };
   search.addEventListener('input',()=>{page=0;refresh();});
