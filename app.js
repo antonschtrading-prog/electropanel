@@ -1865,6 +1865,17 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    if(typeof epCabinetOptionDinSvgV1==='function'){
     const visual=document.createElement('div');visual.className='ep-cabinet-din-visual';
     visual.innerHTML=epCabinetOptionDinSvgV1(preview);previewTarget.appendChild(visual);
+    const svgButton=document.createElement('button');svgButton.type='button';
+    svgButton.className='btn';svgButton.textContent='Скачать эскиз DIN SVG';
+    svgButton.addEventListener('click',()=>{
+     const latest=cabinetCapacityReportV1()?.options.find(o=>o.id===previewOption.id);
+     if(!latest){notify('Вариант больше не доступен',true);return;}
+     const currentPreview=epCabinetOptionPreviewV1(state,latest,catalogDevice);
+     const svg=epCabinetOptionDinSvgV1(currentPreview);
+     if(!svg){notify('Эскиз DIN недоступен',true);return;}
+     download(baseName()+'_din_preview_'+previewOption.id+'.svg',svg,'image/svg+xml;charset=utf-8');
+    });
+    previewTarget.appendChild(svgButton);
    }
    previewTarget.appendChild(list);
    if(typeof epCabinetOptionPreviewCsvV1==='function'){
