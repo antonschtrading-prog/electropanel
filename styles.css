@@ -373,3 +373,5 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 
 .ep-front-gallery-card[data-width-conflict="true"]{border:2px solid #b13d2b;background:#fff2ed}
 .ep-front-gallery-card[data-width-conflict="true"] small{color:#923523;font-weight:700}
+
+.ep-front-gallery-card button{font-size:11px;padding:6px 9px;min-height:30px;margin-top:auto;width:100%;border-radius:7px}
