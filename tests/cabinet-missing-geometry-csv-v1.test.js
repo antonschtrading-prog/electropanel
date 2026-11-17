@@ -94,3 +94,13 @@ test('supplier schedule explicitly requests correction of malformed evidence URL
  assert.doesNotMatch(r.csv,/user:pass/);
  assert.equal(r.ready_for_installation,false);
 });
+
+test('supplier checklist asks to reclassify unsupported provenance',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=csv(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:85,depthMm:70,
+  sourceType:'UNVERIFIED_BLOG',sourceReviewedAt:'2026-11-14',
+  source:'https://example.org/blog'}));
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.match(r.csv,/RECLASSIFY_SOURCE/);
+ assert.equal(r.engineeringApproved,false);
+});
