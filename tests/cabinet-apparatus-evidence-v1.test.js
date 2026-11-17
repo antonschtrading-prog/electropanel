@@ -77,3 +77,22 @@ test('valid reviewed source date remains visible without implying cabinet approv
  assert.equal(r.rows[0].sourceUrl,'https://example.org/datasheet');
  assert.equal(r.ready_for_installation,false);
 });
+
+test('coverage counts are derived from actual selected articles',()=>{
+ const p=board(),r=audit(p,id=>catalog[id]);
+ assert.equal(r.dimensionCoverage.complete,1);
+ assert.equal(r.dimensionCoverage.incomplete,1);
+ assert.equal(r.sourceCoverage.total,2);
+ assert.equal(r.engineeringApproved,false);
+});
+test('nominal device coordinates are relative to the declared installation band',()=>{
+ const p={railCount:1,railCapacity:3,lines:[{id:'L1',modules:1,catalogSku:'C'}],
+  cabinetGeometryV1:{version:1,source:'USER_DECLARED',
+   interior:{widthMm:140,heightMm:140,depthMm:100},
+   zones:[{railIndex:0,xMm:25,yMm:20,widthMm:60,heightMm:100}]}};
+ const r=audit(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:85,depthMm:70}));
+ assert.equal(r.rows[0].nominalStartXMm,25);
+ assert.equal(r.rows[0].nominalEndXMm,43);
+ assert.equal(r.rows[0].remainingZoneWidthMm,42);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+});
