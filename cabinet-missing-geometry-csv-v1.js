@@ -4,7 +4,8 @@
 function epCabinetMissingGeometryCsvV1(project,lookup){
  const heads=['device_id','selected_article','maker','series','body_width_mm',
   'body_height_mm','body_depth_mm','missing_information','source_type',
-  'source_reviewed_at','source_url','installation_status'];
+  'source_reviewed_at','source_url','installation_status','nominal_start_x_mm',
+  'nominal_end_x_mm','actual_body_end_x_mm','remaining_band_mm','remaining_body_band_mm'];
  const esc=x=>{
   let s=String(x??'');
   if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;
@@ -26,12 +27,17 @@ function epCabinetMissingGeometryCsvV1(project,lookup){
   if(row.bodyHeightMm===null)missing.push('BODY_HEIGHT');
   if(row.bodyDepthMm===null)missing.push('BODY_DEPTH');
   if(row.sourceReviewedAt===null)missing.push('SOURCE_REVIEW');
+  if(row.sourceUrl===null)missing.push('SOURCE_URL');
+  if(row.issues.includes('APPARATUS_EVIDENCE_SOURCE_REVIEW_DATE_INVALID'))
+   missing.push('CORRECT_REVIEW_DATE');
   // Even a complete body cuboid has no actual terminal coordinate data.
   missing.push('DIN_MOUNT_OFFSET','TERMINAL_POSITIONS','CONNECTION_CLEARANCES');
   lines.push([row.deviceId,row.articleId||'',row.maker||'',row.series||'',
    row.bodyWidthMm??'UNKNOWN',row.bodyHeightMm??'UNKNOWN',row.bodyDepthMm??'UNKNOWN',
    missing.join('|'),row.sourceType,row.sourceReviewedAt||'NOT_REVIEWED',
-   row.sourceUrl||'','NOT_VERIFIED'].map(esc).join(';'));
+   row.sourceUrl||'','NOT_VERIFIED',row.nominalStartXMm??'UNKNOWN',
+   row.nominalEndXMm??'UNKNOWN',row.actualBodyEndXMm??'UNKNOWN',
+   row.remainingZoneWidthMm??'UNKNOWN',row.remainingBodyZoneWidthMm??'UNKNOWN'].map(esc).join(';'));
   count++;
  }
  if(!count)issues.push({code:'MISSING_GEOMETRY_NO_APPARATUS',level:'UNKNOWN'});
