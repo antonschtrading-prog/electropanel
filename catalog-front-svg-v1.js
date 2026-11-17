@@ -37,7 +37,7 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  }[family];
  const poles=Number.isInteger(device?.poles)&&device.poles>0?Math.min(device.poles,8):1;
  const modules=Number.isInteger(device?.modules)&&device.modules>0?Math.min(device.modules,24):poles;
- const geometryKnown=Number.isFinite(device?.widthMm)&&device.widthMm>0&&device.widthMm<=modules*18+0.001;
+ const geometryKnown=Number.isFinite(device?.widthMm)&&device.widthMm>0&&device.widthMm<=modules*18+0.05;
  const widthStatus=!Number.isFinite(device?.widthMm)||device.widthMm<=0?'UNKNOWN':
   device.widthMm>modules*18+0.05?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
  const evidenceVerified=device?.verificationStatus==='VERIFIED'&&geometryKnown;
