@@ -9,7 +9,7 @@ test('gallery counts apparatus and groups articles by manufacturer and series',(
  const r=gallery(audit,device,()=>({status:'STYLIZED_ONLY'}));
  assert.equal(r.status,'REVIEW_REQUIRED');
  assert.deepEqual(r.totals,{articles:2,apparatus:4,reviewedImages:0,vectorSketches:2,
-  rejectedImages:0,missingArticles:0,unknownGeometry:0});
+  rejectedImages:0,missingArticles:0,unknownGeometry:0,widthConflicts:0});
  assert.deepEqual(r.rows.find(x=>x.sku==='A').deviceIds,['B1','B3']);
  assert.equal(r.rows.find(x=>x.sku==='B').count,2);
  assert.equal(r.groups.length,2);
@@ -160,4 +160,11 @@ test('unreviewed sketches never inherit manufacturer photo provenance',()=>{
  const r=gallery(audit,device,()=>({status:'STYLIZED_ONLY',
   image:{productEvidenceUrl:'https://example.org/unverified',reviewedAt:'2026-11-17'}}));
  assert.ok(r.rows.every(x=>x.imageSourceUrl===null&&x.imageReviewedAt===null));
+});
+
+test('gallery reports width conflict counts globally and per manufacturer group',()=>{
+ const r=gallery(audit,sku=>({...device(sku),widthMm:100}),
+  ()=>({status:'STYLIZED_ONLY'}));
+ assert.equal(r.totals.widthConflicts,2);
+ assert.ok(r.groups.every(x=>x.widthConflicts===1));
 });
