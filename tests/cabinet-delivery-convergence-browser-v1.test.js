@@ -309,3 +309,12 @@ test('dimension export invalidates on project changes',()=>{
  assert.match(block,/cabinetCrossRailFingerprintV1\(\)!==fingerprint/);
  assert.match(block,/notify\('Проект изменён/);
 });
+
+test('DIN geometry schematic loads and renders within selected proposal',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-apparatus-geometry-svg-v1.js"')<
+  html.indexOf('src="app.js"'));
+ assert.match(app,/epCabinetApparatusGeometrySvgV1\(selected.geometry\)/);
+ assert.match(app,/diagram.innerHTML=svg/);
+});
