@@ -1818,6 +1818,7 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    '" data-apply-cabinet-option="'+o.id+'">'+(comparison?.recommendedId===o.id?'★ Рекомендуемый · ':'')+o.capacityModules+
    ' мод. · '+({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Вариант')+' · '+o.railCount+' × '+o.modulesPerRail+
    ' · свободно '+o.reserveModules+
+   ' · площадь ~'+Math.round(o.envelope.preliminaryUsableWidthMm*o.envelope.preliminaryUsableHeightMm/10000)/100+' м²'+
    (o.connectionProximity?' · связанные: на одной DIN '+o.connectionProximity.sameRail+'/'+
     (o.connectionProximity.sameRail+o.connectionProximity.crossRail)+
     ', не размещено '+o.connectionProximity.unresolved:'')+
