@@ -73,6 +73,16 @@ const server=http.createServer((req,res)=>{
  await page.locator('#workflowExportCsvBtn').click();
  const exportedWorkflow=await workflowCsvDownload;
  assert.match(exportedWorkflow.suggestedFilename(),/_workflow_DRAFT\.csv$/);
+ const beforeConsumerCsv=await page.evaluate(()=>JSON.stringify(state));
+ const consumerDownload=page.waitForEvent('download');
+ await page.locator('#workflowConsumerCsvBtn').click();
+ const exportedConsumers=await consumerDownload;
+ assert.match(exportedConsumers.suggestedFilename(),/_consumers_DRAFT\\.csv$/);
+ assert.equal(await page.evaluate(()=>JSON.stringify(state)),beforeConsumerCsv,
+  'Consumer reconciliation export must not mutate engineering state');
+ const auditUi=await page.evaluate(()=>epWorkflowConsumerAuditV1(state));
+ assert.equal(auditUi.engineeringApproved,false);
+ assert.ok(auditUi.rows.length>0);
  await page.locator('#undoBtn').click();
  assert.notEqual(await page.evaluate(id=>state.lines.find(l=>l.id===id)?.catalogSku,proposalId),proposalSku);
  await page.locator('#redoBtn').click();
