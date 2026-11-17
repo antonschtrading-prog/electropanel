@@ -9,6 +9,9 @@ function epCabinetFrontGalleryModelV1(rows,lookup,options={}){
  const search=typeof options.search==='string'?options.search.trim().toLocaleLowerCase():''; 
  const maker=typeof options.maker==='string'?options.maker.trim().toLocaleLowerCase():'';
  const evidence=typeof options.evidence==='string'?options.evidence:'';
+ const geometry=typeof options.geometry==='string'?options.geometry:'';
+ if(geometry&&!['EXCEEDS_DIN_SLOT','UNKNOWN','DECLARED_WITHIN_SLOT'].includes(geometry))
+  return reject('FRONT_GALLERY_GEOMETRY_FILTER_INVALID');
  if(evidence&&!['REVIEWED_IMAGE','STYLIZED_ONLY','ASSET_REJECTED','CATALOGUE_MISSING'].includes(evidence))
   return reject('FRONT_GALLERY_EVIDENCE_FILTER_INVALID');
  if(search.length>200||maker.length>200)return reject('FRONT_GALLERY_FILTER_INVALID');
@@ -35,9 +38,11 @@ function epCabinetFrontGalleryModelV1(rows,lookup,options={}){
     }catch(_){frontStatus='ASSET_REJECTED';}
    }
   }
-  const widthConflict=Number.isInteger(device?.modules)&&device.modules>0&&
-   Number.isFinite(device?.widthMm)&&device.widthMm>device.modules*18+0.05;
-  bySku.set(sku,{sku,maker:makerName,series,kind,quantity:1,widthConflict,device:device||null,
+  const widthKnown=Number.isInteger(device?.modules)&&device.modules>0&&
+   Number.isFinite(device?.widthMm)&&device.widthMm>0;
+  const widthConflict=widthKnown&&device.widthMm>device.modules*18+0.05;
+  const geometryStatus=!widthKnown?'UNKNOWN':widthConflict?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
+  bySku.set(sku,{sku,maker:makerName,series,kind,quantity:1,widthConflict,geometryStatus,device:device||null,
    status:device?'CATALOGUE_FOUND':'CATALOGUE_MISSING',frontStatus});
  }
  const all=[...bySku.values()].sort((a,b)=>
@@ -49,6 +54,7 @@ function epCabinetFrontGalleryModelV1(rows,lookup,options={}){
  const installedDevices=all.reduce((sum,entry)=>sum+entry.quantity,0);
  const widthConflicts=all.filter(x=>x.widthConflict).length;
  const filtered=all.filter(x=>(!evidence||x.frontStatus===evidence)&&
+  (!geometry||x.geometryStatus===geometry)&&
   (!maker||x.maker.toLocaleLowerCase()===maker)&&
   (!search||[x.sku,x.maker,x.series,x.kind].join(' ').toLocaleLowerCase().includes(search)));
  const start=page*pageSize;
