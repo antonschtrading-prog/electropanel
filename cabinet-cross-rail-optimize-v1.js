@@ -16,6 +16,8 @@ function epCabinetCrossRailOptimizeV1(project,lookup,options={}){
  const original=epCabinetConnectionProximityV1(project,before.placements);
  if(original.status==='BLOCKED')return fail('CROSS_RAIL_RELATIONS_INVALID',original.issues);
  const fixed=new Set((project.manualLayoutV1||[]).map(x=>x.deviceId));
+ const relatedIds=new Set(original.pairs.filter(p=>p.status==='REVIEW_REQUIRED')
+  .flatMap(p=>[p.from,p.to]));
  const capacity=project.railCapacity,rails=project.railCount;
  const initial=before.placements.map(p=>({deviceId:p.deviceId,railIndex:p.railIndex,
   startModule:p.startModule,modules:p.modules}));
@@ -51,11 +53,13 @@ function epCabinetCrossRailOptimizeV1(project,lookup,options={}){
  for(let pass=0;pass<maxPasses;pass++){
   let best=null,bestScore=currentScore;
   // Candidate search only moves one non-anchored apparatus at a time.
-  for(let i=0;i<current.length;i++){
-   if(fixed.has(current[i].deviceId))continue;
+  let inspected=0;
+  search:for(let i=0;i<current.length;i++){
+   if(fixed.has(current[i].deviceId)||!relatedIds.has(current[i].deviceId))continue;
    for(let r=0;r<rails;r++){
     if(r===current[i].railIndex)continue;
     for(let x=0;x+current[i].modules<=capacity;x++){
+     if(++inspected>20000)break search;
      const candidate=current.map(p=>({...p}));
      candidate[i].railIndex=r;candidate[i].startModule=x;
      if(!valid(candidate))continue;
