@@ -7,7 +7,8 @@ function epCabinetPackDevicesV1(entries,railCount,capacity,nodeLimit=60000){
   !Number.isInteger(capacity)||capacity<1||capacity>200||
   !Number.isInteger(nodeLimit)||nodeLimit<0||nodeLimit>1000000||
   entries.some(d=>!d||typeof d.deviceId!=='string'||!d.deviceId||
-   !Number.isInteger(d.modules)||d.modules<1||d.modules>200))
+   !Number.isInteger(d.modules)||d.modules<1||d.modules>200)||
+  new Set(entries.map(d=>d.deviceId)).size!==entries.length)
   return {status:'INVALID',rails:[],unplaced:[],issues:[{code:'PACKING_INPUT_INVALID',level:'BLOCKED'}]};
  const sorted=[...entries].sort((a,b)=>b.modules-a.modules||a.deviceId.localeCompare(b.deviceId));
  const rails=Array.from({length:railCount},(_,railIndex)=>({railIndex,usedModules:0,devices:[]}));
