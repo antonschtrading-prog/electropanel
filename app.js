@@ -1905,6 +1905,13 @@ function applyCabinetCapacityOptionV1(id){
  if(!constraints?.eligible.some(x=>x.optionId===id)){
   notify('Предварительная компоновка превышает указанные полезные размеры',true);return;
  }
+ if(typeof epCabinetOptionPreviewV1==='function'){
+  const preview=epCabinetOptionPreviewV1(state,option,catalogDevice);
+  if(preview.status==='BLOCKED'){
+   notify('Нельзя применить вариант: предварительная сверка DIN выявила '+preview.code,true);
+   return;
+  }
+ }
  const changedShape=state.railCount!==option.railCount||state.railCapacity!==option.modulesPerRail;
  if(changedShape&&state.cabinetGeometryV1&&
   !confirm('Текущие заданные размеры и монтажные зоны корпуса будут сняты с компоновки. Продолжить? Изменение можно отменить.'))
