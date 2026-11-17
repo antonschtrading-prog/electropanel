@@ -2009,12 +2009,20 @@ function renderCabinetArticleReconciliationV1(){
   const allMakers=document.createElement('option');allMakers.value='';
   allMakers.textContent='Все производители';makerFilter.appendChild(allMakers);
   const initial=typeof epCabinetFrontGalleryModelV1==='function'?
-   epCabinetFrontGalleryModelV1(report.rows,catalogDevice):null;
+   epCabinetFrontGalleryModelV1(report.rows,catalogDevice,{resolve:epManufacturerFrontResolveV1}):null;
   for(const maker of initial?.makerOptions||[]){
    const option=document.createElement('option');option.value=maker;option.textContent=maker;
    makerFilter.appendChild(option);
   }
-  controls.append(search,makerFilter);gallery.appendChild(controls);
+  const evidenceFilter=document.createElement('select');
+  evidenceFilter.setAttribute('aria-label','Фильтр по подтверждению изображения');
+  for(const [value,label] of [['','Все фасады'],['REVIEWED_IMAGE','Проверенные изображения'],
+   ['STYLIZED_ONLY','Авторские эскизы'],['ASSET_REJECTED','Отклонённые изображения'],
+   ['CATALOGUE_MISSING','Артикул не найден']]){
+   const option=document.createElement('option');option.value=value;option.textContent=label;
+   evidenceFilter.appendChild(option);
+  }
+  controls.append(search,makerFilter,evidenceFilter);gallery.appendChild(controls);
   if(typeof epCabinetFrontInventoryCsvV1==='function'){
    const exportInventory=document.createElement('button');exportInventory.type='button';
    exportInventory.textContent='Скачать ведомость фасадов CSV';
@@ -2037,7 +2045,8 @@ function renderCabinetArticleReconciliationV1(){
   let page=0;
   const refresh=()=>{
    const result=epCabinetFrontGalleryModelV1(report.rows,catalogDevice,{
-    search:search.value,maker:makerFilter.value,page,pageSize:12
+    search:search.value,maker:makerFilter.value,evidence:evidenceFilter.value,
+    resolve:epManufacturerFrontResolveV1,page,pageSize:12
    });
    if(page===0)grid.replaceChildren();
    if(result.status==='BLOCKED'){
@@ -2087,6 +2096,7 @@ function renderCabinetArticleReconciliationV1(){
   };
   search.addEventListener('input',()=>{page=0;refresh();});
   makerFilter.addEventListener('change',()=>{page=0;refresh();});
+  evidenceFilter.addEventListener('change',()=>{page=0;refresh();});
   more.addEventListener('click',()=>{page++;refresh();});
   refresh();
   target.appendChild(gallery);
