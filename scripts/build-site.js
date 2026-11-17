@@ -46,8 +46,8 @@ function buildSite(root=path.resolve(__dirname,'..'),output=path.join(root,'dist
  }
  files.push(...imageFiles);
  const rootPath=path.resolve(root),outPath=path.resolve(output);
- if(outPath===rootPath||!outPath.startsWith(rootPath+path.sep))
-  throw Error('Output must be a dedicated directory inside the project root');
+ if(outPath===rootPath||rootPath.startsWith(outPath+path.sep))
+  throw Error('Output must not overwrite source root or its parent');
  if(fs.existsSync(output)&&fs.lstatSync(output).isSymbolicLink())
   throw Error('Output directory must not be a symlink');
  fs.mkdirSync(output,{recursive:true});
