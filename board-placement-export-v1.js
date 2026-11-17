@@ -3,7 +3,8 @@
 function epBoardPlacementCsvV1(project,lookup){
  const cols=['device_id','kind','catalog_sku','rail_number','start_module_number','width_modules','end_module_number','layout_status',
   'nominal_slot_width_mm','body_width_mm','body_height_mm','body_depth_mm','nominal_remaining_mm','physical_width_status','visual_asset_status',
-  'cabinet_fit_status','cabinet_zone_x_mm','cabinet_zone_y_mm','cabinet_zone_height_mm','cabinet_usable_depth_mm'];
+  'cabinet_fit_status','cabinet_zone_x_mm','cabinet_zone_y_mm','cabinet_zone_height_mm','cabinet_usable_depth_mm',
+  'declared_related_on_same_rail','declared_related_across_rails','connection_proximity_status'];
  const quote=x=>{
   let s=String(x??'');
   if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;
@@ -17,6 +18,17 @@ function epBoardPlacementCsvV1(project,lookup){
  const byDevice=new Map((physical?.rows||[]).map(r=>[r.deviceId,r]));
  const cabinet=typeof epCabinetFitAuditV1==='function'?epCabinetFitAuditV1(project,lookup):null;
  const cabinetById=new Map((cabinet?.rows||[]).map(x=>[x.deviceId,x]));
+ const proximity=typeof epCabinetConnectionProximityV1==='function'?
+  epCabinetConnectionProximityV1(project,board.placements||[]):null;
+ const relatedById=new Map();
+ for(const pair of proximity?.pairs||[]){
+  for(const id of [pair.from,pair.to]){
+   const row=relatedById.get(id)||{same:0,cross:0};
+   if(pair.sameRail===true)row.same++;
+   else if(pair.sameRail===false)row.cross++;
+   relatedById.set(id,row);
+  }
+ }
  const lines=[cols.map(quote).join(';')];
  for(const p of board.placements||[]){
   const row=byDevice.get(p.deviceId);
@@ -30,7 +42,10 @@ function epBoardPlacementCsvV1(project,lookup){
    row?.nominalFreeWidthMm??null,widthStatus,asset?.status||'STYLIZED_ONLY',
    cabinet?.status||'NOT_CHECKED',cabinetById.get(p.deviceId)?.xMm??null,
    cabinetById.get(p.deviceId)?.yMm??null,cabinetById.get(p.deviceId)?.allocatedHeightMm??null,
-   cabinet?.geometry?.interior.depthMm??null].map(quote).join(';'));
+   cabinet?.geometry?.interior.depthMm??null,
+   relatedById.get(p.deviceId)?.same??0,
+   relatedById.get(p.deviceId)?.cross??0,
+   proximity?.status||'NOT_EVALUATED'].map(quote).join(';'));
  }
  for(const issue of board.issues||[])issues.push({code:issue.code,level:issue.level,id:issue.id??null});
  for(const issue of physical?.issues||[])if(issue.code!=='DIN_ENCLOSURE_CLEARANCES_NOT_CHECKED')
