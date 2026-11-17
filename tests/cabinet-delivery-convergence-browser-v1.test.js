@@ -164,3 +164,16 @@ test('DIN preview export regenerates against current project',()=>{
  assert.match(app,/epCabinetOptionPreviewCsvV1\(epCabinetOptionPreviewV1\(state,latest,catalogDevice\)\)/);
  assert.match(app,/_din_positions_/);
 });
+
+test('apply option uses DIN preview gate when current layout is valid',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const body=app.slice(app.indexOf('function applyCabinetCapacityOptionV1('),app.indexOf('function renderBoardConnectionAdvisoryV1('));
+ assert.match(body,/epCabinetOptionPreviewV1\(state,option,catalogDevice\)/);
+ assert.match(body,/if\(current.status!=='BLOCKED'\)/);
+ assert.ok(body.indexOf('epCabinetOptionPreviewV1(state,option')<body.indexOf('checkpoint();'));
+});
+test('overfilled existing cabinet may still be enlarged',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const body=app.slice(app.indexOf('function applyCabinetCapacityOptionV1('),app.indexOf('function renderBoardConnectionAdvisoryV1('));
+ assert.match(body,/An overfilled current enclosure must still be allowed to grow/);
+});
