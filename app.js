@@ -1854,6 +1854,23 @@ function applyCabinetCapacityOptionV1(id){
  if(!check||check.status==='BLOCKED'||check.placements.length!==report.equipmentCount){
   notify('Нельзя применить вариант: контроль размещения выявил несоответствие',true);return;
  }
+ if(typeof epCabinetDeliveryConvergenceV1==='function'){
+  const convergence=epCabinetDeliveryConvergenceV1(proposed,sku=>catalog.get(sku)||null,
+   typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1:()=>({status:'STYLIZED_ONLY'}));
+  const structural=convergence.issues.filter(x=>[
+   'CONVERGENCE_ENGINE_FAILED','CONVERGENCE_ENGINE_RESULT_INVALID',
+   'CONVERGENCE_PLACEMENT_ID_DUPLICATE','CONVERGENCE_BOM_ID_DUPLICATE',
+   'CONVERGENCE_PLACEMENT_MISSING','CONVERGENCE_BOM_MISSING',
+   'CONVERGENCE_ARTICLE_MISMATCH','CONVERGENCE_MODULES_INVALID',
+   'CONVERGENCE_PLACEMENT_OUT_OF_BOUNDS','CONVERGENCE_BOARD_BLOCKED',
+   'CONVERGENCE_BOM_BLOCKED','CONVERGENCE_CAPACITY_BLOCKED',
+   'CONVERGENCE_CAPACITY_SUM_MISMATCH','CONVERGENCE_RAIL_CAPACITY_MISMATCH'
+  ].includes(x.code));
+  if(structural.length||convergence.code==='CONVERGENCE_ENGINES_UNAVAILABLE'){
+   notify('Компоновка не применена: размещение, вместимость и спецификация не согласованы.',true);
+   return;
+  }
+ }
  if(!changedShape&&state.cabinetGeometryV1&&
     typeof epCabinetPlacementChangeAuditV1==='function'){
   const audit=epCabinetPlacementChangeAuditV1(state,proposed,sku=>catalog.get(sku)||null);
