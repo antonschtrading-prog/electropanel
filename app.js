@@ -1861,7 +1861,12 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
      ' → DIN '+(row.toRail+1)+' / '+(row.toSlot+1);
     ul.appendChild(li);
    }
-   list.appendChild(ul);previewTarget.append(heading,summary,list);
+   list.appendChild(ul);previewTarget.append(heading,summary);
+   if(typeof epCabinetOptionDinSvgV1==='function'){
+    const visual=document.createElement('div');visual.className='ep-cabinet-din-visual';
+    visual.innerHTML=epCabinetOptionDinSvgV1(preview);previewTarget.appendChild(visual);
+   }
+   previewTarget.appendChild(list);
   }else{
    summary.textContent='Просмотр недоступен: '+(preview?.code||'движок отсутствует');
    previewTarget.append(heading,summary);
