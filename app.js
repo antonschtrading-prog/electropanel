@@ -2010,7 +2010,8 @@ function renderCabinetArticleReconciliationV1(){
     '; авторских эскизов '+totals.vectorSketches+
     '; отклонённых изображений '+totals.rejectedImages+
     '; отсутствуют в каталоге '+totals.missingArticles+
-    '; габариты неизвестны у '+totals.unknownGeometry+' артикулов.'+
+    '; габариты неизвестны у '+totals.unknownGeometry+' артикулов; '+
+    'превышений ширины DIN-места '+totals.widthConflicts+'.'+
     (frontReport.status==='BLOCKED'?' Есть блокирующие несоответствия.':'');
    audit.dataset.frontAuditStatus=frontReport.status;
    gallery.appendChild(audit);
