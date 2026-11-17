@@ -1992,10 +1992,12 @@ function renderCabinetArticleReconciliationV1(){
   target.appendChild(exportButton);
  }
  if(typeof epManufacturerVisualHtmlV1==='function'){
-  const skus=[...new Set(report.rows.map(x=>x.boardSku).filter(Boolean))];
+  const frontReport=typeof epCabinetFrontGalleryV1==='function'?
+   epCabinetFrontGalleryV1(report,catalogDevice,epManufacturerFrontResolveV1):null;
+  const fronts=frontReport?.rows||[];
   const gallery=document.createElement('details');
   const heading=document.createElement('summary');
-  heading.textContent='Фасады аппаратов в проекте ('+skus.length+' артикулов)';
+  heading.textContent='Фасады аппаратов в проекте ('+fronts.length+' артикулов)';
   gallery.appendChild(heading);
   const caption=document.createElement('p');
   caption.textContent='Каталожные SVG — авторские эскизы, не фотографии изделий. Фотографии отображаются только при зарегистрированных правах и проверенном артикуле.';
