@@ -51,6 +51,18 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
  const reconciliation=epCabinetArticleReconciliationV1(copy,lookup);
  if(reconciliation.status==='BLOCKED')
   return reject('REPLACEMENT_RECONCILIATION_BLOCKED',reconciliation.issues);
+ const originalBom=typeof epDraftBomV1==='function'?epDraftBomV1(project,lookup):null;
+ const updatedBom=typeof epDraftBomV1==='function'?epDraftBomV1(copy,lookup):null;
+ const bomChanges=[];
+ if(originalBom&&updatedBom){
+  const original=new Map(originalBom.items.map(x=>[x.key,x.quantity]));
+  const updated=new Map(updatedBom.items.map(x=>[x.key,x.quantity]));
+  for(const sku of [...new Set([...original.keys(),...updated.keys()])].sort()){
+   const oldQuantity=original.get(sku)||0,newQuantity=updated.get(sku)||0;
+   if(oldQuantity!==newQuantity)bomChanges.push({sku,oldQuantity,newQuantity,
+    delta:newQuantity-oldQuantity});
+  }
+ }
  const previousPosition=before.placements?.find(x=>x.deviceId===deviceId);
  const newPosition=after.placements?.find(x=>x.deviceId===deviceId);
  if(!newPosition)return reject('REPLACEMENT_PLACEMENT_MISSING');
@@ -66,6 +78,8 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
    nextPosition:{railIndex:newPosition.railIndex,startModule:newPosition.startModule},
    relocatedDeviceIds:relocated,relocationCount:relocated.length,
    moduleDelta:newPosition.modules-(previousPosition?.modules??newPosition.modules),
+   bomChanges,bomDistinctArticlesBefore:originalBom?.distinctArticles??null,
+   bomDistinctArticlesAfter:updatedBom?.distinctArticles??null,
    articleCount:reconciliation.counts.matched,
    manualLayoutPreserved:Array.isArray(copy.manualLayoutV1)},
   issues:[],engineeringApproved:false,ready_for_installation:false,
