@@ -132,3 +132,24 @@ test('manufacturer mirror without URL is not counted as reviewed evidence',()=>{
  assert.equal(r.sourceCoverage.reviewed,0);
  assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_LINK_MISSING'));
 });
+
+test('malformed, credentialed and non-HTTPS provenance links are not counted',()=>{
+ for(const source of ['https://','https://user:pass@example.org/datasheet',
+  'https://example.org/a b','http://example.org/data',
+  'javascript:alert(1)','https://example.org/data#fragment']){
+  const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+  const r=audit(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:80,depthMm:70,
+   sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2026-11-14',source}));
+  assert.equal(r.sourceReviewed,0,source);
+  assert.equal(r.rows[0].sourceUrl,null,source);
+  assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_URL_INVALID'),source);
+  assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_LINK_MISSING'),source);
+ }
+});
+test('unclassified evidence has an actionable provenance issue',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}]};
+ const r=audit(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:80,depthMm:70,
+  source:'https://example.org/data',sourceReviewedAt:'2026-11-14'}));
+ assert.equal(r.sourceReviewed,0);
+ assert.ok(r.issues.some(x=>x.code==='APPARATUS_EVIDENCE_SOURCE_CATEGORY_MISSING'));
+});
