@@ -418,3 +418,6 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 #cabinetOptionPreview ul{max-height:180px;overflow:auto;padding-left:22px;overflow-wrap:anywhere}
 #cabinetOptionPreview li{padding:3px 0}
 @media(max-width:520px){#cabinetOptionPreview{padding:9px}}
+
+.ep-cabinet-din-visual{margin:10px 0;padding:8px;border:1px solid #d4e0e8;border-radius:8px;background:#fff;overflow-x:auto}
+.ep-cabinet-din-visual svg{min-width:280px;height:auto}
