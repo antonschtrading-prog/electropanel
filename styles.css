@@ -390,3 +390,11 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-front-review-items li:last-child{border-bottom:0}
 .ep-front-review-queue button{justify-self:start;max-width:100%;white-space:normal}
 @media(max-width:520px){.ep-front-review-queue{padding:9px}.ep-front-review-queue select,.ep-front-review-queue button{width:100%;max-width:none}.ep-front-review-items{max-height:200px}}
+
+/* Read-only cabinet/BOM/DIN/front convergence audit. */
+.ep-front-delivery-convergence{display:grid;gap:8px;margin:12px 0;padding:12px;border:1px solid #b9d1df;border-radius:10px;background:#f4f9fc;min-width:0}
+.ep-front-delivery-convergence h4{margin:0;font-size:14px;color:#26495d}
+.ep-front-delivery-convergence p{margin:0;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+.ep-front-delivery-convergence button{justify-self:start;max-width:100%;white-space:normal}
+.ep-front-delivery-convergence[data-convergence-status="BLOCKED"]{border-color:#b85c4b;background:#fff6f2}
+@media(max-width:520px){.ep-front-delivery-convergence{padding:9px}.ep-front-delivery-convergence button{width:100%;max-width:none}}
