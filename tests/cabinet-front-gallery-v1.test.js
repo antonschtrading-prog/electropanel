@@ -34,3 +34,12 @@ test('gallery is responsive on narrow mobile screens',()=>{
  assert.match(css,/\.ep-front-gallery\{/);
  assert.match(css,/@media\(max-width:520px\)\{\.ep-front-gallery/);
 });
+
+test('gallery exposes DIN geometry filter with clear mobile-accessible labels',()=>{
+ assert.match(section,/geometryFilter=document\.createElement\('select'\)/);
+ assert.match(section,/Фильтр по габаритам аппарата/);
+ assert.match(section,/Шире DIN-места/);
+ assert.match(section,/Габариты неизвестны/);
+ assert.match(section,/geometry:geometryFilter\.value/);
+ assert.match(section,/geometryFilter\.addEventListener\('change'/);
+});
