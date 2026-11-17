@@ -2036,6 +2036,15 @@ function renderCabinetArticleReconciliationV1(){
    gallery.appendChild(exportInventory);
   }
 
+  const evidenceSummary=document.createElement('p');evidenceSummary.className='ep-front-gallery-evidence';
+  if(initial?.evidenceSummary){
+   const e=initial.evidenceSummary;
+   evidenceSummary.textContent='В компоновке '+initial.installedDevices+' аппаратов: '+
+    'проверенных изображений '+e.REVIEWED_IMAGE+', авторских эскизов '+e.STYLIZED_ONLY+
+    ', отклонённых '+e.ASSET_REJECTED+', отсутствуют в каталоге '+e.CATALOGUE_MISSING+
+    '. Это не подтверждение пригодности щита к монтажу.';
+  }
+  gallery.appendChild(evidenceSummary);
   const count=document.createElement('p');count.className='ep-front-gallery-count';
   count.setAttribute('aria-live','polite');gallery.appendChild(count);
   const grid=document.createElement('div');grid.className='ep-front-gallery';
