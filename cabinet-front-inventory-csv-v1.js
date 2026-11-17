@@ -12,7 +12,7 @@ function epCabinetFrontInventoryCsvV1(rows,lookup,resolve){
   return '"'+safe.replace(/"/g,'""')+'"';
  };
  const columns=['article','quantity','manufacturer','series','kind','modules','poles',
-  'body_width_mm','front_status','front_issues','image_source','product_evidence',
+  'body_width_mm','din_width_conflict','front_status','front_issues','image_source','product_evidence',
   'installation_approved'];
  const seen=new Map(),data=[];
  for(const row of rows){
@@ -27,8 +27,12 @@ function epCabinetFrontInventoryCsvV1(rows,lookup,resolve){
    'REVIEWED_IMAGE':asset?.status==='ASSET_REJECTED'?'ASSET_REJECTED':'STYLIZED_ONLY';
   const issues=!item?'ARTICLE_NOT_IN_CATALOGUE':Array.isArray(asset?.issues)?
    asset.issues.join('|'):'';
+  const widthKnown=Number.isFinite(item?.widthMm)&&item.widthMm>0&&
+   Number.isInteger(item?.modules)&&item.modules>0;
+  const widthConflict=widthKnown?(item.widthMm>item.modules*18+0.05?'YES':'NO'):'UNKNOWN';
   data.push([sku,1,item?.maker,item?.series,item?.kind,item?.modules,item?.poles,
-   item?.widthMm,status,issues,asset?.image?.src,asset?.image?.productEvidenceUrl,'NO']);
+   item?.widthMm,widthConflict,status,issues,asset?.image?.src,
+   asset?.image?.productEvidenceUrl,'NO']);
  }
  data.sort((a,b)=>String(a[0]).localeCompare(String(b[0]),'ru'));
  const csv='\uFEFF'+[columns,...data].map(row=>row.map(q).join(';')).join('\r\n')+'\r\n';
