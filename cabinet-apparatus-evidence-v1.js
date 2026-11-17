@@ -31,8 +31,10 @@ function epCabinetApparatusEvidenceV1(project,lookup){
   if(p.article&&!d)add('APPARATUS_EVIDENCE_ARTICLE_MISSING','BLOCKED',p.deviceId);
   const width=dim(d?.widthMm),height=dim(d?.heightMm),depth=dim(d?.depthMm);
   const slotWidth=p.modules*18,zone=zones.get(p.railIndex);
-  const review=typeof d?.sourceReviewedAt==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.sourceReviewedAt)?
-   d.sourceReviewedAt:null;
+  const validReviewDate=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
+   const t=Date.parse(v+'T00:00:00Z');return Number.isFinite(t)&&
+    new Date(t).toISOString().slice(0,10)===v&&t<=Date.now();};
+  const review=validReviewDate(d?.sourceReviewedAt)?d.sourceReviewedAt:null;
   const sourceType=typeof d?.sourceType==='string'&&d.sourceType?d.sourceType:
    d?'SOURCE_CATEGORY_NOT_DECLARED':'NO_ARTICLE';
   const evidenceSource=typeof d?.source==='string'&&/^https:\/\//.test(d.source)?d.source:null;
@@ -43,6 +45,10 @@ function epCabinetApparatusEvidenceV1(project,lookup){
   if(height===null)issue('APPARATUS_EVIDENCE_HEIGHT_MISSING');
   if(depth===null)issue('APPARATUS_EVIDENCE_DEPTH_MISSING');
   if(review===null)issue('APPARATUS_EVIDENCE_SOURCE_NOT_REVIEWED');
+  if(d?.sourceReviewedAt!=null&&!validReviewDate(d.sourceReviewedAt))
+   issue('APPARATUS_EVIDENCE_SOURCE_REVIEW_DATE_INVALID');
+  if(sourceType==='MANUFACTURER_DATASHEET_MIRROR'&&evidenceSource===null)
+   issue('APPARATUS_EVIDENCE_SOURCE_LINK_MISSING');
   if(sourceType==='PROJECT_DECLARATION')issue('APPARATUS_EVIDENCE_USER_ENTERED_UNVERIFIED');
   if(width!==null&&width>slotWidth+1e-6)issue('APPARATUS_EVIDENCE_NOMINAL_SLOT_WIDTH_EXCEEDED','BLOCKED');
   if(zone&&height!==null&&height>zone.heightMm+1e-6)
