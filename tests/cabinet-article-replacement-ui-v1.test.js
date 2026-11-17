@@ -42,3 +42,12 @@ test('replacement UI never inserts user-controlled markup',()=>{
  assert.match(ui,/result\.textContent=/);
  assert.match(ui,/option\.textContent=/);
 });
+
+test('replacement editor suggests project catalogue SKUs with manufacturer and series',()=>{
+ assert.match(ui,/suggestions=document\.createElement\('datalist'\)/);
+ assert.match(ui,/epProjectCatalogV1\(state,/);
+ assert.match(ui,/Object\.entries\(articles\)\.slice\(0,400\)/);
+ assert.match(ui,/article\.maker,article\.series,article\.label/);
+ assert.match(ui,/skuInput\.setAttribute\('list',suggestions\.id\)/);
+ assert.match(ui,/option\.value=sku/);
+});
