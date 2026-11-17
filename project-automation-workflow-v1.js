@@ -55,7 +55,7 @@ function epWorkflowConsumerAuditV1(project){
  const summary={matchedConsumers:0,orphanConsumers:0,duplicateConsumers:0,
   invalidConsumerPower:0,powerDisagreements:0,unrepresentedCircuits:0};
  if(!project||!Array.isArray(project.lines)||!Array.isArray(project.loads))
-  return {status:'BLOCKED',issues:[{code:'WORKFLOW_CONSUMER_MODEL_INVALID',level:'BLOCKED',lineId:null}],summary,rows:[]};
+  return {status:'BLOCKED',issues:[{code:'WORKFLOW_CONSUMER_MODEL_INVALID',level:'BLOCKED',lineId:null}],summary,rows:[],engineeringApproved:false,ready_for_installation:false};
  for(const line of project.lines){
   if(!line||typeof line.id!=='string'||!line.id.trim()||seenCircuits.has(line.id)){
    issues.push({code:'WORKFLOW_CIRCUIT_ID_INVALID_OR_DUPLICATE',level:'BLOCKED',lineId:line?.id??null});
