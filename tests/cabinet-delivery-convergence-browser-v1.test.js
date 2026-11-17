@@ -330,3 +330,21 @@ test('DIN apply verifies fresh catalog geometry before confirmation',()=>{
  assert.match(segment,/selected.geometry\?\.rows/);
  assert.match(segment,/повторите предпросмотр/);
 });
+
+test('enclosure comparison accepts optional explicit candidate list',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(html,/id="cabinetEnclosureCandidatesInput"/);
+ assert.ok(html.indexOf('src="cabinet-enclosure-match-v1.js"')<html.indexOf('src="app.js"'));
+ assert.match(app,/JSON.parse\(enclosureText\)/);
+ assert.match(app,/enclosureCandidates.length>100/);
+ assert.match(app,/epCabinetReflowAlternativesV1\(state,catalogDevice,\{enclosures:enclosureCandidates\}\)/);
+});
+test('enclosure comparison distinguishes fit conflict from unknown',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/selected.enclosure.rows.forEach/);
+ assert.match(app,/PRELIMINARY_MATCH/);
+ assert.match(app,/REJECTED/);
+ assert.match(app,/недостаточно данных/);
+ assert.match(app,/Посадка, проводка и тепловые условия не подтверждены/);
+});
