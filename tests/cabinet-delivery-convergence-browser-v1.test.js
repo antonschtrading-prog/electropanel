@@ -203,3 +203,25 @@ test('cabinet comparison export includes impact-aware ranking',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.match(app,/impactRows:impact\?\.rows\|\|\[\]/);
 });
+
+test('cross rail optimizer loads before app and has explicit control',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-cross-rail-optimize-v1.js"')<html.indexOf('src="app.js"'));
+ assert.match(html,/id="cabinetCrossRailOptimizeBtn"/);
+});
+test('cross rail optimizer requires confirmation and history checkpoint',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const i=app.indexOf("$('cabinetCrossRailOptimizeBtn')?.addEventListener");
+ assert.ok(i>0);
+ const block=app.slice(i,app.indexOf("$('cabinetGroupReflowBtn')?.addEventListener",i));
+ assert.match(block,/epCabinetCrossRailOptimizeV1\(state,catalogDevice\)/);
+ assert.match(block,/confirm\(/);
+ assert.match(block,/checkpoint\(\)/);
+ assert.match(block,/state.manualLayoutV1=proposal.project.manualLayoutV1/);
+});
+test('cross rail optimization does not change electrical links in UI',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const i=app.indexOf("$('cabinetCrossRailOptimizeBtn')?.addEventListener");
+ const block=app.slice(i,app.indexOf("$('cabinetGroupReflowBtn')?.addEventListener",i));
+ assert.doesNotMatch(block,/state.protectionLinks\s*=|state.deviceSupplyV1\s*=/);
+});
