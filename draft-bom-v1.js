@@ -66,7 +66,9 @@ function epDraftBomV1(project,lookupSku){
   if(ids.has(id)){issues.push({code:'DEVICE_ID_DUPLICATE',level:'BLOCKED',owner:l.id});continue;}
   ids.add(id);
   if(b&&b.modules!==l.modules)issues.push({code:'BRANCH_WIDTH_CONFLICT',level:'BLOCKED',owner:l.id});
-  push('branch',id,l.catalogSku,b?.modules??l.modules,l.id);
+  if(b?.catalogSku&&l.catalogSku&&b.catalogSku!==l.catalogSku)
+   issues.push({code:'BRANCH_SKU_OVERRIDES_LINE_FALLBACK',level:'UNKNOWN',owner:l.id,deviceId:id});
+  push('branch',id,b?.catalogSku||l.catalogSku,b?.modules??l.modules,l.id);
  }
  for(const b of branches)if(!project.lines.some(l=>l?.id===b?.circuitId))
   issues.push({code:'BRANCH_ORPHAN',level:'BLOCKED',deviceId:b?.id});
