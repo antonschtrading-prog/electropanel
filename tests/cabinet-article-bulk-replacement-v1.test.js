@@ -85,3 +85,15 @@ test('bulk migration handles implicit branch fallback selections',()=>{
  assert.equal(r.preview.replacedCount,2);
  assert.equal(r.project.branchDevices[0].catalogSku,'NEW');
 });
+
+test('bulk migration reports module growth and exact BOM article deltas',()=>{
+ const r=bulk(project(),'OLD','WIDE',catalogue);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.preview.beforeModules,3);
+ assert.equal(r.preview.afterModules,5);
+ assert.equal(r.preview.moduleDelta,2);
+ assert.deepEqual(r.preview.bomChanges,[
+  {sku:'OLD',oldQuantity:2,newQuantity:0,delta:-2},
+  {sku:'WIDE',oldQuantity:0,newQuantity:2,delta:2}
+ ]);
+});
