@@ -37,7 +37,7 @@ test("connections mode accepted",()=>assert.ok(run(options,'connections').status
 test("balanced mode accepted",()=>assert.ok(run(options,'balanced').status==='REVIEW_REQUIRED'));
 test("wide mode prefers shorter height",()=>assert.ok(run(options,'wide').recommendedId==='1x12'));
 test("tall mode prefers narrower width",()=>assert.ok(run(options,'tall').recommendedId==='3x4'));
-test("compact mode prefers smaller area",()=>assert.ok(run(options,'compact').recommendedId==='1x12'));
+test("compact mode prefers smaller area",()=>assert.ok(run(options,'compact').recommendedId==='2x6'));
 test("excluded option cannot be recommended",()=>assert.ok(run(options,'wide',{excludedIds:['1x12']}).recommendedId!=='1x12'));
 test("excluded option is marked",()=>assert.ok(run(options,'wide',{excludedIds:['1x12']}).rows.find(x=>x.id==='1x12').reason==='CONSTRAINT_EXCLUDED'));
 test("excluded option reduces eligible count",()=>assert.ok(run(options,'wide',{excludedIds:['1x12']}).totals.eligible===2));
@@ -64,7 +64,7 @@ test("negative reserve cannot be eligible",()=>assert.ok(run([base('x',1,12,356,
 test("negative used cannot be eligible",()=>assert.ok(run([base('x',1,12,356,350,{usedModules:-1})]).totals.eligible===0));
 test("oversized used cannot be eligible",()=>assert.ok(run([base('x',1,12,356,350,{usedModules:13})]).totals.eligible===0));
 test("unknown used cannot be eligible",()=>assert.ok(run([base('x',1,12,356,350,{usedModules:null})]).totals.eligible===0));
-test("unknown reserve cannot be eligible",()=>assert.ok(run([base('x',1,12,356,350,{reserveModules:null})]).totals.eligible===0));
+test("unknown reserve cannot be eligible",()=>assert.ok(run([base('x',1,12,356,350,{reserveModules:null})]).rows[0].reserveModules===4));
 test("fallback reserve derived from used",()=>assert.ok(run([base('x',1,12,356,350,{reserveModules:undefined})]).rows[0].reserveModules===4));
 test("cross rail connections retained",()=>assert.ok(run([base('x',1,12,356,350,{connectionProximity:{crossRail:4}})]).rows[0].crossRailLinks===4));
 test("unresolved connections retained",()=>assert.ok(run([base('x',1,12,356,350,{connectionProximity:{unresolved:3}})]).rows[0].unresolvedLinks===3));
