@@ -2095,7 +2095,16 @@ function renderCabinetArticleReconciliationV1(){
      const code=document.createElement('span');code.textContent=sku;
      const type=document.createElement('span');type.textContent=item.kind||'Тип не указан';
      const quantity=document.createElement('span');quantity.textContent='В компоновке: '+entry.quantity+' шт.';
-     card.append(title,code,type,quantity,status);
+     const dimensions=document.createElement('small');
+     const modules=Number.isInteger(item.modules)&&item.modules>0?item.modules:null;
+     const width=Number.isFinite(item.widthMm)&&item.widthMm>0?item.widthMm:null;
+     dimensions.textContent='DIN: '+(modules??'неизвестно')+' мод.; корпус: '+
+      (width===null?'размер неизвестен':width+' мм');
+     if(modules!==null&&width!==null&&width>modules*18+0.05){
+      card.dataset.widthConflict='true';
+      dimensions.textContent+=' · ширина больше номинального места';
+     }
+     card.append(title,code,type,quantity,dimensions,status);
     }
     if(!item){const code=document.createElement('span');code.textContent=sku;card.append(art,code);}
     grid.appendChild(card);
