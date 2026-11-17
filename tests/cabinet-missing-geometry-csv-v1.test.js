@@ -68,3 +68,18 @@ test('missing manufacturer mirror URL has an explicit supplier request',()=>{
  assert.match(r.csv,/VALID_SOURCE_LINK/);
  assert.equal(r.status,'REVIEW_REQUIRED');
 });
+
+test('blocked cabinet body conflict retains supplier article rows',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}],
+  cabinetGeometryV1:{version:1,source:'USER_DECLARED',
+   interior:{widthMm:110,heightMm:140,depthMm:65},
+   zones:[{railIndex:0,xMm:30,yMm:20,widthMm:50,heightMm:75}]}};
+ const r=csv(p,()=>({sku:'C',modules:1,widthMm:18,heightMm:86,depthMm:80}));
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.rows,1);
+ assert.match(r.csv,/"L1"/);
+ assert.match(r.csv,/"86"/);
+ assert.match(r.csv,/"80"/);
+ assert.ok(r.issues.some(x=>x.code==='MISSING_GEOMETRY_INPUT_BLOCKED'));
+ assert.equal(r.ready_for_installation,false);
+});
