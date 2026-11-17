@@ -55,6 +55,9 @@ function epCabinetArticleReconciliationV1(project,lookup){
   if(p&&v)check(safeSku(p.article)!==safeSku(v.sku),'CABINET_ARTICLE_VISUAL_SKU_MISMATCH');
   if(p)check(!safeSku(p.article),'CABINET_ARTICLE_UNSELECTED');
   if(v)check(v.assetStatus==='ASSET_REJECTED','CABINET_ARTICLE_VISUAL_ASSET_REJECTED');
+  if(v)check(v.visual?.source!=='CATALOG_DECLARED','CABINET_ARTICLE_VISUAL_IDENTITY_UNVERIFIED');
+  if(v)check(v.evidence?.includes('VISUAL_PLACEMENT_WIDTH_MISMATCH'),
+   'CABINET_ARTICLE_CATALOGUE_WIDTH_MISMATCH');
   if(p&&v)check(p.modules!==v.modules,'CABINET_ARTICLE_VISUAL_MODULES_MISMATCH');
   if(v)check(v.evidence?.includes('VISUAL_ARTICLE_ID_MISMATCH'),
    'CABINET_ARTICLE_CATALOGUE_IDENTITY_MISMATCH');
