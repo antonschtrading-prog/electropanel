@@ -1037,6 +1037,10 @@ const server=http.createServer((req,res)=>{
  await page.getByRole('button',{name:'Скачать ведомость фасадов CSV'}).click();
  const inventoryDownload=await inventoryExport;
  assert.match(inventoryDownload.suggestedFilename(),/_front_inventory\.csv$/);
+ await page.setViewportSize({width:390,height:844});
+ assert.equal(await page.locator('.ep-front-gallery-controls input[type="search"]').isVisible(),true);
+ assert.equal(await page.locator('.ep-front-gallery-controls select[aria-label="Фильтр по подтверждению изображения"]').isVisible(),true);
+ await page.setViewportSize({width:1440,height:1000});
  // Full cabinet model workflow through actual form, undo/redo, JSON persistence and DIN export.
  assert.equal(await page.locator('#cabinetGeometryPanel [data-cabinet-autoplan]').count(),1);
  const cabinetInputs={interiorWidthMm:'2000',interiorHeightMm:'1500',interiorDepthMm:'300',
