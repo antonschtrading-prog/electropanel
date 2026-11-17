@@ -10,8 +10,8 @@ test('ABB existing SKU is enrichment review not a new article',()=>{
 test('Schneider existing SKU is enrichment review not a new article',()=>{
  const d=createReleaseGate().decisions.find(x=>x.sku==='A9F74116');assert.equal(d.action,'REVIEW_ENRICHMENT');
 });
-test('Hager RCD is held until evidence and dimensions are complete',()=>{
- const d=createReleaseGate().decisions.find(x=>x.sku==='CDA440D');assert.equal(d.action,'HOLD_NEW_ARTICLE');assert.ok(d.unresolved.some(x=>x.field==='widthMm'));
+test('Hager RCD remains held for explicit integration review',()=>{
+ const d=createReleaseGate().decisions.find(x=>x.sku==='CDA440D');assert.equal(d.action,'HOLD_NEW_ARTICLE');assert.equal(d.approval,false);
 });
 test('release gate cannot automatically merge or claim engineering approval',()=>{
  const r=createReleaseGate();assert.equal(r.autoMergeAllowed,false);assert.equal(r.electricalEngineeringApproved,false);
