@@ -55,3 +55,15 @@ test('gallery does not mutate input board rows',()=>{
  model(source,lookup,{search:'ABB'});
  assert.equal(JSON.stringify(source),before);
 });
+
+test('gallery aggregates quantity for repeated installed article without repeated catalogue lookups',()=>{
+ const calls=new Map();
+ const r=model([{boardSku:'A'},{boardSku:'B'},{boardSku:'A'}],sku=>{
+  calls.set(sku,(calls.get(sku)||0)+1);
+  return {sku,maker:'ABB',series:'S200'};
+ });
+ assert.equal(r.total,2);
+ assert.equal(r.items.find(x=>x.sku==='A').quantity,2);
+ assert.equal(r.items.find(x=>x.sku==='B').quantity,1);
+ assert.equal(calls.get('A'),1);
+});
