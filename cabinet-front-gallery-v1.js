@@ -39,7 +39,7 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   const widthMm=Number.isFinite(item?.widthMm)&&item.widthMm>0?item.widthMm:null;
   const nominalSlotWidthMm=modules===null?null:modules*18;
   const geometryStatus=widthMm===null||nominalSlotWidthMm===null?'UNKNOWN':
-   widthMm>nominalSlotWidthMm+0.001?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
+   widthMm>nominalSlotWidthMm+0.05?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
   const issues=status==='MISSING_ARTICLE'?['FRONT_GALLERY_CATALOGUE_MISSING']:
    Array.isArray(asset?.issues)?[...asset.issues]:[];
   if(asset?.status==='REVIEWED_IMAGE'&&!reviewedImage)
