@@ -1905,11 +1905,15 @@ function applyCabinetCapacityOptionV1(id){
  if(!constraints?.eligible.some(x=>x.optionId===id)){
   notify('Предварительная компоновка превышает указанные полезные размеры',true);return;
  }
- if(typeof epCabinetOptionPreviewV1==='function'){
-  const preview=epCabinetOptionPreviewV1(state,option,catalogDevice);
-  if(preview.status==='BLOCKED'){
-   notify('Нельзя применить вариант: предварительная сверка DIN выявила '+preview.code,true);
-   return;
+ if(typeof epCabinetOptionPreviewV1==='function'&&typeof epDraftBoardPlanV1==='function'){
+  const current=epDraftBoardPlanV1(state,catalogDevice);
+  // An overfilled current enclosure must still be allowed to grow into a valid option.
+  if(current.status!=='BLOCKED'){
+   const preview=epCabinetOptionPreviewV1(state,option,catalogDevice);
+   if(preview.status==='BLOCKED'){
+    notify('Нельзя применить вариант: предварительная сверка DIN выявила '+preview.code,true);
+    return;
+   }
   }
  }
  const changedShape=state.railCount!==option.railCount||state.railCapacity!==option.modulesPerRail;
