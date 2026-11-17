@@ -2658,6 +2658,21 @@ $('cabinetCapacityTotal')?.addEventListener('change',e=>{
   cabinetCapacitySelectedTotalV1=n;renderCabinetCapacityOptionsV1();
  }
 });
+$('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
+ if(typeof epCabinetGroupReflowV1!=='function'){
+  notify('Оптимизатор группировки недоступен',true);return;
+ }
+ const proposal=epCabinetGroupReflowV1(state,catalogDevice);
+ if(proposal.status==='BLOCKED'){
+  notify('Компоновку нельзя переставить: '+proposal.code,true);return;
+ }
+ if(!proposal.changes.length){
+  notify('Улучшение близости для имеющихся связей не найдено.');return;
+ }
+ checkpoint();state.manualLayoutV1=proposal.project.manualLayoutV1;changed();
+ notify('Перемещено аппаратов: '+proposal.changes.length+
+  '. Изменены только позиции, подключения не пересчитывались.');
+});
 $('cabinetCapacityOptions')?.addEventListener('click',e=>{
  const b=e.target.closest('[data-apply-cabinet-option]');
  if(b)applyCabinetCapacityOptionV1(b.dataset.applyCabinetOption);

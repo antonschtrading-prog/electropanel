@@ -1457,6 +1457,11 @@ const server=http.createServer((req,res)=>{
    printed:epEngineeringPrintV1(report).includes('Группировка по заявленным электрическим связям')};
  });
  assert.deepEqual(advisory,{status:'REVIEW_REQUIRED',physical:false,pairs:0,printed:true});
+ assert.equal(await page.locator('#cabinetGroupReflowBtn').count(),1);
+ const beforeNoLinks=await page.evaluate(()=>JSON.stringify(state.lines));
+ await page.locator('#cabinetGroupReflowBtn').click();
+ assert.equal(await page.evaluate(()=>JSON.stringify(state.lines)),beforeNoLinks);
+
  const beforeCabinet=await page.evaluate(()=>JSON.stringify(state.lines));
  await capacityChoice.click();
  const appliedCabinet=await page.evaluate(()=>{
