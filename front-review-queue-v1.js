@@ -30,7 +30,8 @@ function epFrontReviewQueueV1(ledger,options={}){
  const items=ledger.entries.map(x=>{
   const front=EP_FRONT_REVIEW_CODES_V1[x.frontStatus]||EP_FRONT_REVIEW_CODES_V1.CATALOGUE_MISSING;
   const geo=EP_FRONT_REVIEW_CODES_V1[x.geometryStatus]||EP_FRONT_REVIEW_CODES_V1.UNKNOWN;
-  const priority=Math.min(front.priority,geo.priority);
+  const priority=x.issues?.some(code=>['LEDGER_DUPLICATE_DEVICE_ID','LEDGER_ARTICLE_MISMATCH','LEDGER_IDENTITY_INCOMPLETE'].includes(code))?
+   1:Math.min(front.priority,geo.priority);
   const actions=[];
   if(x.frontStatus==='CATALOGUE_MISSING')actions.push(front.action);
   else if(x.frontStatus==='ASSET_REJECTED')actions.push(front.action);
@@ -56,7 +57,7 @@ function epFrontReviewQueueV1(ledger,options={}){
   unverified:items.filter(x=>x.frontStatus==='STYLIZED_ONLY').length,
   reviewed:items.filter(x=>x.frontStatus==='REVIEWED_IMAGE').length};
  const term=search.trim().toLocaleLowerCase('ru'),makerTerm=maker.trim().toLocaleLowerCase('ru');
- const filtered=items.filter(x=>(filter==='ALL'||filter==='ACTION_REQUIRED'&&!x.reviewed||
+ const filtered=items.filter(x=>(filter==='ALL'||filter==='ACTION_REQUIRED'&&(x.priority<5||x.issues.length>0)||
    filter===x.frontStatus||filter===x.geometryStatus)&&
   (!term||[x.sku,x.maker,x.series,...x.actions].join(' ').toLocaleLowerCase('ru').includes(term))&&
   (!makerTerm||x.maker.toLocaleLowerCase('ru')===makerTerm));
