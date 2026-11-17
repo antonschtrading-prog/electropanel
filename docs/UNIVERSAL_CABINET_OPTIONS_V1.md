@@ -45,3 +45,7 @@ Reserved capacity is user-adjustable (0–50%, integer percent), persisted with 
 ## Packing correctness and UI lifecycle
 
 The initial first-fit-decreasing allocator is not a proof of non-fit. A memoized, bounded exact bin-packing search is now used whenever first-fit fails. A complete search may prove impossible; if the search budget is exhausted, the candidate is explicitly not verified and is never presented as an accepted fit. Complete apparatuses are never split between rows. Repeated rendering does not register duplicate reserve-change handlers.
+
+## Capacity comparison UI
+
+The selector compares all known row distributions for a chosen standard-pattern total (e.g., 36 = 2×18 versus 3×12). No arbitrary 'first 12 options' cutoff can hide the alternate orientation. When inputs/constraints change, the selector falls back to the closest eligible total. This is a draft shortlist, not a catalogue of actual enclosure products.

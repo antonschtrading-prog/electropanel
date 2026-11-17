@@ -1502,6 +1502,26 @@ const server=http.createServer((req,res)=>{
  await page.locator('#undoBtn').click();
  assert.equal(await page.evaluate(()=>state.railCapacity),6);
  assert.equal(await page.evaluate(()=>!!state.cabinetGeometryV1),true);
+ // Same nominal 36-place enclosure capacity has both tall and wide
+ // module distributions; options must be discoverable by capacity, not
+ // arbitrarily cut off by the first twelve globally sorted shapes.
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.railCount=4;state.railCapacity=12;
+  state.lines=Array.from({length:8},(_,i)=>({
+   id:'L'+(i+1),name:'Load '+i,power:1,phase:'L1',
+   device:'C16',modules:4,source:'manual',sourceRef:''
+  }));
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  state.cabinetSizingPreferencesV1={reservePercent:10,maxUsableWidthMm:null,maxUsableHeightMm:null};
+  syncBranchDevices(state);lastDesignSnapshot=null;changed();switchView('board');
+ });
+ assert.equal(await page.locator('#cabinetCapacityTotal').inputValue(),'36');
+ assert.equal(await page.locator('[data-apply-cabinet-option="2x18"]').count(),1);
+ assert.equal(await page.locator('[data-apply-cabinet-option="3x12"]').count(),1);
+ await page.locator('#cabinetCapacityTotal').selectOption('48');
+ assert.equal(await page.locator('[data-apply-cabinet-option="2x18"]').count(),0);
+ assert.ok((await page.locator('#cabinetCapacityOptions button').count())>=1);
 
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}

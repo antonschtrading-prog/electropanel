@@ -1724,6 +1724,7 @@ function cabinetCapacityReportV1(){
  return typeof epUniversalCabinetOptionsV1==='function'?
   epUniversalCabinetOptionsV1(state,catalogDevice,{reserveFraction:(state.cabinetSizingPreferencesV1?.reservePercent??20)/100}):null;
 }
+let cabinetCapacitySelectedTotalV1=null;
 function renderCabinetCapacityOptionsV1(){
  const target=$('cabinetCapacityOptions');if(!target)return;
  const report=cabinetCapacityReportV1();
@@ -1743,11 +1744,27 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
  const good=report.options.filter(o=>o.status!=='BLOCKED'&&
   (!limits.maxUsableWidthMm||o.envelope.preliminaryUsableWidthMm<=limits.maxUsableWidthMm)&&
   (!limits.maxUsableHeightMm||o.envelope.preliminaryUsableHeightMm<=limits.maxUsableHeightMm));
- const shown=good.slice(0,12);
+ const capacitySelect=$('cabinetCapacityTotal');
+ const totals=[...new Set(good.map(o=>o.capacityModules))].sort((a,b)=>a-b);
+ if(!totals.includes(cabinetCapacitySelectedTotalV1))
+  cabinetCapacitySelectedTotalV1=totals[0]??null;
+ if(capacitySelect){
+  capacitySelect.replaceChildren();
+  for(const capacity of totals){
+   const option=document.createElement('option');
+   option.value=String(capacity);
+   option.textContent=String(capacity)+' модульных мест';
+   capacitySelect.appendChild(option);
+  }
+  if(cabinetCapacitySelectedTotalV1!==null)
+   capacitySelect.value=String(cabinetCapacitySelectedTotalV1);
+  capacitySelect.disabled=!totals.length;
+ }
+ const shown=good.filter(o=>o.capacityModules===cabinetCapacitySelectedTotalV1);
  if(!shown.length){target.textContent='Под заданные ограничения вариантов не найдено. Проверьте полезные размеры или уменьшите резерв.';return;}
  const selected=state.railCount+'x'+state.railCapacity;
  target.innerHTML='<p>Аппаратура: <b>'+report.equipmentModules+
-  ' мод.</b> · Минимальный резерв: '+(limits.reservePercent??20)+'%. Варианты являются предварительными.</p>'+
+  ' мод.</b> · Минимальный резерв: '+(limits.reservePercent??20)+'%. Выбрана вместимость '+cabinetCapacitySelectedTotalV1+' мест; доступных типоразмеров: '+totals.length+'.</p>'+
   '<div class="ep-capacity-options" style="display:flex;gap:8px;flex-wrap:wrap">'+
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
    '" data-apply-cabinet-option="'+o.id+'">'+o.capacityModules+
@@ -2556,6 +2573,12 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   changed();
  });
 }
+$('cabinetCapacityTotal')?.addEventListener('change',e=>{
+ const n=Number(e.target.value);
+ if(Number.isInteger(n)&&n>0){
+  cabinetCapacitySelectedTotalV1=n;renderCabinetCapacityOptionsV1();
+ }
+});
 $('cabinetCapacityOptions')?.addEventListener('click',e=>{
  const b=e.target.closest('[data-apply-cabinet-option]');
  if(b)applyCabinetCapacityOptionV1(b.dataset.applyCabinetOption);
