@@ -148,3 +148,16 @@ test('large board gallery aggregates repeated SKUs without repeated catalogue fe
  assert.ok(r.rows.every(x=>x.count===400));
  assert.deepEqual([...calls.values()],[1,1,1]);
 });
+
+test('reviewed image retains traceable manufacturer product URL and review date',()=>{
+ const r=gallery(audit,device,()=>({status:'REVIEWED_IMAGE',image:{
+  src:'assets/device-fronts/abb.webp',productEvidenceUrl:'https://example.org/abb',
+  reviewedAt:'2026-11-17'}}));
+ assert.ok(r.rows.every(x=>x.imageSourceUrl==='https://example.org/abb'));
+ assert.ok(r.rows.every(x=>x.imageReviewedAt==='2026-11-17'));
+});
+test('unreviewed sketches never inherit manufacturer photo provenance',()=>{
+ const r=gallery(audit,device,()=>({status:'STYLIZED_ONLY',
+  image:{productEvidenceUrl:'https://example.org/unverified',reviewedAt:'2026-11-17'}}));
+ assert.ok(r.rows.every(x=>x.imageSourceUrl===null&&x.imageReviewedAt===null));
+});
