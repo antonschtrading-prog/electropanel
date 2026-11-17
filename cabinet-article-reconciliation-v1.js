@@ -39,6 +39,8 @@ function epCabinetArticleReconciliationV1(project,lookup){
   if(p&&b)check((p.article||'')!==b.sku,'CABINET_ARTICLE_BOM_SKU_MISMATCH');
   if(p&&v)check((p.article||'')!==(v.sku||''),'CABINET_ARTICLE_VISUAL_SKU_MISMATCH');
   if(p&&v)check(p.modules!==v.modules,'CABINET_ARTICLE_VISUAL_MODULES_MISMATCH');
+  if(v)check(v.evidence?.includes('VISUAL_ARTICLE_ID_MISMATCH'),
+   'CABINET_ARTICLE_CATALOGUE_IDENTITY_MISMATCH');
   if(!codes.length)matched++;
   rows.push({deviceId:id,boardSku:p?.article||null,bomSku:b?.sku||null,
    visualSku:v?.sku||null,modules:p?.modules??null,railIndex:p?.railIndex??null,
