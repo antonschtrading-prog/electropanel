@@ -40,3 +40,12 @@ test('gallery filters unverified images without treating SVG as manufacturer pho
  assert.match(section,/evidenceFilter\.addEventListener\('change'/);
  assert.match(section,/resolve:epManufacturerFrontResolveV1/);
 });
+
+test('gallery can locate a selected article by SKU on the live DIN board',()=>{
+ assert.match(section,/locate\.textContent='Найти на DIN-рейке'/);
+ assert.match(section,/document\.querySelectorAll\('#boardCanvas \.din-apparatus'\)/);
+ assert.match(section,/x\.dataset\.catalogSku===sku/);
+ assert.match(section,/node\.scrollIntoView/);
+ assert.match(section,/node\.click\(\)/);
+ assert.match(app,/d\.dataset\.catalogSku=l\.catalogSku\|\|''/);
+});
