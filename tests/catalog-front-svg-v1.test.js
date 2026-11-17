@@ -57,3 +57,15 @@ test('series marker does not insert raw catalogue markup',()=>{
  assert.doesNotMatch(svg,/<script>/);
  assert.match(svg,/data-series-marker="[0-3]"/);
 });
+
+test('SVG sanitizes control characters from manufacturer and series text',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'ABB\u0000bad',series:'S200\u0007test',sku:'A',modules:1});
+ assert.doesNotMatch(svg,/\u0000|\u0007/);
+ assert.match(svg,/ABB bad/);
+});
+test('SVG limits oversized accessibility text from untrusted catalogue metadata',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'M'.repeat(5000),series:'S'.repeat(5000),
+  sku:'K'.repeat(5000),modules:1});
+ assert.ok(svg.length<4000);
+ assert.doesNotMatch(svg,/M{501}/);
+});
