@@ -70,6 +70,13 @@ function epCabinetGroupReflowV1(project,lookup){
  }
  const after=epCabinetConnectionProximityV1(next,board.placements);
  if(after.status==='BLOCKED')return fail('GROUP_REFLOW_AFTER_INVALID');
+ if(after.summary.nominalDistanceModules>=prior.summary.nominalDistanceModules){
+  return {project:JSON.parse(JSON.stringify(project)),status:'REVIEW_REQUIRED',
+   code:'GROUP_REFLOW_NO_IMPROVEMENT',changes:[],perRail:newOrders,
+   before:prior.summary,after:prior.summary,
+   engineeringApproved:false,physicalWiringVerified:false,
+   note:'No actual decrease in declared same-rail gap; existing positions preserved.'};
+ }
  const improvements=before.placements.filter(p=>{
   const q=index.get(p.deviceId);return q?.railIndex!==p.railIndex||q?.startModule!==p.startModule;
  }).map(p=>({deviceId:p.deviceId,from:{railIndex:p.railIndex,startModule:p.startModule},
