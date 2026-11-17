@@ -1,0 +1,30 @@
+name: Catalog intake validation
+on:
+  push:
+    branches:
+      - feature/catalog-equipment-evidence-20261118
+    paths:
+      - 'catalog-intake/**'
+      - 'tests/catalog-*.test.js'
+      - '.github/workflows/catalog-intake-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  catalog-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check all catalogue intake modules
+        run: |
+          for file in catalog-intake/*.js tests/catalog-*.test.js; do
+            node --check "$file"
+          done
+      - name: Catalogue intake regression tests
+        run: node --test tests/catalog-*.test.js
+      - name: Full application Node regression tests
+        run: node --test tests/*.test.js
