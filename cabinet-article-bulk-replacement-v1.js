@@ -6,7 +6,8 @@ function epCabinetArticleBulkReplacementV1(project,oldSku,newSku,lookup){
   status:'BLOCKED',code,issues,project:null,preview:null,
   engineeringApproved:false,ready_for_installation:false});
  if(!project||typeof oldSku!=='string'||!oldSku.trim()||
-  typeof newSku!=='string'||!newSku.trim()||oldSku===newSku||
+  typeof newSku!=='string'||!newSku.trim()||oldSku!==oldSku.trim()||
+  newSku!==newSku.trim()||oldSku.length>200||newSku.length>200||oldSku===newSku||
   typeof lookup!=='function'||typeof epDraftBoardPlanV1!=='function'||
   typeof epCabinetArticleReplacementV1!=='function')
   return reject('BULK_REPLACEMENT_INPUT_INVALID');
