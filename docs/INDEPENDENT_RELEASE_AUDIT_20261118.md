@@ -62,3 +62,24 @@ These are **contract/regression tests**, not proof of a fully integrated commerc
 
 ## Final release decision
 **NOT YET VERIFIED / NO GO pending evidence**. This is not a conclusion that the application is broken. It means the independent audit has not yet demonstrated all acceptance criteria.
+
+## Extended independent audit cycle — cross-view acceptance
+
+New isolated files:
+- `tests/independent-release-negative-1-0.test.js`: five negative BOM and identity cases.
+- `tests/independent-cross-view-1-0.test.js`: eight cross-projection, edit, overflow and DIN-move cases.
+- `tests/independent-known-defects-1-0.test.js`: one characterization of a source-reproducible discrepancy.
+
+### DEFECT-01 — branch article override produces contradictory drawing and specification
+- **Severity:** P0 for release if mismatched article assignments can be saved/exported; otherwise P1 if a separate authoritative validation always blocks the state.
+- **Reproduction:** create one circuit `L1` with `catalogSku:'A'` and its linked branch device `Q1` with `catalogSku:'B'`, both one module. Project both with `epSingleLineDraftV1`, `epDraftBoardPlanV1` and `epDraftBomV1`.
+- **Expected:** one canonical effective SKU across scheme, DIN and BOM, or a BLOCKED status preventing inconsistent issue.
+- **Actual (verified from source control flow):** `single-line-draft-v1.js` reads `line.catalogSku` and emits `A`; `draft-board-plan-v1.js` uses `branch.catalogSku ?? line.catalogSku` and emits `B`; `draft-bom-v1.js` uses `branch.catalogSku || line.catalogSku` and emits `B` with only an UNKNOWN override notice. These projections do not themselves block the mismatch.
+- **Affected modules:** `single-line-draft-v1.js`, `draft-board-plan-v1.js`, `draft-bom-v1.js`; project-state mutation and final export gate require separate UI verification.
+- **Proposed fix in production PR (not made in audit PR):** establish a single authoritative effective article and block or reconcile conflicting line/branch assignments on change/import. Re-run cross-view and export regression after fix.
+
+### Execution evidence and limits
+- Earlier audit commit `72abd59e2fca7d92bc41d1c3d3f85fce2b9fbb39`: GitHub Actions JS checks and validation reported success; browser integration was in progress when last observed.
+- New audit commits require fresh CI verification. Local git clone failed because the runtime cannot resolve `github.com`; no local Node or Chromium run is claimed.
+- This source-level characterization does **not** establish that the public UI can reach or export the conflicting state; that is an additional acceptance step.
+- Independent audit test inventory now totals 20 tests (6 + 5 + 8 + 1); only the subset included in completed CI can be called executed.
