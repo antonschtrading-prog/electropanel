@@ -1736,6 +1736,8 @@ function renderCabinetCapacityOptionsV1(){
  const report=cabinetCapacityReportV1();
  if(!report||!report.options.length){
   target.textContent='Нет вариантов: проверьте модули и состав оборудования.';
+  const diagram=$('cabinetSpaceDiagram');if(diagram)diagram.replaceChildren();
+  const select=$('cabinetCapacityTotal');if(select){select.replaceChildren();select.disabled=true;}
   return;
  }
  const limits=state.cabinetSizingPreferencesV1||{};
@@ -1788,7 +1790,15 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   capacitySelect.disabled=!totals.length;
  }
  const shown=good.filter(o=>o.capacityModules===cabinetCapacitySelectedTotalV1);
- if(!shown.length){target.textContent='Под заданные ограничения вариантов не найдено. Проверьте полезные размеры или уменьшите резерв.';return;}
+ if(!shown.length){
+  const causes=constraintReport?.excluded.flatMap(x=>x.reasons)||[];
+  const missingDepth=causes.includes('DEPTH_UNKNOWN');
+  target.textContent='Под заданные ограничения вариантов не найдено.'+
+   (missingDepth?' Неизвестная глубина аппаратов требует уточнения паспортных данных.':'')+
+   ' Проверьте полезные размеры или уменьшите резерв.';
+  const diagram=$('cabinetSpaceDiagram');if(diagram)diagram.replaceChildren();
+  return;
+ }
  const selected=state.railCount+'x'+state.railCapacity;
  target.innerHTML='<p>Аппаратура: <b>'+report.equipmentModules+
   ' мод.</b> · Минимальный резерв: '+(limits.reservePercent??20)+'%. Выбрана вместимость '+cabinetCapacitySelectedTotalV1+' мест; доступных типоразмеров: '+totals.length+'.</p>'+
@@ -1803,7 +1813,8 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    ' · полезное ~'+
    Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
    Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+
-  '<p class="muted">Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
+  '<p class="muted">Предварительный приоритет: '+
+  (good[0]?.id||'не определён')+'. Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
   '. Неизвестная глубина не проходит заданный предел глубины.</p>'+
   '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';
  const space=$('cabinetSpaceDiagram');
