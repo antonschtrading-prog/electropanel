@@ -1966,8 +1966,37 @@ function renderCabinetArticleEvidenceV1(){
  }
  table.appendChild(tbody);details.appendChild(table);target.appendChild(details);
 }
+function renderCabinetArticleReconciliationV1(){
+ const target=$('cabinetArticleReconciliation');if(!target)return;
+ if(typeof epCabinetArticleReconciliationV1!=='function'){
+  target.textContent='Сопоставление артикулов недоступно.';return;
+ }
+ const report=epCabinetArticleReconciliationV1(state,catalogDevice);
+ const count=report.counts;
+ target.replaceChildren();
+ const title=document.createElement('h4');title.textContent='Согласованность каталога, DIN и спецификации';
+ const summary=document.createElement('p');
+ summary.textContent='Сопоставлено: '+count.matched+' из '+Math.max(count.board,count.bom,count.visual)+
+  ' аппаратов. Блокирующих замечаний: '+report.issues.filter(x=>x.level==='BLOCKED').length+
+  '. Подбор корпуса и монтаж не подтверждены.';
+ target.append(title,summary);
+ const errors=report.rows.filter(x=>x.status==='BLOCKED').slice(0,20);
+ if(errors.length){
+  const details=document.createElement('details');
+  const heading=document.createElement('summary');heading.textContent='Несовпадения артикулов ('+errors.length+')';
+  const list=document.createElement('ul');
+  for(const item of errors){
+   const li=document.createElement('li');
+   li.textContent=item.deviceId+': DIN '+(item.boardSku||'—')+', спецификация '+
+    (item.bomSku||'—')+', фасад '+(item.visualSku||'—')+' · '+item.issues.join(', ');
+   list.appendChild(li);
+  }
+  details.append(heading,list);target.appendChild(details);
+ }
+}
 function renderBoard(){
  renderCabinetCapacityOptionsV1();
+ renderCabinetArticleReconciliationV1();
  renderBoardConnectionAdvisoryV1();
  renderCabinetAccessReviewV1();
  renderCabinetArticleEvidenceV1();
