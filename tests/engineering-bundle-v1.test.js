@@ -70,3 +70,20 @@ test('connection space remains separately not configured when cabinet geometry a
   delete global.epDraftBoardPlanV1;
  }
 });
+
+test('apparatus dimension evidence does not imply DIN mount or terminal approval',()=>{
+ global.epCabinetApparatusEvidenceV1=
+  require('../cabinet-apparatus-evidence-v1.js').epCabinetApparatusEvidenceV1;
+ global.epDraftBoardPlanV1=require('../draft-board-plan-v1.js').epDraftBoardPlanV1;
+ try{
+  const r=bundle(p(),lookup).sections.cabinetApparatusEvidence;
+  assert.equal(r.status,'REVIEW_REQUIRED');
+  assert.equal(r.actualTerminalCoordinatesVerified,false);
+  assert.equal(r.actualMountingPositionVerified,false);
+  assert.equal(r.rows.length,1);
+  assert.equal(r.rows[0].bodyHeightMm,null);
+ }finally{
+  delete global.epCabinetApparatusEvidenceV1;
+  delete global.epDraftBoardPlanV1;
+ }
+});

@@ -39,3 +39,11 @@ test('app has export button',()=>assert.match(fs.readFileSync(path.join(__dirnam
 test('app calls export engine',()=>assert.match(fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8'),/epBoardPlacementCsvV1\(state,catalogDevice\)/));
 test('app names file',()=>assert.match(fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8'),/din-placement\.csv/));
 test('index loads before app',()=>{const s=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');assert.ok(s.indexOf('board-placement-export-v1.js')<s.indexOf('app.js'))});
+
+test('DIN schedule includes provenance columns without claiming verified terminals',()=>{
+ const out=csv(p());
+ assert.match(out.csv,/body_dimension_source_type/);
+ assert.match(out.csv,/body_dimension_source_reviewed_at/);
+ assert.match(out.csv,/actual_terminal_coordinates_verified/);
+ assert.equal(out.ready_for_installation,false);
+});

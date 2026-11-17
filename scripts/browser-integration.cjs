@@ -1706,6 +1706,57 @@ const server=http.createServer((req,res)=>{
  await page.locator('#undoBtn').click();
  assert.equal(await page.evaluate(()=>JSON.stringify(state.manualLayoutV1||[])),baseline);
 
+ // Selected product article and incomplete catalogue geometry propagate into
+ // board review, engineering evidence, print and CSV without invented measures.
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.railCount=1;state.railCapacity=6;
+  state.lines=[
+   {id:'L1',name:'Schneider',power:1,phase:'L1',modules:1,device:'B10',
+    catalogSku:'SE-A9F73110',source:'manual',sourceRef:''},
+   {id:'L2',name:'ABB',power:1,phase:'L1',modules:1,device:'B16',
+    catalogSku:'ABB-2CDS251001R0164',source:'manual',sourceRef:''}
+  ];
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  syncBranchDevices(state);
+  // Sync may bind catalogue selections to the branch inventory.
+  const first=state.branchDevices.find(x=>x.circuitId==='L1');
+  const second=state.branchDevices.find(x=>x.circuitId==='L2');
+  first.catalogSku='SE-A9F73110';second.catalogSku='ABB-2CDS251001R0164';
+  delete state.cabinetGeometryV1;
+  lastDesignSnapshot=null;changed();switchView('board');
+ });
+ const articleEvidence=await page.evaluate(()=>{
+  const r=epCabinetApparatusEvidenceV1(state,catalogDevice);
+  const report=epEngineeringBundleV1(state,catalogDevice);
+  const csv=epBoardPlacementCsvV1(state,catalogDevice);
+  return {status:r.status,count:r.rows.length,width:r.knownDimensions.width,
+   height:r.knownDimensions.height,depth:r.knownDimensions.depth,
+   article:r.rows[0]?.articleId,secondHeight:r.rows[1]?.bodyHeightMm,
+   knownHeightSource:r.rows[0]?.sourceType,verified:r.actualTerminalCoordinatesVerified,
+   inBundle:report.sections.cabinetApparatusEvidence.rows.length,
+   inPrint:epEngineeringPrintV1(report).includes('Габариты выбранных аппаратов и источники'),
+   inCsv:csv.csv.includes('body_dimension_source_type')&&
+    csv.csv.includes('MANUFACTURER_DATASHEET_MIRROR')};
+ });
+ assert.equal(articleEvidence.status,'REVIEW_REQUIRED');
+ assert.equal(articleEvidence.count,2);
+ assert.equal(articleEvidence.width,2);
+ assert.equal(articleEvidence.height,1);
+ assert.equal(articleEvidence.depth,1);
+ assert.equal(articleEvidence.article,'SE-A9F73110');
+ assert.equal(articleEvidence.secondHeight,null);
+ assert.equal(articleEvidence.knownHeightSource,'MANUFACTURER_DATASHEET_MIRROR');
+ assert.equal(articleEvidence.verified,false);
+ assert.equal(articleEvidence.inBundle,2);
+ assert.equal(articleEvidence.inPrint,true);
+ assert.equal(articleEvidence.inCsv,true);
+ const evidenceDetails=page.locator('#cabinetArticleEvidence details');
+ assert.equal(await evidenceDetails.count(),1);
+ await evidenceDetails.locator('summary').click();
+ assert.match(await evidenceDetails.innerText(),/SE-A9F73110/);
+ assert.match(await evidenceDetails.innerText(),/Неизвестна/);
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());

@@ -94,3 +94,17 @@ test('print distinguishes nominal region distances from manufacturer connection 
  assert.match(h,/НЕ ВЫПОЛНЕНА/);
  assert.match(h,/не отражают путь проводника/);
 });
+
+test('print marks unknown body dimensions instead of fabricating catalogue sizes',()=>{
+ const b=bundle();
+ b.sections.cabinetApparatusEvidence={status:'REVIEW_REQUIRED',rows:[{
+  deviceId:'L1',articleId:'CUSTOM-1',bodyWidthMm:18,bodyHeightMm:null,bodyDepthMm:null,
+  sourceType:'PROJECT_DECLARATION',sourceReviewedAt:null,status:'REVIEW_REQUIRED'
+ }]};
+ const h=print(b);
+ assert.match(h,/Габариты выбранных аппаратов и источники/);
+ assert.match(h,/CUSTOM-1/);
+ assert.match(h,/PROJECT_DECLARATION/);
+ assert.match(h,/НЕИЗВЕСТНО/);
+ assert.match(h,/DIN-защёлки/);
+});
