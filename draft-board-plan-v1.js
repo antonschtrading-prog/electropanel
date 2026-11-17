@@ -25,7 +25,7 @@ function epDraftBoardPlanV1(project,lookupSku){
   if(branches&&!branch)add('MISSING_BRANCH_DEVICE',line?.id??null,'BLOCKED');
   if(branch&&branch.modules!==line?.modules)add('BRANCH_LINE_WIDTH_CONFLICT',line?.id??null,'BLOCKED');
   devices.push({id:branch?.id??line?.id,modules:branch?.modules??line?.modules,
-   article:line?.catalogSku??null,kind:'branch'});
+   article:branch?.catalogSku??line?.catalogSku??null,kind:'branch'});
  }
  const ids=new Set();let rail=0,slot=0;
  const manual=project.manualLayoutV1;

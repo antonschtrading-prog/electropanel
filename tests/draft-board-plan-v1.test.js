@@ -39,3 +39,19 @@ test('branch and line width disagreement is blocked',()=>{
  const p=base();p.branchDevices=[{id:'B1',circuitId:'L1',modules:1},{id:'B2',circuitId:'L2',modules:3}];
  assert.ok(plan(p).issues.some(x=>x.code==='BRANCH_LINE_WIDTH_CONFLICT'));
 });
+
+test('board uses actual bound branch article, not stale circuit fallback',()=>{
+ const p={railCount:1,railCapacity:4,
+  lines:[{id:'L1',modules:1,catalogSku:'OLD'}],
+  branchDevices:[{id:'B1',circuitId:'L1',modules:1,catalogSku:'ACTUAL'}]};
+ const r=plan(p,sku=>({modules:1,sku,widthMm:18}));
+ assert.equal(r.status,'UNKNOWN');assert.equal(r.placements[0].article,'ACTUAL');
+ assert.equal(r.placements[0].deviceId,'B1');
+});
+test('without branch catalogue SKU the line article remains a valid fallback',()=>{
+ const p={railCount:1,railCapacity:4,
+  lines:[{id:'L1',modules:1,catalogSku:'LINE'}],
+  branchDevices:[{id:'B1',circuitId:'L1',modules:1}]};
+ const r=plan(p,sku=>({modules:1,sku,widthMm:18}));
+ assert.equal(r.placements[0].article,'LINE');
+});
