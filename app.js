@@ -2724,7 +2724,13 @@ $('exportCabinetCapacityBtn')?.addEventListener('click',()=>{
   schema:'electropanel.cabinet.capacity.export.1',project:state.title,
   selectedLayout:{rails:state.railCount,modulesPerRail:state.railCapacity},
   usableSizeLimits:state.cabinetSizingPreferencesV1||null,
-  ...report,reviewRequired:true,manufacturerSelected:false
+  ...report,
+  constraintReview:typeof epCabinetOptionConstraintsV1==='function'?
+   epCabinetOptionConstraintsV1(report,{
+    maxUsableWidthMm:state.cabinetSizingPreferencesV1?.maxUsableWidthMm??null,
+    maxUsableHeightMm:state.cabinetSizingPreferencesV1?.maxUsableHeightMm??null,
+    maxUsableDepthMm:state.cabinetSizingPreferencesV1?.maxUsableDepthMm??null}):null,
+  reviewRequired:true,manufacturerSelected:false
  },null,2),'application/json;charset=utf-8');
 });
  for(const [id,field,min,max] of [['cabinetWiringCorridor','wiringCorridorMm',0,120],
