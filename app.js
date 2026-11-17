@@ -2133,6 +2133,30 @@ function renderCabinetArticleReconciliationV1(){
    queueBox.append(heading,filter,summary,list,exportQueue);gallery.appendChild(queueBox);
    refreshQueue();
   }
+  if(typeof epCabinetDeliveryConvergenceV1==='function'&&typeof epCabinetDeliveryConvergenceCsvV1==='function'){
+   const section=document.createElement('section');section.className='ep-front-delivery-convergence';
+   const heading=document.createElement('h4');heading.textContent='Сверка щита: DIN · спецификация · фасады';
+   const summary=document.createElement('p');summary.setAttribute('aria-live','polite');
+   const exportButton=document.createElement('button');exportButton.type='button';
+   exportButton.textContent='Скачать сквозную сверку щита CSV';
+   const buildReport=()=>epCabinetDeliveryConvergenceV1(state,catalogDevice,epManufacturerFrontResolveV1);
+   const refresh=()=>{
+    const result=buildReport(),t=result.totals;
+    summary.textContent='Размещено '+t.placed+' аппаратов; занято '+t.occupied+
+     ' DIN-модулей; свободно '+t.free+'; требуют проверки '+t.actionable+
+     ' артикулов; конфликтов габаритов '+t.geometryConflicts+
+     '. Статус: '+(result.status==='BLOCKED'?'есть блокирующие несоответствия':'требуется инженерная проверка')+
+     '. Это не разрешение на монтаж.';
+    section.dataset.convergenceStatus=result.status;
+   };
+   exportButton.addEventListener('click',()=>{
+    const result=epCabinetDeliveryConvergenceCsvV1(buildReport());
+    if(!result.csv){notify('Сквозная сверка щита недоступна',true);return;}
+    download(baseName()+'_cabinet_convergence.csv',result.csv,'text/csv;charset=utf-8');
+   });
+   section.append(heading,summary,exportButton);gallery.appendChild(section);
+   refresh();
+  }
   const evidenceSummary=document.createElement('p');evidenceSummary.className='ep-front-gallery-evidence';
   if(initial?.evidenceSummary){
    const e=initial.evidenceSummary;
