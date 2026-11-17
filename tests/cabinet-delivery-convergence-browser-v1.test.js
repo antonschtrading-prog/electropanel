@@ -260,3 +260,19 @@ test('cross rail proposal clears after successful apply',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.match(app,/panel.replaceChildren\(\);cabinetCrossRailPreviewSnapshotV1=null;/);
 });
+
+test('before and after SVG adapter loads before app',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-before-after-svg-v1.js"')<html.indexOf('src="app.js"'));
+});
+test('cross rail preview renders current and proposed rails separately',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/epCabinetBeforeAfterSvgV1\(preview\)/);
+ assert.match(app,/\['Сейчас',pair.before\]/);
+ assert.match(app,/\['Предлагается',pair.after\]/);
+ assert.match(app,/ep-cabinet-before-after/);
+});
+test('cross rail preview invalidates on any project mutation',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/const cabinetCrossRailFingerprintV1=\(\)=>JSON.stringify\(state\)/);
+});
