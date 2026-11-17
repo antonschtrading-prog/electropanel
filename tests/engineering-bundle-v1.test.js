@@ -54,3 +54,19 @@ test('preliminary cabinet sizing is a separate traceable bundle section',()=>{
   assert.equal(out.statuses.cabinetCapacity,'REVIEW_REQUIRED');
  } finally {delete global.epUniversalCabinetOptionsV1;}
 });
+
+test('connection space remains separately not configured when cabinet geometry absent',()=>{
+ global.epCabinetConnectionSpaceV1=require('../cabinet-connection-space-v1.js').epCabinetConnectionSpaceV1;
+ global.epCabinetGeometryCheckV1=require('../cabinet-geometry-v1.js').epCabinetGeometryCheckV1;
+ global.epDraftBoardPlanV1=require('../draft-board-plan-v1.js').epDraftBoardPlanV1;
+ try{
+  const r=bundle(p(),lookup);
+  assert.equal(r.sections.cabinetConnectionSpace.status,'NOT_CONFIGURED');
+  assert.equal(r.sections.cabinetConnectionSpace.terminalConnectionsVerified,false);
+  assert.notEqual(r.overallStatus,'APPROVED');
+ }finally{
+  delete global.epCabinetConnectionSpaceV1;
+  delete global.epCabinetGeometryCheckV1;
+  delete global.epDraftBoardPlanV1;
+ }
+});

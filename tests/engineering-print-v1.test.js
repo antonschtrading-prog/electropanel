@@ -80,3 +80,17 @@ test('print cabinet capacity rows are transparently preliminary',()=>{
  assert.match(html,/НЕИЗВЕСТНА/);
  assert.match(html,/не паспортные размеры/);
 });
+
+test('print distinguishes nominal region distances from manufacturer connection proof',()=>{
+ const b=bundle();
+ b.sections.cabinetConnectionSpace={status:'REVIEW_REQUIRED',rows:[{
+  deviceId:'BR_L1',railIndex:0,
+  nearestWireDuct:{regionId:'ductA',distanceMm:12},
+  nearestTerminalRegion:{regionId:'termA',distanceMm:44}
+ }]};
+ const h=print(b);
+ assert.match(h,/Зоны подключения и кабельные каналы/);
+ assert.match(h,/ductA/);assert.match(h,/termA/);
+ assert.match(h,/НЕ ВЫПОЛНЕНА/);
+ assert.match(h,/не отражают путь проводника/);
+});

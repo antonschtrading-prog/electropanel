@@ -1612,6 +1612,50 @@ const server=http.createServer((req,res)=>{
  await page.locator('#redoBtn').click();
  assert.equal(await page.evaluate(()=>state.manualLayoutV1.length),4);
 
+ // Terminal and duct rectangles must be user declared, never inferred by the
+ // planner. Check bundle, print, export and board on a real browser project.
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.lines=[{id:'L1',name:'Socket circuit',power:1,phase:'L1',modules:2,
+   device:'B16',source:'manual',sourceRef:''}];
+  state.railCount=1;state.railCapacity=6;
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  syncBranchDevices(state);delete state.protectionLinks;
+  delete state.protectionLinksVersion;
+  state.cabinetGeometryV1={
+   version:1,source:'USER_DECLARED',
+   interior:{widthMm:260,heightMm:280,depthMm:140},
+   zones:[{railIndex:0,xMm:50,yMm:85,widthMm:120,heightMm:100}],
+   obstacles:[
+    {id:'ductB',kind:'WIRE_DUCT',xMm:50,yMm:195,widthMm:120,heightMm:30},
+    {id:'terminalA',kind:'TERMINAL_REGION',xMm:185,yMm:85,widthMm:50,heightMm:90}
+   ]};
+  lastDesignSnapshot=null;changed();switchView('board');
+ });
+ const connectionSpaceEvidence=await page.evaluate(()=>{
+  const report=epCabinetConnectionSpaceV1(state,catalogDevice);
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  const csv=epBoardPlacementCsvV1(state,catalogDevice);
+  return {status:report.status,count:report.rows.length,
+   duct:report.rows[0]?.nearestWireDuct?.regionId,
+   ductGap:report.rows[0]?.nearestWireDuct?.verticalGapMm,
+   terminal:report.rows[0]?.nearestTerminalRegion?.regionId,
+   sameInBundle:bundle.sections.cabinetConnectionSpace.rows[0]?.nearestWireDuct?.regionId,
+   inPrint:epEngineeringPrintV1(bundle).includes('Зоны подключения и кабельные каналы'),
+   inCsv:csv.csv.includes('nearest_declared_terminal_region')&&
+    csv.csv.includes('terminalA')&&csv.csv.includes('ductB'),
+   verified:report.terminalConnectionsVerified};
+ });
+ assert.deepEqual(connectionSpaceEvidence,{status:'REVIEW_REQUIRED',count:1,
+  duct:'ductB',ductGap:10,terminal:'terminalA',sameInBundle:'ductB',
+  inPrint:true,inCsv:true,verified:false});
+ assert.match(await page.locator('#cabinetAccessReview').innerText(),/объявленной зоной клемм/);
+ const serialGeometry=await page.evaluate(()=>{
+  const copy=normalizeImport(JSON.parse(snapshot()));
+  return copy.cabinetGeometryV1.obstacles.map(x=>x.id);
+ });
+ assert.deepEqual(serialGeometry,['ductB','terminalA']);
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());

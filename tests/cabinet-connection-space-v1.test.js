@@ -54,3 +54,13 @@ test('rail slots beyond declared nominal band refuse review',()=>{
  assert.equal(r.status,'REVIEW_REQUIRED');
  assert.equal(r.rows.find(x=>x.deviceId==='L2').nominalBand.xMm,140);
 });
+
+test('changing one user-declared terminal region shifts only nominal distance',()=>{
+ const p=base();p.cabinetGeometryV1=geometry();
+ const a=review(p).rows[0].nearestTerminalRegion.distanceMm;
+ p.cabinetGeometryV1.obstacles[1].xMm=195;
+ const b=review(p);
+ assert.equal(b.status,'REVIEW_REQUIRED');
+ assert.equal(b.rows[0].nearestTerminalRegion.distanceMm,a+10);
+ assert.equal(b.terminalConnectionsVerified,false);
+});
