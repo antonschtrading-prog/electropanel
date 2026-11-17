@@ -3366,9 +3366,22 @@ $('exportCabinetMissingDimensionsBtn')?.addEventListener('click',()=>{
  }
  download(baseName()+'_apparatus_geometry_requests.csv',result.csv,'text/csv;charset=utf-8');
 });
+// Preview and application are intentionally separate. A changed project invalidates the proposal.
+let cabinetCrossRailPreviewSnapshotV1=null;
+const cabinetCrossRailFingerprintV1=()=>JSON.stringify({
+ railCount:state.railCount,railCapacity:state.railCapacity,
+ lines:state.lines,branchDevices:state.branchDevices,sharedDevices:state.sharedDevices,
+ manualLayoutV1:state.manualLayoutV1,protectionLinks:state.protectionLinks,
+ deviceSupplyV1:state.deviceSupplyV1,cabinetGeometryV1:state.cabinetGeometryV1,
+ catalogAssignments:state.catalogAssignments
+});
 $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
- if(typeof epCabinetCrossRailOptimizeV1!=='function'){
-  notify('Оптимизатор межрядных связей недоступен',true);return;
+ const panel=$('cabinetCrossRailPreview');
+ if(!panel)return;
+ panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
+ if(typeof epCabinetCrossRailOptimizeV1!=='function'||
+  typeof epCabinetReflowPreviewV1!=='function'){
+  notify('Предпросмотр межрядной оптимизации недоступен',true);return;
  }
  const proposal=epCabinetCrossRailOptimizeV1(state,catalogDevice);
  if(proposal.status==='BLOCKED'){
@@ -3377,18 +3390,75 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
  if(!proposal.changes.length){
   notify('Уменьшить количество связей между DIN-рейками не удалось');return;
  }
- const cross=proposal.changes.filter(c=>c.from.railIndex!==c.to.railIndex).length;
- const moveDetails=proposal.changes.slice(0,10).map(c=>
-  c.deviceId+': DIN '+(c.from.railIndex+1)+'/'+(c.from.startModule+1)+
-  ' → DIN '+(c.to.railIndex+1)+'/'+(c.to.startModule+1)).join('\n');
- if(!confirm('Предлагается переместить '+proposal.changes.length+
-  ' аппаратов, из них между DIN-рейками: '+cross+
-  '. Расчётное число межрядных связей: '+proposal.before.cross+' → '+proposal.after.cross+
-  '.\n\n'+moveDetails+(proposal.changes.length>10?'\n… и ещё '+(proposal.changes.length-10):'')+
-  '\n\nЭлектрические связи не изменятся. Применить компоновку?'))return;
- checkpoint();state.manualLayoutV1=proposal.project.manualLayoutV1;changed();
- notify('Межрядные связи: '+proposal.before.cross+' → '+proposal.after.cross+
-  '. Перемещено аппаратов: '+proposal.changes.length+'.');
+ const preview=epCabinetReflowPreviewV1(state,proposal,catalogDevice);
+ if(preview.status==='BLOCKED'){
+  notify('Предпросмотр отклонён: '+preview.code,true);return;
+ }
+ const fingerprint=cabinetCrossRailFingerprintV1();
+ cabinetCrossRailPreviewSnapshotV1={fingerprint,changes:JSON.stringify(proposal.changes)};
+ const heading=document.createElement('h4');heading.textContent='Предлагаемая DIN-компоновка';
+ const summary=document.createElement('p');
+ summary.textContent='Межрядные связи: '+proposal.before.cross+' → '+proposal.after.cross+
+  ' · перемещено аппаратов: '+preview.summary.moved+
+  ' · переходов между рейками: '+preview.summary.changedRails+
+  '. Электрические связи не изменяются.';
+ panel.append(heading,summary);
+ if(typeof epCabinetOptionDinSvgV1==='function'){
+  const diagram=document.createElement('div');diagram.className='ep-cabinet-din-visual';
+  diagram.innerHTML=epCabinetOptionDinSvgV1(preview);panel.appendChild(diagram);
+ }
+ const list=document.createElement('details'),label=document.createElement('summary');
+ label.textContent='Перечень перестановок ('+preview.summary.moved+')';
+ const ul=document.createElement('ul');
+ for(const row of preview.rows.filter(r=>r.changed)){
+  const li=document.createElement('li');
+  li.textContent=row.deviceId+': DIN '+(row.fromRail+1)+'/'+(row.fromSlot+1)+
+   ' → DIN '+(row.toRail+1)+'/'+(row.toSlot+1);
+  ul.appendChild(li);
+ }
+ list.append(label,ul);panel.appendChild(list);
+ const exportCsv=document.createElement('button');exportCsv.type='button';
+ exportCsv.className='btn';exportCsv.textContent='Скачать перемещения CSV';
+ exportCsv.addEventListener('click',()=>{
+  if(cabinetCrossRailFingerprintV1()!==fingerprint){
+   notify('Проект изменён — повторите предпросмотр',true);return;
+  }
+  const data=epCabinetOptionPreviewCsvV1(preview);
+  if(!data.csv){notify('CSV недоступен',true);return;}
+  download(baseName()+'_cross_rail_preview.csv',data.csv,'text/csv;charset=utf-8');
+ });
+ const exportSvg=document.createElement('button');exportSvg.type='button';
+ exportSvg.className='btn';exportSvg.textContent='Скачать эскиз SVG';
+ exportSvg.addEventListener('click',()=>{
+  if(cabinetCrossRailFingerprintV1()!==fingerprint){
+   notify('Проект изменён — повторите предпросмотр',true);return;
+  }
+  const svg=epCabinetOptionDinSvgV1(preview);
+  if(!svg){notify('SVG недоступен',true);return;}
+  download(baseName()+'_cross_rail_preview.svg',svg,'image/svg+xml;charset=utf-8');
+ });
+ const apply=document.createElement('button');apply.type='button';
+ apply.className='btn';apply.textContent='Применить предложенную компоновку';
+ apply.addEventListener('click',()=>{
+  if(cabinetCrossRailFingerprintV1()!==fingerprint){
+   panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
+   notify('Проект изменён — предложение устарело. Постройте новый предпросмотр',true);return;
+  }
+  const fresh=epCabinetCrossRailOptimizeV1(state,catalogDevice);
+  if(fresh.status==='BLOCKED'||JSON.stringify(fresh.changes)!==cabinetCrossRailPreviewSnapshotV1?.changes){
+   notify('Предложение изменилось — повторите предпросмотр',true);return;
+  }
+  const verified=epCabinetReflowPreviewV1(state,fresh,catalogDevice);
+  if(verified.status==='BLOCKED'||verified.summary.moved!==preview.summary.moved){
+   notify('Проверка компоновки не пройдена',true);return;
+  }
+  if(!confirm('Применить '+verified.summary.moved+' перестановок DIN? Электрические связи не изменятся.'))return;
+  checkpoint();state.manualLayoutV1=fresh.project.manualLayoutV1;changed();
+  panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
+  notify('Межрядные связи: '+fresh.before.cross+' → '+fresh.after.cross+
+   '. Перемещено аппаратов: '+fresh.changes.length+'.');
+ });
+ panel.append(exportCsv,exportSvg,apply);
 });
 $('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
  if(typeof epCabinetGroupReflowV1!=='function'){
