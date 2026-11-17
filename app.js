@@ -2076,6 +2076,58 @@ function renderCabinetArticleReconciliationV1(){
  });
  editor.append(previewButton,applyButton,result);
  target.appendChild(editor);
+ if(typeof epCabinetArticleBulkReplacementV1==='function'){
+  const bulkEditor=document.createElement('details');
+  const bulkTitle=document.createElement('summary');
+  bulkTitle.textContent='Массовая замена серии или производителя';
+  bulkEditor.appendChild(bulkTitle);
+  const source=document.createElement('select');
+  const skus=[...new Set(report.rows.map(x=>x.boardSku).filter(Boolean))].sort();
+  for(const sku of skus){
+   const option=document.createElement('option');option.value=sku;option.textContent=sku;
+   source.appendChild(option);
+  }
+  const destination=document.createElement('input');destination.type='text';
+  destination.maxLength=200;destination.placeholder='Новый артикул из каталога';
+  destination.setAttribute('list','cabinetArticleReplacementSuggestions');
+  const sourceLabel=document.createElement('label');sourceLabel.textContent='Заменяемый артикул';
+  sourceLabel.appendChild(source);
+  const destLabel=document.createElement('label');destLabel.textContent='Артикул замены';
+  destLabel.appendChild(destination);
+  const preview=document.createElement('button');preview.type='button';
+  preview.textContent='Проверить массовую замену';
+  const apply=document.createElement('button');apply.type='button';
+  apply.textContent='Применить массовую замену';apply.disabled=true;
+  const message=document.createElement('p');message.setAttribute('aria-live','polite');
+  let pending=null;
+  const reset=()=>{pending=null;apply.disabled=true;message.textContent='';};
+  source.addEventListener('change',reset);destination.addEventListener('input',reset);
+  preview.addEventListener('click',()=>{
+   reset();
+   const candidate=epCabinetArticleBulkReplacementV1(state,source.value,destination.value.trim(),catalogDevice);
+   if(candidate.status!=='REVIEW_REQUIRED'){
+    message.textContent='Массовая замена отклонена: '+candidate.code;return;
+   }
+   pending={signature:JSON.stringify(state)};
+   message.textContent='Проверено: '+candidate.preview.replacedCount+
+    ' аппаратов, переместятся '+candidate.preview.relocatedCount+
+    ' ('+(candidate.preview.relocatedDeviceIds.join(', ')||'нет')+'). Требуется подтверждение.';
+   apply.disabled=false;
+  });
+  apply.addEventListener('click',()=>{
+   if(!pending||pending.signature!==JSON.stringify(state)){
+    reset();message.textContent='Проект изменился. Повторите проверку.';return;
+   }
+   const checked=epCabinetArticleBulkReplacementV1(state,source.value,destination.value.trim(),catalogDevice);
+   if(checked.status!=='REVIEW_REQUIRED'){
+    reset();message.textContent='Массовая замена не прошла повторную проверку.';return;
+   }
+   checkpoint();state=checked.project;changed();
+   notify('Массовая замена выполнена. Спецификация и DIN-компоновка пересчитаны.');
+  });
+  bulkEditor.append(sourceLabel,destLabel,preview,apply,message);
+  target.appendChild(bulkEditor);
+ }
 }
 function renderBoard(){
  renderCabinetCapacityOptionsV1();
