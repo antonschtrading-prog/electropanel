@@ -48,6 +48,67 @@ function epWorkflowLineEstimateV1(line,inputs){
  return {status:'CALCULATED',code:'WORKFLOW_ARITHMETIC_FROM_ENGINE',
   current:result.roundedIbA,calculation:result};
 }
+// Audit the user-entered circuit/load association without silently summing
+// loads into the circuit power or rewriting engineer-declared demand factors.
+function epWorkflowConsumerAuditV1(project){
+ const issues=[],byCircuit=new Map(),seenCircuits=new Set(),seenLoads=new Set();
+ const summary={matchedConsumers:0,orphanConsumers:0,duplicateConsumers:0,
+  invalidConsumerPower:0,powerDisagreements:0,unrepresentedCircuits:0};
+ if(!project||!Array.isArray(project.lines)||!Array.isArray(project.loads))
+  return {status:'BLOCKED',issues:[{code:'WORKFLOW_CONSUMER_MODEL_INVALID',level:'BLOCKED',lineId:null}],summary,rows:[]};
+ for(const line of project.lines){
+  if(!line||typeof line.id!=='string'||!line.id.trim()||seenCircuits.has(line.id)){
+   issues.push({code:'WORKFLOW_CIRCUIT_ID_INVALID_OR_DUPLICATE',level:'BLOCKED',lineId:line?.id??null});
+   continue;
+  }
+  seenCircuits.add(line.id);
+  byCircuit.set(line.id,{lineId:line.id,consumerCount:0,consumerPowerKw:0,
+   declaredPowerKw:epWorkflowPositiveV1(line.power??line.powerKw),
+   powerComplete:true,comparison:'NOT_AVAILABLE'});
+ }
+ for(const load of project.loads){
+  const id=load?.id, circuitId=load?.circuitId;
+  if(typeof id!=='string'||!id.trim()||seenLoads.has(id)){
+   summary.duplicateConsumers++;
+   issues.push({code:'WORKFLOW_CONSUMER_ID_INVALID_OR_DUPLICATE',level:'BLOCKED',
+    lineId:typeof circuitId==='string'?circuitId:null});
+  }else seenLoads.add(id);
+  const row=byCircuit.get(circuitId);
+  if(!row){
+   summary.orphanConsumers++;
+   issues.push({code:'WORKFLOW_CONSUMER_WITHOUT_EXISTING_CIRCUIT',level:'BLOCKED',
+    lineId:typeof circuitId==='string'?circuitId:null});
+   continue;
+  }
+  summary.matchedConsumers++;
+  row.consumerCount++;
+  const power=epWorkflowPositiveV1(load.powerKw);
+  if(power===null){
+   summary.invalidConsumerPower++;
+   row.powerComplete=false;
+   issues.push({code:'WORKFLOW_CONSUMER_POWER_MISSING_OR_INVALID',level:'UNKNOWN',lineId:circuitId});
+  }else row.consumerPowerKw+=power;
+ }
+ for(const row of byCircuit.values()){
+  row.consumerPowerKw=Math.round(row.consumerPowerKw*1000000)/1000000;
+  if(!row.consumerCount){
+   summary.unrepresentedCircuits++;
+   row.comparison='NO_CONSUMERS_LINKED';
+  }else if(!row.powerComplete||row.declaredPowerKw===null){
+   row.comparison='INSUFFICIENT_DATA';
+  }else if(Math.abs(row.consumerPowerKw-row.declaredPowerKw)>0.001){
+   summary.powerDisagreements++;
+   row.comparison='DIFFERENT_DECLARED_POWER';
+   issues.push({code:'WORKFLOW_CONSUMER_CIRCUIT_POWER_DIFFER',level:'UNKNOWN',lineId:row.lineId});
+  }else row.comparison='MATCH';
+ }
+ return {schema:'electropanel.workflow.consumers.audit.1',
+  status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':issues.length?'REVIEW':'MATCHED',
+  issues,summary,rows:[...byCircuit.values()],
+  method:'DECLARED_KW_COMPARISON_ONLY',autoGroupApplied:false,
+  engineeringApproved:false,ready_for_installation:false};
+}
+
 function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  const issues=[],rows=[],add=(code,level='UNKNOWN',lineId=null)=>issues.push({code,level,lineId});
  const result=()=>({schema:'electropanel.project.workflow.draft.1',
@@ -66,8 +127,10 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   catch(e){add(e.message,'BLOCKED');}
  }
  const catalog=Array.isArray(catalogInput)?catalogInput:[];
- const owned=new Set(project.lines.map(x=>x.id));
- for(const load of project.loads)if(!owned.has(load.circuitId))summary.unassignedLoads++;
+ const consumerAudit=epWorkflowConsumerAuditV1(project);
+ summary.consumerReconciliation=consumerAudit.summary;
+ summary.unassignedLoads=consumerAudit.summary.orphanConsumers;
+ for(const issue of consumerAudit.issues)add(issue.code,issue.level,issue.lineId);
  summary.consumers=project.loads.length;
  summary.circuits=project.lines.length;
  const phaseLoads={L1:0,L2:0,L3:0,unassigned:0};
@@ -114,6 +177,7 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  summary.phaseHints=epWorkflowPhaseSuggestionsV1(project).candidates;
  if(summary.unknownPhase)add('WORKFLOW_PHASE_ASSIGNMENT_REQUIRED');
  if(summary.unassignedLoads)add('WORKFLOW_CONSUMERS_WITHOUT_CIRCUIT','BLOCKED');
+ if(consumerAudit.summary.powerDisagreements)add('WORKFLOW_CONSUMER_POWERS_NEED_REVIEW');
  if(summary.missingInput)add('WORKFLOW_LOAD_INPUTS_PENDING');
  if(!inputs)add('WORKFLOW_COMMON_INPUTS_PENDING');
  let schematic=null,bom=null,board=null;
@@ -262,7 +326,13 @@ function epWorkflowHtmlV1(report,stored={}){
   ', расчетов Ib: '+esc(report?.summary?.calculated??0)+
   ', уже заданных токов: '+esc(report?.summary?.manualCurrentPreserved??0)+
   ', предложений аппаратов: '+esc(report?.summary?.protectiveCandidates??0)+
-  '.</p><p class="muted">Подсказки балансировки мощностей (только кВт, без индивидуальных cos φ и режимов): '+
+  '.</p><p class="muted">Сверка потребителей: отсутствующие цепи — '+
+  esc(report?.summary?.consumerReconciliation?.orphanConsumers??0)+
+  ', дубли идентификаторов — '+
+  esc(report?.summary?.consumerReconciliation?.duplicateConsumers??0)+
+  ', расхождения заявленных мощностей — '+
+  esc(report?.summary?.consumerReconciliation?.powerDisagreements??0)+
+  '. Разные мощности требуют проверки инженером; автоматической подмены нет.</p><p class="muted">Подсказки балансировки мощностей (только кВт, без индивидуальных cos φ и режимов): '+
   ((report?.summary?.phaseHints||[]).length?
    report.summary.phaseHints.slice(0,3).map(x=>esc(x.lineId)+': '+
     esc(x.from)+' → '+esc(x.to)+'; разброс '+esc(x.beforeKw)+
@@ -292,5 +362,6 @@ function epWorkflowCsvV1(report){
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epWorkflowPositiveV1,epWorkflowInputsV1,epWorkflowLineEstimateV1,
+ epWorkflowConsumerAuditV1,
  epWorkflowPreviewV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
  epWorkflowArticleChoiceV1,epWorkflowPhaseSuggestionsV1,epWorkflowCsvV1};
