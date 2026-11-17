@@ -3418,6 +3418,26 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   ' · переходов между рейками: '+preview.summary.changedRails+
   '. Электрические связи не изменяются.';
  variantPanel.append(heading,summary);
+ if(selected.geometry){
+  const geo=document.createElement('p');
+  geo.textContent='Каталожные габариты: '+selected.geometry.summary.knownDimensions+
+   ' из '+selected.geometry.summary.devices+' аппаратов; неизвестно: '+
+   selected.geometry.summary.missingDimensions+
+   '. Габариты корпуса и монтажные зазоры не подтверждены.';
+  variantPanel.appendChild(geo);
+  const dimensionExport=document.createElement('button');
+  dimensionExport.type='button';dimensionExport.className='btn';
+  dimensionExport.textContent='Скачать габариты аппаратов CSV';
+  dimensionExport.addEventListener('click',()=>{
+   if(cabinetCrossRailFingerprintV1()!==fingerprint){
+    notify('Проект изменён — повторите предпросмотр',true);return;
+   }
+   const data=epCabinetApparatusGeometryCsvV1(selected.geometry);
+   if(!data.csv){notify('Ведомость габаритов недоступна',true);return;}
+   download(baseName()+'_apparatus_dimensions.csv',data.csv,'text/csv;charset=utf-8');
+  });
+  variantPanel.appendChild(dimensionExport);
+ }
  if(typeof epCabinetBeforeAfterSvgV1==='function'){
   const pair=epCabinetBeforeAfterSvgV1(preview);
   if(pair.status==='REVIEW_REQUIRED'){
