@@ -137,3 +137,22 @@ Five new cases in `tests/independent-aggregate-guard-1-0.test.js` verify: SKU mi
 
 ### Next acceptance target
 Trace actual application handlers for BOM CSV, schematic print/export and engineering bundle downloads; verify all entry points block or prominently mark contradictory outputs. Do not propose a duplicate validator when the existing cross-view audit already covers the inconsistency.
+
+## Confirmed release-gate bypass in shipped app handlers — source evidence
+
+### DEFECT-03 — standalone BOM and single-line exports bypass cross-view gate
+- **Severity:** **P0 for issuing mutually inconsistent project documents**; exported files are explicitly marked DRAFT, which limits the claim, but does not eliminate the inconsistency.
+- **Reproduction at module level:** set line `L1.catalogSku='A'`, linked branch `Q1.catalogSku='B'`; generate single-line and BOM. Existing `epCrossViewAuditV1` detects and BLOCKS the mismatch, as tested in `independent-aggregate-guard-1-0.test.js`.
+- **Source path in `app.js`:**
+  - `exportSingleLineSvgBtn` directly calls `epSingleLineDraftV1(state,catalogDevice)`, renders SVG and invokes `download(...single_line_DRAFT.svg...)` without checking `epCrossViewAuditV1`, bundle `overallStatus`, or even schematic `status`.
+  - `exportDraftBomCsvBtn` directly calls `epDraftBomCsvV1(epDraftBomV1(state,catalogDevice))` and downloads `equipment_BOM_DRAFT.csv` without a gate.
+  - `exportDraftBomJsonBtn` directly serializes `epDraftBomV1(state,catalogDevice)` and downloads `equipment_BOM_DRAFT.json` without a gate.
+  - `workflowExportCsvBtn` directly downloads `epWorkflowCsvV1(epWorkflowPreviewV1(...))` without checking aggregate `BLOCKED` status.
+- **Expected:** any contradictory article assignments either prevent standalone document export, or are clearly embedded in the exported artifact with a mandatory blocking notice and reconciliation status. Do not silently deliver contradictory project documents.
+- **Actual:** source handlers call download unconditionally after generating draft reports. The existing cross-view guard is available but not enforced in these handlers.
+- **Verification boundary:** source-level handler audit is conclusive about missing gate calls; actual UI interaction and download artifacts for this inconsistent fixture have not yet been run in Chromium.
+- **Recommended minimal production fix:** centralize a single export eligibility decision using `epEngineeringBundleV1(...).sections.crossView` (and relevant report blockers), and require it in schematic SVG, BOM CSV/JSON, workflow CSV, and other document outputs. Keep draft export possible for nonblocking UNKNOWN states, with clear issue annotations; do not demand unrelated external network/cable length inputs.
+
+### CI
+- Audit SHA `591dfa79e09f996dbf71615ff9cabab61d40b7f0`: all three workflows completed SUCCESS, including browser integration.
+- Audit SHA with the new cross-view guard tests and this report requires fresh CI confirmation.
