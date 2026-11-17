@@ -2073,6 +2073,18 @@ function renderCabinetArticleReconciliationV1(){
    gallery.appendChild(exportInventory);
   }
 
+  if(typeof epFrontEvidenceLedgerV1==='function'&&typeof epFrontEvidenceLedgerCsvV1==='function'){
+   const exportEvidence=document.createElement('button');exportEvidence.type='button';
+   exportEvidence.textContent='Скачать ведомость подтверждений фасадов CSV';
+   exportEvidence.addEventListener('click',()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const ledger=epFrontEvidenceLedgerV1(fresh.rows,catalogDevice,epManufacturerFrontResolveV1);
+    const result=epFrontEvidenceLedgerCsvV1(ledger);
+    if(!result.csv){notify('Ведомость подтверждений фасадов недоступна',true);return;}
+    download(baseName()+'_front_evidence_ledger.csv',result.csv,'text/csv;charset=utf-8');
+   });
+   gallery.appendChild(exportEvidence);
+  }
   const evidenceSummary=document.createElement('p');evidenceSummary.className='ep-front-gallery-evidence';
   if(initial?.evidenceSummary){
    const e=initial.evidenceSummary;
