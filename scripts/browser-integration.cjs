@@ -1448,6 +1448,15 @@ const server=http.createServer((req,res)=>{
  });
  assert.deepEqual(sizingModel,{terminal:60,stored:60,height:410});
 
+ assert.match(await page.locator('#cabinetConnectionAdvisory').innerText(),/Условная близость/);
+ const advisory=await page.evaluate(()=>{
+  const report=epEngineeringBundleV1(state,catalogDevice);
+  return {status:report.sections.cabinetConnectionProximity.status,
+   physical:report.sections.cabinetConnectionProximity.physicalWiringVerified,
+   pairs:report.sections.cabinetConnectionProximity.pairs.length,
+   printed:epEngineeringPrintV1(report).includes('Группировка по заявленным электрическим связям')};
+ });
+ assert.deepEqual(advisory,{status:'REVIEW_REQUIRED',physical:false,pairs:0,printed:true});
  const beforeCabinet=await page.evaluate(()=>JSON.stringify(state.lines));
  await capacityChoice.click();
  const appliedCabinet=await page.evaluate(()=>{

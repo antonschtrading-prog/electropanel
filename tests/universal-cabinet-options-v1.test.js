@@ -156,3 +156,17 @@ test('unknown body heights stay UNKNOWN, not automatically approved or rejected'
  assert.equal(r.options[0].envelope.spacePlan.allBodyHeightsKnown,false);
  assert.ok(r.options[0].issues.some(x=>x.code==='CABINET_APPLIANCE_HEIGHT_PARTLY_UNKNOWN'));
 });
+
+test('candidate compaction reports only declared grouping-proximity counts',()=>{
+ global.epCabinetConnectionProximityV1=require('../cabinet-connection-proximity-v1.js').epCabinetConnectionProximityV1;
+ try {
+  const project={lines:[{id:'L1',modules:1},{id:'L2',modules:1}],
+   sharedDevices:[{id:'G1',modules:1,circuitIds:['L1','L2']}]};
+  const r=plan(project);
+  const o=r.options.find(x=>x.id==='1x4');
+  assert.ok(o.connectionProximity);
+  assert.equal(o.connectionProximity.sameRail,2);
+  assert.equal(o.connectionProximity.crossRail,0);
+  assert.equal(o.connectionProximity.unresolved,0);
+ }finally{delete global.epCabinetConnectionProximityV1;}
+});

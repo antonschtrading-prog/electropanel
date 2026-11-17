@@ -210,7 +210,7 @@ function epEngineeringPrintV1(bundle){
  const capacity=sections.cabinetCapacity||{};
  const capacityRows=rows(['Вместимость','Вариант','Ряды','Модулей на DIN','Резерв','Полезная ширина (предв.), мм',
   'Полезная высота (предв.), мм','Полезная глубина (предв.), мм',
-  'Кабельный коридор на ряд, мм','Резерв клемм, мм','Ограничения'],
+  'Кабельный коридор на ряд, мм','Резерв клемм, мм','Связанные пары на одной DIN','Связанные пары на разных DIN','Ограничения'],
   (capacity.options||[]).filter(o=>o.status!=='BLOCKED').slice(0,16).map(o=>[
    o.capacityModules,({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Не определён'),o.railCount,o.modulesPerRail,o.reserveModules,
    o.envelope?.preliminaryUsableWidthMm??'—',
@@ -218,6 +218,7 @@ function epEngineeringPrintV1(bundle){
    o.envelope?.preliminaryUsableDepthMm??'НЕИЗВЕСТНА',
    o.envelope?.spacePlan?.wiringCorridorPerRailMm??'—',
    o.envelope?.spacePlan?.terminalReserveMm??'—',
+   o.connectionProximity?.sameRail??'—',o.connectionProximity?.crossRail??'—',
    o.withinDeclaredLimits===false?'Превышены':'Требует проверки'
   ]));
  const proximity=sections.cabinetConnectionProximity||{};

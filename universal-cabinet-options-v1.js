@@ -110,6 +110,11 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
  const options=profiles.map(profile=>{
   const packed=epCabinetPackDevicesV1(entries,profile.railCount,profile.modulesPerRail);
   const {rails,unplaced}=packed;
+  const proximity=typeof epCabinetConnectionProximityV1==='function'?
+   epCabinetConnectionProximityV1(project,rails.flatMap(rail=>rail.devices.map(d=>({
+    deviceId:d.deviceId,railIndex:rail.railIndex,startModule:d.startModule,
+    modules:d.modules
+   })))):null;
   const used=entries.reduce((s,x)=>s+x.modules,0);
   const target=Math.ceil(used*(1+p.reserveFraction));
   const allocated=profile.capacityModules;
@@ -167,7 +172,7 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   const orientation=ordered.length===1?'ONLY':
    order===0?'WIDE':order===ordered.length-1?'TALL':'BALANCED';
   return {id:profile.id,orientation,capacityModules:profile.capacityModules,modulesPerRail:profile.modulesPerRail,railCount:rails.length,
-   rails,packingMethod:packed.status,usedModules:used,allocatedModules:allocated,reserveModules:allocated-used,
+   rails,connectionProximity:proximity?proximity.summary:null,packingMethod:packed.status,usedModules:used,allocatedModules:allocated,reserveModules:allocated-used,
    unplaced,envelope,issues:optionIssues,
    status:optionIssues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',
    engineeringApproved:false,confirmedCabinetFit:false};

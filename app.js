@@ -1791,7 +1791,11 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
    '" data-apply-cabinet-option="'+o.id+'">'+o.capacityModules+
    ' мод. · '+({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Вариант')+' · '+o.railCount+' × '+o.modulesPerRail+
-   ' · свободно '+o.reserveModules+' · полезное ~'+
+   ' · свободно '+o.reserveModules+
+   (o.connectionProximity?' · связанные: на одной DIN '+o.connectionProximity.sameRail+'/'+
+    (o.connectionProximity.sameRail+o.connectionProximity.crossRail)+
+    ', не размещено '+o.connectionProximity.unresolved:'')+
+   ' · полезное ~'+
    Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
    Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+
   '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';

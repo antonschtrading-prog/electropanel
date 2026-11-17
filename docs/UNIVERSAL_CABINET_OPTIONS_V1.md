@@ -67,3 +67,5 @@ A supplier-neutral CSV schedule exports rows, module widths, spare modules, prel
 ## Declared-relationship proximity audit
 
 The optional cabinetConnectionProximity engineering section relates DIN positions to explicit shared-device memberships, protection hierarchy and declared supply links (when both endpoints are represented apparatuses). It reports same-rail, directly adjacent, cross-rail and unplaced pairs, without inferring other electrical connections. It is a relative planning signal only: no conductor routing, terminal access, wire lengths, selectivity, or installation conformity is asserted. The board and print report display the findings; actual device placement is not silently modified.
+
+Every nominal cabinet candidate now optionally carries proximity counts for its proposed rail locations based solely on available declared logical connections. The chooser and print report expose these counts for comparing alternatives; no topology-driven physical wiring claim is made. If the advisory engine is absent, the candidate still exists but its proximity field is null.
