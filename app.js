@@ -3533,7 +3533,8 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
  const apply=document.createElement('button');apply.type='button';
  apply.className='btn';apply.textContent='Применить предложенную компоновку';
  apply.addEventListener('click',()=>{
-  if(cabinetCrossRailFingerprintV1()!==fingerprint){
+  if(cabinetCrossRailFingerprintV1()!==fingerprint||
+   ($('cabinetEnclosureCandidatesInput')?.value.trim()??'')!==enclosureText){
    panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
    notify('Проект изменён — предложение устарело. Постройте новый предпросмотр',true);return;
   }
