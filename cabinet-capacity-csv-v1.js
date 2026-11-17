@@ -11,13 +11,19 @@ function epCabinetCapacityCsvV1(report,limits={}){
   status:'BLOCKED',issues:[{code,level:'BLOCKED'}],engineeringApproved:false});
  if(!report||report.schema!=='electropanel.universal.cabinet.options.1'||
     !Array.isArray(report.options)||report.status==='BLOCKED')return fail('CABINET_CSV_INPUT_INVALID');
- if(!limits||typeof limits!=='object'||Array.isArray(limits))return fail('CABINET_CSV_LIMITS_INVALID');
+ if(!limits||typeof limits!=='object'||Array.isArray(limits)||
+  Object.keys(limits).some(key=>!['maxUsableWidthMm','maxUsableHeightMm','maxUsableDepthMm'].includes(key)||
+   typeof limits[key]!=='number'||!Number.isFinite(limits[key])||limits[key]<=0))
+  return fail('CABINET_CSV_LIMITS_INVALID');
  const rows=[cols],issues=[];
  for(const o of report.options){
   if(o.status==='BLOCKED')continue;
   const env=o.envelope||{},plan=env.spacePlan||{};
   const available=(!limits.maxUsableWidthMm||env.preliminaryUsableWidthMm<=limits.maxUsableWidthMm)&&
-   (!limits.maxUsableHeightMm||env.preliminaryUsableHeightMm<=limits.maxUsableHeightMm);
+   (!limits.maxUsableHeightMm||env.preliminaryUsableHeightMm<=limits.maxUsableHeightMm)&&
+   (!limits.maxUsableDepthMm||(env.preliminaryUsableDepthMm!==null&&
+    env.preliminaryUsableDepthMm!==undefined&&
+    env.preliminaryUsableDepthMm<=limits.maxUsableDepthMm));
   rows.push([o.id,o.capacityModules,o.railCount,o.modulesPerRail,o.orientation,
    o.usedModules,o.reserveModules,env.preliminaryUsableWidthMm??'UNKNOWN',
    env.preliminaryUsableHeightMm??'UNKNOWN',
