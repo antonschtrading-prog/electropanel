@@ -80,3 +80,16 @@ test('lookup exceptions are cached within a reconciliation pass',()=>{
  assert.equal(r.status,'BLOCKED');
  assert.equal(calls,1);
 });
+
+test('missing manufacturer identity cannot count as visually reconciled',()=>{
+ const r=reconcile(project(),sku=>({...lookup(sku),maker:''}));
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.counts.matched,0);
+ assert.ok(r.issues.some(x=>x.code==='CABINET_ARTICLE_VISUAL_IDENTITY_UNVERIFIED'));
+});
+test('missing series cannot count as visually reconciled',()=>{
+ const r=reconcile(project(),sku=>({...lookup(sku),series:null}));
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.counts.matched,0);
+ assert.ok(r.rows[0].issues.includes('CABINET_ARTICLE_VISUAL_IDENTITY_UNVERIFIED'));
+});
