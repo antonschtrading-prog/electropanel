@@ -1980,6 +1980,17 @@ function renderCabinetArticleReconciliationV1(){
   ' аппаратов. Блокирующих замечаний: '+report.issues.filter(x=>x.level==='BLOCKED').length+
   '. Подбор корпуса и монтаж не подтверждены.';
  target.append(title,summary);
+ if(typeof epCabinetArticleReconciliationCsvV1==='function'){
+  const exportButton=document.createElement('button');exportButton.type='button';
+  exportButton.textContent='Скачать сверку артикулов CSV';
+  exportButton.addEventListener('click',()=>{
+   const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+   const result=epCabinetArticleReconciliationCsvV1(fresh);
+   if(!result.csv){notify('Сверка артикулов недоступна',true);return;}
+   download(baseName()+'_articles_audit.csv',result.csv,'text/csv;charset=utf-8');
+  });
+  target.appendChild(exportButton);
+ }
  const errors=report.rows.filter(x=>x.status==='BLOCKED').slice(0,20);
  const totalErrors=report.rows.filter(x=>x.status==='BLOCKED').length;
  if(errors.length){
