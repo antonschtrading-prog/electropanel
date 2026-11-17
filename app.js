@@ -1743,7 +1743,8 @@ function renderCabinetCapacityOptionsV1(){
   state.title,state.lines.map(l=>[l.id,l.modules,l.catalogSku]),
   (state.sharedDevices||[]).map(d=>[d.id,d.modules,d.catalogSku]),
   limits.reservePercent??20,limits.wiringCorridorMm??40,limits.terminalReserveMm??0,
-  limits.sideWiringCorridorMm??40,limits.maxUsableWidthMm??null,limits.maxUsableHeightMm??null
+  limits.sideWiringCorridorMm??40,limits.maxUsableWidthMm??null,limits.maxUsableHeightMm??null,
+  limits.maxUsableDepthMm??null
  ]);
  if(signature!==cabinetCapacityInputSignatureV1){
   cabinetCapacityInputSignatureV1=signature;
@@ -1759,13 +1760,17 @@ function renderCabinetCapacityOptionsV1(){
  if(reserveInput&&document.activeElement!==reserveInput)
   reserveInput.value=String(limits.reservePercent??20);
 for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
-  ['cabinetHeightLimit','maxUsableHeightMm']]){
+  ['cabinetHeightLimit','maxUsableHeightMm'],['cabinetDepthLimit','maxUsableDepthMm']]){
   const input=$(id);if(input&&document.activeElement!==input)
    input.value=limits[field]||'';
  }
- const good=report.options.filter(o=>o.status!=='BLOCKED'&&
-  (!limits.maxUsableWidthMm||o.envelope.preliminaryUsableWidthMm<=limits.maxUsableWidthMm)&&
-  (!limits.maxUsableHeightMm||o.envelope.preliminaryUsableHeightMm<=limits.maxUsableHeightMm));
+ const constraintReport=typeof epCabinetOptionConstraintsV1==='function'?
+  epCabinetOptionConstraintsV1(report,{
+   maxUsableWidthMm:limits.maxUsableWidthMm??null,
+   maxUsableHeightMm:limits.maxUsableHeightMm??null,
+   maxUsableDepthMm:limits.maxUsableDepthMm??null}):null;
+ const eligibleIds=new Set(constraintReport?.eligible.map(x=>x.optionId)||[]);
+ const good=report.options.filter(o=>eligibleIds.has(o.id));
  const capacitySelect=$('cabinetCapacityTotal');
  const totals=[...new Set(good.map(o=>o.capacityModules))].sort((a,b)=>a-b);
  if(!totals.includes(cabinetCapacitySelectedTotalV1))
@@ -1798,6 +1803,8 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    ' · полезное ~'+
    Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
    Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+
+  '<p class="muted">Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
+  '. Неизвестная глубина не проходит заданный предел глубины.</p>'+
   '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';
  const space=$('cabinetSpaceDiagram');
  if(space){
@@ -1812,8 +1819,12 @@ function applyCabinetCapacityOptionV1(id){
  const option=report?.options.find(x=>x.id===id&&x.status==='REVIEW_REQUIRED');
  if(!option){notify('Вариант недоступен: проверьте состав оборудования и размеры',true);return;}
  const lim=state.cabinetSizingPreferencesV1||{};
- if((lim.maxUsableWidthMm&&option.envelope.preliminaryUsableWidthMm>lim.maxUsableWidthMm)||
-    (lim.maxUsableHeightMm&&option.envelope.preliminaryUsableHeightMm>lim.maxUsableHeightMm)){
+ const constraints=typeof epCabinetOptionConstraintsV1==='function'?
+  epCabinetOptionConstraintsV1(report,{
+   maxUsableWidthMm:lim.maxUsableWidthMm??null,
+   maxUsableHeightMm:lim.maxUsableHeightMm??null,
+   maxUsableDepthMm:lim.maxUsableDepthMm??null}):null;
+ if(!constraints?.eligible.some(x=>x.optionId===id)){
   notify('Предварительная компоновка превышает указанные полезные размеры',true);return;
  }
  const changedShape=state.railCount!==option.railCount||state.railCapacity!==option.modulesPerRail;
@@ -2685,7 +2696,10 @@ $('uploadPlan').onclick=()=>$('planFile').click();$('planFile').addEventListener
 $('exportCabinetCapacityCsvBtn')?.addEventListener('click',()=>{
  const report=cabinetCapacityReportV1();
  const result=typeof epCabinetCapacityCsvV1==='function'?
-  epCabinetCapacityCsvV1(report,state.cabinetSizingPreferencesV1||{}):null;
+  epCabinetCapacityCsvV1(report,{
+   maxUsableWidthMm:state.cabinetSizingPreferencesV1?.maxUsableWidthMm??null,
+   maxUsableHeightMm:state.cabinetSizingPreferencesV1?.maxUsableHeightMm??null,
+   maxUsableDepthMm:state.cabinetSizingPreferencesV1?.maxUsableDepthMm??null}):null;
  if(!result||result.status==='BLOCKED'){
   notify('Не удалось сформировать предварительную ведомость корпусов',true);return;
  }
@@ -2725,7 +2739,7 @@ $('cabinetReservePercent')?.addEventListener('change',e=>{
   ...(state.cabinetSizingPreferencesV1||{}),reservePercent:val};changed();
 });
 for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
- ['cabinetHeightLimit','maxUsableHeightMm']]){
+ ['cabinetHeightLimit','maxUsableHeightMm'],['cabinetDepthLimit','maxUsableDepthMm']]){
  $(id)?.addEventListener('change',e=>{
   const raw=e.target.value.trim();const val=raw===''?null:Number(raw);
   if(val!==null&&(!Number.isInteger(val)||val<=0||val>10000)){
