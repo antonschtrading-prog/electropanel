@@ -43,13 +43,14 @@ function epCabinetOptionPreviewV1(project,option,lookup){
  if(before.status==='BLOCKED'||after.status==='BLOCKED'||
   after.placements.length!==positions.length||before.placements.length!==positions.length)
   return fail('OPTION_PREVIEW_PLACEMENTS_INVALID');
+ const declared=new Map(option.rails.flatMap(r=>r.devices.map(d=>[d.deviceId,d])));
  const old=new Map(before.placements.map(p=>[p.deviceId,p]));
  const next=new Map(after.placements.map(p=>[p.deviceId,p]));
  const rows=[];
  for(const d of positions){
   const a=old.get(d.deviceId),b=next.get(d.deviceId);
   if(!a||!b||b.railIndex!==d.railIndex||b.startModule!==d.startModule||
-   a.modules!==b.modules||a.article!==b.article)
+   a.modules!==b.modules||a.article!==b.article||declared.get(d.deviceId)?.modules!==b.modules)
    return fail('OPTION_PREVIEW_IDENTITY_MISMATCH');
   const railChanged=a.railIndex!==b.railIndex;
   const slotChanged=a.startModule!==b.startModule;
