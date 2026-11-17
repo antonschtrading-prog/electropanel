@@ -12,8 +12,11 @@ function epBoardVisualAuditV1(project,lookup){
   const line=project.lines?.find(x=>x.id===(branch?.circuitId||p.deviceId));
   const shared=project.sharedDevices?.find(x=>x.id===p.deviceId);
   const source=shared||branch||line;
-  const sku=source?.catalogSku||line?.catalogSku||'';
-  const catalog=sku&&typeof lookup==='function'?lookup(sku):null;
+  const sku=p.article||source?.catalogSku||line?.catalogSku||'';
+  let catalog=null;
+  try{catalog=sku&&typeof lookup==='function'?lookup(sku):null;}catch(_){
+   issues.push({code:'VISUAL_LOOKUP_FAILED',deviceId:p.deviceId,level:'BLOCKED'});
+  }
   const visual=epDeviceVisualEvidenceV1({modules:p.modules,device:source?.label||line?.device},catalog);
   const asset=catalog&&typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(catalog):null;
   const evidence=visual.issues.slice();
@@ -29,7 +32,11 @@ function epBoardVisualAuditV1(project,lookup){
  }
  for(const source of [...(project.lines||[]),...(project.branchDevices||[]),...(project.sharedDevices||[])]){
   if(!source?.catalogSku)continue;
-  if(typeof lookup!=='function'||!lookup(source.catalogSku)){
+  if(project.branchDevices?.some(b=>b?.circuitId===source.id&&b?.catalogSku))continue;
+  let found=null;
+  try{found=typeof lookup==='function'?lookup(source.catalogSku):null;}
+  catch(_){issues.push({code:'VISUAL_LOOKUP_FAILED',deviceId:source.id,level:'BLOCKED'});}
+  if(!found){
    if(!issues.some(x=>x.code==='VISUAL_SKU_NOT_FOUND'&&x.deviceId===source.id))
     issues.push({code:'VISUAL_SKU_NOT_FOUND',deviceId:source.id,level:'BLOCKED'});
   }
