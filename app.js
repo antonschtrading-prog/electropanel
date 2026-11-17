@@ -2110,8 +2110,11 @@ function renderCabinetArticleReconciliationV1(){
    }
    pending={signature:JSON.stringify(state)};
    message.textContent='Проверено: '+candidate.preview.replacedCount+
-    ' аппаратов, переместятся '+candidate.preview.relocatedCount+
-    ' ('+(candidate.preview.relocatedDeviceIds.join(', ')||'нет')+'). Требуется подтверждение.';
+    ' аппаратов; изменение ширины: '+candidate.preview.moduleDelta+
+    ' мод.; переместятся '+candidate.preview.relocatedCount+
+    ' ('+(candidate.preview.relocatedDeviceIds.join(', ')||'нет')+'); спецификация: '+
+    (candidate.preview.bomChanges.map(x=>x.sku+' '+(x.delta>0?'+':'')+x.delta).join(', ')||'без изменений')+
+    '. Требуется подтверждение.';
    apply.disabled=false;
   });
   apply.addEventListener('click',()=>{
