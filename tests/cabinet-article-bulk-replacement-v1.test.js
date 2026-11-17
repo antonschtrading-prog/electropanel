@@ -97,3 +97,15 @@ test('bulk migration reports module growth and exact BOM article deltas',()=>{
   {sku:'WIDE',oldQuantity:0,newQuantity:2,delta:2}
  ]);
 });
+
+test('bulk migration uses one catalogue snapshot for all devices and reports',()=>{
+ const calls=new Map();
+ const r=bulk(project(),'OLD','NEW',sku=>{
+  calls.set(sku,(calls.get(sku)||0)+1);
+  return {...catalogue(sku),label:'Snapshot '+calls.get(sku)};
+ });
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(calls.get('OLD'),1);
+ assert.equal(calls.get('NEW'),1);
+ assert.equal(calls.get('KEEP'),1);
+});
