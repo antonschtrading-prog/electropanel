@@ -1529,9 +1529,14 @@ const server=http.createServer((req,res)=>{
  const undoBefore=await page.evaluate(()=>historyUndo.length);
  await page.locator('#cabinetReservePercent').fill('15');
  await page.locator('#cabinetReservePercent').blur();
- const undoAfter=await page.evaluate(()=>historyUndo.length);
- assert.equal(undoAfter,undoBefore+1,'reserve edit must create one checkpoint');
- assert.equal(await page.evaluate(()=>state.cabinetSizingPreferencesV1.reservePercent),15);
+ const undoAfter=await page.evaluate(()=>({
+  count:historyUndo.length,lastReserve:JSON.parse(historyUndo.at(-1)).cabinetSizingPreferencesV1.reservePercent,
+  currentReserve:state.cabinetSizingPreferencesV1.reservePercent
+ }));
+ assert.equal(undoAfter.count,Math.min(MAX_HISTORY,undoBefore+1),
+  'reserve edit must create one checkpoint without duplicate subscriptions');
+ assert.equal(undoAfter.lastReserve,10,'undo must restore reserve immediately before editing');
+ assert.equal(undoAfter.currentReserve,15);
 
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
