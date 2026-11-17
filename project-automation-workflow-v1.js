@@ -225,7 +225,7 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  summary.occupiedModules=board?.placements?.reduce((sum,x)=>sum+x.modules,0)??null;
  steps.push({key:'LOADS',status:summary.missingInput||summary.unknownPhase||summary.staleLinkedCurrents?'PARTIAL':'READY',
   count:summary.calculated+summary.manualCurrentPreserved});
- steps.push({key:'APPARATUS',status:summary.assignedArticles===summary.circuits?'SELECTED':
+ steps.push({key:'APPARATUS',status:summary.staleLinkedCurrents?'REVIEW_REQUIRED':summary.assignedArticles===summary.circuits?'SELECTED':
    summary.protectiveCandidates?'CANDIDATES':'PENDING',count:summary.protectiveCandidates});
  steps.push({key:'SINGLE_LINE',status:schematic?.status??'PENDING',
   count:schematic?.nodes?.length??0});

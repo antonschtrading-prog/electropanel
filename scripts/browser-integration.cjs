@@ -61,6 +61,17 @@ const server=http.createServer((req,res)=>{
   .filter(l=>l.loadCurrentCalculation?.powerSource==='circuit')
   .map(l=>({id:l.id,ib:l.overloadInput.ibA})));
  await page.locator('#workflow-powerFactor').fill('0,8');
+ const stalePreview=await page.evaluate(()=>{
+  const r=epWorkflowPreviewV1(state,catalogDevice,
+   projectCatalogEntries().map(([id,device])=>({id,device})),
+   {singleVoltageV:230,threeVoltageV:400,powerFactor:.8,efficiency:1,demandFactor:1});
+  return {count:r.summary.staleLinkedCurrents,
+   staleRows:r.rows.filter(x=>x.ibSource==='STALE_LINKED_CURRENT'),
+   approved:r.engineeringApproved};
+ });
+ assert.ok(stalePreview.count>0);
+ assert.ok(stalePreview.staleRows.every(x=>x.proposedSku===null&&x.candidatesCount===0));
+ assert.equal(stalePreview.approved,false);
  await page.locator('#workflowApplyCurrentsBtn').click();
  const recalculatedLinked=await page.evaluate(()=>({
   factors:state.workflowDesignInputsV1?.powerFactor,
@@ -68,6 +79,10 @@ const server=http.createServer((req,res)=>{
    .map(l=>({id:l.id,ib:l.overloadInput.ibA,review:l.calculationReview?.required}))
  }));
  assert.equal(recalculatedLinked.factors,.8);
+ const afterRecalculatePreview=await page.evaluate(()=>epWorkflowPreviewV1(
+  state,catalogDevice,projectCatalogEntries().map(([id,device])=>({id,device})),
+  state.workflowDesignInputsV1));
+ assert.equal(afterRecalculatePreview.summary.staleLinkedCurrents,0);
  assert.equal(recalculatedLinked.linked.length,beforeFactorChange.length);
  for(const line of recalculatedLinked.linked){
   const before=beforeFactorChange.find(x=>x.id===line.id);
