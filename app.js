@@ -2172,10 +2172,13 @@ function renderBoard(){
    if(d.dataset.geometryWidthConflict==='true')d.title+=' · Габариты расходятся с DIN';
    else if(bodyWidth!==null)d.title+=' · Корпус '+bodyWidth+' мм / слот '+(width*18)+' мм';
    const face=epBoardArticleFaceHtmlV2(l,boardId||l.id);
-   d.title+=' · '+(visual.source==='CATALOG_DECLARED'?'Каталожные данные, условный внешний вид':'Нет подтверждённой модели, внешний вид условный');
+   d.title+=' · '+(asset?.status==='REVIEWED_IMAGE'?'Изображение сверено по артикулу; монтаж не подтверждён':
+    visual.source==='CATALOG_DECLARED'?'Авторский векторный эскиз по данным каталога, не фото производителя':
+    'Нет подтверждённой модели, внешний вид условный');
    const renderedFront=cat&&typeof epManufacturerVisualHtmlV1==='function'?
     epManufacturerVisualHtmlV1(cat,boardId||l.id):null;
-   d.dataset.frontPresentation=renderedFront?'MANUFACTURER_SERIES_ILLUSTRATION':'LEGACY_PLACEHOLDER';
+   d.dataset.frontPresentation=asset?.status==='REVIEWED_IMAGE'?'REVIEWED_IMAGE':
+    renderedFront?'CATALOG_VECTOR_ILLUSTRATION':'LEGACY_PLACEHOLDER';
    d.dataset.manufacturerImageVerified=String(asset?.status==='REVIEWED_IMAGE');
    if(renderedFront){
     d.classList.add('ep-catalog-front-active');
