@@ -993,8 +993,8 @@ const server=http.createServer((req,res)=>{
   const p=epDinPhysicalEnvelopeV1(epDraftBoardPlanV1(state,catalogDevice),catalogDevice);
   const d=p.rows.find(r=>r.deviceId===row?.dataset.apparatusId);
   return {asset:row?.dataset.frontAssetStatus,bodyWidth:row?.dataset.bodyWidthMm,
-   slotWidth:row?.dataset.nominalSlotWidthMm,hasSvg:!!row?.querySelector('.ep-board-front svg'),
-   hasPhoto:!!row?.querySelector('.ep-board-front img'),hasSelectedFront:
+   slotWidth:row?.dataset.nominalSlotWidthMm,hasSvg:!!row?.querySelector('.ep-front-viewport svg'),
+   hasPhoto:!!row?.querySelector('.ep-front-viewport img'),hasSelectedFront:
     !!document.querySelector('#selectedDevice .ep-preview-article-front svg'),
    geometryStatus:p.status,declaredWidth:d?.bodyWidthMm,
    approval:p.engineeringApproved};
