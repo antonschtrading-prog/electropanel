@@ -122,3 +122,18 @@ New isolated files:
 3. Confirm post-edit and post-import consistency in real Chromium and validate export gates.
 4. Confirm enclosure and article manufacturer evidence against the agreed 1.0 scope.
 5. Re-run all relevant checks after any production fix, without treating a green CI as proof of requirements not covered by its tests.
+
+## Guard-layer verification and correction of earlier release-risk interpretation
+
+The source review found an **existing independent cross-view guard**: `epCrossViewAuditV1` in `cross-view-audit-v1.js`, already called by `epEngineeringBundleV1` as the `crossView` section. It compares the canonical line SKU with actual DIN placements and BOM device/article records and can return `BLOCKED` for the A/B mismatch. The bundle aggregates blocked sections into `overallStatus:'BLOCKED'`.
+
+**Important correction to DEFECT-01:** contradictory raw schematic, DIN and CSV projections are real, but it is inaccurate to claim that the *entire* application lacks a consistency guard. The existing bundle cross-view check detects the discrepancy. **Remaining release risk** is whether every UI download/print/export path enforces the bundle or cross-view guard before delivering conflicting artifacts. This has not been demonstrated. Severity remains conditional on export bypass, not automatically P0.
+
+**Important qualification to DEFECT-02:** the standalone workflow preview can report `DRAFT` despite a `BLOCKED` schematic step. However, the larger engineering bundle separately aggregates blocked sections. The severity depends on whether the workflow preview is presented as an authoritative release state or controls any export; this is not yet established.
+
+Five new cases in `tests/independent-aggregate-guard-1-0.test.js` verify: SKU mismatch blocked by cross-view audit, read-only behavior, consistent SKU case, missing placement detection, and stale schematic after rename.
+
+**Updated total:** 61 independent audit tests (56 + 5). This new commit requires fresh CI.
+
+### Next acceptance target
+Trace actual application handlers for BOM CSV, schematic print/export and engineering bundle downloads; verify all entry points block or prominently mark contradictory outputs. Do not propose a duplicate validator when the existing cross-view audit already covers the inconsistency.
