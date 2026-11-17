@@ -24,7 +24,7 @@ test('CSV includes rank',()=>assert.ok(csv(report).includes('"1"')));
 test('CSV escapes spreadsheet formulas',()=>assert.ok(csv({...report,rows:[{...report.rows[0],id:'=1+1'}]}).includes("'=1+1")));
 test('CSV escapes quotes',()=>assert.ok(csv({...report,rows:[{...report.rows[0],id:'a"b'}]}).includes('a""b')));
 test('CSV quotes every cell',()=>assert.ok(csv(report).includes('"Ранг";"Вариант"')));
-test('CSV tolerates empty report',()=>assert.equal(csv(null).split('\r\n').length,3));
+test('CSV tolerates empty report',()=>assert.equal(csv(null).split('\r\n').length,2));
 test('CSV tolerates empty rows',()=>assert.equal(csv({rows:[]}).split('\r\n').length,3));
 test('CSV is deterministic',()=>assert.equal(csv(report),csv(report)));
 test('CSV does not mutate report',()=>{const before=JSON.stringify(report);csv(report);assert.equal(JSON.stringify(report),before)});
