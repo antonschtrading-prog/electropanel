@@ -2103,8 +2103,8 @@ function renderCabinetArticleReconciliationV1(){
     const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
     const ledger=epFrontEvidenceLedgerV1(fresh.rows,catalogDevice,epManufacturerFrontResolveV1);
     const queue=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100});
-    summary.textContent='Всего требующих внимания: '+(queue.counts.unverified+queue.counts.rejected+
-     queue.counts.missing)+'; проблемы габаритов: '+queue.counts.geometry+
+    summary.textContent='Требуют действий: '+epFrontReviewQueueV1(ledger,{filter:'ACTION_REQUIRED',pageSize:1}).total+
+     '; проблемы габаритов: '+queue.counts.geometry+
      '; проверенных изображений: '+queue.counts.reviewed+'. Это не разрешение на монтаж.';
     list.replaceChildren();
     for(const item of queue.items){
