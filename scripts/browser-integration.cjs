@@ -1530,10 +1530,10 @@ const server=http.createServer((req,res)=>{
  await page.locator('#cabinetReservePercent').fill('15');
  await page.locator('#cabinetReservePercent').blur();
  const undoAfter=await page.evaluate(()=>({
-  count:historyUndo.length,lastReserve:JSON.parse(historyUndo.at(-1)).cabinetSizingPreferencesV1.reservePercent,
+  count:historyUndo.length,maxCount:MAX_HISTORY,lastReserve:JSON.parse(historyUndo.at(-1)).cabinetSizingPreferencesV1.reservePercent,
   currentReserve:state.cabinetSizingPreferencesV1.reservePercent
  }));
- assert.equal(undoAfter.count,Math.min(MAX_HISTORY,undoBefore+1),
+ assert.equal(undoAfter.count,Math.min(undoAfter.maxCount,undoBefore+1),
   'reserve edit must create one checkpoint without duplicate subscriptions');
  assert.equal(undoAfter.lastReserve,10,'undo must restore reserve immediately before editing');
  assert.equal(undoAfter.currentReserve,15);
