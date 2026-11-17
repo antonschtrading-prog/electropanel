@@ -2076,7 +2076,8 @@ function renderCabinetArticleReconciliationV1(){
      title.textContent=[item.maker,item.series].filter(Boolean).join(' / ');
      const code=document.createElement('span');code.textContent=sku;
      const type=document.createElement('span');type.textContent=item.kind||'Тип не указан';
-     card.append(title,code,type,status);
+     const quantity=document.createElement('span');quantity.textContent='В компоновке: '+entry.quantity+' шт.';
+     card.append(title,code,type,quantity,status);
     }
     if(!item){const code=document.createElement('span');code.textContent=sku;card.append(art,code);}
     grid.appendChild(card);
