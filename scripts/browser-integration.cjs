@@ -1427,6 +1427,20 @@ const server=http.createServer((req,res)=>{
  });
  const capacityChoice=page.locator('[data-apply-cabinet-option="1x6"]');
  assert.equal(await capacityChoice.count(),1,'small cabinet form factor should be offered');
+ assert.equal(await page.locator('#cabinetSpaceDiagram svg').count(),1,
+  'Preliminary interior-space diagram must be visible');
+ assert.match(await page.locator('#cabinetSpaceDiagram').innerText(),/Глубина|глубина|условн|Условн/);
+ await page.locator('#cabinetTerminalReserve').fill('60');
+ await page.locator('#cabinetTerminalReserve').blur();
+ const sizingModel=await page.evaluate(()=>{
+  const r=cabinetCapacityReportV1(),o=r.options.find(x=>x.id==='1x6');
+  const saved=normalizeImport(JSON.parse(snapshot()));
+  return {terminal:o.envelope.spacePlan.terminalReserveMm,
+   stored:saved.cabinetSizingPreferencesV1.terminalReserveMm,
+   height:o.envelope.preliminaryUsableHeightMm};
+ });
+ assert.deepEqual(sizingModel,{terminal:60,stored:60,height:410});
+
  const beforeCabinet=await page.evaluate(()=>JSON.stringify(state.lines));
  await capacityChoice.click();
  const appliedCabinet=await page.evaluate(()=>{
