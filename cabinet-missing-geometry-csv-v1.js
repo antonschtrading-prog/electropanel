@@ -28,6 +28,11 @@ function epCabinetMissingGeometryCsvV1(project,lookup){
   if(row.bodyDepthMm===null)missing.push('BODY_DEPTH');
   if(row.sourceReviewedAt===null)missing.push('SOURCE_REVIEW');
   if(row.sourceUrl===null)missing.push('SOURCE_URL');
+  if(row.sourceType==='PROJECT_DECLARATION')missing.push('INDEPENDENT_MANUFACTURER_EVIDENCE');
+  if(row.sourceType==='SOURCE_CATEGORY_NOT_DECLARED'||row.sourceType==='NO_ARTICLE')
+   missing.push('SOURCE_CATEGORY');
+  if(row.issues.includes('APPARATUS_EVIDENCE_SOURCE_LINK_MISSING'))
+   missing.push('VALID_SOURCE_LINK');
   if(row.issues.includes('APPARATUS_EVIDENCE_SOURCE_REVIEW_DATE_INVALID'))
    missing.push('CORRECT_REVIEW_DATE');
   // Even a complete body cuboid has no actual terminal coordinate data.
