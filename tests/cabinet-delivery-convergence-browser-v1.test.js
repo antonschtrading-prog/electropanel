@@ -286,3 +286,26 @@ test('multi-alternative selector is populated from verified proposals',()=>{
  assert.match(app,/select.addEventListener\('change',renderVariant\)/);
  assert.match(app,/strategy:selected.strategy/);
 });
+
+test('apparatus geometry audit scripts load before alternatives and app',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const geo=html.indexOf('src="cabinet-apparatus-geometry-v1.js"');
+ const csv=html.indexOf('src="cabinet-apparatus-geometry-csv-v1.js"');
+ const alternatives=html.indexOf('src="cabinet-reflow-alternatives-v1.js"');
+ assert.ok(geo>=0&&csv>geo&&alternatives>csv&&html.indexOf('src="app.js"')>alternatives);
+});
+test('selected DIN proposal reports known and unknown apparatus dimensions',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/selected.geometry.summary.knownDimensions/);
+ assert.match(app,/selected.geometry.summary.missingDimensions/);
+ assert.match(app,/epCabinetApparatusGeometryCsvV1\(selected.geometry\)/);
+ assert.match(app,/_apparatus_dimensions.csv/);
+});
+test('dimension export invalidates on project changes',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const start=app.indexOf("dimensionExport.addEventListener('click'");
+ const end=app.indexOf("variantPanel.appendChild(dimensionExport)",start);
+ const block=app.slice(start,end);
+ assert.match(block,/cabinetCrossRailFingerprintV1\(\)!==fingerprint/);
+ assert.match(block,/notify\('Проект изменён/);
+});
