@@ -7,7 +7,7 @@ const catalogue=()=>({article:'A',modules:2,widthMm:36,heightMm:85,depthMm:80});
 test('supplier sizing constraints reject malformed width, height and depth limits',()=>{
  const report=plan(project,catalogue);
  for(const key of ['maxUsableWidthMm','maxUsableHeightMm','maxUsableDepthMm']){
-  for(const value of [NaN,Infinity,-Infinity,0,-1,'250',null]){
+  for(const value of [NaN,Infinity,-Infinity,0,-1,'250']){
    const r=csv(report,{[key]:value});
    assert.equal(r.status,'BLOCKED',key+':'+value);
    assert.ok(r.issues.some(x=>x.code==='CABINET_CSV_LIMITS_INVALID'));
@@ -67,4 +67,12 @@ test('unknown depth with no depth limit remains reviewable, not dimension-verifi
  assert.equal(r.summary.unknownDimensions,0);
  assert.match(r.csv,/DEPTH_UNKNOWN/);
  assert.equal(r.engineeringApproved,false);
+});
+
+test('unset cabinet limits represented by null are valid for UI export',()=>{
+ const r=csv(plan(project,catalogue),{
+  maxUsableWidthMm:null,maxUsableHeightMm:null,maxUsableDepthMm:null});
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.ok(r.summary.considered>0);
+ assert.equal(r.summary.withinLimits,r.summary.considered);
 });
