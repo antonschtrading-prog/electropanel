@@ -83,3 +83,26 @@ New isolated files:
 - New audit commits require fresh CI verification. Local git clone failed because the runtime cannot resolve `github.com`; no local Node or Chromium run is claimed.
 - This source-level characterization does **not** establish that the public UI can reach or export the conflicting state; that is an additional acceptance step.
 - Independent audit test inventory now totals 20 tests (6 + 5 + 8 + 1); only the subset included in completed CI can be called executed.
+
+## Release-gate propagation and exported-data audit (additional cycle)
+
+### DEFECT-02 — blocked schematic does not block aggregate workflow preview
+- **Severity:** P0 if an aggregate DRAFT can be exported or mistaken for a non-blocked project; P1 if another mandatory final-release gate prevents this.
+- **Reproduction:** valid circuit `L1`, linked branch `Q1`, and shared RCD `R1` whose `circuitIds:['MISSING']` refers to a nonexistent circuit. Generate `epSingleLineDraftV1` and `epWorkflowPreviewV1`.
+- **Expected:** aggregate workflow is BLOCKED when its schematic projection is BLOCKED.
+- **Actual (source-level characterization):** schematic returns `BLOCKED` with `SINGLE_LINE_GROUP_ORPHAN`, and the workflow's SINGLE_LINE step reports `BLOCKED`, but aggregate workflow `status` is `DRAFT`. The workflow explicitly propagates BOARD and BOM blocking issues but not schematic blocking issues.
+- **Modules:** `single-line-draft-v1.js`, `project-automation-workflow-v1.js`.
+- **Proposed fix:** propagate any schematic BLOCKED result to aggregate workflow BLOCKED, preserving all detailed issue codes; add browser export gating acceptance.
+
+### DEFECT-01 — export impact confirmed by CSV generation path
+- **Reproduction:** same A/B line-vs-branch SKU conflict described above; call `epDraftBomCsvV1(epDraftBomV1(project,lookup))` and compare to the schematic circuit node.
+- **Expected:** exported specification and schematic reference the same article or export is blocked.
+- **Actual:** BOM CSV contains article B while schematic circuit node contains A. This demonstrates contradictory projection/export values in the module API; UI-level download gating remains unverified.
+
+### Added regression characterization
+`tests/independent-workflow-release-gates-1-0.test.js` includes five cases: schematic block propagation gap, BOM mismatch severity, CSV article divergence, positive BOARD blocker propagation, and positive BOM blocker propagation. The independent audit suite totals **25 tests** across five files.
+
+### CI evidence
+- For audit commit `311fd99ffa4d3922b59159471d869ebac3221ce6`, all three GitHub Actions workflows completed successfully: JS checks, engineering validation, browser integration. Job steps confirm full Node regression and actual packaged page exercise.
+- Later commits (including this audit expansion) require their own CI result before claiming success.
+- Current suite is mostly module-level; a nine-stage interactive browser acceptance with post-edit exports and reimport is still a distinct release requirement.
