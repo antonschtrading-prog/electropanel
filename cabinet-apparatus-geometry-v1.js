@@ -15,7 +15,9 @@ function epCabinetApparatusGeometryV1(project,preview,lookup,settings={}){
  for(const p of preview.rows){
   if(!p||typeof p.deviceId!=='string'||seen.has(p.deviceId)||
    !Number.isInteger(p.modules)||p.modules<1||!Number.isInteger(p.toRail)||
-   !Number.isInteger(p.toSlot))return blocked('GEOMETRY_POSITION_INVALID');
+   !Number.isInteger(p.toSlot)||p.toRail<0||p.toSlot<0||
+   !preview.rails.some(r=>r.railIndex===p.toRail&&Number.isInteger(r.capacity)&&
+    p.toSlot+p.modules<=r.capacity))return blocked('GEOMETRY_POSITION_INVALID');
   seen.add(p.deviceId);
   let catalog=null;
   if(p.article){
