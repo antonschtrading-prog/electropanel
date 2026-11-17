@@ -2000,42 +2000,81 @@ function renderCabinetArticleReconciliationV1(){
   const caption=document.createElement('p');
   caption.textContent='Каталожные SVG — авторские эскизы, не фотографии изделий. Фотографии отображаются только при зарегистрированных правах и проверенном артикуле.';
   gallery.appendChild(caption);
+  const controls=document.createElement('div');controls.className='ep-front-gallery-controls';
+  const search=document.createElement('input');search.type='search';
+  search.maxLength=200;search.placeholder='Поиск: артикул, серия, тип';
+  search.setAttribute('aria-label','Поиск фасадов аппаратов');
+  const makerFilter=document.createElement('select');
+  makerFilter.setAttribute('aria-label','Фильтр по производителю');
+  const allMakers=document.createElement('option');allMakers.value='';
+  allMakers.textContent='Все производители';makerFilter.appendChild(allMakers);
+  const initial=typeof epCabinetFrontGalleryModelV1==='function'?
+   epCabinetFrontGalleryModelV1(report.rows,catalogDevice):null;
+  for(const maker of initial?.makerOptions||[]){
+   const option=document.createElement('option');option.value=maker;option.textContent=maker;
+   makerFilter.appendChild(option);
+  }
+  controls.append(search,makerFilter);gallery.appendChild(controls);
+  const count=document.createElement('p');count.className='ep-front-gallery-count';
+  count.setAttribute('aria-live','polite');gallery.appendChild(count);
   const grid=document.createElement('div');grid.className='ep-front-gallery';
-  for(const sku of skus.slice(0,12)){
-   const item=catalogDevice(sku);
-   if(!item)continue;
-   const card=document.createElement('div');card.className='ep-front-gallery-card';
-   const art=document.createElement('div');art.className='ep-front-gallery-art';
-   const asset=typeof epManufacturerFrontResolveV1==='function'?
-    epManufacturerFrontResolveV1(item):null;
-   try{
-    if(asset?.status==='REVIEWED_IMAGE'){
-     const img=document.createElement('img');img.className='ep-manufacturer-front-image';
-     img.src=asset.image.src;img.loading='lazy';img.decoding='async';
-     img.alt='Фасад '+item.maker+' '+item.series+' '+item.sku;
-     art.appendChild(img);
-    }else if(typeof epCatalogFrontSvgV1==='function'){
-     const svg=epCatalogFrontSvgV1(item,'gallery-'+sku);
-     const parsed=new DOMParser().parseFromString(svg,'image/svg+xml');
-     if(parsed.querySelector('parsererror'))throw Error('SVG_INVALID');
-     art.appendChild(document.importNode(parsed.documentElement,true));
-    }else art.textContent='Условный фасад';
-   }catch(_){art.textContent='Фасад недоступен';}
-   const title=document.createElement('strong');
-   title.textContent=[item.maker,item.series].filter(Boolean).join(' / ');
-   const code=document.createElement('span');code.textContent=sku;
-   const status=document.createElement('small');
-   status.textContent=asset?.status==='REVIEWED_IMAGE'?'Изображение по артикулу':
-    asset?.status==='ASSET_REJECTED'?'Изображение отклонено · эскиз':
-    'Авторский эскиз';
-   card.append(art,title,code,status);grid.appendChild(card);
-  }
   gallery.appendChild(grid);
-  if(skus.length>12){
-   const remainder=document.createElement('p');
-   remainder.textContent='Показаны первые 12 из '+skus.length+' артикулов.';
-   gallery.appendChild(remainder);
-  }
+  const more=document.createElement('button');more.type='button';
+  more.textContent='Показать ещё 12';gallery.appendChild(more);
+  let page=0;
+  const refresh=()=>{
+   const result=epCabinetFrontGalleryModelV1(report.rows,catalogDevice,{
+    search:search.value,maker:makerFilter.value,page:0,pageSize:Math.min(48,(page+1)*12)
+   });
+   grid.replaceChildren();
+   if(result.status==='BLOCKED'){
+    count.textContent='Не удалось сформировать список фасадов';more.hidden=true;return;
+   }
+   count.textContent='Показано '+result.items.length+' из '+result.total+
+    ' артикулов (всего в проекте '+result.allArticles+')';
+   for(const entry of result.items){
+    const sku=entry.sku,item=entry.device;
+    const card=document.createElement('div');card.className='ep-front-gallery-card';
+    const art=document.createElement('div');art.className='ep-front-gallery-art';
+    if(!item){art.textContent='Артикул отсутствует в каталоге';}
+    else{
+     const asset=typeof epManufacturerFrontResolveV1==='function'?
+      epManufacturerFrontResolveV1(item):null;
+     try{
+      if(asset?.status==='REVIEWED_IMAGE'){
+       const img=document.createElement('img');img.className='ep-manufacturer-front-image';
+       img.src=asset.image.src;img.loading='lazy';img.decoding='async';
+       img.alt='Фасад '+item.maker+' '+item.series+' '+item.sku;
+       art.appendChild(img);
+      }else if(typeof epCatalogFrontSvgV1==='function'){
+       const svg=epCatalogFrontSvgV1(item,'gallery-'+sku);
+       const parsed=new DOMParser().parseFromString(svg,'image/svg+xml');
+       if(parsed.querySelector('parsererror'))throw Error('SVG_INVALID');
+       art.appendChild(document.importNode(parsed.documentElement,true));
+      }else art.textContent='Условный фасад';
+     }catch(_){art.textContent='Фасад недоступен';}
+     const status=document.createElement('small');
+     status.textContent=asset?.status==='REVIEWED_IMAGE'?'Изображение по артикулу':
+      asset?.status==='ASSET_REJECTED'?'Изображение отклонено · эскиз':
+      'Авторский эскиз';
+     card.dataset.frontEvidence=asset?.status||'STYLIZED_ONLY';
+     card.appendChild(art);
+     const title=document.createElement('strong');
+     title.textContent=[item.maker,item.series].filter(Boolean).join(' / ');
+     const code=document.createElement('span');code.textContent=sku;
+     const type=document.createElement('span');type.textContent=item.kind||'Тип не указан';
+     card.append(title,code,type,status);
+    }
+    if(!item){const code=document.createElement('span');code.textContent=sku;card.append(art,code);}
+    grid.appendChild(card);
+   }
+   if(!result.items.length)grid.textContent='Нет аппаратов по заданным фильтрам';
+   more.hidden=!result.hasMore;
+  };
+  search.addEventListener('input',()=>{page=0;refresh();});
+  makerFilter.addEventListener('change',()=>{page=0;refresh();});
+  more.addEventListener('click',()=>{page++;refresh();});
+  refresh();
   target.appendChild(gallery);
  }
  const errors=report.rows.filter(x=>x.status==='BLOCKED').slice(0,20);
