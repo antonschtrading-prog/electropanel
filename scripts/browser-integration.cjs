@@ -1033,6 +1033,11 @@ const server=http.createServer((req,res)=>{
  assert.ok(await page.locator('.ep-front-gallery-card').count()>0);
  const makerOptions=await page.locator('.ep-front-gallery-controls select option').allTextContents();
  assert.ok(makerOptions.includes('Все производители'));
+ const geometryFilter=page.locator('.ep-front-gallery-controls select[aria-label="Фильтр по габаритам аппарата"]');
+ assert.equal(await geometryFilter.count(),1);
+ await geometryFilter.selectOption('EXCEEDS_DIN_SLOT');
+ assert.match(await page.locator('.ep-front-gallery-count').textContent(),/Показано /);
+ await geometryFilter.selectOption('');
  const evidencePicker=page.locator('.ep-front-gallery-controls select[aria-label="Фильтр по подтверждению изображения"]');
  assert.equal(await evidencePicker.count(),1);
  await evidencePicker.selectOption('REVIEWED_IMAGE');
