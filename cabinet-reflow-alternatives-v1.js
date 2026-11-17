@@ -24,7 +24,7 @@ function epCabinetReflowAlternativesV1(project,lookup,options={}){
   if(geometry?.status==='BLOCKED'){
    failures.push({strategy,code:geometry.code});continue;
   }
-  const enclosure=geometry&&Array.isArray(options.enclosures)&&
+  const enclosure=geometry&&Array.isArray(options.enclosures)&&options.enclosures.length>0&&
    typeof epCabinetEnclosureMatchV1==='function'?
    epCabinetEnclosureMatchV1(preview,geometry,options.enclosures):null;
   if(enclosure?.status==='BLOCKED'){
