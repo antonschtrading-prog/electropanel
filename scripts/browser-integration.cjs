@@ -1656,6 +1656,49 @@ const server=http.createServer((req,res)=>{
  });
  assert.deepEqual(serialGeometry,['ductB','terminalA']);
 
+ // If declared terminal-region distances worsen, application must offer
+ // cancellation; accepted changes still remain a single undoable placement.
+ await page.evaluate(()=>{
+  state=initial();state.schema=PROJECT_SCHEMA;state.earthing='TN-S';
+  state.railCount=1;state.railCapacity=8;
+  state.lines=Array.from({length:4},(_,i)=>({
+   id:'L'+(i+1),name:'Circuit '+i,phase:'L1',power:1,
+   modules:1,device:'B10',source:'manual',sourceRef:''
+  }));
+  state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
+  syncBranchDevices(state);
+  state.protectionLinks=[{upstreamLineId:'L1',downstreamLineId:'L4'}];
+  state.protectionLinksVersion=1;
+  state.cabinetGeometryV1={
+   version:1,source:'USER_DECLARED',
+   interior:{widthMm:280,heightMm:280,depthMm:160},
+   zones:[{railIndex:0,xMm:40,yMm:85,widthMm:160,heightMm:100}],
+   obstacles:[
+    {id:'duct',kind:'WIRE_DUCT',xMm:40,yMm:195,widthMm:160,heightMm:30},
+    {id:'terminal',kind:'TERMINAL_REGION',xMm:215,yMm:85,widthMm:40,heightMm:90}
+   ]};
+  lastDesignSnapshot=null;changed();switchView('board');
+ });
+ const baseline=await page.evaluate(()=>JSON.stringify(normalizeImport(JSON.parse(snapshot())).manualLayoutV1||[]));
+ const proposalEvidence=await page.evaluate(()=>{
+  const p=epCabinetGroupReflowV1(state,catalogDevice);
+  return {status:p.status,changes:p.changes?.length,
+   increasing:p.connectionSpaceDelta?.increases?.length,
+   hasPhysicalApproval:p.connectionSpaceDelta?.actualConnectionsVerified};
+ });
+ assert.equal(proposalEvidence.status,'REVIEW_REQUIRED');
+ assert.ok(proposalEvidence.changes>0);
+ assert.ok(proposalEvidence.increasing>0);
+ assert.equal(proposalEvidence.hasPhysicalApproval,false);
+ await page.evaluate(()=>window.confirm=()=>false);
+ await page.locator('#cabinetGroupReflowBtn').click();
+ assert.equal(await page.evaluate(()=>JSON.stringify(normalizeImport(JSON.parse(snapshot())).manualLayoutV1||[])),baseline);
+ await page.evaluate(()=>window.confirm=()=>true);
+ await page.locator('#cabinetGroupReflowBtn').click();
+ assert.ok((await page.evaluate(()=>state.manualLayoutV1?.length))===4);
+ await page.locator('#undoBtn').click();
+ assert.equal(await page.evaluate(()=>JSON.stringify(state.manualLayoutV1||[])),baseline);
+
  assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
