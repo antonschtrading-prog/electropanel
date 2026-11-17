@@ -19,17 +19,23 @@ function epCabinetReflowAlternativesV1(project,lookup,options={}){
   if(!proposal.changes.length)continue;
   const preview=epCabinetReflowPreviewV1(project,proposal,lookup);
   if(preview.status!=='REVIEW_REQUIRED'){failures.push({strategy,code:preview.code});continue;}
+  const geometry=typeof epCabinetApparatusGeometryV1==='function'?
+   epCabinetApparatusGeometryV1(project,preview,lookup):null;
+  if(geometry?.status==='BLOCKED'){
+   failures.push({strategy,code:geometry.code});continue;
+  }
   const key=JSON.stringify(preview.rows.map(r=>[r.deviceId,r.toRail,r.toSlot]));
   if(seen.has(key))continue;
   seen.add(key);
   const id='reflow-'+strategy;
-  variants.push({id,strategy,proposal,preview,
+  variants.push({id,strategy,proposal,preview,geometry,
    moved:preview.summary.moved,changedRails:preview.summary.changedRails,
    crossRail:proposal.after.cross,nominalGap:proposal.after.gap,
    engineeringApproved:false});
  }
  variants.sort((a,b)=>a.crossRail-b.crossRail||a.moved-b.moved||
   a.changedRails-b.changedRails||a.nominalGap-b.nominalGap||
+  (a.geometry?.summary?.missingDimensions??Infinity)-(b.geometry?.summary?.missingDimensions??Infinity)||
   a.id.localeCompare(b.id));
  return {schema:'electropanel.cabinet.reflow.alternatives.1',
   status:variants.length?'REVIEW_REQUIRED':failures.length?'UNKNOWN':'REVIEW_REQUIRED',
