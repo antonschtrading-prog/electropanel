@@ -65,4 +65,30 @@ function epCabinetConnectionSpaceV1(project,lookup){
  add('CABINET_CONNECTION_SPACE_TERMINALS_AND_BEND_RADII_UNVERIFIED');
  return finish(issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED');
 }
-if(typeof module!=='undefined'&&module.exports)module.exports={epCabinetConnectionSpaceV1};
+// Compare purely nominal distances after an explicit repositioning; changes
+// in these distances do not prove or disprove accessibility of real terminals.
+function epCabinetConnectionSpaceDeltaV1(before,after,lookup){
+ const a=epCabinetConnectionSpaceV1(before,lookup),b=epCabinetConnectionSpaceV1(after,lookup);
+ const result={schema:'electropanel.cabinet.connection.space.delta.1',
+  status:a.status==='BLOCKED'||b.status==='BLOCKED'?'BLOCKED':
+   a.status==='NOT_CONFIGURED'||b.status==='NOT_CONFIGURED'?'NOT_CONFIGURED':'REVIEW_REQUIRED',
+  increases:[],decreases:[],unknown:[],actualConnectionsVerified:false,engineeringApproved:false};
+ if(result.status!=='REVIEW_REQUIRED')return result;
+ const old=new Map(a.rows.map(x=>[x.deviceId,x]));
+ for(const row of b.rows){
+  const prior=old.get(row.deviceId);
+  if(!prior){result.unknown.push({deviceId:row.deviceId,code:'NO_BASELINE_POSITION'});continue;}
+  for(const kind of ['nearestWireDuct','nearestTerminalRegion']){
+   const one=prior[kind],two=row[kind];
+   if(!one||!two){result.unknown.push({deviceId:row.deviceId,kind,code:'REGION_NOT_DECLARED'});continue;}
+   const deltaMm=Math.round((two.distanceMm-one.distanceMm)*100)/100;
+   const record={deviceId:row.deviceId,kind,fromRegion:one.regionId,
+    toRegion:two.regionId,oldDistanceMm:one.distanceMm,newDistanceMm:two.distanceMm,deltaMm};
+   if(deltaMm>0.01)result.increases.push(record);
+   else if(deltaMm< -0.01)result.decreases.push(record);
+  }
+ }
+ return result;
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={
+ epCabinetConnectionSpaceV1,epCabinetConnectionSpaceDeltaV1};

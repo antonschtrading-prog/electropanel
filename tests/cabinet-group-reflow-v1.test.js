@@ -36,3 +36,19 @@ test('unrelated apparatuses remain intact and stay on original rails',()=>{
  for(const d of a.placements)
   assert.equal(b.placements.find(x=>x.deviceId===d.deviceId).railIndex,d.railIndex);
 });
+
+test('when cabinet geometry is not specified reflow does not claim space access',()=>{
+ global.epCabinetConnectionSpaceDeltaV1=
+  require('../cabinet-connection-space-v1.js').epCabinetConnectionSpaceDeltaV1;
+ global.epCabinetGeometryCheckV1=
+  require('../cabinet-geometry-v1.js').epCabinetGeometryCheckV1;
+ try {
+  const r=reflow(fixture());
+  assert.equal(r.status,'REVIEW_REQUIRED');
+  assert.equal(r.connectionSpaceDelta.status,'NOT_CONFIGURED');
+  assert.equal(r.connectionSpaceDelta.actualConnectionsVerified,false);
+ }finally{
+  delete global.epCabinetConnectionSpaceDeltaV1;
+  delete global.epCabinetGeometryCheckV1;
+ }
+});

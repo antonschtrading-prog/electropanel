@@ -77,13 +77,17 @@ function epCabinetGroupReflowV1(project,lookup){
    engineeringApproved:false,physicalWiringVerified:false,
    note:'No actual decrease in declared same-rail gap; existing positions preserved.'};
  }
+ const connectionSpaceDelta=typeof epCabinetConnectionSpaceDeltaV1==='function'?
+  epCabinetConnectionSpaceDeltaV1(project,next,lookup):null;
+ if(connectionSpaceDelta?.status==='BLOCKED')
+  return fail('GROUP_REFLOW_CONNECTION_SPACE_INVALID');
  const improvements=before.placements.filter(p=>{
   const q=index.get(p.deviceId);return q?.railIndex!==p.railIndex||q?.startModule!==p.startModule;
  }).map(p=>({deviceId:p.deviceId,from:{railIndex:p.railIndex,startModule:p.startModule},
   to:{railIndex:index.get(p.deviceId).railIndex,startModule:index.get(p.deviceId).startModule}}));
  return {project:next,status:'REVIEW_REQUIRED',code:improvements.length?'GROUP_REFLOW_READY':'GROUP_REFLOW_NO_IMPROVEMENT',
   changes:improvements,perRail:newOrders,
-  before:prior.summary,after:after.summary,
+  connectionSpaceDelta,before:prior.summary,after:after.summary,
   engineeringApproved:false,physicalWiringVerified:false,
   note:'Same-rail nominal apparatus proximity only; actual wire routing unchanged and not assessed.'};
 }

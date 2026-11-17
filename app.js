@@ -2687,6 +2687,10 @@ $('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
  if(!proposal.changes.length){
   notify('Улучшение близости для имеющихся связей не найдено.');return;
  }
+ const more=proposal.connectionSpaceDelta?.increases?.length||0;
+ if(more>0&&!confirm('После перестановки '+more+
+  ' расчётных расстояний до зарезервированных кабельных/клеммных зон увеличатся. '+
+  'Это лишь геометрические оценки, а не длины проводов. Применить вариант?'))return;
  checkpoint();state.manualLayoutV1=proposal.project.manualLayoutV1;changed();
  notify('Перемещено аппаратов: '+proposal.changes.length+
   '. Изменены только позиции, подключения не пересчитывались.');

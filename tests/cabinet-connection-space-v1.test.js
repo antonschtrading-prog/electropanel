@@ -64,3 +64,20 @@ test('changing one user-declared terminal region shifts only nominal distance',(
  assert.equal(b.rows[0].nearestTerminalRegion.distanceMm,a+10);
  assert.equal(b.terminalConnectionsVerified,false);
 });
+
+test('delta flags nominal increases and never claims verified conductor access',()=>{
+ const {epCabinetConnectionSpaceDeltaV1:delta}=require('../cabinet-connection-space-v1.js');
+ const p=base();p.cabinetGeometryV1=geometry();
+ const b=JSON.parse(JSON.stringify(p));
+ b.manualLayoutV1=[{deviceId:'L1',railIndex:0,startModule:3},
+  {deviceId:'L2',railIndex:0,startModule:0}];
+ const r=delta(p,b);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.ok(r.increases.some(x=>x.deviceId==='L1'&&x.kind==='nearestWireDuct')===false);
+ assert.ok(r.decreases.some(x=>x.deviceId==='L1'&&x.kind==='nearestTerminalRegion'));
+ assert.equal(r.actualConnectionsVerified,false);
+});
+test('delta remains not configured when user has not declared cabinet geometry',()=>{
+ const {epCabinetConnectionSpaceDeltaV1:delta}=require('../cabinet-connection-space-v1.js');
+ assert.equal(delta(base(),base()).status,'NOT_CONFIGURED');
+});
