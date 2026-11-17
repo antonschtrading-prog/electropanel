@@ -55,6 +55,29 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.evaluate(()=>state.lines.filter(l=>l.loadCurrentCalculation?.powerSource==='circuit').length),0);
  await page.locator('#redoBtn').click();
  assert.ok(await page.evaluate(()=>state.lines.some(l=>l.loadCurrentCalculation?.powerSource==='circuit')));
+ // Change one common input in the actual UI: previously calculated linked Ib
+ // must refresh only on the explicit action and stay intact on repeat.
+ const beforeFactorChange=await page.evaluate(()=>state.lines
+  .filter(l=>l.loadCurrentCalculation?.powerSource==='circuit')
+  .map(l=>({id:l.id,ib:l.overloadInput.ibA})));
+ await page.locator('#workflow-powerFactor').fill('0,8');
+ await page.locator('#workflowApplyCurrentsBtn').click();
+ const recalculatedLinked=await page.evaluate(()=>({
+  factors:state.workflowDesignInputsV1?.powerFactor,
+  linked:state.lines.filter(l=>l.loadCurrentCalculation?.powerSource==='circuit')
+   .map(l=>({id:l.id,ib:l.overloadInput.ibA,review:l.calculationReview?.required}))
+ }));
+ assert.equal(recalculatedLinked.factors,.8);
+ assert.equal(recalculatedLinked.linked.length,beforeFactorChange.length);
+ for(const line of recalculatedLinked.linked){
+  const before=beforeFactorChange.find(x=>x.id===line.id);
+  assert.ok(before&&line.ib>before.ib);
+  assert.equal(line.review,true);
+ }
+ const repeatedLinked=await page.evaluate(()=>JSON.stringify(state.lines));
+ await page.locator('#workflowApplyCurrentsBtn').click();
+ assert.equal(await page.evaluate(()=>JSON.stringify(state.lines)),repeatedLinked,
+  'Applying unchanged common inputs is idempotent');
  const offer=page.locator('[data-workflow-article][data-workflow-line]').first();
  assert.ok(await offer.count()>0,'Draft workflow offers a reviewed provisional SKU');
  const proposalId=await offer.getAttribute('data-workflow-line');
