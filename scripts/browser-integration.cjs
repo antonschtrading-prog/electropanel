@@ -1585,6 +1585,7 @@ const server=http.createServer((req,res)=>{
   state.sharedDevices=[];state.branchDevices=[];state.branchModelVersion=1;
   syncBranchDevices(state);
   state.protectionLinks=[{upstreamLineId:'L1',downstreamLineId:'L4'}];
+  state.protectionLinksVersion=1;
   delete state.cabinetGeometryV1;
   lastDesignSnapshot=null;changed();switchView('board');
  });
