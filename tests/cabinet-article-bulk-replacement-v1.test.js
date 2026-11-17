@@ -63,3 +63,25 @@ test('bulk replacement deterministic and never approved for installation',()=>{
  assert.equal(a.engineeringApproved,false);
  assert.equal(a.manufacturerCabinetFitVerified,false);
 });
+
+test('bulk migration includes shared apparatus with the same selected SKU',()=>{
+ const p=project();p.sharedDevices=[{id:'S1',catalogSku:'OLD',modules:1}];
+ const r=bulk(p,'OLD','NEW',catalogue);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.preview.replacedCount,3);
+ assert.equal(r.project.sharedDevices[0].catalogSku,'NEW');
+});
+test('bulk migration leaves unmatched shared apparatus unchanged',()=>{
+ const p=project();p.sharedDevices=[{id:'S1',catalogSku:'KEEP',modules:1}];
+ const r=bulk(p,'OLD','NEW',catalogue);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.preview.replacedCount,2);
+ assert.equal(r.project.sharedDevices[0].catalogSku,'KEEP');
+});
+test('bulk migration handles implicit branch fallback selections',()=>{
+ const p=project();delete p.branchDevices[0].catalogSku;
+ const r=bulk(p,'OLD','NEW',catalogue);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.preview.replacedCount,2);
+ assert.equal(r.project.branchDevices[0].catalogSku,'NEW');
+});
