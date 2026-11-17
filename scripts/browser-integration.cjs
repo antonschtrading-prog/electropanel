@@ -1650,6 +1650,13 @@ const server=http.createServer((req,res)=>{
   duct:'ductB',ductGap:10,terminal:'terminalA',sameInBundle:'ductB',
   inPrint:true,inCsv:true,verified:false});
  assert.match(await page.locator('#cabinetAccessReview').innerText(),/объявленной зоной клемм/);
+ const accessDetail=page.locator('#cabinetAccessReview details');
+ assert.equal(await accessDetail.count(),1);
+ await accessDetail.locator('summary').click();
+ assert.match(await accessDetail.innerText(),/terminalA/);
+ assert.match(await accessDetail.innerText(),/ductB/);
+ assert.match(await accessDetail.innerText(),/Не проверен/);
+
  const serialGeometry=await page.evaluate(()=>{
   const copy=normalizeImport(JSON.parse(snapshot()));
   return copy.cabinetGeometryV1.obstacles.map(x=>x.id);

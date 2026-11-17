@@ -1873,10 +1873,42 @@ function renderCabinetAccessReviewV1(){
  }
  const duct=r.rows.filter(x=>x.nearestWireDuct).length,
   term=r.rows.filter(x=>x.nearestTerminalRegion).length;
- target.textContent='Расчётные монтажные зоны: аппаратов '+r.rows.length+
+ target.replaceChildren();
+ const summary=document.createElement('p');
+ summary.textContent='Расчётные монтажные зоны: аппаратов '+r.rows.length+
   ', с объявленной ближайшей зоной кабельного канала '+duct+
   ', с объявленной зоной клемм '+term+
-  '. Показаны геометрические расстояния до резервных зон, а не доступность реальных клемм.';
+  '. Только расстояния между зарезервированными прямоугольниками, не длины проводов.';
+ target.appendChild(summary);
+ if(r.rows.length){
+  const details=document.createElement('details'),title=document.createElement('summary');
+  title.textContent='Просмотреть расстояния по аппаратам (не монтажная проверка)';
+  details.appendChild(title);
+  const scroll=document.createElement('div');scroll.className='table-scroll';
+  const table=document.createElement('table'),thead=document.createElement('thead'),
+   headRow=document.createElement('tr'),tbody=document.createElement('tbody');
+  const columns=['Аппарат','Ряд','Кабельный канал','Зазор, мм',
+   'Область клемм','Зазор, мм','Фактический доступ'];
+  for(const value of columns){const th=document.createElement('th');th.textContent=value;headRow.appendChild(th);}
+  thead.appendChild(headRow);table.appendChild(thead);
+  for(const row of r.rows.slice(0,100)){
+   const tr=document.createElement('tr');
+   const values=[row.deviceId,row.railIndex+1,
+    row.nearestWireDuct?.regionId??'Не задан',
+    row.nearestWireDuct?.distanceMm??'Неизвестно',
+    row.nearestTerminalRegion?.regionId??'Не задан',
+    row.nearestTerminalRegion?.distanceMm??'Неизвестно','Не проверен'];
+   for(const value of values){const td=document.createElement('td');td.textContent=String(value);tr.appendChild(td);}
+   tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);scroll.appendChild(table);details.appendChild(scroll);
+  if(r.rows.length>100){
+   const note=document.createElement('p');
+   note.textContent='Показаны первые 100 аппаратов; полный результат доступен в ведомости.';
+   details.appendChild(note);
+  }
+  target.appendChild(details);
+ }
 }
 function renderBoard(){
  renderCabinetCapacityOptionsV1();
