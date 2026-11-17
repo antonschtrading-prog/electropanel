@@ -336,8 +336,8 @@ test('enclosure comparison accepts optional explicit candidate list',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.match(html,/id="cabinetEnclosureCandidatesInput"/);
  assert.ok(html.indexOf('src="cabinet-enclosure-match-v1.js"')<html.indexOf('src="app.js"'));
- assert.match(app,/JSON.parse\(enclosureText\)/);
- assert.match(app,/enclosureCandidates.length>100/);
+ assert.match(app,/epCabinetEnclosureInputV1\(enclosureText\)/);
+ assert.match(app,/parsedEnclosures.status==='BLOCKED'/);
  assert.match(app,/epCabinetReflowAlternativesV1\(state,catalogDevice,\{enclosures:enclosureCandidates\}\)/);
 });
 test('enclosure comparison distinguishes fit conflict from unknown',()=>{
