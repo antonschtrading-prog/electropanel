@@ -2042,6 +2042,7 @@ function renderCabinetArticleReconciliationV1(){
    evidenceSummary.textContent='В компоновке '+initial.installedDevices+' аппаратов: '+
     'проверенных изображений '+e.REVIEWED_IMAGE+', авторских эскизов '+e.STYLIZED_ONLY+
     ', отклонённых '+e.ASSET_REJECTED+', отсутствуют в каталоге '+e.CATALOGUE_MISSING+
+    '. Превышений ширины DIN-места: '+initial.widthConflicts+
     '. Это не подтверждение пригодности щита к монтажу.';
   }
   gallery.appendChild(evidenceSummary);
