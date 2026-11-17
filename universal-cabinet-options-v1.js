@@ -3,6 +3,12 @@
 // Bounded exact packing fallback. FFD is fast, but can falsely reject a feasible
 // set of indivisible apparatuses. Memoized DFS is complete unless budget expires.
 function epCabinetPackDevicesV1(entries,railCount,capacity,nodeLimit=60000){
+ if(!Array.isArray(entries)||!Number.isInteger(railCount)||railCount<1||railCount>100||
+  !Number.isInteger(capacity)||capacity<1||capacity>200||
+  !Number.isInteger(nodeLimit)||nodeLimit<0||nodeLimit>1000000||
+  entries.some(d=>!d||typeof d.deviceId!=='string'||!d.deviceId||
+   !Number.isInteger(d.modules)||d.modules<1||d.modules>200))
+  return {status:'INVALID',rails:[],unplaced:[],issues:[{code:'PACKING_INPUT_INVALID',level:'BLOCKED'}]};
  const sorted=[...entries].sort((a,b)=>b.modules-a.modules||a.deviceId.localeCompare(b.deviceId));
  const rails=Array.from({length:railCount},(_,railIndex)=>({railIndex,usedModules:0,devices:[]}));
  const add=(row,d)=>{row.devices.push({deviceId:d.deviceId,startModule:row.usedModules,
@@ -45,7 +51,8 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   issues:[{code,level:'BLOCKED'}],options:[],engineeringApproved:false,confirmedCabinetFit:false});
  if(!project||!Array.isArray(project.lines)||project.lines.length>500||
     !Array.isArray(project.sharedDevices??[])||(project.sharedDevices??[]).length>500||
-    !settings||typeof settings!=='object'||Array.isArray(settings))return blocked('INPUT_INVALID');
+    !settings||typeof settings!=='object'||Array.isArray(settings)||
+    (project.branchDevices!==undefined&&!Array.isArray(project.branchDevices)))return blocked('INPUT_INVALID');
  const defaults={reserveFraction:0.2,sideAllowanceMm:70,topBottomAllowanceMm:100,
   rowPitchMm:150,depthAllowanceMm:60,
   wiringCorridorMm:40,terminalReserveMm:0,sideWiringCorridorMm:40};
@@ -53,6 +60,8 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
  if(Object.keys(settings).some(k=>!Object.hasOwn(defaults,k))||
     !Number.isFinite(p.reserveFraction)||p.reserveFraction<0||p.reserveFraction>1||
     ![p.sideAllowanceMm,p.topBottomAllowanceMm,p.rowPitchMm,p.depthAllowanceMm].every(x=>
+      typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=1000)||
+    ![p.wiringCorridorMm,p.terminalReserveMm,p.sideWiringCorridorMm].every(x=>
       typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=1000)||
     p.rowPitchMm<50||p.wiringCorridorMm>p.rowPitchMm-30||
     p.sideWiringCorridorMm>p.sideAllowanceMm)return blocked('SETTINGS_INVALID');
@@ -156,7 +165,7 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    spacePlan
   };
   const optionIssues=[
-   ...unplaced.map(deviceId=>({code:packed.status==='UNPROVEN'?'PACKING_NOT_VERIFIED':'DEVICE_NOT_PACKABLE_IN_PATTERN',level:'BLOCKED',deviceId})),
+   ...unplaced.map(deviceId=>({code:packed.status==='UNPROVEN'?'PACKING_NOT_VERIFIED':'DEVICE_NOT_PACKABLE_IN_PATTERN',level:packed.status==='UNPROVEN'?'UNKNOWN':'BLOCKED',deviceId})),
    ...(packed.status==='UNPROVEN'?[{code:'PACKING_SEARCH_LIMIT',level:'UNKNOWN'}]:[]),
    ...(allocated<target?[{code:'CAPACITY_RESERVE_UNMET',level:'BLOCKED'}]:[]),
    {code:'CABINET_MOUNTING_WIRING_AND_THERMAL_NOT_VERIFIED',level:'UNKNOWN'},
