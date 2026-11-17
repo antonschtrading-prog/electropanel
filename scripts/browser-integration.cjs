@@ -1026,6 +1026,12 @@ const server=http.createServer((req,res)=>{
  assert.ok(await page.locator('.ep-front-gallery-card').count()>0);
  const makerOptions=await page.locator('.ep-front-gallery-controls select option').allTextContents();
  assert.ok(makerOptions.includes('Все производители'));
+ const evidencePicker=page.locator('.ep-front-gallery-controls select[aria-label="Фильтр по подтверждению изображения"]');
+ assert.equal(await evidencePicker.count(),1);
+ await evidencePicker.selectOption('REVIEWED_IMAGE');
+ assert.match(await page.locator('.ep-front-gallery-count').textContent(),/Показано 0 из 0/);
+ await evidencePicker.selectOption('');
+ assert.ok(await page.locator('.ep-front-gallery-card').count()>0);
  const inventoryExport=page.waitForEvent('download');
  await page.getByRole('button',{name:'Скачать ведомость фасадов CSV'}).click();
  const inventoryDownload=await inventoryExport;
