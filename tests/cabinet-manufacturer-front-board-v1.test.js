@@ -61,3 +61,18 @@ test('SVG is original illustration when no rights-reviewed image exists',()=>{
   assert.match(markup,/aria-label="Иллюстрация/);
  }finally{global.epCatalogFrontSvgV1=previous;}
 });
+
+test('board renders only one front per catalogue apparatus',()=>{
+ const active=board.slice(board.indexOf("if(renderedFront){"),board.indexOf("}else{",board.indexOf("if(renderedFront){")));
+ assert.match(active,/ep-front-viewport/);
+ assert.doesNotMatch(active,/\+face\+/);
+});
+test('bad front renderer falls back and reports rendering error',()=>{
+ assert.match(board,/try\{renderedFront=epManufacturerVisualHtmlV1/);
+ assert.match(board,/catch\(_\)\{renderedFront=null;d\.dataset\.frontRenderError='true';\}/);
+});
+test('board labels images as reviewed only with reviewed asset provenance',()=>{
+ assert.match(board,/d\.dataset\.frontPresentation=asset\?\.status==='REVIEWED_IMAGE'/);
+ assert.match(board,/CATALOG_VECTOR_ILLUSTRATION/);
+ assert.match(board,/Авторский векторный эскиз/);
+});
