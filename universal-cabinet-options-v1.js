@@ -62,7 +62,7 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   if(typeof id!=='string'||!id.trim()||seen.has(id)){
    issues.push({code:'DEVICE_ID_INVALID_OR_DUPLICATE',level:'BLOCKED',deviceId:id});return;}
   seen.add(id);
-  let modules=declared,bodyDepthMm=null;
+  let modules=declared,bodyDepthMm=null,bodyHeightMm=null;
   if(sku){
    let a=null;try{a=typeof lookupSku==='function'?lookupSku(sku):null;}catch(_){}
    if(!a||!Number.isInteger(a.modules)||a.modules<1||a.article&&a.article!==sku){
@@ -71,10 +71,12 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    modules=a.modules;
    const depth=a.geometry?.depthMm??a.depthMm;
    if(typeof depth==='number'&&Number.isFinite(depth)&&depth>0)bodyDepthMm=depth;
+   const height=a.geometry?.heightMm??a.heightMm;
+   if(typeof height==='number'&&Number.isFinite(height)&&height>0)bodyHeightMm=height;
   }else issues.push({code:'ARTICLE_NOT_SELECTED',level:'UNKNOWN',deviceId:id});
   if(!Number.isInteger(modules)||modules<1||modules>200){
    issues.push({code:'DEVICE_MODULES_INVALID',level:'BLOCKED',deviceId:id});return;}
-  entries.push({deviceId:id,modules,article:sku||null,bodyDepthMm});
+  entries.push({deviceId:id,modules,article:sku||null,bodyDepthMm,bodyHeightMm});
  };
  for(const d of project.sharedDevices||[])push(d,d?.id,d?.catalogSku,d?.modules);
  for(const l of project.lines){
@@ -113,6 +115,9 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   const allocated=profile.capacityModules;
   const depthKnown=entries.every(x=>x.bodyDepthMm!==null);
   const maxDepth=depthKnown?Math.max(...entries.map(x=>x.bodyDepthMm)):null;
+  const knownHeights=entries.filter(x=>x.bodyHeightMm!==null).map(x=>x.bodyHeightMm);
+  const maxKnownHeight=knownHeights.length?Math.max(...knownHeights):null;
+  const availableMountHeight=p.rowPitchMm-p.wiringCorridorMm;
   const rowZones=Array.from({length:rails.length},(_,railIndex)=>({
    railIndex,
    wiringCorridor:{xMm:0,yMm:p.topBottomAllowanceMm+railIndex*p.rowPitchMm,
@@ -131,6 +136,8 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    topBottomAllowanceMm:p.topBottomAllowanceMm,
    rowPitchMm:p.rowPitchMm,
    apparatusBandHeightMm:p.rowPitchMm-p.wiringCorridorMm,
+   tallestKnownBodyHeightMm:maxKnownHeight,
+   allBodyHeightsKnown:knownHeights.length===entries.length,
    rowZones,
    assumptions:['WIRING_CORRIDOR_NOT_ROUTED','TERMINAL_REGION_NOT_SIZED_FROM_EQUIPMENT',
     'HEAT_DISSIPATION_NOT_ASSESSED','DIN_MOUNTING_OFFSETS_UNVERIFIED']
@@ -149,6 +156,10 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    ...(allocated<target?[{code:'CAPACITY_RESERVE_UNMET',level:'BLOCKED'}]:[]),
    {code:'CABINET_MOUNTING_WIRING_AND_THERMAL_NOT_VERIFIED',level:'UNKNOWN'},
    {code:'TERMINAL_AND_CABLE_CORRIDORS_ASSUMED',level:'UNKNOWN'},
+   ...(maxKnownHeight!==null&&maxKnownHeight>availableMountHeight?
+    [{code:'CABINET_ASSUMED_MOUNTING_BAND_TOO_LOW',level:'BLOCKED'}]:[]),
+   ...(knownHeights.length!==entries.length?
+    [{code:'CABINET_APPLIANCE_HEIGHT_PARTLY_UNKNOWN',level:'UNKNOWN'}]:[]),
    ...(depthKnown?[]:[{code:'CABINET_DEPTH_UNKNOWN',level:'UNKNOWN'}])
   ];
   const ordered=variantsBySize.get(profile.capacityModules);

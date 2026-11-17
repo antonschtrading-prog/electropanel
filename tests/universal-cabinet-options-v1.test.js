@@ -140,3 +140,19 @@ test('reject wiring corridor wider than row pitch or side margin',()=>{
  assert.equal(plan(base(),null,{wiringCorridorMm:125}).status,'BLOCKED');
  assert.equal(plan(base(),null,{sideWiringCorridorMm:80}).status,'BLOCKED');
 });
+
+test('known body height exceeding preliminary mounting band blocks narrow-height assumption',()=>{
+ const r=plan({lines:[{id:'L1',modules:1,catalogSku:'A'}]},
+  ()=>({article:'A',modules:1,geometry:{heightMm:115,depthMm:80}}),
+  {wiringCorridorMm:45});
+ assert.equal(r.options[0].status,'BLOCKED');
+ assert.ok(r.options[0].issues.some(x=>x.code==='CABINET_ASSUMED_MOUNTING_BAND_TOO_LOW'));
+ assert.equal(r.options[0].envelope.spacePlan.tallestKnownBodyHeightMm,115);
+ assert.equal(r.options[0].envelope.spacePlan.apparatusBandHeightMm,105);
+});
+test('unknown body heights stay UNKNOWN, not automatically approved or rejected',()=>{
+ const r=plan({lines:[{id:'L1',modules:1}]});
+ assert.equal(r.options[0].status,'REVIEW_REQUIRED');
+ assert.equal(r.options[0].envelope.spacePlan.allBodyHeightsKnown,false);
+ assert.ok(r.options[0].issues.some(x=>x.code==='CABINET_APPLIANCE_HEIGHT_PARTLY_UNKNOWN'));
+});
