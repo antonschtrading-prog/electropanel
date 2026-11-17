@@ -113,3 +113,16 @@ test('gallery uses the same 0.05 mm DIN width tolerance as board visual checks',
   ()=>({status:'STYLIZED_ONLY'}));
  assert.equal(beyond.status,'BLOCKED');
 });
+
+test('gallery blocks duplicated device identity within one article',()=>{
+ const r=gallery({rows:[{deviceId:'B1',boardSku:'A'},{deviceId:'B1',boardSku:'A'}]},
+  device,()=>({status:'STYLIZED_ONLY'}));
+ assert.equal(r.status,'BLOCKED');
+ assert.ok(r.rows[0].issues.includes('FRONT_GALLERY_DUPLICATE_DEVICE_ID'));
+});
+test('gallery blocks duplicated device identity across different articles',()=>{
+ const r=gallery({rows:[{deviceId:'B1',boardSku:'A'},{deviceId:'B1',boardSku:'B'}]},
+  device,()=>({status:'STYLIZED_ONLY'}));
+ assert.equal(r.status,'BLOCKED');
+ assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_DUPLICATE_DEVICE_ID')));
+});
