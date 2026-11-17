@@ -363,3 +363,10 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-front-gallery-card span{font-size:10px;overflow-wrap:anywhere;text-align:center}
 .ep-front-gallery-card small{font-size:9px;color:#657680;text-align:center}
 @media(max-width:520px){.ep-front-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.ep-front-gallery-art{height:150px}}
+
+.ep-front-gallery-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.ep-front-gallery-controls input,.ep-front-gallery-controls select{flex:1 1 180px;min-width:0;max-width:320px;min-height:36px}
+.ep-front-gallery-count{font-size:12px;color:#586b78;margin:6px 0}
+.ep-front-gallery-card[data-front-evidence="ASSET_REJECTED"]{border-color:#b87958}
+.ep-front-gallery-card:focus-within{outline:2px solid #3b789a;outline-offset:2px}
+@media(max-width:520px){.ep-front-gallery-controls{flex-direction:column;align-items:stretch}.ep-front-gallery-controls input,.ep-front-gallery-controls select{flex:0 0 auto;width:100%;max-width:none}}
