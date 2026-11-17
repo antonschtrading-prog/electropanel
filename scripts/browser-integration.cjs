@@ -1007,6 +1007,17 @@ const server=http.createServer((req,res)=>{
  assert.equal(face.bodyWidth,'18');
  assert.equal(face.slotWidth,'18');
  assert.equal(face.approval,false);
+ const manufacturerGallery=await page.evaluate(()=>{
+  const gallery=document.querySelector('.ep-front-gallery');
+  const cards=gallery?[...gallery.querySelectorAll('.ep-front-gallery-card')]:[];
+  return {gallery:!!gallery,cards:cards.length,
+   vectorFaces:gallery?.querySelectorAll('svg.ep-manufacturer-front').length||0,
+   imageFaces:gallery?.querySelectorAll('img.ep-manufacturer-front-image').length||0};
+ });
+ assert.equal(manufacturerGallery.gallery,true,JSON.stringify(manufacturerGallery));
+ assert.ok(manufacturerGallery.cards>0,JSON.stringify(manufacturerGallery));
+ assert.ok(manufacturerGallery.vectorFaces>0,JSON.stringify(manufacturerGallery));
+ assert.equal(manufacturerGallery.imageFaces,0,JSON.stringify(manufacturerGallery));
  // Full cabinet model workflow through actual form, undo/redo, JSON persistence and DIN export.
  assert.equal(await page.locator('#cabinetGeometryPanel [data-cabinet-autoplan]').count(),1);
  const cabinetInputs={interiorWidthMm:'2000',interiorHeightMm:'1500',interiorDepthMm:'300',
