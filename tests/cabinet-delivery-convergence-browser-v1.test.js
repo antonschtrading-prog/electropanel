@@ -50,7 +50,7 @@ test('cabinet capacity option is crosschecked against the same BOM and DIN engin
  assert.match(body,/epCabinetDeliveryConvergenceV1\(proposed/);
  assert.match(body,/CONVERGENCE_ARTICLE_MISMATCH/);
  assert.match(body,/CONVERGENCE_CAPACITY_SUM_MISMATCH/);
- assert.match(body,/CONVERGENCE_BOM_BLOCKED/);
+ assert.doesNotMatch(body,/CONVERGENCE_BOM_BLOCKED/);
  assert.match(body,/Компоновка не применена/);
 });
 test('cabinet capacity selection does not treat missing image as an automatic rejection',()=>{
@@ -63,4 +63,11 @@ test('cabinet capacity crosscheck precedes checkpoint and project mutation',()=>
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  const body=app.slice(app.indexOf('function applyCabinetCapacityOptionV1('),app.indexOf('function renderBoardConnectionAdvisoryV1('));
  assert.ok(body.indexOf('epCabinetDeliveryConvergenceV1(proposed')<body.indexOf('checkpoint();'));
+});
+
+test('preliminary enclosure selection is permitted without assigned catalogue articles',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const body=app.slice(app.indexOf('function applyCabinetCapacityOptionV1('),app.indexOf('function renderBoardConnectionAdvisoryV1('));
+ assert.doesNotMatch(body,/CONVERGENCE_LEDGER_QUANTITY_MISMATCH/);
+ assert.doesNotMatch(body,/CONVERGENCE_BOM_MISSING/);
 });
