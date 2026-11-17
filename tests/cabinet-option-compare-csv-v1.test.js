@@ -30,3 +30,8 @@ test('CSV is deterministic',()=>assert.equal(csv(report),csv(report)));
 test('CSV does not mutate report',()=>{const before=JSON.stringify(report);csv(report);assert.equal(JSON.stringify(report),before)});
 test('CSV includes every row',()=>assert.ok(csv({...report,rows:[...report.rows,{...report.rows[0],id:'3x12'}]}).includes('3x12')));
 test('CSV ranks multiple rows sequentially',()=>assert.ok(csv({...report,rows:[...report.rows,{...report.rows[0],id:'3x12'}]}).includes('"2";"3x12"')));
+
+test('CSV has moved apparatus column',()=>assert.ok(csv(report).includes('Перемещено аппаратов')));
+test('CSV has changed DIN rail column',()=>assert.ok(csv(report).includes('Смена DIN-рейки')));
+test('CSV exports actual movement count',()=>assert.ok(csv({...report,rows:[{...report.rows[0],movedDevices:3,changedRailDevices:1}]}).includes('"3";"1"')));
+test('CSV does not invent unavailable movement count',()=>assert.ok(csv(report).includes('"н/д"')));
