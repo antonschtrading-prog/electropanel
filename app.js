@@ -2045,8 +2045,9 @@ function renderCabinetArticleReconciliationV1(){
   }
   proposed={candidate,signature:JSON.stringify(state)};
   result.textContent='Проверено: '+candidate.preview.previousSku+' → '+candidate.preview.nextSku+
-   '. Переместятся аппараты: '+candidate.preview.relocatedDeviceIds.length+
-   '. Для сохранения нажмите «Применить».';
+   '. Изменение ширины: '+candidate.preview.moduleDelta+' мод.; переместятся аппараты: '+
+   candidate.preview.relocationCount+'; позиций спецификации изменится: '+
+   candidate.preview.bomChanges.length+'. Для сохранения нажмите «Применить».';
   applyButton.disabled=false;
  });
  applyButton.addEventListener('click',()=>{
