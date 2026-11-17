@@ -60,6 +60,8 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
    kind:typeof item?.kind==='string'?item.kind:'',
    modules,widthMm,nominalSlotWidthMm,geometryStatus,
    imageSrc:status==='REVIEWED_IMAGE'?asset.image?.src||null:null,
+   imageSourceUrl:status==='REVIEWED_IMAGE'?asset.image?.productEvidenceUrl||null:null,
+   imageReviewedAt:status==='REVIEWED_IMAGE'?asset.image?.reviewedAt||null:null,
    issues,engineeringApproved:false};
  }).sort((a,b)=>a.maker.localeCompare(b.maker)||a.series.localeCompare(b.series)||
   a.sku.localeCompare(b.sku));
