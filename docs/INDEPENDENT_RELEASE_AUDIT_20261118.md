@@ -106,3 +106,19 @@ New isolated files:
 - For audit commit `311fd99ffa4d3922b59159471d869ebac3221ce6`, all three GitHub Actions workflows completed successfully: JS checks, engineering validation, browser integration. Job steps confirm full Node regression and actual packaged page exercise.
 - Later commits (including this audit expansion) require their own CI result before claiming success.
 - Current suite is mostly module-level; a nine-stage interactive browser acceptance with post-edit exports and reimport is still a distinct release requirement.
+
+## Bulk acceptance matrix — 31 further scenarios
+
+`tests/independent-release-matrix-1-0.test.js` introduces 31 independent tests in one batch:
+- **20 mutation/failure cases:** orphan branch, duplicate branch assignment, missing branch, duplicate circuit/device identifiers, inconsistent module widths, unknown SKU, invalid DIN rail, overlapping/orphan/out-of-range/duplicate/manual-layout inputs, insufficient enclosure, orphan/invalid/multiply-assigned shared protection groups, malformed branch collection, invalid manufacturer dimensions, and missing selected article.
+- **8 malformed engineering inputs:** invalid power factor, voltages, demand factor, missing efficiency, unknown fields, and invalid numerical strings.
+- **3 acceptance invariants:** decimal-comma parsing, nonmutating phase suggestions, and non-approval of unverified protective candidates.
+- The cases invoke actual projectors and assert precise issue codes, non-approval and project immutability; they do not simulate the entire UI.
+- **Total isolated audit tests: 56** (6 + 5 + 8 + 1 + 5 + 31). The matrix's newly committed cases remain **unverified until CI completes**.
+
+### Remaining release gates
+1. Resolve DEFECT-01 cross-view effective SKU and exported CSV consistency.
+2. Resolve DEFECT-02 aggregate BLOCKED propagation from schematic.
+3. Confirm post-edit and post-import consistency in real Chromium and validate export gates.
+4. Confirm enclosure and article manufacturer evidence against the agreed 1.0 scope.
+5. Re-run all relevant checks after any production fix, without treating a green CI as proof of requirements not covered by its tests.
