@@ -35,7 +35,7 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   try{asset=item?resolveImage(item):null;}catch(_){asset={status:'ASSET_REJECTED',issues:['FRONT_RESOLVER_FAILED']};}
   const reviewedImage=asset?.status==='REVIEWED_IMAGE'&&
    typeof asset.image?.src==='string'&&
-   /^assets\\/device-fronts\\/[a-z0-9][a-z0-9_-]{0,95}\\.(png|jpe?g|webp)$/i.test(asset.image.src);
+   /^assets\/device-fronts\/[a-z0-9][a-z0-9_-]{0,95}\.(png|jpe?g|webp)$/i.test(asset.image.src);
   const status=failed||!item?'MISSING_ARTICLE':
    reviewedImage?'REVIEWED_IMAGE':
    asset?.status==='REVIEWED_IMAGE'?'ASSET_REJECTED':
