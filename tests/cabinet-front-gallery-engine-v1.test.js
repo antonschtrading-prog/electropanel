@@ -134,3 +134,17 @@ test('empty cabinet returns UNKNOWN visual evidence instead of a positive review
  assert.equal(r.totals.apparatus,0);
  assert.equal(r.engineeringApproved,false);
 });
+
+test('large board gallery aggregates repeated SKUs without repeated catalogue fetches',()=>{
+ const rows=Array.from({length:1200},(_,i)=>({deviceId:'D'+i,
+  boardSku:i%3===0?'A':i%3===1?'B':'C'}));
+ const calls=new Map();
+ const r=gallery({rows},sku=>{
+  calls.set(sku,(calls.get(sku)||0)+1);
+  return device(sku);
+ },()=>({status:'STYLIZED_ONLY'}));
+ assert.equal(r.totals.apparatus,1200);
+ assert.equal(r.totals.articles,3);
+ assert.ok(r.rows.every(x=>x.count===400));
+ assert.deepEqual([...calls.values()],[1,1,1]);
+});
