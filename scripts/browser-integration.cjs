@@ -77,7 +77,7 @@ const server=http.createServer((req,res)=>{
  const consumerDownload=page.waitForEvent('download');
  await page.locator('#workflowConsumerCsvBtn').click();
  const exportedConsumers=await consumerDownload;
- assert.match(exportedConsumers.suggestedFilename(),/_consumers_DRAFT\\.csv$/);
+ assert.match(exportedConsumers.suggestedFilename(),/_consumers_DRAFT\.csv$/);
  assert.equal(await page.evaluate(()=>JSON.stringify(state)),beforeConsumerCsv,
   'Consumer reconciliation export must not mutate engineering state');
  const auditUi=await page.evaluate(()=>epWorkflowConsumerAuditV1(state));
