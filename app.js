@@ -1794,9 +1794,13 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    capacitySelect.value=String(cabinetCapacitySelectedTotalV1);
   capacitySelect.disabled=!totals.length;
  }
+ const impact=typeof epCabinetOptionImpactV1==='function'?
+  epCabinetOptionImpactV1(state,report,catalogDevice,{
+   excludedIds:report.options.filter(o=>!eligibleIds.has(o.id)).map(o=>o.id)}):null;
  const comparison=typeof epCabinetOptionCompareV1==='function'?
   epCabinetOptionCompareV1(report,{preference:cabinetOptionPreferenceV1,
-   excludedIds:report.options.filter(o=>!eligibleIds.has(o.id)).map(o=>o.id)}):null;
+   excludedIds:report.options.filter(o=>!eligibleIds.has(o.id)).map(o=>o.id),
+   impactRows:impact?.rows||[]}):null;
  const ranking=new Map((comparison?.rows||[]).map((r,i)=>[r.id,{...r,rank:i+1}]));
  const shown=good.filter(o=>cabinetOptionShowAllCapacitiesV1||o.capacityModules===cabinetCapacitySelectedTotalV1)
   .sort((a,b)=>(ranking.get(a.id)?.score??0)-(ranking.get(b.id)?.score??0));
@@ -1813,7 +1817,7 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
  target.innerHTML='<label class="ep-cabinet-option-preference">Приоритет подбора: <select data-cabinet-option-preference>'+[
   ['balanced','Сбалансированный'],['compact','Минимальная площадь'],
   ['wide','Широкий корпус'],['tall','Высокий корпус'],
-  ['connections','Группировка связей']].map(([key,label])=>'<option value="'+key+'"'+
+  ['connections','Группировка связей'],['stability','Минимум перестановок']].map(([key,label])=>'<option value="'+key+'"'+
    (cabinetOptionPreferenceV1===key?' selected':'')+'>'+label+'</option>').join('')+
   '</select></label><label class="ep-cabinet-option-all"><input type="checkbox" data-cabinet-show-all'+
   '"'+(cabinetOptionShowAllCapacitiesV1?' checked':'')+'> Показать все вместимости</label>'+ '<p>Аппаратура: <b>'+report.equipmentModules+
@@ -1822,6 +1826,7 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
    '" data-apply-cabinet-option="'+o.id+'">'+(comparison?.recommendedId===o.id?'★ Рекомендуемый · ':'')+o.capacityModules+
    ' мод. · '+({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Вариант')+' · '+o.railCount+' × '+o.modulesPerRail+
+   ' · перестановок '+(impact?.rows.find(r=>r.id===o.id)?.moved??'н/д')+
    ' · свободно '+o.reserveModules+
    ' · площадь ~'+Math.round(o.envelope.preliminaryUsableWidthMm*o.envelope.preliminaryUsableHeightMm/10000)/100+' м²'+
    (o.connectionProximity?' · связанные: на одной DIN '+o.connectionProximity.sameRail+'/'+
@@ -3270,8 +3275,11 @@ $('exportCabinetCompareCsvBtn')?.addEventListener('click',()=>{
    maxUsableDepthMm:limits.maxUsableDepthMm??null}):null;
  if(!constrained){notify('Ограничения корпуса не проверены',true);return;}
  const eligible=new Set(constrained.eligible.map(x=>x.optionId));
+ const excludedIds=report.options.filter(o=>!eligible.has(o.id)).map(o=>o.id);
+ const impact=typeof epCabinetOptionImpactV1==='function'?
+  epCabinetOptionImpactV1(state,report,catalogDevice,{excludedIds}):null;
  const comparison=epCabinetOptionCompareV1(report,{preference:cabinetOptionPreferenceV1,
-  excludedIds:report.options.filter(o=>!eligible.has(o.id)).map(o=>o.id)});
+  excludedIds,impactRows:impact?.rows||[]});
  if(comparison.code==='OPTION_COMPARE_INPUT_INVALID'||comparison.code==='OPTION_COMPARE_VARIANT_INVALID'){
   notify('Невозможно сформировать сравнение вариантов',true);return;
  }
