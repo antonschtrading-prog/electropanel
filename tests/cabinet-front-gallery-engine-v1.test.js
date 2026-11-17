@@ -72,3 +72,24 @@ test('gallery ignores empty article keys and sorts deterministic by maker/series
  assert.equal(r.totals.articles,2);
  assert.deepEqual(r.rows.map(x=>x.sku),['B','A']);
 });
+
+test('gallery emits precise DIN-width conflict code per affected article',()=>{
+ const r=gallery(audit,sku=>({...device(sku),widthMm:100}),
+  ()=>({status:'STYLIZED_ONLY'}));
+ assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_BODY_EXCEEDS_DIN_SLOT')));
+ assert.equal(r.status,'BLOCKED');
+});
+test('gallery emits missing dimension evidence without guessing a manufacturer body',()=>{
+ const r=gallery(audit,sku=>({...device(sku),modules:null}),
+  ()=>({status:'STYLIZED_ONLY'}));
+ assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_GEOMETRY_UNKNOWN')));
+ assert.ok(r.rows.every(x=>x.nominalSlotWidthMm===null));
+});
+test('gallery blocks articles without a declared manufacturer or series',()=>{
+ for(const missing of ['maker','series']){
+  const r=gallery(audit,sku=>({...device(sku),[missing]:''}),
+   ()=>({status:'STYLIZED_ONLY'}));
+  assert.equal(r.status,'BLOCKED');
+  assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_IDENTITY_INCOMPLETE')));
+ }
+});
