@@ -341,3 +341,15 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-cabinet-obstacle{fill:#e8d7ae;stroke:#94723a;stroke-dasharray:3 2;stroke-width:1.5}
 .ep-cabinet-panel [data-cabinet-obstacle] select{padding:8px;border:1px solid #b8c6d0;border-radius:5px;min-width:0;width:100%}
 .ep-cabinet-panel [data-cabinet-obstacle-remove]{margin-inline-start:6px}
+
+/* DIN front rendering: catalogue-specific original SVG illustration or a
+   rights-reviewed local image. Never imply factory photography for SVG. */
+.din-apparatus.ep-catalog-front-active{padding:0!important;overflow:hidden;justify-content:flex-start;background:#e7ebed!important}
+.ep-catalog-front-active .ep-front-viewport{display:flex;align-items:center;justify-content:center;min-width:0;width:100%;height:100%;overflow:hidden;flex:1 1 auto;background:linear-gradient(90deg,#dce3e5,#f6f7f6 20%,#e9edee 85%,#cbd5d9)}
+.ep-catalog-front-active .ep-manufacturer-front{display:block;max-width:100%;max-height:100%;width:auto;height:100%;flex:0 1 auto;object-fit:contain;pointer-events:none}
+.ep-catalog-front-active .ep-manufacturer-front-image{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.ep-catalog-front-active .ep-front-meta{display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap;min-width:0;width:100%;max-height:33px;overflow:hidden;padding:2px;background:#f1f4f5;border-top:1px solid #c3cdd2}
+.ep-catalog-front-active .ep-front-meta .ep-visual-evidence{font-size:7px;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ep-catalog-front-active[data-geometry-width-conflict="true"]{outline:2px solid #b53227;outline-offset:-2px}
+.ep-catalog-front-active[data-front-asset-status="ASSET_REJECTED"]{border-color:#c15b32!important}
+@media(max-width:760px){.ep-catalog-front-active .ep-front-meta{max-height:28px;padding:1px}.ep-catalog-front-active .ep-front-meta .ep-visual-evidence{font-size:6px}}
