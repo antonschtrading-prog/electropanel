@@ -1991,6 +1991,42 @@ function renderCabinetArticleReconciliationV1(){
   });
   target.appendChild(exportButton);
  }
+ if(typeof epManufacturerVisualHtmlV1==='function'){
+  const skus=[...new Set(report.rows.map(x=>x.boardSku).filter(Boolean))];
+  const gallery=document.createElement('details');
+  const heading=document.createElement('summary');
+  heading.textContent='Фасады аппаратов в проекте ('+skus.length+' артикулов)';
+  gallery.appendChild(heading);
+  const caption=document.createElement('p');
+  caption.textContent='Каталожные SVG — авторские эскизы, не фотографии изделий. Фотографии отображаются только при зарегистрированных правах и проверенном артикуле.';
+  gallery.appendChild(caption);
+  const grid=document.createElement('div');grid.className='ep-front-gallery';
+  for(const sku of skus.slice(0,12)){
+   const item=catalogDevice(sku);
+   if(!item)continue;
+   const card=document.createElement('div');card.className='ep-front-gallery-card';
+   const art=document.createElement('div');art.className='ep-front-gallery-art';
+   try{art.innerHTML=epManufacturerVisualHtmlV1(item,'gallery-'+sku);}
+   catch(_){art.textContent='Фасад недоступен';}
+   const title=document.createElement('strong');
+   title.textContent=[item.maker,item.series].filter(Boolean).join(' / ');
+   const code=document.createElement('span');code.textContent=sku;
+   const status=document.createElement('small');
+   const asset=typeof epManufacturerFrontResolveV1==='function'?
+    epManufacturerFrontResolveV1(item):null;
+   status.textContent=asset?.status==='REVIEWED_IMAGE'?'Изображение по артикулу':
+    asset?.status==='ASSET_REJECTED'?'Изображение отклонено · эскиз':
+    'Авторский эскиз';
+   card.append(art,title,code,status);grid.appendChild(card);
+  }
+  gallery.appendChild(grid);
+  if(skus.length>12){
+   const remainder=document.createElement('p');
+   remainder.textContent='Показаны первые 12 из '+skus.length+' артикулов.';
+   gallery.appendChild(remainder);
+  }
+  target.appendChild(gallery);
+ }
  const errors=report.rows.filter(x=>x.status==='BLOCKED').slice(0,20);
  const totalErrors=report.rows.filter(x=>x.status==='BLOCKED').length;
  if(errors.length){
