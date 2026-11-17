@@ -29,7 +29,7 @@ function epCabinetApparatusEvidenceV1(project,lookup){
  const zones=new Map((geometry?.geometry?.zones||[]).map(x=>[x.railIndex,x]));
  const dim=(v)=>typeof v==='number'&&Number.isFinite(v)&&v>0?v:null;
  const validSourceUrl=v=>{
-  if(typeof v!=='string'||!v||/[\\s\\u0000-\\u001f]/.test(v))return false;
+  if(typeof v!=='string'||!v||/[\s\u0000-\u001f]/.test(v))return false;
   try{const u=new URL(v);return u.protocol==='https:'&&!!u.hostname&&
    !u.username&&!u.password&&!u.hash;}catch(_){return false;}
  };
