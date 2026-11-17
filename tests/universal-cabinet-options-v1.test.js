@@ -170,3 +170,40 @@ test('candidate compaction reports only declared grouping-proximity counts',()=>
   assert.equal(o.connectionProximity.unresolved,0);
  }finally{delete global.epCabinetConnectionProximityV1;}
 });
+
+test('all three routing and terminal allowances reject nonfinite and negative input',()=>{
+ for(const field of ['wiringCorridorMm','terminalReserveMm','sideWiringCorridorMm']){
+  for(const value of [NaN,Infinity,-Infinity,-1,'40',null]){
+   assert.equal(plan(base(),null,{[field]:value}).status,'BLOCKED',field+':'+value);
+  }
+ }
+});
+test('non-array branch device input is rejected rather than silently ignored',()=>{
+ assert.equal(plan({...base(),branchDevices:{} }).status,'BLOCKED');
+ assert.equal(plan({...base(),branchDevices:'bad'}).status,'BLOCKED');
+});
+test('bounded packer rejects invalid rail dimensions and malformed device widths',()=>{
+ const {epCabinetPackDevicesV1:pack}=require('../universal-cabinet-options-v1.js');
+ const devices=[{deviceId:'L',modules:1}];
+ for(const [rows,capacity] of [[0,12],[1,0],[-1,12],[1,201],[1,NaN],[1,1.5]])
+  assert.equal(pack(devices,rows,capacity).status,'INVALID');
+ for(const entries of [null,{},[{deviceId:'L',modules:NaN}],
+  [{deviceId:'L',modules:-1}],[{deviceId:'',modules:1}]])
+  assert.equal(pack(entries,1,12).status,'INVALID');
+ for(const limit of [-1,NaN,Infinity,1.5])
+  assert.equal(pack(devices,1,12,limit).status,'INVALID');
+});
+test('packing search exhaustion remains unproven, never falsely impossible',()=>{
+ const {epCabinetPackDevicesV1:pack}=require('../universal-cabinet-options-v1.js');
+ const devices=[2,2,2,3,5,6,9].map((modules,i)=>({deviceId:'D'+i,modules}));
+ const r=pack(devices,3,10,0);
+ assert.equal(r.status,'UNPROVEN');
+ assert.ok(r.unplaced.length>0);
+});
+test('zero routing and terminal allowances are valid declared assumptions',()=>{
+ const r=plan(base(),null,{wiringCorridorMm:0,terminalReserveMm:0,
+  sideWiringCorridorMm:0});
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.options[0].envelope.spacePlan.wiringCorridorPerRailMm,0);
+ assert.equal(r.options[0].envelope.spacePlan.terminalReserveMm,0);
+});
