@@ -53,7 +53,8 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
  if(!project||!Array.isArray(project.lines)||project.lines.length>500||
     !Array.isArray(project.sharedDevices??[])||(project.sharedDevices??[]).length>500||
     !settings||typeof settings!=='object'||Array.isArray(settings)||
-    (project.branchDevices!==undefined&&!Array.isArray(project.branchDevices)))return blocked('INPUT_INVALID');
+    (project.branchDevices!==undefined&&(!Array.isArray(project.branchDevices)||
+     project.branchDevices.length>500)))return blocked('INPUT_INVALID');
  const defaults={reserveFraction:0.2,sideAllowanceMm:70,topBottomAllowanceMm:100,
   rowPitchMm:150,depthAllowanceMm:60,
   wiringCorridorMm:40,terminalReserveMm:0,sideWiringCorridorMm:40};
@@ -79,10 +80,23 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
     issues.push({code:'ARTICLE_WIDTH_UNVERIFIED',level:'BLOCKED',deviceId:id});return;}
    if(modules!==a.modules)issues.push({code:'MODULE_WIDTH_MISMATCH',level:'BLOCKED',deviceId:id});
    modules=a.modules;
+   const bodyWidth=a.geometry?.widthMm??a.widthMm;
+   if(bodyWidth!==undefined&&bodyWidth!==null){
+    if(typeof bodyWidth!=='number'||!Number.isFinite(bodyWidth)||bodyWidth<=0)
+     issues.push({code:'ARTICLE_BODY_WIDTH_INVALID',level:'BLOCKED',deviceId:id});
+    else if(bodyWidth>modules*18+1e-6)
+     issues.push({code:'ARTICLE_BODY_EXCEEDS_NOMINAL_DIN_SLOT',level:'BLOCKED',deviceId:id});
+   }
    const depth=a.geometry?.depthMm??a.depthMm;
-   if(typeof depth==='number'&&Number.isFinite(depth)&&depth>0)bodyDepthMm=depth;
+   if(depth!==undefined&&depth!==null){
+    if(typeof depth==='number'&&Number.isFinite(depth)&&depth>0)bodyDepthMm=depth;
+    else issues.push({code:'ARTICLE_BODY_DEPTH_INVALID',level:'BLOCKED',deviceId:id});
+   }
    const height=a.geometry?.heightMm??a.heightMm;
-   if(typeof height==='number'&&Number.isFinite(height)&&height>0)bodyHeightMm=height;
+   if(height!==undefined&&height!==null){
+    if(typeof height==='number'&&Number.isFinite(height)&&height>0)bodyHeightMm=height;
+    else issues.push({code:'ARTICLE_BODY_HEIGHT_INVALID',level:'BLOCKED',deviceId:id});
+   }
   }else issues.push({code:'ARTICLE_NOT_SELECTED',level:'UNKNOWN',deviceId:id});
   if(!Number.isInteger(modules)||modules<1||modules>200){
    issues.push({code:'DEVICE_MODULES_INVALID',level:'BLOCKED',deviceId:id});return;}
@@ -96,6 +110,17 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
   const b=matching?.[0];
   if(b&&b.modules!==l.modules)issues.push({code:'BRANCH_MODULES_CONFLICT',level:'BLOCKED',deviceId:b.id});
   push(l,b?.id??l?.id,b?.catalogSku||l?.catalogSku,b?.modules??l?.modules);
+ }
+ if(branches){
+  const lineIds=new Set(project.lines.map(l=>l?.id));
+  const boundIds=new Set();
+  for(const b of branches){
+   if(!b||typeof b.circuitId!=='string'||!lineIds.has(b.circuitId))
+    issues.push({code:'BRANCH_ORPHAN_OR_INVALID',level:'BLOCKED',deviceId:b?.id});
+   if(typeof b?.id!=='string'||!b.id.trim()||boundIds.has(b.id))
+    issues.push({code:'BRANCH_ID_INVALID_OR_DUPLICATE',level:'BLOCKED',deviceId:b?.id});
+   else boundIds.add(b.id);
+  }
  }
  if(!entries.length)issues.push({code:'NO_DEVICES',level:'BLOCKED'});
  if(issues.some(x=>x.level==='BLOCKED'))return {...blocked('EQUIPMENT_INVALID'),issues};
