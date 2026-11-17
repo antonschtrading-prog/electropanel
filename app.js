@@ -2023,7 +2023,18 @@ function renderCabinetArticleReconciliationV1(){
  const skuLabel=document.createElement('label');skuLabel.textContent='Новый артикул';
  const skuInput=document.createElement('input');skuInput.type='text';
  skuInput.maxLength=200;skuInput.placeholder='Артикул из каталога проекта';
- skuLabel.appendChild(skuInput);
+ const suggestions=document.createElement('datalist');
+ suggestions.id='cabinetArticleReplacementSuggestions';
+ if(typeof epProjectCatalogV1==='function'){
+  const articles=epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles;
+  for(const [sku,article] of Object.entries(articles).slice(0,400)){
+   const option=document.createElement('option');option.value=sku;
+   option.label=[article.maker,article.series,article.label].filter(Boolean).join(' / ');
+   suggestions.appendChild(option);
+  }
+ }
+ skuInput.setAttribute('list',suggestions.id);
+ skuLabel.append(skuInput,suggestions);
  row.append(idLabel,skuLabel);editor.appendChild(row);
  const previewButton=document.createElement('button');previewButton.type='button';
  previewButton.textContent='Проверить замену';
