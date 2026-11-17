@@ -21,10 +21,11 @@ function epManufacturerFrontResolveV1(device,library=EP_MANUFACTURER_FRONT_ASSET
  if(!Object.prototype.hasOwnProperty.call(library,key))
   return {...base,issues:['FRONT_IMAGE_NOT_REGISTERED']};
  const a=library[key],issues=[];
+ if(key==='|'||key.startsWith('|')||key.endsWith('|'))issues.push('FRONT_ARTICLE_KEY_INVALID');
  if(!a||typeof a!=='object'||Array.isArray(a))issues.push('FRONT_ASSET_INVALID');
  else{
   const norm=x=>typeof x==='string'?x.trim().toLowerCase():'';
-  if(norm(a.maker)!==norm(device.maker)||norm(a.sku)!==norm(device.sku)||
+  if(epManufacturerFrontKeyV1(a)!==key||norm(a.maker)!==norm(device.maker)||norm(a.sku)!==norm(device.sku)||
      norm(a.series)!==norm(device.series)||norm(a.kind)!==norm(device.kind))
    issues.push('FRONT_ARTICLE_IDENTITY_MISMATCH');
   if(!Number.isInteger(device.poles)||a.poles!==device.poles||
