@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const s=fs.readFileSync(path.join(__dirname,'..','scripts/browser-integration.cjs'),'utf8');
 test('real Chromium flow validates exact article facade on the editable rail',()=>{
- assert.match(s,/row\?\.querySelector\('\.ep-board-front svg'\)/);
+ assert.match(s,/row\?\.querySelector\('\.ep-front-viewport svg'\)/);
  assert.match(s,/face\.asset,'STYLIZED_ONLY'/);
  assert.match(s,/face\.hasPhoto,false/);
 });
