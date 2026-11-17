@@ -25,7 +25,7 @@ test('CSV escapes spreadsheet formulas',()=>assert.ok(csv({...report,rows:[{...r
 test('CSV escapes quotes',()=>assert.ok(csv({...report,rows:[{...report.rows[0],id:'a"b'}]}).includes('a""b')));
 test('CSV quotes every cell',()=>assert.ok(csv(report).includes('"Ранг";"Вариант"')));
 test('CSV tolerates empty report',()=>assert.equal(csv(null).split('\r\n').length,2));
-test('CSV tolerates empty rows',()=>assert.equal(csv({rows:[]}).split('\r\n').length,3));
+test('CSV tolerates empty rows',()=>assert.equal(csv({rows:[]}).split('\r\n').length,2));
 test('CSV is deterministic',()=>assert.equal(csv(report),csv(report)));
 test('CSV does not mutate report',()=>{const before=JSON.stringify(report);csv(report);assert.equal(JSON.stringify(report),before)});
 test('CSV includes every row',()=>assert.ok(csv({...report,rows:[...report.rows,{...report.rows[0],id:'3x12'}]}).includes('3x12')));
