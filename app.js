@@ -2050,7 +2050,16 @@ function renderCabinetArticleReconciliationV1(){
    const option=document.createElement('option');option.value=value;option.textContent=label;
    evidenceFilter.appendChild(option);
   }
-  controls.append(search,makerFilter,evidenceFilter);gallery.appendChild(controls);
+  const geometryFilter=document.createElement('select');
+  geometryFilter.setAttribute('aria-label','Фильтр по габаритам аппарата');
+  for(const [value,label] of [['','Любые габариты'],
+   ['EXCEEDS_DIN_SLOT','Шире DIN-места'],
+   ['UNKNOWN','Габариты неизвестны'],
+   ['DECLARED_WITHIN_SLOT','Ширина в пределах DIN-места']]){
+   const option=document.createElement('option');option.value=value;option.textContent=label;
+   geometryFilter.appendChild(option);
+  }
+  controls.append(search,makerFilter,evidenceFilter,geometryFilter);gallery.appendChild(controls);
   if(typeof epCabinetFrontInventoryCsvV1==='function'){
    const exportInventory=document.createElement('button');exportInventory.type='button';
    exportInventory.textContent='Скачать ведомость фасадов CSV';
@@ -2084,6 +2093,7 @@ function renderCabinetArticleReconciliationV1(){
   const refresh=()=>{
    const result=epCabinetFrontGalleryModelV1(report.rows,catalogDevice,{
     search:search.value,maker:makerFilter.value,evidence:evidenceFilter.value,
+    geometry:geometryFilter.value,
     resolve:epManufacturerFrontResolveV1,page,pageSize:12
    });
    if(page===0)grid.replaceChildren();
