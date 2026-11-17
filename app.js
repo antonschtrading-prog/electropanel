@@ -2577,6 +2577,16 @@ $('uploadPlan').onclick=()=>$('planFile').click();$('planFile').addEventListener
  }catch(err){notify(err.message,true);}finally{e.target.value='';}
 });
 
+$('exportCabinetCapacityCsvBtn')?.addEventListener('click',()=>{
+ const report=cabinetCapacityReportV1();
+ const result=typeof epCabinetCapacityCsvV1==='function'?
+  epCabinetCapacityCsvV1(report,state.cabinetSizingPreferencesV1||{}):null;
+ if(!result||result.status==='BLOCKED'){
+  notify('Не удалось сформировать предварительную ведомость корпусов',true);return;
+ }
+ download(baseName()+'_cabinet_requirements.csv',result.csv,
+  'text/csv;charset=utf-8');
+});
 $('exportCabinetCapacityBtn')?.addEventListener('click',()=>{
  const report=cabinetCapacityReportV1();
  if(!report||report.status==='BLOCKED'){notify('Нет допустимых вариантов для выгрузки',true);return;}

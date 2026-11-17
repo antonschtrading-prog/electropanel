@@ -1427,6 +1427,13 @@ const server=http.createServer((req,res)=>{
  });
  const capacityChoice=page.locator('[data-apply-cabinet-option="1x6"]');
  assert.equal(await capacityChoice.count(),1,'small cabinet form factor should be offered');
+ assert.equal(await page.locator('#exportCabinetCapacityCsvBtn').count(),1);
+ const capacityCsvEvidence=await page.evaluate(()=>{
+  const p=epCabinetCapacityCsvV1(cabinetCapacityReportV1(),{});
+  return {status:p.status,hasHeading:p.csv.includes('terminal_height_reserve_mm'),
+   notCertified:p.csv.includes('PRELIMINARY_NOT_MANUFACTURER_FIT')};
+ });
+ assert.deepEqual(capacityCsvEvidence,{status:'REVIEW_REQUIRED',hasHeading:true,notCertified:true});
  assert.equal(await page.locator('#cabinetSpaceDiagram svg').count(),1,
   'Preliminary interior-space diagram must be visible');
  assert.match(await page.locator('#cabinetSpaceDiagram').innerText(),/Зелёный|клемм/);
