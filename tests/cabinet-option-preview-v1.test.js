@@ -62,3 +62,20 @@ test("no mutation of option",()=>assert.ok((()=>{const o=option(),before=JSON.st
 test("deterministic result",()=>assert.ok(JSON.stringify(runDefault())===JSON.stringify(runDefault())));
 test("no changes for identical placement",()=>assert.ok(run(project(),{railCount:1,modulesPerRail:6,rails:[{railIndex:0,devices:[{deviceId:'A',startModule:0,modules:2},{deviceId:'B',startModule:2,modules:1},{deviceId:'C',startModule:3,modules:2}]}]},()=>null).summary.moved===0));
 test("same shape no geometry reset",()=>assert.ok(run({...project(),cabinetGeometryV1:{}},{railCount:1,modulesPerRail:6,rails:[{railIndex:0,devices:[{deviceId:'A',startModule:0,modules:2},{deviceId:'B',startModule:2,modules:1},{deviceId:'C',startModule:3,modules:2}]}]},()=>null).summary.geometryResetRequired===false));
+
+test('duplicate empty DIN rail is rejected even with complete unique indices',()=>{
+ const o=option();o.rails.push({railIndex:1,devices:[]});
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});
+test('extra rail beyond declared rail count rejected',()=>{
+ const o=option();o.rails.push({railIndex:0,devices:[]});
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});
+test('more than 100 DIN rails rejected',()=>{
+ const o=option();o.railCount=101;
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});
+test('more than 200 modules per rail rejected',()=>{
+ const o=option();o.modulesPerRail=201;
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});
