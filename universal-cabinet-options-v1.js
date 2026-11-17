@@ -212,8 +212,17 @@ function epUniversalCabinetOptionsV1(project, lookupSku, settings = {}) {
    status:optionIssues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',
    engineeringApproved:false,confirmedCabinetFit:false};
  });
+ const eligible=options.filter(x=>x.status==='REVIEW_REQUIRED');
+ const preliminaryShortlist=eligible.slice(0,5).map(x=>({
+  optionId:x.id,orientation:x.orientation,capacityModules:x.capacityModules,
+  reserveModules:x.reserveModules,railCount:x.railCount,modulesPerRail:x.modulesPerRail,
+  usableWidthEstimateMm:x.envelope.preliminaryUsableWidthMm,
+  usableHeightEstimateMm:x.envelope.preliminaryUsableHeightMm,
+  usableDepthEstimateMm:x.envelope.preliminaryUsableDepthMm,
+  confirmedCabinetFit:false}));
  return {schema:'electropanel.universal.cabinet.options.1',
-  status:options.some(x=>x.status!=='BLOCKED')?'REVIEW_REQUIRED':'BLOCKED',
+  status:eligible.length?'REVIEW_REQUIRED':'BLOCKED',
+  preliminaryOptionId:eligible[0]?.id??null,preliminaryShortlist,
   equipmentCount:entries.length,equipmentModules:entries.reduce((s,x)=>s+x.modules,0),
   options,issues,engineeringApproved:false,confirmedCabinetFit:false,
   note:'Draft nominal DIN packing only. Preliminary usable interior envelope assumes user-adjustable allowances; external cabinet dimensions, thermal and wiring fit require separate review.'};
