@@ -2164,6 +2164,7 @@ function renderCabinetArticleReconciliationV1(){
   search.addEventListener('input',()=>{page=0;refresh();});
   makerFilter.addEventListener('change',()=>{page=0;refresh();});
   evidenceFilter.addEventListener('change',()=>{page=0;refresh();});
+  geometryFilter.addEventListener('change',()=>{page=0;refresh();});
   more.addEventListener('click',()=>{page++;refresh();});
   refresh();
   target.appendChild(gallery);
