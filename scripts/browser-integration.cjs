@@ -15,6 +15,39 @@ const server=http.createServer((req,res)=>{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
+
+ // Independent release gate: conflicting article assignment must prevent standalone
+ // schematic/BOM downloads in the actual packaged browser UI.
+ const exportGateProbe=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const line=state.lines.find(l=>l.id===branch.circuitId);
+  const original=branch.catalogSku;
+  const alternate='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  branch.catalogSku=alternate;
+  const gate=epDraftDocumentExportGate();
+  branch.catalogSku=original;
+  return {allowed:gate.allowed,reason:gate.reason};
+ });
+ assert.equal(exportGateProbe.allowed,false,JSON.stringify(exportGateProbe));
+ const blockedExportNames=await page.evaluate(async()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const oldDownload=download;
+  const recorded=[];
+  download=function(name){recorded.push(name);};
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  try{
+   for(const id of ['exportSingleLineSvgBtn','exportDraftBomCsvBtn','exportDraftBomJsonBtn']){
+    document.getElementById(id).click();
+   }
+  }finally{
+   branch.catalogSku=original;
+   download=oldDownload;
+  }
+  return recorded;
+ });
+ assert.deepEqual(blockedExportNames,[],'inconsistent documents cannot be downloaded');
+
  // New unified engineer workflow: consumer power -> existing arithmetic engine ->
  // candidate shortlist and linked diagram/DIN/BOM. Inputs remain user-owned.
  await page.evaluate(()=>switchView('loads'));
