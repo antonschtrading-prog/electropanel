@@ -2105,7 +2105,17 @@ function renderCabinetArticleReconciliationV1(){
       card.dataset.widthConflict='true';
       dimensions.textContent+=' · ширина больше номинального места';
      }
-     card.append(title,code,type,quantity,dimensions,status);
+     const locate=document.createElement('button');locate.type='button';
+     locate.textContent='Найти на DIN-рейке';
+     locate.setAttribute('aria-label','Найти на DIN-рейке '+sku);
+     locate.addEventListener('click',()=>{
+      const node=[...document.querySelectorAll('#boardCanvas .din-apparatus')]
+       .find(x=>x.dataset.catalogSku===sku);
+      if(!node){notify('Аппарат не найден в текущем отображении щита',true);return;}
+      node.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+      node.click();
+     });
+     card.append(title,code,type,quantity,dimensions,status,locate);
     }
     if(!item){const code=document.createElement('span');code.textContent=sku;card.append(art,code);}
     grid.appendChild(card);
@@ -2286,6 +2296,7 @@ function renderBoard(){
    const modelLink=(state.boardBindingsV1||[]).find(x=>x.boardDeviceId===boardId);
    const mapped=modelLink?epBoardBindingsAuditV1(state,catalogDevice):null;
    d.dataset.apparatusId=boardId||'';
+   d.dataset.catalogSku=l.catalogSku||'';
    d.dataset.topologyLink=modelLink?(mapped?.issues.some(x=>x.level==='BLOCKED'&&
     (x.id===boardId||x.boardDeviceId===boardId))?'stale':'declared'):'unbound';
    d.title+=' · Терминальная схема: '+(modelLink?'связана декларативно':'не связана');
