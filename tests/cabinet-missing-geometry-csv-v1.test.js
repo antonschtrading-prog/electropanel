@@ -30,3 +30,18 @@ test('invalid layout cannot produce fake procurement-ready schedule',()=>{
  const r=csv({railCount:0,railCapacity:4,lines:[]});
  assert.equal(r.status,'BLOCKED');assert.equal(r.rows,0);
 });
+
+test('supplier CSV carries missing source and independent body geometry evidence',()=>{
+ const p={railCount:1,railCapacity:2,lines:[{id:'L1',modules:1,catalogSku:'C'}],
+  cabinetGeometryV1:{version:1,source:'USER_DECLARED',
+   interior:{widthMm:100,heightMm:140,depthMm:100},
+   zones:[{railIndex:0,xMm:20,yMm:10,widthMm:40,heightMm:100}]}};
+ const r=csv(p,()=>({sku:'C',modules:1,widthMm:17.5,heightMm:80,depthMm:70,
+  sourceType:'MANUFACTURER_DATASHEET_MIRROR',sourceReviewedAt:'2099-01-01'}));
+ assert.equal(r.rows,1);
+ assert.match(r.csv,/SOURCE_REVIEW\|SOURCE_URL\|CORRECT_REVIEW_DATE/);
+ assert.match(r.csv,/actual_body_end_x_mm/);
+ assert.match(r.csv,/"37.5"/);
+ assert.match(r.csv,/"22.5"/);
+ assert.equal(r.ready_for_installation,false);
+});
