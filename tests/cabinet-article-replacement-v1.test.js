@@ -176,3 +176,17 @@ test('nonblocking cabinet geometry audit permits preliminary replacement',()=>{
  try{assert.equal(replace(p,'B1','WIDE',catalogue).status,'REVIEW_REQUIRED');}
  finally{global.epCabinetPlacementChangeAuditV1=previous;}
 });
+
+test('implicit branch selection shows the effective line SKU in preview',()=>{
+ const p=project();delete p.branchDevices[0].catalogSku;
+ const r=replace(p,'B1','WIDE',catalogue);
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.preview.previousSku,'OLD');
+ assert.equal(r.preview.nextSku,'WIDE');
+});
+test('replacing an implicit branch with its existing fallback is a no-op',()=>{
+ const p=project();delete p.branchDevices[0].catalogSku;
+ const r=replace(p,'B1','OLD',catalogue);
+ assert.equal(r.code,'REPLACEMENT_ARTICLE_UNCHANGED');
+ assert.equal(r.project,null);
+});
