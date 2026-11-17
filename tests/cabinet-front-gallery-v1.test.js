@@ -8,8 +8,8 @@ const section=app.slice(app.indexOf('function renderCabinetArticleReconciliation
 test('gallery is derived from actual board article identities',()=>{
  assert.match(section,/new Set\(report\.rows\.map\(x=>x\.boardSku\)/);
  assert.match(section,/Фасады аппаратов в проекте/);
- assert.match(section,/for\(const sku of skus\.slice\(0,12\)\)/);
- assert.match(section,/catalogDevice\(sku\)/);
+ assert.match(section,/epCabinetFrontGalleryModelV1\(report\.rows,catalogDevice/);
+ assert.match(section,/for\(const entry of result\.items\)/);
 });
 test('gallery uses rights-aware images and safe original SVG rendering',()=>{
  assert.match(section,/epCatalogFrontSvgV1\(item,'gallery-'\+sku\)/);
@@ -27,7 +27,8 @@ test('gallery uses textContent for catalogue metadata and limits card count',()=
  assert.match(section,/title\.textContent=/);
  assert.match(section,/code\.textContent=sku/);
  assert.match(section,/status\.textContent=/);
- assert.match(section,/Показаны первые 12/);
+ assert.match(section,/Показано /);
+ assert.match(section,/more\.hidden=!result\.hasMore/);
 });
 test('gallery is responsive on narrow mobile screens',()=>{
  assert.match(css,/\.ep-front-gallery\{/);
