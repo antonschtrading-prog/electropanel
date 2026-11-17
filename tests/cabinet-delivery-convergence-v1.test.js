@@ -92,3 +92,23 @@ test("invalid rail count blocks",()=>assert.ok(check({...project(),railCount:0})
 test("invalid rail capacity blocks",()=>assert.ok(check({...project(),railCapacity:0}).status==='BLOCKED'));
 test("overfull cabinet blocks",()=>assert.ok(check({...project(),railCount:1,railCapacity:2}).status==='BLOCKED'));
 test("manual placement preserved",()=>assert.ok(check({...project(),manualLayoutV1:[{deviceId:'L1',railIndex:1,startModule:0},{deviceId:'L2',railIndex:0,startModule:0}]}).rows.find(x=>x.deviceId==='L1').railIndex===1));
+
+test('catalogue width and module counts remain independent of visual evidence',()=>{
+ const x=check();assert.equal(x.rows.find(r=>r.deviceId==='L2').modules,2);
+ assert.equal(x.rows.find(r=>r.deviceId==='L2').bodyWidthMm,35);
+});
+test('catalogue-module mismatch is blocking when placement differs',()=>{
+ const p=project(),x=check(p,sku=>({...lookup(sku),modules:1}));
+ assert.equal(x.status,'BLOCKED');
+ assert.ok(x.issues.some(i=>i.code==='CONVERGENCE_CATALOGUE_MODULES_MISMATCH')||
+  x.issues.some(i=>i.code==='CONVERGENCE_BOARD_BLOCKED'));
+});
+test('evidence ledger quantity matches placed device count in a valid project',()=>{
+ const x=check();assert.ok(!x.issues.some(i=>i.code==='CONVERGENCE_LEDGER_QUANTITY_MISMATCH'));
+});
+test('all report row IDs are unique in a valid project',()=>{
+ const x=check();assert.equal(new Set(x.rows.map(r=>r.deviceId)).size,x.rows.length);
+});
+test('convergence remains read only after repeated runs',()=>{
+ const p=project(),before=JSON.stringify(p);check(p);check(p);assert.equal(JSON.stringify(p),before);
+});
