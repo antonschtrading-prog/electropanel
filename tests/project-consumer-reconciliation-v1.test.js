@@ -31,7 +31,7 @@ test('mismatch is advisory and original circuit calculation remains declared',()
  const w=epWorkflowPreviewV1(p,()=>null,[],inputs);
  assert.ok(w.issues.some(x=>x.code==='WORKFLOW_CONSUMER_CIRCUIT_POWER_DIFFER'));
  assert.equal(w.rows[0].powerKw,1.5);
- assert.equal(w.status,'DRAFT');
+ assert.equal(w.issues.find(x=>x.code==='WORKFLOW_CONSUMER_CIRCUIT_POWER_DIFFER').level,'UNKNOWN');
  assert.match(epWorkflowHtmlV1(w,inputs),/расхождения заявленных мощностей/);
 });
 test('bad consumer identity and orphans block, without silently regrouping',()=>{
