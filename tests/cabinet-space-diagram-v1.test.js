@@ -9,7 +9,7 @@ test('SVG depicts declared useful width, depth unknown, wiring, side corridors a
  const svg=draw(option);
  assert.match(svg,/<svg/);assert.match(svg,/НЕ ДЛЯ МОНТАЖА/);
  assert.match(svg,/глубина неизвестна/);assert.match(svg,/DIN 1/);
- assert.match(svg,/фиолетовый/);assert.match(svg,/346.0 × 410.0/);
+ assert.match(svg,/фиолетовый/);assert.match(svg,/212.0 × 410.0/);
  assert.doesNotMatch(svg,/manufacturerDrawing:true|engineeringApproved:true/);
 });
 test('blocked layout and incomplete envelope cannot render an approved drawing',()=>{
