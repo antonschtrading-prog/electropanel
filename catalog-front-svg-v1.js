@@ -4,6 +4,10 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const maker=String(device?.maker||'').toLowerCase();
  const series=String(device?.series||'');
+ // A stable original series marker helps distinguish product lines without
+ // implying that the pattern reproduces a manufacturer's official facade.
+ const seriesHash=Array.from(series.toLowerCase()).reduce((h,ch)=>((h*31+ch.charCodeAt(0))>>>0),17);
+ const seriesPattern=series?seriesHash%4:0;
  const family=maker.includes('schneider')?'schneider':maker.includes('abb')?'abb':
   maker.includes('iek')?'iek':maker.includes('legrand')?'legrand':
   maker.includes('hager')?'hager':maker.includes('ekf')?'ekf':
@@ -92,7 +96,8 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  '<defs><linearGradient id="ep-body-'+gradientId+'" x1="0" x2="1"><stop stop-color="#e7e9eb"/><stop offset=".18" stop-color="#fff"/><stop offset=".83" stop-color="#f7f8f9"/><stop offset="1" stop-color="#d7dade"/></linearGradient></defs>'+
  '<rect x="1" y="1" width="'+(width-2)+'" height="238" rx="7" fill="url(#ep-body-'+gradientId+')" stroke="#b9c1c7" stroke-width="2"/>'+
  terminal+'<rect x="5" y="25" width="'+(width-10)+'" height="86" rx="3" fill="'+palette.label+'"/>'+
- '<rect x="5" y="25" width="'+(width-10)+'" height="6" fill="'+palette.stripe+'"/>'+
+ '<rect x="5" y="25" width="'+(width-10)+'" height="6" fill="'+palette.stripe+'"/>'+ 
+ '<rect data-series-marker="'+seriesPattern+'" x="'+(width-17)+'" y="35" width="9" height="'+(12+seriesPattern*4)+'" rx="2" fill="'+palette.brand+'" opacity=".65"/>'+
  text(49,brandSize,palette.brand,elide(labels[0],brandMax),700)+
  text(65,seriesSize,'#394653',elide(labels[1],seriesMax))+
  text(90,ratingSize,'#17232b',elide(rated,ratingMax),700)+
