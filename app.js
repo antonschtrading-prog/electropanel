@@ -3444,6 +3444,21 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   const note=document.createElement('p');
   note.textContent='Проверяются только заявленные полезные размеры. Посадка, проводка и тепловые условия не подтверждены.';
   variantPanel.append(title,list,note);
+  if(typeof epCabinetEnclosureMatchCsvV1==='function'){
+   const exportEnclosures=document.createElement('button');
+   exportEnclosures.type='button';exportEnclosures.className='btn';
+   exportEnclosures.textContent='Скачать сравнение корпусов CSV';
+   exportEnclosures.addEventListener('click',()=>{
+    if(cabinetCrossRailFingerprintV1()!==fingerprint||
+     ($('cabinetEnclosureCandidatesInput')?.value.trim()??'')!==enclosureText){
+     notify('Исходные данные изменены — повторите предпросмотр',true);return;
+    }
+    const data=epCabinetEnclosureMatchCsvV1(selected.enclosure);
+    if(!data.csv){notify('Ведомость корпусов недоступна',true);return;}
+    download(baseName()+'_enclosure_comparison.csv',data.csv,'text/csv;charset=utf-8');
+   });
+   variantPanel.appendChild(exportEnclosures);
+  }
  }
  if(selected.geometry){
   const geo=document.createElement('p');
