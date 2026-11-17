@@ -2175,8 +2175,11 @@ function renderBoard(){
    d.title+=' · '+(asset?.status==='REVIEWED_IMAGE'?'Изображение сверено по артикулу; монтаж не подтверждён':
     visual.source==='CATALOG_DECLARED'?'Авторский векторный эскиз по данным каталога, не фото производителя':
     'Нет подтверждённой модели, внешний вид условный');
-   const renderedFront=cat&&typeof epManufacturerVisualHtmlV1==='function'?
-    epManufacturerVisualHtmlV1(cat,boardId||l.id):null;
+   let renderedFront=null;
+   if(cat&&typeof epManufacturerVisualHtmlV1==='function'){
+    try{renderedFront=epManufacturerVisualHtmlV1(cat,boardId||l.id);}
+    catch(_){renderedFront=null;d.dataset.frontRenderError='true';}
+   }
    d.dataset.frontPresentation=asset?.status==='REVIEWED_IMAGE'?'REVIEWED_IMAGE':
     renderedFront?'CATALOG_VECTOR_ILLUSTRATION':'LEGACY_PLACEHOLDER';
    d.dataset.manufacturerImageVerified=String(asset?.status==='REVIEWED_IMAGE');
