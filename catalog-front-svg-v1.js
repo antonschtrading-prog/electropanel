@@ -59,8 +59,8 @@ function epCatalogFrontSvgV1(device,deviceId=''){
    '<rect x="'+(cx-leverWidth*.34)+'" y="124" width="'+(leverWidth*.68)+'" height="28" rx="3" fill="#424b54"/>';
  }).join('');
  const faceShape=(()=>{
-  if(['MCB','SWITCH','RCD','RCBO'].includes(breaker)){
-   const testButton=['RCD','RCBO'].includes(breaker)?
+  if(['MCB','SWITCH','RCD','RCBO','AFDD'].includes(breaker)){
+   const testButton=['RCD','RCBO','AFDD'].includes(breaker)?
     '<circle data-test-control="true" cx="'+(width-15)+'" cy="163" r="7" fill="#f9f5df" stroke="#3c4650"/>'+
     '<text x="'+(width-17.5)+'" y="166" font-family="Arial" font-size="9" fill="#2d353b">T</text>':'';
    return levers+testButton;
@@ -72,7 +72,18 @@ function epCatalogFrontSvgV1(device,deviceId=''){
   if(breaker==='METER')
    return '<rect data-display="true" x="10" y="121" width="'+(width-20)+'" height="49" rx="4" fill="#a8bbb5" stroke="#60746f"/>'+
     '<text x="16" y="151" font-family="monospace" font-size="15" fill="#334944">— — —</text>';
-  if(breaker==='DIN_PSU')
+  if(breaker==='SPD')
+   return '<rect data-spd-indicator="true" x="12" y="128" width="'+(width-24)+'" height="42" rx="4" fill="#d6e4d8" stroke="#7b9c80"/>'+ 
+    '<circle cx="'+(width/2)+'" cy="149" r="9" fill="#4c9868" stroke="#2e6a43"/>';
+  if(breaker==='TIMER')
+   return '<circle data-timer-dial="true" cx="'+(width/2)+'" cy="147" r="21" fill="#e9ecee" stroke="#60717b" stroke-width="3"/>'+ 
+    '<path d="M '+(width/2)+' 132 V 147 L '+(width/2+11)+' 155" stroke="#374650" stroke-width="3" fill="none"/>';
+  if(breaker==='THERMOSTAT')
+   return '<circle data-thermostat-dial="true" cx="'+(width/2)+'" cy="147" r="18" fill="#f1f0e8" stroke="#8d979d" stroke-width="3"/>'+ 
+    '<circle cx="'+(width/2)+'" cy="147" r="5" fill="#667d8c"/>';
+  if(breaker==='SIGNAL')
+   return '<circle data-signal-lamp="true" cx="'+(width/2)+'" cy="146" r="17" fill="#d7b85a" stroke="#8e793e" stroke-width="4"/>';
+  if(['DIN_PSU','LED_PSU'].includes(breaker))
    return Array.from({length:5},(_,i)=>'<path data-vent="true" d="M 13 '+(126+i*9)+' H '+(width-13)+'" stroke="#88949d" stroke-width="3" stroke-linecap="round"/>').join('')+
     '<text x="10" y="179" font-family="Arial" font-size="8" fill="#53636d">DC OUT · not rated</text>';
   return '<rect data-generic-face="true" x="12" y="126" width="'+(width-24)+'" height="43" rx="4" fill="#d7dde1" stroke="#a9b4bd"/>';
