@@ -97,3 +97,14 @@ test('LED power supply sketch uses cooling vents and no invented output rating',
  assert.match(svg,/data-vent="true"/);
  assert.match(svg,/DC OUT · not rated/);
 });
+
+test('SVG exposes declared DIN width evidence without claiming manufacturer fit',()=>{
+ const valid=epCatalogFrontSvgV1({maker:'ABB',series:'S200',modules:2,widthMm:36});
+ const unknown=epCatalogFrontSvgV1({maker:'ABB',series:'S200',modules:2});
+ const invalid=epCatalogFrontSvgV1({maker:'ABB',series:'S200',modules:2,widthMm:40});
+ assert.match(valid,/data-modules="2"/);
+ assert.match(valid,/data-width-status="DECLARED_WITHIN_SLOT"/);
+ assert.match(unknown,/data-width-status="UNKNOWN"/);
+ assert.match(invalid,/data-width-status="EXCEEDS_DIN_SLOT"/);
+ assert.match(invalid,/геометрия\/паспорт не подтверждены/);
+});
