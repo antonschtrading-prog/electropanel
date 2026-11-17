@@ -177,3 +177,11 @@ test('overfilled existing cabinet may still be enlarged',()=>{
  const body=app.slice(app.indexOf('function applyCabinetCapacityOptionV1('),app.indexOf('function renderBoardConnectionAdvisoryV1('));
  assert.match(body,/An overfilled current enclosure must still be allowed to grow/);
 });
+
+test('DIN SVG export regenerates from the current option and project',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/Скачать эскиз DIN SVG/);
+ assert.match(app,/epCabinetOptionDinSvgV1\(currentPreview\)/);
+ assert.match(app,/_din_preview_/);
+ assert.match(app,/image\/svg\+xml;charset=utf-8/);
+});
