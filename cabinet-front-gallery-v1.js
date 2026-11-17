@@ -36,14 +36,18 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   const nominalSlotWidthMm=modules===null?null:modules*18;
   const geometryStatus=widthMm===null||nominalSlotWidthMm===null?'UNKNOWN':
    widthMm>nominalSlotWidthMm+0.001?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
+  const issues=status==='MISSING_ARTICLE'?['FRONT_GALLERY_CATALOGUE_MISSING']:
+   Array.isArray(asset?.issues)?[...asset.issues]:[];
+  if(item&&(!item.maker||!item.series))issues.push('FRONT_GALLERY_IDENTITY_INCOMPLETE');
+  if(geometryStatus==='UNKNOWN')issues.push('FRONT_GALLERY_GEOMETRY_UNKNOWN');
+  if(geometryStatus==='EXCEEDS_DIN_SLOT')issues.push('FRONT_GALLERY_BODY_EXCEEDS_DIN_SLOT');
   return {sku:a.sku,count:a.count,deviceIds:a.deviceIds.sort(),status,
    maker:typeof item?.maker==='string'?item.maker:'',
    series:typeof item?.series==='string'?item.series:'',
    kind:typeof item?.kind==='string'?item.kind:'',
    modules,widthMm,nominalSlotWidthMm,geometryStatus,
    imageSrc:status==='REVIEWED_IMAGE'?asset.image?.src||null:null,
-   issues:status==='MISSING_ARTICLE'?['FRONT_GALLERY_CATALOGUE_MISSING']:
-    asset?.issues||[],engineeringApproved:false};
+   issues,engineeringApproved:false};
  }).sort((a,b)=>a.maker.localeCompare(b.maker)||a.series.localeCompare(b.series)||
   a.sku.localeCompare(b.sku));
  const groups=[];
@@ -64,7 +68,7 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   unknownGeometry:rows.filter(r=>r.geometryStatus==='UNKNOWN').length};
  return {schema:'electropanel.cabinet.front.gallery.1',
   status:rows.some(r=>r.status==='MISSING_ARTICLE'||r.status==='ASSET_REJECTED'||
-   r.geometryStatus==='EXCEEDS_DIN_SLOT')?'BLOCKED':'REVIEW_REQUIRED',
+   r.geometryStatus==='EXCEEDS_DIN_SLOT'||r.issues.includes('FRONT_GALLERY_IDENTITY_INCOMPLETE'))?'BLOCKED':'REVIEW_REQUIRED',
   code:'FRONT_GALLERY_PRELIMINARY',rows,groups,totals,
   engineeringApproved:false,manufacturerCabinetFitVerified:false};
 }
