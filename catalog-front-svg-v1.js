@@ -38,7 +38,8 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const visualNote=evidenceVerified?'Эскиз, не официальный фасад':'Условный эскиз · геометрия/паспорт не подтверждены';
  const width=Math.max(92,Math.min(480,Math.round((geometryKnown?device.widthMm:modules*18)*5.1)));
  const height=240;
- const gradientId='ep-body-'+family+'-'+Array.from(String(deviceId||device?.sku||'device')).reduce((h,ch)=>((h*33+ch.charCodeAt(0))>>>0),5381).toString(36);
+ const gradientSeed=[family,deviceId,device?.sku,device?.series,device?.kind,modules,device?.widthMm].join('|');
+ const gradientId='ep-body-'+family+'-'+Array.from(gradientSeed).reduce((h,ch)=>((h*33+ch.charCodeAt(0))>>>0),5381).toString(36);
  const inA=Number.isFinite(device?.inA)?String(device.inA):'—';
  const curve=String(device?.curve||'');
  const labels=[String(device?.maker||'Условный вид'),series];
