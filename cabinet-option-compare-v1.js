@@ -8,12 +8,19 @@ function epCabinetOptionCompareV1(report,options={}){
  if(!report||!Array.isArray(report.options)||report.options.length>500||
   !options||typeof options!=='object'||Array.isArray(options))
   return blocked('OPTION_COMPARE_INPUT_INVALID');
- const allowed=['balanced','compact','wide','tall','connections'];
+ const allowed=['balanced','compact','wide','tall','connections','stability'];
  const preference=options.preference??'balanced';
  if(!allowed.includes(preference))return blocked('OPTION_COMPARE_PREFERENCE_INVALID');
  const excluded=options.excludedIds??[];
  if(!Array.isArray(excluded)||excluded.some(x=>typeof x!=='string'||x.length>80))
   return blocked('OPTION_COMPARE_EXCLUSIONS_INVALID');
+ const impact=options.impactRows??[];
+ if(!Array.isArray(impact)||impact.some(r=>!r||typeof r.id!=='string'||
+  typeof r.previewable!=='boolean'||r.previewable&&
+  (!Number.isInteger(r.moved)||r.moved<0||!Number.isInteger(r.changedRails)||r.changedRails<0)))
+  return blocked('OPTION_COMPARE_IMPACT_INVALID');
+ const impactMap=new Map(impact.map(r=>[r.id,r]));
+ if(impactMap.size!==impact.length)return blocked('OPTION_COMPARE_IMPACT_DUPLICATE');
  const excludedSet=new Set(excluded),seen=new Set();
  const rows=[];
  for(const o of report.options){
@@ -37,7 +44,10 @@ function epCabinetOptionCompareV1(report,options={}){
    reserve!==null&&reserve>=0&&used!==null&&used>=0&&used<=o.capacityModules;
   const aspect=width/height,aspectPenalty=Math.abs(Math.log(aspect));
   const area=width*height;
-  const score=preference==='compact'?
+  const movement=impactMap.get(o.id);
+  const score=preference==='stability'?
+   (movement?.previewable?movement.moved*1000+movement.changedRails*100+area/1000:
+    1000000000+area/1000):preference==='compact'?
    area/1000+o.capacityModules*0.1+cross*2+unresolved*10:
    preference==='wide'?height/10+width/100+cross*2+unresolved*10:
    preference==='tall'?width/10+height/100+cross*2+unresolved*10:
@@ -48,6 +58,8 @@ function epCabinetOptionCompareV1(report,options={}){
    reserveModules:reserve,freePct:Math.round(100*reserve/o.capacityModules*10)/10,
    widthMm:width,heightMm:height,areaMm2:area,aspectRatio:Math.round(aspect*100)/100,
    crossRailLinks:cross,unresolvedLinks:unresolved,packingMethod:o.packingMethod,
+   movedDevices:movement?.previewable?movement.moved:null,
+   changedRailDevices:movement?.previewable?movement.changedRails:null,
    eligible,reason:excludedSet.has(o.id)?'CONSTRAINT_EXCLUDED':o.status==='BLOCKED'?'OPTION_BLOCKED':
     !eligible?'PACKING_NOT_CONFIRMED':'PRELIMINARY_ONLY',score:Math.round(score*1000)/1000,
    engineeringApproved:false});
