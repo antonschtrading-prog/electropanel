@@ -67,3 +67,24 @@ test('gallery aggregates quantity for repeated installed article without repeate
  assert.equal(r.items.find(x=>x.sku==='B').quantity,1);
  assert.equal(calls.get('A'),1);
 });
+
+test('evidence filter separates reviewed images from original illustrations',()=>{
+ const subset=rows.slice(0,4);
+ const resolve=d=>d.sku==='SKU-00'?{status:'REVIEWED_IMAGE'}:
+  d.sku==='SKU-01'?{status:'ASSET_REJECTED'}:{status:'STYLIZED_ONLY'};
+ assert.equal(model(subset,lookup,{resolve,evidence:'REVIEWED_IMAGE'}).total,1);
+ assert.equal(model(subset,lookup,{resolve,evidence:'ASSET_REJECTED'}).total,1);
+ assert.equal(model(subset,lookup,{resolve,evidence:'STYLIZED_ONLY'}).total,2);
+ assert.equal(model(subset,lookup,{resolve,evidence:'UNKNOWN'}).status,'BLOCKED');
+});
+test('missing catalogue article is discoverable through evidence filter',()=>{
+ const r=model([{boardSku:'X'}],()=>null,{evidence:'CATALOGUE_MISSING'});
+ assert.equal(r.total,1);
+ assert.equal(r.items[0].frontStatus,'CATALOGUE_MISSING');
+});
+test('failed image evidence resolver does not crash gallery',()=>{
+ const r=model([{boardSku:'X'}],lookup,{resolve:()=>{throw Error('bad');},
+  evidence:'ASSET_REJECTED'});
+ assert.equal(r.total,1);
+ assert.equal(r.items[0].frontStatus,'ASSET_REJECTED');
+});
