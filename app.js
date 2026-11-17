@@ -1861,9 +1861,27 @@ function renderBoardConnectionAdvisoryV1(){
   ', рядом '+s.adjacent+', на разных рейках '+s.crossRail+
   ', не размещено '+s.unresolved+'. Проводные соединения не проверены.';
 }
+function renderCabinetAccessReviewV1(){
+ const target=$('cabinetAccessReview');if(!target)return;
+ if(typeof epCabinetConnectionSpaceV1!=='function'){target.textContent='Анализ монтажных зон недоступен.';return;}
+ const r=epCabinetConnectionSpaceV1(state,catalogDevice);
+ if(r.status==='NOT_CONFIGURED'){
+  target.textContent='Кабельные каналы и зоны клемм внутри выбранного корпуса пока не заданы. Проверка расположения недоступна.';return;
+ }
+ if(r.status==='BLOCKED'){
+  target.textContent='Указанная геометрия корпуса содержит блокирующие ошибки. Проверьте монтажные зоны.';return;
+ }
+ const duct=r.rows.filter(x=>x.nearestWireDuct).length,
+  term=r.rows.filter(x=>x.nearestTerminalRegion).length;
+ target.textContent='Расчётные монтажные зоны: аппаратов '+r.rows.length+
+  ', с объявленной ближайшей зоной кабельного канала '+duct+
+  ', с объявленной зоной клемм '+term+
+  '. Показаны геометрические расстояния до резервных зон, а не доступность реальных клемм.';
+}
 function renderBoard(){
  renderCabinetCapacityOptionsV1();
  renderBoardConnectionAdvisoryV1();
+ renderCabinetAccessReviewV1();
  renderProjectCatalogWorkbenchV1();
  const board=$('boardCanvas');board.innerHTML='';$('boardTitle').textContent=state.title+' / компоновка';
  const layout=layoutSlots();

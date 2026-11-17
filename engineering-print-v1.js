@@ -221,6 +221,16 @@ function epEngineeringPrintV1(bundle){
    o.connectionProximity?.sameRail??'—',o.connectionProximity?.crossRail??'—',
    o.withinDeclaredLimits===false?'Превышены':'Требует проверки'
   ]));
+ const mountingSpace=sections.cabinetConnectionSpace||{};
+ const mountingSpaceTable=rows(['Аппарат','Ряд','Ближайший кабельный канал','Расстояние до него, мм',
+  'Ближайшая область клемм','Расстояние до неё, мм','Проверка фактических соединений'],
+  (mountingSpace.rows||[]).map(x=>[
+   x.deviceId,x.railIndex+1,x.nearestWireDuct?.regionId??'НЕ ОБОЗНАЧЕН',
+   x.nearestWireDuct?.distanceMm??'НЕИЗВЕСТНО',
+   x.nearestTerminalRegion?.regionId??'НЕ ОБОЗНАЧЕН',
+   x.nearestTerminalRegion?.distanceMm??'НЕИЗВЕСТНО',
+   'НЕ ВЫПОЛНЕНА'
+  ]));
  const proximity=sections.cabinetConnectionProximity||{};
  const proximityTable=rows(['От аппарата','К аппарату','Основание','Одна DIN',
   'Промежуток, модули','Рядов между','Статус'],
@@ -267,6 +277,8 @@ function epEngineeringPrintV1(bundle){
   '<h2>Стадия и применимость проектных проверок</h2>'+designStageTable+
   '<h2>Варианты вместимости и предварительной компоновки корпуса</h2>'+capacityRows+
   '<p>Это не паспортные размеры конкретного щита. Приведён только расчёт полезного монтажного пространства с условными отступами. Кабельные вводы, температурный режим, аппараты и конструкция корпуса требуют проверки.</p>'+
+  '<h2>Зоны подключения и кабельные каналы · геометрический ориентир</h2>'+mountingSpaceTable+
+  '<p>Данные расстояния относятся только к объявленным прямоугольным монтажным зонам. Они не отражают путь проводника, точки подключения конкретных аппаратов, допустимый изгиб и удобство обслуживания.</p>'+
   '<h2>Группировка по заявленным электрическим связям · предварительно</h2>'+proximityTable+
   '<p>Близость аппаратов — не длина проводов и не подтверждение фактической прокладки, селективности или доступности клемм.</p>'+
   '<h2>Ведомость цепей</h2>'+circuitTable+

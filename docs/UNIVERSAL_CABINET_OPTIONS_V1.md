@@ -73,3 +73,7 @@ Every nominal cabinet candidate now optionally carries proximity counts for its 
 ## Explicit within-rail proximity reflow
 
 An opt-in UI command runs a strictly non-destructive candidate optimizer: adjacent whole-device swaps on each existing DIN rail to reduce gaps between apparatuses with *declared* logical relationships. The optimizer does not transfer an apparatus to a different rail, alter circuit topology, device SKU, protection setting, capacity, or wiring declaration. It validates the proposed positions through the existing DIN planner and cabinet fit-delta check, and commits through undo/redo only when at least one position actually improves. No speculative electrical connection is created.
+
+## Declared cabinet connection-space audit
+
+When actual *user-declared* cabinet geometry is present, the new cabinetConnectionSpace section locates the nearest explicitly reserved WIRE_DUCT and TERMINAL_REGION rectangles relative to each nominal DIN allocated slot band. It returns planar edge-to-edge separation only, never a routed conductor distance. A missing duct, terminal region, body terminal position or cabinet geometry is UNKNOWN/NOT_CONFIGURED and is not silently treated as approval. Invalid intersecting zones are BLOCKED. Board interface, printable engineering report and DIN CSV expose these review-only distances. The existing geometry editor owns these regions; there is no parallel unversioned model or manufacturer enclosure catalogue.
