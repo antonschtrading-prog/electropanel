@@ -217,7 +217,7 @@ test('cross rail optimizer requires confirmation and history checkpoint',()=>{
  assert.match(block,/epCabinetCrossRailOptimizeV1\(state,catalogDevice\)/);
  assert.match(block,/confirm\(/);
  assert.match(block,/checkpoint\(\)/);
- assert.match(block,/state.manualLayoutV1=proposal.project.manualLayoutV1/);
+ assert.match(block,/state.manualLayoutV1=fresh.project.manualLayoutV1/);
 });
 test('cross rail optimization does not change electrical links in UI',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
