@@ -3378,10 +3378,14 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   notify('Уменьшить количество связей между DIN-рейками не удалось');return;
  }
  const cross=proposal.changes.filter(c=>c.from.railIndex!==c.to.railIndex).length;
+ const moveDetails=proposal.changes.slice(0,10).map(c=>
+  c.deviceId+': DIN '+(c.from.railIndex+1)+'/'+(c.from.startModule+1)+
+  ' → DIN '+(c.to.railIndex+1)+'/'+(c.to.startModule+1)).join('\n');
  if(!confirm('Предлагается переместить '+proposal.changes.length+
   ' аппаратов, из них между DIN-рейками: '+cross+
   '. Расчётное число межрядных связей: '+proposal.before.cross+' → '+proposal.after.cross+
-  '. Электрические связи не изменятся. Применить компоновку?'))return;
+  '.\n\n'+moveDetails+(proposal.changes.length>10?'\n… и ещё '+(proposal.changes.length-10):'')+
+  '\n\nЭлектрические связи не изменятся. Применить компоновку?'))return;
  checkpoint();state.manualLayoutV1=proposal.project.manualLayoutV1;changed();
  notify('Межрядные связи: '+proposal.before.cross+' → '+proposal.after.cross+
   '. Перемещено аппаратов: '+proposal.changes.length+'.');
