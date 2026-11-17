@@ -3377,7 +3377,28 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   typeof epCabinetReflowPreviewV1!=='function'){
   notify('Предпросмотр межрядной оптимизации недоступен',true);return;
  }
- const proposal=epCabinetCrossRailOptimizeV1(state,catalogDevice);
+ const alternatives=typeof epCabinetReflowAlternativesV1==='function'?
+  epCabinetReflowAlternativesV1(state,catalogDevice):null;
+ if(!alternatives||alternatives.status==='BLOCKED'){
+  notify('Сравнение альтернатив недоступно',true);return;
+ }
+ if(!alternatives.alternatives.length){
+  notify('Улучшение межрядных связей не найдено');return;
+ }
+ const select=document.createElement('select');select.className='input';
+ select.setAttribute('aria-label','Вариант компоновки DIN');
+ alternatives.alternatives.forEach((item,i)=>{
+  const opt=document.createElement('option');opt.value=item.id;
+  opt.textContent='Вариант '+(i+1)+' · связей '+item.crossRail+
+   ' · перестановок '+item.moved+' · переходов '+item.changedRails;
+  select.appendChild(opt);
+ });
+ panel.appendChild(select);
+ const variantPanel=document.createElement('div');panel.appendChild(variantPanel);
+ const renderVariant=()=>{variantPanel.replaceChildren();
+ const selected=alternatives.alternatives.find(v=>v.id===select.value);
+ if(!selected)return;
+ const proposal=selected.proposal;
  if(proposal.status==='BLOCKED'){
   notify('Межрядная оптимизация отклонена: '+proposal.code,true);return;
  }
@@ -3389,14 +3410,14 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   notify('Предпросмотр отклонён: '+preview.code,true);return;
  }
  const fingerprint=cabinetCrossRailFingerprintV1();
- cabinetCrossRailPreviewSnapshotV1={fingerprint,changes:JSON.stringify(proposal.changes)};
+ cabinetCrossRailPreviewSnapshotV1={fingerprint,changes:JSON.stringify(proposal.changes),strategy:selected.strategy};
  const heading=document.createElement('h4');heading.textContent='Предлагаемая DIN-компоновка';
  const summary=document.createElement('p');
  summary.textContent='Межрядные связи: '+proposal.before.cross+' → '+proposal.after.cross+
   ' · перемещено аппаратов: '+preview.summary.moved+
   ' · переходов между рейками: '+preview.summary.changedRails+
   '. Электрические связи не изменяются.';
- panel.append(heading,summary);
+ variantPanel.append(heading,summary);
  if(typeof epCabinetBeforeAfterSvgV1==='function'){
   const pair=epCabinetBeforeAfterSvgV1(preview);
   if(pair.status==='REVIEW_REQUIRED'){
@@ -3407,7 +3428,7 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
     const diagram=document.createElement('div');diagram.innerHTML=markup;
     section.append(h,diagram);grid.appendChild(section);
    }
-   panel.appendChild(grid);
+   variantPanel.appendChild(grid);
   }
  }
  const list=document.createElement('details'),label=document.createElement('summary');
@@ -3419,7 +3440,7 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
    ' → DIN '+(row.toRail+1)+'/'+(row.toSlot+1);
   ul.appendChild(li);
  }
- list.append(label,ul);panel.appendChild(list);
+ list.append(label,ul);variantPanel.appendChild(list);
  const exportCsv=document.createElement('button');exportCsv.type='button';
  exportCsv.className='btn';exportCsv.textContent='Скачать перемещения CSV';
  exportCsv.addEventListener('click',()=>{
@@ -3447,7 +3468,7 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
    panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
    notify('Проект изменён — предложение устарело. Постройте новый предпросмотр',true);return;
   }
-  const fresh=epCabinetCrossRailOptimizeV1(state,catalogDevice);
+  const fresh=epCabinetCrossRailOptimizeV1(state,catalogDevice,{strategy:selected.strategy});
   if(fresh.status==='BLOCKED'||JSON.stringify(fresh.changes)!==cabinetCrossRailPreviewSnapshotV1?.changes){
    notify('Предложение изменилось — повторите предпросмотр',true);return;
   }
@@ -3461,7 +3482,10 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   notify('Межрядные связи: '+fresh.before.cross+' → '+fresh.after.cross+
    '. Перемещено аппаратов: '+fresh.changes.length+'.');
  });
- panel.append(exportCsv,exportSvg,apply);
+ variantPanel.append(exportCsv,exportSvg,apply);
+ };
+ select.addEventListener('change',renderVariant);
+ renderVariant();
 });
 $('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
  if(typeof epCabinetGroupReflowV1!=='function'){
