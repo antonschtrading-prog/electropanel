@@ -1018,6 +1018,12 @@ const server=http.createServer((req,res)=>{
  assert.ok(manufacturerGallery.cards>0,JSON.stringify(manufacturerGallery));
  assert.ok(manufacturerGallery.vectorFaces>0,JSON.stringify(manufacturerGallery));
  assert.equal(manufacturerGallery.imageFaces,0,JSON.stringify(manufacturerGallery));
+ const galleryAudit=await page.locator('.ep-front-gallery-audit').first().evaluate(el=>({
+  status:el.dataset.frontAuditStatus,text:el.textContent
+ }));
+ assert.ok(['REVIEW_REQUIRED','BLOCKED'].includes(galleryAudit.status),JSON.stringify(galleryAudit));
+ assert.match(galleryAudit.text,/аппаратов/);
+ assert.match(galleryAudit.text,/габариты неизвестны/);
  await page.getByText('Фасады аппаратов в проекте',{exact:false}).first().click();
  const frontFilter=page.locator('.ep-front-gallery-controls input[type="search"]');
  assert.equal(await frontFilter.count(),1);
