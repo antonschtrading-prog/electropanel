@@ -41,3 +41,26 @@ test('gallery uses textContent rather than injecting report HTML',()=>{
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.match(app,/summary.textContent='Размещено '/);
 });
+
+test('cabinet capacity option is crosschecked against the same BOM and DIN engine',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const start=app.indexOf('function applyCabinetCapacityOptionV1(');
+ const end=app.indexOf('function renderBoardConnectionAdvisoryV1(',start);
+ const body=app.slice(start,end);
+ assert.match(body,/epCabinetDeliveryConvergenceV1\(proposed/);
+ assert.match(body,/CONVERGENCE_ARTICLE_MISMATCH/);
+ assert.match(body,/CONVERGENCE_CAPACITY_SUM_MISMATCH/);
+ assert.match(body,/CONVERGENCE_BOM_BLOCKED/);
+ assert.match(body,/Компоновка не применена/);
+});
+test('cabinet capacity selection does not treat missing image as an automatic rejection',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const body=app.slice(app.indexOf('function applyCabinetCapacityOptionV1('),app.indexOf('function renderBoardConnectionAdvisoryV1('));
+ assert.doesNotMatch(body,/CONVERGENCE_FRONT_EVIDENCE_BLOCKED/);
+ assert.doesNotMatch(body,/CONVERGENCE_FRONT_REVIEW_BLOCKED/);
+});
+test('cabinet capacity crosscheck precedes checkpoint and project mutation',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const body=app.slice(app.indexOf('function applyCabinetCapacityOptionV1('),app.indexOf('function renderBoardConnectionAdvisoryV1('));
+ assert.ok(body.indexOf('epCabinetDeliveryConvergenceV1(proposed')<body.indexOf('checkpoint();'));
+});
