@@ -28,8 +28,12 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
   const {item,failed}=lookupOnce(a.sku);
   let asset=null;
   try{asset=item?resolveImage(item):null;}catch(_){asset={status:'ASSET_REJECTED',issues:['FRONT_RESOLVER_FAILED']};}
+  const reviewedImage=asset?.status==='REVIEWED_IMAGE'&&
+   typeof asset.image?.src==='string'&&
+   /^assets\\/device-fronts\\/[a-z0-9][a-z0-9_-]{0,95}\\.(png|jpe?g|webp)$/i.test(asset.image.src);
   const status=failed||!item?'MISSING_ARTICLE':
-   asset?.status==='REVIEWED_IMAGE'?'REVIEWED_IMAGE':
+   reviewedImage?'REVIEWED_IMAGE':
+   asset?.status==='REVIEWED_IMAGE'?'ASSET_REJECTED':
    asset?.status==='ASSET_REJECTED'?'ASSET_REJECTED':'STYLIZED_ONLY';
   const modules=Number.isInteger(item?.modules)&&item.modules>0?item.modules:null;
   const widthMm=Number.isFinite(item?.widthMm)&&item.widthMm>0?item.widthMm:null;
@@ -38,6 +42,8 @@ function epCabinetFrontGalleryV1(reconciliation,lookup,resolveImage){
    widthMm>nominalSlotWidthMm+0.001?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
   const issues=status==='MISSING_ARTICLE'?['FRONT_GALLERY_CATALOGUE_MISSING']:
    Array.isArray(asset?.issues)?[...asset.issues]:[];
+  if(asset?.status==='REVIEWED_IMAGE'&&!reviewedImage)
+   issues.push('FRONT_GALLERY_REVIEWED_IMAGE_PATH_INVALID');
   if(item&&(!item.maker||!item.series))issues.push('FRONT_GALLERY_IDENTITY_INCOMPLETE');
   if(geometryStatus==='UNKNOWN')issues.push('FRONT_GALLERY_GEOMETRY_UNKNOWN');
   if(geometryStatus==='EXCEEDS_DIN_SLOT')issues.push('FRONT_GALLERY_BODY_EXCEEDS_DIN_SLOT');
