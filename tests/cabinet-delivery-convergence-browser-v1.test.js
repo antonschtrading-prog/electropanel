@@ -71,3 +71,33 @@ test('preliminary enclosure selection is permitted without assigned catalogue ar
  assert.doesNotMatch(body,/CONVERGENCE_LEDGER_QUANTITY_MISMATCH/);
  assert.doesNotMatch(body,/CONVERGENCE_BOM_MISSING/);
 });
+
+test('cabinet comparison is loaded before application',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.ok(html.indexOf('src="cabinet-option-compare-v1.js"')<html.indexOf('src="app.js"'));
+});
+test('cabinet ranking is computed from eligible constrained options',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/epCabinetOptionCompareV1\(report,/);
+ assert.match(app,/excludedIds:report.options.filter/);
+});
+test('cabinet sizing offers five user-controlled ranking priorities',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ for(const key of ['balanced','compact','wide','tall','connections'])
+  assert.match(app,new RegExp("'"+key+"'"));
+ assert.match(app,/data-cabinet-option-preference/);
+});
+test('cabinet sizing ranks eligible shapes and preserves capacity filter',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/good.filter\(o=>o.capacityModules===cabinetCapacitySelectedTotalV1\)/);
+ assert.match(app,/ranking.get\(a.id\)/);
+});
+test('cabinet ranking preference changes without editing project state',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/cabinetOptionPreferenceV1=e.target.value;renderCabinetCapacityOptionsV1\(\)/);
+});
+test('cabinet option highlights recommendation and does not autoapply it',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ assert.match(app,/comparison\?\.recommendedId===o.id/);
+ assert.match(app,/data-apply-cabinet-option/);
+});
