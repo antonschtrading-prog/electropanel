@@ -41,7 +41,8 @@ function epCabinetArticleReplacementV1(project,deviceId,nextSku,lookup){
  if(typeof catalogue.widthMm!=='number'||!Number.isFinite(catalogue.widthMm)||
   catalogue.widthMm<=0||catalogue.widthMm>catalogue.modules*18+0.001)
   return reject('REPLACEMENT_ARTICLE_WIDTH_INVALID');
- const previous=target.item.catalogSku||null;
+ const previous=target.item.catalogSku||
+  (target.kind==='branch'?copy.lines.find(l=>l?.id===target.item.circuitId)?.catalogSku:null)||null;
  if(previous===nextSku)return reject('REPLACEMENT_ARTICLE_UNCHANGED');
  target.item.catalogSku=nextSku;
  target.item.modules=catalogue.modules;
