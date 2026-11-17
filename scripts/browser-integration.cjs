@@ -1018,6 +1018,14 @@ const server=http.createServer((req,res)=>{
  assert.ok(manufacturerGallery.cards>0,JSON.stringify(manufacturerGallery));
  assert.ok(manufacturerGallery.vectorFaces>0,JSON.stringify(manufacturerGallery));
  assert.equal(manufacturerGallery.imageFaces,0,JSON.stringify(manufacturerGallery));
+ const frontFilter=page.locator('.ep-front-gallery-controls input[type="search"]');
+ assert.equal(await frontFilter.count(),1);
+ await frontFilter.fill('no-such-article-9999');
+ assert.match(await page.locator('.ep-front-gallery-count').textContent(),/Показано 0 из 0/);
+ await frontFilter.fill('');
+ assert.ok(await page.locator('.ep-front-gallery-card').count()>0);
+ const makerOptions=await page.locator('.ep-front-gallery-controls select option').allTextContents();
+ assert.ok(makerOptions.includes('Все производители'));
  // Full cabinet model workflow through actual form, undo/redo, JSON persistence and DIN export.
  assert.equal(await page.locator('#cabinetGeometryPanel [data-cabinet-autoplan]').count(),1);
  const cabinetInputs={interiorWidthMm:'2000',interiorHeightMm:'1500',interiorDepthMm:'300',
