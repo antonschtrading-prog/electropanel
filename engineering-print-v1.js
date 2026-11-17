@@ -220,6 +220,12 @@ function epEngineeringPrintV1(bundle){
    o.envelope?.spacePlan?.terminalReserveMm??'—',
    o.withinDeclaredLimits===false?'Превышены':'Требует проверки'
   ]));
+ const proximity=sections.cabinetConnectionProximity||{};
+ const proximityTable=rows(['От аппарата','К аппарату','Основание','Одна DIN',
+  'Промежуток, модули','Рядов между','Статус'],
+  (proximity.pairs||[]).map(x=>[x.from,x.to,x.basis,
+   x.sameRail===null?'Без размещения':x.sameRail?'Да':'Нет',
+   x.gapModules??'—',x.railSeparation??'—',x.status]));
  const boardTable=rows(['Аппарат','Рейка','Начало','Модули','Артикул'],
   board.map(x=>[x.deviceId,x.railIndex+1,x.startModule+1,x.modules,x.article||'Не выбран']));
  const crossTable=rows(['Уровень','Код','Цепь'],cross.map(x=>[x.level,x.code,x.lineId||'Проект']));
@@ -260,6 +266,8 @@ function epEngineeringPrintV1(bundle){
   '<h2>Стадия и применимость проектных проверок</h2>'+designStageTable+
   '<h2>Варианты вместимости и предварительной компоновки корпуса</h2>'+capacityRows+
   '<p>Это не паспортные размеры конкретного щита. Приведён только расчёт полезного монтажного пространства с условными отступами. Кабельные вводы, температурный режим, аппараты и конструкция корпуса требуют проверки.</p>'+
+  '<h2>Группировка по заявленным электрическим связям · предварительно</h2>'+proximityTable+
+  '<p>Близость аппаратов — не длина проводов и не подтверждение фактической прокладки, селективности или доступности клемм.</p>'+
   '<h2>Ведомость цепей</h2>'+circuitTable+
   '<h2>Изменения аппаратов · обязательная повторная проверка</h2>'+replacementTable+
   '<h2>Связи защитных аппаратов · топология, селективность не доказана</h2>'+protectionTopologyTable+protectionTopologyIssues+

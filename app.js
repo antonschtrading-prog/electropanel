@@ -1842,8 +1842,24 @@ function applyCabinetCapacityOptionV1(id){
  changed();notify('Компоновка применена. Электрические аппараты не изменены.'+
   (changedShape?' Проверьте монтажные зоны корпуса заново.':''));
 }
+function renderBoardConnectionAdvisoryV1(){
+ const target=$('cabinetConnectionAdvisory');if(!target)return;
+ if(typeof epDraftBoardPlanV1!=='function'||typeof epCabinetConnectionProximityV1!=='function'){
+  target.textContent='Контроль группировки аппаратов недоступен.';return;
+ }
+ const board=epDraftBoardPlanV1(state,catalogDevice);
+ const report=epCabinetConnectionProximityV1(state,board.placements||[]);
+ if(report.status==='BLOCKED'){
+  target.textContent='Проверка группировки: некорректные данные размещения.';return;
+ }
+ const s=report.summary;
+ target.textContent='Условная близость связанных аппаратов: на одной рейке '+s.sameRail+
+  ', рядом '+s.adjacent+', на разных рейках '+s.crossRail+
+  ', не размещено '+s.unresolved+'. Проводные соединения не проверены.';
+}
 function renderBoard(){
  renderCabinetCapacityOptionsV1();
+ renderBoardConnectionAdvisoryV1();
  renderProjectCatalogWorkbenchV1();
  const board=$('boardCanvas');board.innerHTML='';$('boardTitle').textContent=state.title+' / компоновка';
  const layout=layoutSlots();

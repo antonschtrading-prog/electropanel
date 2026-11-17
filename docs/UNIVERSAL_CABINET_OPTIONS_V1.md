@@ -63,3 +63,7 @@ An original SVG schematic shows the hypothetical inside space with per-row devic
 When any selected catalogue item has a declared body height greater than the nominal per-row apparatus band, the preliminary candidate is blocked against *that specific assumed row pitch*. Unknown heights are expressly marked unknown and do not become approval. Actual DIN mounting position, cable duct interference, access and body projection still require separate geometric evidence.
 
 A supplier-neutral CSV schedule exports rows, module widths, spare modules, preliminary useful inside dimensions, wiring corridor and terminal reserves, and review status. The enclosure SKU column is intentionally blank: the CSV does not select a product or certify usable dimensions.
+
+## Declared-relationship proximity audit
+
+The optional cabinetConnectionProximity engineering section relates DIN positions to explicit shared-device memberships, protection hierarchy and declared supply links (when both endpoints are represented apparatuses). It reports same-rail, directly adjacent, cross-rail and unplaced pairs, without inferring other electrical connections. It is a relative planning signal only: no conductor routing, terminal access, wire lengths, selectivity, or installation conformity is asserted. The board and print report display the findings; actual device placement is not silently modified.
