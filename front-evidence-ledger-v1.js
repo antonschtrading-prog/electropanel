@@ -25,7 +25,7 @@ function epFrontEvidenceLedgerV1(rows,lookup,resolve){
   if(device&&device.sku!==item.sku)issues.push('LEDGER_ARTICLE_MISMATCH');
   const frontStatus=!device?'CATALOGUE_MISSING':resolveFailed?'ASSET_REJECTED':
    asset?.status==='REVIEWED_IMAGE'&&typeof asset.image?.src==='string'&&
-   /^assets\\/device-fronts\\/[a-z0-9][a-z0-9_-]{0,95}\\.(png|jpe?g|webp)$/i.test(asset.image.src)?
+   /^assets\/device-fronts\/[a-z0-9][a-z0-9_-]{0,95}\.(png|jpe?g|webp)$/i.test(asset.image.src)?
    'REVIEWED_IMAGE':asset?.status==='REVIEWED_IMAGE'||asset?.status==='ASSET_REJECTED'?
    'ASSET_REJECTED':'STYLIZED_ONLY';
   if(frontStatus==='ASSET_REJECTED')issues.push(...(Array.isArray(asset?.issues)?asset.issues:['LEDGER_ASSET_REJECTED']));
