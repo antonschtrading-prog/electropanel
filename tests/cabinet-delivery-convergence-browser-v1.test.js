@@ -318,3 +318,15 @@ test('DIN geometry schematic loads and renders within selected proposal',()=>{
  assert.match(app,/epCabinetApparatusGeometrySvgV1\(selected.geometry\)/);
  assert.match(app,/diagram.innerHTML=svg/);
 });
+
+test('DIN apply verifies fresh catalog geometry before confirmation',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const i=app.indexOf('const geometryFresh=typeof epCabinetApparatusGeometryV1');
+ const j=app.indexOf("if(!confirm('Применить",i);
+ assert.ok(i>0&&j>i);
+ const segment=app.slice(i,j);
+ assert.match(segment,/epCabinetApparatusGeometryV1\(state,verified,catalogDevice\)/);
+ assert.match(segment,/geometryFresh\?\.status==='BLOCKED'/);
+ assert.match(segment,/selected.geometry\?\.rows/);
+ assert.match(segment,/повторите предпросмотр/);
+});
