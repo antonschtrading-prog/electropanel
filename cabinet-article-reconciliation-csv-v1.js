@@ -9,9 +9,11 @@ function epCabinetArticleReconciliationCsvV1(report){
   return '"'+s.replace(/"/g,'""')+'"';
  };
  const cols=['device_id','board_sku','bom_sku','visual_sku','modules',
-  'rail_index','start_module','status','issue_codes','installation_approved'];
+  'rail_index','start_module','status','issue_codes','report_status',
+  'global_blocking_issue_count','installation_approved'];
  const rows=[cols,...report.rows.map(x=>[x.deviceId,x.boardSku,x.bomSku,x.visualSku,
-  x.modules,x.railIndex,x.startModule,x.status,(x.issues||[]).join('|'),'NO'])];
+  x.modules,x.railIndex,x.startModule,x.status,(x.issues||[]).join('|'),
+  report.status,(report.issues||[]).filter(i=>i.level==='BLOCKED').length,'NO'])];
  return {schema:'electropanel.cabinet.article.reconciliation.csv.1',
   status:report.status==='BLOCKED'?'BLOCKED':'REVIEW_REQUIRED',
   csv:'\uFEFF'+rows.map(x=>x.map(safe).join(';')).join('\r\n')+'\r\n',
