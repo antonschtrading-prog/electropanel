@@ -7,7 +7,7 @@ test('each staged article has an official source and SKU evidence',()=>{for(cons
 test('ABB geometry is explicit and Icn voltage remains unknown',()=>{const c=candidates[0];assert.equal(c.widthMm,17.5);assert.equal(c.icnVoltageV,null)});
 test('Schneider Icn and Icu remain separate',()=>{const c=candidates[1];assert.equal(c.icnKa,6);assert.equal(c.icuKa,10);assert.equal(c.icnVoltageV,230)});
 test('Hager conditional short-circuit rating is not represented as MCB Icn',()=>{const c=candidates[2];assert.equal(c.conditionalShortCircuitKa,6);assert.equal(c.icnKa,undefined)});
-test('Hager unknown width is not inferred from four modules',()=>{const c=candidates[2];assert.equal(c.modules,4);assert.equal(c.widthMm,null)});
-test('all three candidates are blocked pending missing fields or manual review',()=>{const r=inspectBatch(candidates,evidence);assert.equal(r.status,'BLOCKED');assert.equal(r.engineeringApproved,false)});
+test('Hager exact body dimensions come from its own product page',()=>{const c=candidates[2];assert.equal(c.modules,4);assert.equal(c.widthMm,70);assert.equal(c.heightMm,83);assert.equal(c.depthMm,70)});
+test('staged candidate batch requires independent review before import',()=>{const r=inspectBatch(candidates,evidence);assert.equal(r.status,'BLOCKED');assert.equal(r.engineeringApproved,false)});
 test('manufacturer sources are not image-usage licenses',()=>{assert.equal(candidates.some(c=>c.imageUrl),false);assert.equal(Object.keys(sources).length,3)});
 test('staged candidates have no silent automatic approval',()=>{for(const c of candidates)assert.equal(c.verificationStatus,undefined)});
