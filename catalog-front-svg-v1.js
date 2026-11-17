@@ -1,7 +1,7 @@
 'use strict';
 // Manufacturer-series presentation: original vector illustration, not an official product image.
 function epCatalogFrontSvgV1(device,deviceId=''){
- const esc=x=>String(x??'').replace(/[\\u0000-\\u001f\\u007f]/g,' ').slice(0,500).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const esc=x=>String(x??'').replace(/[\u0000-\u001f\u007f]/g,' ').slice(0,500).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const maker=String(device?.maker||'').toLowerCase();
  const series=String(device?.series||'');
  // A stable original series marker helps distinguish product lines without
