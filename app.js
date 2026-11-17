@@ -1731,6 +1731,7 @@ function cabinetCapacityReportV1(){
 }
 let cabinetCapacitySelectedTotalV1=null;
 let cabinetCapacityInputSignatureV1=null;
+let cabinetOptionPreferenceV1='balanced';
 function renderCabinetCapacityOptionsV1(){
  const target=$('cabinetCapacityOptions');if(!target)return;
  const report=cabinetCapacityReportV1();
@@ -1789,7 +1790,12 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    capacitySelect.value=String(cabinetCapacitySelectedTotalV1);
   capacitySelect.disabled=!totals.length;
  }
- const shown=good.filter(o=>o.capacityModules===cabinetCapacitySelectedTotalV1);
+ const comparison=typeof epCabinetOptionCompareV1==='function'?
+  epCabinetOptionCompareV1(report,{preference:cabinetOptionPreferenceV1,
+   excludedIds:report.options.filter(o=>!eligibleIds.has(o.id)).map(o=>o.id)}):null;
+ const ranking=new Map((comparison?.rows||[]).map((r,i)=>[r.id,{...r,rank:i+1}]));
+ const shown=good.filter(o=>o.capacityModules===cabinetCapacitySelectedTotalV1)
+  .sort((a,b)=>(ranking.get(a.id)?.score??0)-(ranking.get(b.id)?.score??0));
  if(!shown.length){
   const causes=constraintReport?.excluded.flatMap(x=>x.reasons)||[];
   const missingDepth=causes.includes('DEPTH_UNKNOWN');
@@ -1800,11 +1806,16 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
   return;
  }
  const selected=state.railCount+'x'+state.railCapacity;
- target.innerHTML='<p>Аппаратура: <b>'+report.equipmentModules+
+ target.innerHTML='<label class="ep-cabinet-option-preference">Приоритет подбора: <select data-cabinet-option-preference>'+[
+  ['balanced','Сбалансированный'],['compact','Минимальная площадь'],
+  ['wide','Широкий корпус'],['tall','Высокий корпус'],
+  ['connections','Группировка связей']].map(([key,label])=>'<option value="'+key+'"'+
+   (cabinetOptionPreferenceV1===key?' selected':'')+'>'+label+'</option>').join('')+
+  '</select></label>'+ '<p>Аппаратура: <b>'+report.equipmentModules+
   ' мод.</b> · Минимальный резерв: '+(limits.reservePercent??20)+'%. Выбрана вместимость '+cabinetCapacitySelectedTotalV1+' мест; доступных типоразмеров: '+totals.length+'.</p>'+
   '<div class="ep-capacity-options" style="display:flex;gap:8px;flex-wrap:wrap">'+
   shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
-   '" data-apply-cabinet-option="'+o.id+'">'+o.capacityModules+
+   '" data-apply-cabinet-option="'+o.id+'">'+(comparison?.recommendedId===o.id?'★ Рекомендуемый · ':'')+o.capacityModules+
    ' мод. · '+({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Вариант')+' · '+o.railCount+' × '+o.modulesPerRail+
    ' · свободно '+o.reserveModules+
    (o.connectionProximity?' · связанные: на одной DIN '+o.connectionProximity.sameRail+'/'+
@@ -1814,7 +1825,7 @@ for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
    Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
    Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>').join('')+'</div>'+
   '<p class="muted">Предварительный приоритет: '+
-  (good[0]?.id||'не определён')+'. Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
+  (comparison?.recommendedId||good[0]?.id||'не определён')+'. Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
   '. Неизвестная глубина не проходит заданный предел глубины.</p>'+
   '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';
  const space=$('cabinetSpaceDiagram');
@@ -3266,6 +3277,11 @@ $('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
  checkpoint();state.manualLayoutV1=proposal.project.manualLayoutV1;changed();
  notify('Перемещено аппаратов: '+proposal.changes.length+
   '. Изменены только позиции, подключения не пересчитывались.');
+});
+$('cabinetCapacityOptions')?.addEventListener('change',e=>{
+ if(e.target.matches('[data-cabinet-option-preference]')){
+  cabinetOptionPreferenceV1=e.target.value;renderCabinetCapacityOptionsV1();
+ }
 });
 $('cabinetCapacityOptions')?.addEventListener('click',e=>{
  const b=e.target.closest('[data-apply-cabinet-option]');
