@@ -7,6 +7,8 @@ function epCabinetCrossRailOptimizeV1(project,lookup,options={}){
  if(!project||!options||typeof options!=='object'||Array.isArray(options)||
   typeof epDraftBoardPlanV1!=='function'||typeof epCabinetConnectionProximityV1!=='function')
   return fail('CROSS_RAIL_INPUT_INVALID');
+ const strategy=options.strategy??'first';
+ if(!['first','reverse','nearest','compact'].includes(strategy))return fail('CROSS_RAIL_STRATEGY_INVALID');
  const maxPasses=options.maxPasses??12;
  if(!Number.isInteger(maxPasses)||maxPasses<1||maxPasses>50)return fail('CROSS_RAIL_PASSES_INVALID');
  let before;
@@ -54,11 +56,20 @@ function epCabinetCrossRailOptimizeV1(project,lookup,options={}){
   let best=null,bestScore=currentScore;
   // Candidate search only moves one non-anchored apparatus at a time.
   let inspected=0;
-  search:for(let i=0;i<current.length;i++){
+  const indices=Array.from({length:current.length},(_,i)=>i);
+  if(strategy==='reverse')indices.reverse();
+  search:for(const i of indices){
    if(fixed.has(current[i].deviceId)||!relatedIds.has(current[i].deviceId))continue;
-   for(let r=0;r<rails;r++){
+   const targets=Array.from({length:rails},(_,r)=>r);
+   if(strategy==='reverse')targets.reverse();
+   if(strategy==='nearest')targets.sort((a,b)=>
+    Math.abs(a-current[i].railIndex)-Math.abs(b-current[i].railIndex)||a-b);
+   for(const r of targets){
     if(r===current[i].railIndex)continue;
-    for(let x=0;x+current[i].modules<=capacity;x++){
+    const slots=Array.from({length:capacity-current[i].modules+1},(_,x)=>x);
+    if(strategy==='reverse')slots.reverse();
+    if(strategy==='compact')slots.sort((a,b)=>b-a);
+    for(const x of slots){
      if(++inspected>20000)break search;
      const candidate=current.map(p=>({...p}));
      candidate[i].railIndex=r;candidate[i].startModule=x;
@@ -110,7 +121,7 @@ function epCabinetCrossRailOptimizeV1(project,lookup,options={}){
   from:{railIndex:old.get(p.deviceId).railIndex,startModule:old.get(p.deviceId).startModule},
   to:{railIndex:p.railIndex,startModule:p.startModule}}));
  return {status:'REVIEW_REQUIRED',code:'CROSS_RAIL_OPTIMIZED',project:copy,
-  changes,before:startScore,after:quality(current),
+  changes,before:startScore,after:quality(current),strategy,
   engineeringApproved:false,physicalWiringVerified:false,
   note:'Nominal cross-rail relations only. Cable routing and electrical connections unchanged.'};
 }
