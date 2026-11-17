@@ -2015,6 +2015,19 @@ function renderCabinetArticleReconciliationV1(){
    makerFilter.appendChild(option);
   }
   controls.append(search,makerFilter);gallery.appendChild(controls);
+  if(typeof epCabinetFrontInventoryCsvV1==='function'){
+   const exportInventory=document.createElement('button');exportInventory.type='button';
+   exportInventory.textContent='Скачать ведомость фасадов CSV';
+   exportInventory.addEventListener('click',()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const inventory=epCabinetFrontInventoryCsvV1(fresh.rows,catalogDevice,
+     epManufacturerFrontResolveV1);
+    if(!inventory.csv){notify('Ведомость фасадов недоступна',true);return;}
+    download(baseName()+'_front_inventory.csv',inventory.csv,'text/csv;charset=utf-8');
+   });
+   gallery.appendChild(exportInventory);
+  }
+
   const count=document.createElement('p');count.className='ep-front-gallery-count';
   count.setAttribute('aria-live','polite');gallery.appendChild(count);
   const grid=document.createElement('div');grid.className='ep-front-gallery';
