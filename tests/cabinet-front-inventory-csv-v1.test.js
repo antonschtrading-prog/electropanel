@@ -48,3 +48,13 @@ test('inventory records quantity of repeated installed SKU',()=>{
  const line=r.csv.split('\r\n').find(x=>x.startsWith('"ABB-S200";'));
  assert.match(line,/^"ABB-S200";"2";/);
 });
+
+test('CSV distinguishes declared oversize from unknown cabinet body width',()=>{
+ const r=csv([{boardSku:'WIDE'},{boardSku:'UNKNOWN'}],
+  sku=>sku==='WIDE'?{maker:'ABB',modules:1,widthMm:20,sku}:
+   {maker:'ABB',modules:1,sku},
+  ()=>({status:'STYLIZED_ONLY',issues:[]}));
+ assert.match(r.csv,/"din_width_conflict"/);
+ assert.match(r.csv,/"WIDE";"1";"ABB";"";"";"1";"";"20";"YES"/);
+ assert.match(r.csv,/"UNKNOWN";"1";"ABB";"";"";"1";"";"";"UNKNOWN"/);
+});
