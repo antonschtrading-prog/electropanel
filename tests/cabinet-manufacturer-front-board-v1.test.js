@@ -17,7 +17,7 @@ test('manufacturer SVG and rights-aware image library load before board app',()=
  }
 });
 test('board renders manufacturer front only for catalogue-resolved devices',()=>{
- assert.match(board,/const renderedFront=cat&&typeof epManufacturerVisualHtmlV1/);
+ assert.match(board,/if\(cat&&typeof epManufacturerVisualHtmlV1==='function'\)/);
  assert.match(board,/epManufacturerVisualHtmlV1\(cat,boardId\|\|l\.id\)/);
  assert.match(board,/d\.classList\.add\('ep-catalog-front-active'\)/);
  assert.match(board,/ep-front-viewport/);
