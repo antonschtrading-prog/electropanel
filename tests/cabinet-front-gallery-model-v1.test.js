@@ -99,3 +99,18 @@ test('gallery summary separates article coverage from installed device count',()
   REVIEWED_IMAGE:1,STYLIZED_ONLY:0,ASSET_REJECTED:1,CATALOGUE_MISSING:1
  });
 });
+
+test('gallery flags apparatus whose declared body exceeds nominal DIN slot width',()=>{
+ const r=model([{boardSku:'WIDE'},{boardSku:'OK'}],sku=>({
+  sku,maker:'ABB',series:'S200',modules:1,widthMm:sku==='WIDE'?20:18
+ }));
+ assert.equal(r.widthConflicts,1);
+ assert.equal(r.items.find(x=>x.sku==='WIDE').widthConflict,true);
+ assert.equal(r.items.find(x=>x.sku==='OK').widthConflict,false);
+ assert.equal(r.engineeringApproved,false);
+});
+test('missing body width is unknown, not a fabricated width conflict',()=>{
+ const r=model([{boardSku:'UNKNOWN'}],sku=>({sku,maker:'ABB',modules:1}));
+ assert.equal(r.widthConflicts,0);
+ assert.equal(r.items[0].widthConflict,false);
+});
