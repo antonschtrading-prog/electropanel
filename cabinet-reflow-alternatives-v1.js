@@ -24,11 +24,17 @@ function epCabinetReflowAlternativesV1(project,lookup,options={}){
   if(geometry?.status==='BLOCKED'){
    failures.push({strategy,code:geometry.code});continue;
   }
+  const enclosure=geometry&&Array.isArray(options.enclosures)&&
+   typeof epCabinetEnclosureMatchV1==='function'?
+   epCabinetEnclosureMatchV1(preview,geometry,options.enclosures):null;
+  if(enclosure?.status==='BLOCKED'){
+   failures.push({strategy,code:enclosure.code});continue;
+  }
   const key=JSON.stringify(preview.rows.map(r=>[r.deviceId,r.toRail,r.toSlot]));
   if(seen.has(key))continue;
   seen.add(key);
   const id='reflow-'+strategy;
-  variants.push({id,strategy,proposal,preview,geometry,
+  variants.push({id,strategy,proposal,preview,geometry,enclosure,
    moved:preview.summary.moved,changedRails:preview.summary.changedRails,
    crossRail:proposal.after.cross,nominalGap:proposal.after.gap,
    engineeringApproved:false});
