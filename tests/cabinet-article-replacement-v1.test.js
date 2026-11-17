@@ -190,3 +190,10 @@ test('replacing an implicit branch with its existing fallback is a no-op',()=>{
  assert.equal(r.code,'REPLACEMENT_ARTICLE_UNCHANGED');
  assert.equal(r.project,null);
 });
+
+test('single replacement rejects whitespace-ambiguous IDs and catalogue SKUs',()=>{
+ for(const id of [' B1','B1 '])
+  assert.equal(replace(project(),id,'WIDE',catalogue).code,'REPLACEMENT_INPUT_INVALID');
+ for(const sku of [' WIDE','WIDE '])
+  assert.equal(replace(project(),'B1',sku,catalogue).code,'REPLACEMENT_INPUT_INVALID');
+});
