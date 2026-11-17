@@ -173,3 +173,15 @@ These tests intentionally characterize **present behavior**, not desired accepta
 
 ### Important PR integration note
 GitHub currently reports audit PR #14 `mergeable:false`. This may indicate conflicts with the concurrently advancing integration branch. No merge or force update was attempted; inspect and rebase with explicit conflict resolution before integration.
+
+## Candidate remediation in isolated audit branch (not merged)
+
+Commit series `23d4614` / `2306474` / `79bcebe` implements a **minimal cross-view export gate** in `app.js`, updates the source-level tests to require the gate, and adds a real Chromium check in `scripts/browser-integration.cjs` for inconsistent line-vs-branch SKU.
+- `epDraftDocumentExportGate` calls `epEngineeringBundleV1` and requires the `crossView` section to exist and not be `BLOCKED`.
+- `epRequireDraftDocumentExport` informs the engineer of a blocked export.
+- Four standalone exports now call the gate: schematic SVG, BOM CSV, BOM JSON, workflow CSV.
+- UNKNOWN status remains exportable as **DRAFT**. Missing optional cable route and upstream external studies do not become universal blockers.
+- Existing DIN CSV guard is retained.
+- Chromium regression mutates only its in-browser demo fixture, attempts the three primary document exports, checks none reaches `download`, and restores state.
+- This is a **candidate fix pending CI**. It does not assert final engineering approval and does not cover every other specialized export handler.
+- The independent audit test inventory is now **72** (previous 71 plus one shared-gate contract).
