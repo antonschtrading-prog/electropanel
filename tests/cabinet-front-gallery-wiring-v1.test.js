@@ -31,3 +31,12 @@ test('gallery text uses safe DOM assignment and SVG XML parser',()=>{
  assert.match(section,/new DOMParser\(\)/);
  assert.doesNotMatch(section,/innerHTML/);
 });
+
+test('gallery filters unverified images without treating SVG as manufacturer photography',()=>{
+ assert.match(section,/evidenceFilter\.setAttribute\('aria-label'/);
+ assert.match(section,/\['REVIEWED_IMAGE','Проверенные изображения'\]/);
+ assert.match(section,/\['STYLIZED_ONLY','Авторские эскизы'\]/);
+ assert.match(section,/\['CATALOGUE_MISSING','Артикул не найден'\]/);
+ assert.match(section,/evidenceFilter\.addEventListener\('change'/);
+ assert.match(section,/resolve:epManufacturerFrontResolveV1/);
+});
