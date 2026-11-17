@@ -11,9 +11,12 @@ test('gallery is derived from actual board article identities',()=>{
  assert.match(section,/for\(const sku of skus\.slice\(0,12\)\)/);
  assert.match(section,/catalogDevice\(sku\)/);
 });
-test('gallery uses same manufacturer front renderer as DIN board',()=>{
- assert.match(section,/epManufacturerVisualHtmlV1\(item,'gallery-'\+sku\)/);
+test('gallery uses rights-aware images and safe original SVG rendering',()=>{
+ assert.match(section,/epCatalogFrontSvgV1\(item,'gallery-'\+sku\)/);
  assert.match(section,/epManufacturerFrontResolveV1\(item\)/);
+ assert.match(section,/new DOMParser\(\)\.parseFromString\(svg,'image\/svg\+xml'\)/);
+ assert.match(section,/document\.importNode\(parsed\.documentElement,true\)/);
+ assert.doesNotMatch(section,/innerHTML/);
 });
 test('gallery does not claim generated SVG is manufacturer photography',()=>{
  assert.match(section,/Каталожные SVG — авторские эскизы, не фотографии/);
