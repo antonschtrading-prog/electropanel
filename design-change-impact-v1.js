@@ -14,7 +14,10 @@ function epDesignChangeImpactV1(before,after){
  if(!has(before)||!has(after))return {status:'BLOCKED',changed:['project'],affected:Object.keys(MAP),issues:[{code:'CHANGE_IMPACT_PROJECT_INVALID',level:'BLOCKED'}]};
  const lines=(project,keys)=>Array.isArray(project.lines)?project.lines.map(x=>Object.fromEntries(['id',...keys].map(k=>[k,x?.[k]??null]))).sort((a,b)=>String(a.id).localeCompare(String(b.id))):null;
  const areas={
-  load:[lines(before,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),lines(after,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),before.loads,after.loads],
+  load:[lines(before,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),lines(after,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),before.loads,after.loads,
+   before.workflowDesignInputsV1,after.workflowDesignInputsV1,
+   before.consumerGroupMergeRulesV1,after.consumerGroupMergeRulesV1,
+   before.consumerGroupSplitRulesV1,after.consumerGroupSplitRulesV1],
   network:[before.network,after.network,before.earthing,after.earthing,before.voltage,after.voltage,
    lines(before,['maximumFaultInput','faultRouteInput','faultInput']),lines(after,['maximumFaultInput','faultRouteInput','faultInput'])],
   cable:[lines(before,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput']),lines(after,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput']),before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],

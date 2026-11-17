@@ -282,10 +282,24 @@ function epWorkflowApplyCurrentsV1(project,rawInputs){
  for(const line of current.lines){
   const original=line.overloadInput?.ibA;
   const present=original!==undefined&&original!==null&&String(original).trim()!=='';
-  if(present){skipped.push({lineId:line.id,code:'WORKFLOW_EXISTING_CURRENT_PRESERVED'});continue;}
+  // Only a current produced by the circuit-linked calculation engine may
+  // be updated by this explicit action. Engineer-entered and overridden Ib
+  // are immutable, even if common calculation inputs change.
+  const linked=line.loadCurrentCalculation;
+  const owned=present&&linked?.powerSource==='circuit'&&
+   linked?.stale!==true&&epWorkflowPositiveV1(original)!==null&&
+   Number(original)===Number(linked.roundedIbA);
+  if(present&&!owned){
+   skipped.push({lineId:line.id,code:'WORKFLOW_EXISTING_CURRENT_PRESERVED'});continue;
+  }
   const estimate=epWorkflowLineEstimateV1(line,inputs);
   if(estimate.status!=='CALCULATED'){
    skipped.push({lineId:line.id,code:estimate.code});continue;
+  }
+  if(owned&&linked.mode===estimate.calculation.mode&&
+    Object.entries(estimate.calculation.inputs).every(([key,value])=>
+     Number(linked.inputs?.[key])===Number(value))){
+   skipped.push({lineId:line.id,code:'WORKFLOW_LINKED_CURRENT_UNCHANGED'});continue;
   }
   const calculation=epApplyLoadCurrentV1(current,line.id,{
    mode:estimate.calculation.mode,powerSource:'circuit',
@@ -296,7 +310,8 @@ function epWorkflowApplyCurrentsV1(project,rawInputs){
    skipped.push({lineId:line.id,code:calculation.code});continue;
   }
   current=calculation.project;
-  applied.push({lineId:line.id,ibA:estimate.current});
+  applied.push({lineId:line.id,ibA:estimate.current,
+   reason:owned?'LINKED_INPUTS_RECALCULATED':'MISSING_CURRENT_CALCULATED'});
  }
  if(applied.length)current.workflowDesignInputsV1=inputs;
  return {schema:'electropanel.project.workflow.apply.1',
