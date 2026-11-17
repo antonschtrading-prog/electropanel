@@ -6,6 +6,7 @@ const EP_FRONT_REVIEW_CODES_V1=Object.freeze({
  EXCEEDS_DIN_SLOT:{priority:1,action:'Проверить ширину корпуса и компоновку'},
  UNKNOWN:{priority:3,action:'Получить паспортную ширину корпуса'},
  STYLIZED_ONLY:{priority:4,action:'Запросить изображение точного артикула'},
+ DECLARED_WITHIN_SLOT:{priority:5,action:'Ширина в пределах заявленного DIN-места'},
  REVIEWED_IMAGE:{priority:5,action:'Подтверждение изображения получено'}
 });
 function epFrontReviewQueueV1(ledger,options={}){
