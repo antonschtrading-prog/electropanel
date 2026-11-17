@@ -2743,6 +2743,16 @@ $('cabinetCapacityTotal')?.addEventListener('change',e=>{
   cabinetCapacitySelectedTotalV1=n;renderCabinetCapacityOptionsV1();
  }
 });
+$('exportCabinetMissingDimensionsBtn')?.addEventListener('click',()=>{
+ if(typeof epCabinetMissingGeometryCsvV1!=='function'){
+  notify('Геометрическая ведомость недоступна',true);return;
+ }
+ const result=epCabinetMissingGeometryCsvV1(state,catalogDevice);
+ if(result.status==='BLOCKED'){
+  notify('Сначала исправьте ошибки размещения и артикулов',true);return;
+ }
+ download(baseName()+'_apparatus_geometry_requests.csv',result.csv,'text/csv;charset=utf-8');
+});
 $('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
  if(typeof epCabinetGroupReflowV1!=='function'){
   notify('Оптимизатор группировки недоступен',true);return;

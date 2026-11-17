@@ -1751,6 +1751,16 @@ const server=http.createServer((req,res)=>{
  assert.equal(articleEvidence.inBundle,2);
  assert.equal(articleEvidence.inPrint,true);
  assert.equal(articleEvidence.inCsv,true);
+ const missingGeometryEvidence=await page.evaluate(()=>{
+  const result=epCabinetMissingGeometryCsvV1(state,catalogDevice);
+  return {status:result.status,count:result.rows,
+   missing:result.csv.includes('BODY_HEIGHT|BODY_DEPTH'),
+   mounting:result.csv.includes('DIN_MOUNT_OFFSET|TERMINAL_POSITIONS'),
+   approved:result.engineeringApproved};
+ });
+ assert.deepEqual(missingGeometryEvidence,{
+  status:'REVIEW_REQUIRED',count:2,missing:true,mounting:true,approved:false});
+ assert.equal(await page.locator('#exportCabinetMissingDimensionsBtn').count(),1);
  const evidenceDetails=page.locator('#cabinetArticleEvidence details');
  assert.equal(await evidenceDetails.count(),1);
  await evidenceDetails.locator('summary').click();
