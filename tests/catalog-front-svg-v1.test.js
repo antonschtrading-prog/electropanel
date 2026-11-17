@@ -26,3 +26,16 @@ test('verified article geometry still remains an original illustrative SVG',()=>
  assert.match(svg,/Эскиз, не официальный фасад/);
  assert.match(svg,/viewBox="0 0 92 240"/);
 });
+
+test('SVG gradients change with article and series even when DIN device ID stays the same',()=>{
+ const base={maker:'ABB',series:'S200',sku:'A1',kind:'MCB',modules:1,poles:1,widthMm:18};
+ const ids=[base,{...base,sku:'A2'},{...base,series:'S300'},{...base,kind:'RCBO'},
+  {...base,modules:2,widthMm:36}].map(x=>
+   epCatalogFrontSvgV1(x,'SAME-ID').match(/linearGradient id="([^"]+)"/)[1]);
+ assert.equal(new Set(ids).size,ids.length);
+});
+test('SVG gradient reference matches its unique definition',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'Hager',series:'MBS',sku:'A',modules:2,poles:2},'ID');
+ const id=svg.match(/linearGradient id="([^"]+)"/)[1];
+ assert.match(svg,new RegExp('url\\(#'+id+'\\)'));
+});
