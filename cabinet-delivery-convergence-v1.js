@@ -64,7 +64,10 @@ function epCabinetDeliveryConvergenceV1(project,lookup,resolve){
  if(capacity.status==='BLOCKED')add('CONVERGENCE_CAPACITY_BLOCKED');
  const bySku=new Map(ledger.entries.map(e=>[e.sku,e]));
  const rows=reconciliationRows.map(r=>{
-  const evidence=bySku.get(r.boardSku),deviceIssues=issues.filter(i=>i.deviceId===r.deviceId).map(i=>i.code);
+  const evidence=bySku.get(r.boardSku);
+  if(evidence&&r.modules!==null&&evidence.modules!==null&&r.modules!==evidence.modules)
+   add('CONVERGENCE_CATALOGUE_MODULES_MISMATCH',r.deviceId);
+  const deviceIssues=issues.filter(i=>i.deviceId===r.deviceId).map(i=>i.code);
   return {...r,maker:evidence?.maker??'',series:evidence?.series??'',
    frontStatus:evidence?.frontStatus??'CATALOGUE_MISSING',
    geometryStatus:evidence?.geometryStatus??'UNKNOWN',bodyWidthMm:evidence?.widthMm??null,
@@ -80,6 +83,8 @@ function epCabinetDeliveryConvergenceV1(project,lookup,resolve){
  if(occupied!==expected)add('CONVERGENCE_CAPACITY_SUM_MISMATCH');
  if(totalCapacity!==project.railCount*project.railCapacity)add('CONVERGENCE_RAIL_CAPACITY_MISMATCH');
  const unplaced=ids.filter(id=>!placements.has(id)).length;
+ if(ledger.totals.quantity!==placements.size)add('CONVERGENCE_LEDGER_QUANTITY_MISMATCH');
+ if(rows.length!==ids.length)add('CONVERGENCE_ROW_COUNT_MISMATCH');
  const totals={placed:placements.size,articles:ledger.totals.articles,occupied,free:totalCapacity-occupied,
   imageReviewed:ledger.totals.reviewed,imageStylized:ledger.totals.stylized,
   imageRejected:ledger.totals.rejected,geometryConflicts:ledger.totals.widthConflicts,
