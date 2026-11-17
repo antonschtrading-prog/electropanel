@@ -126,3 +126,11 @@ test('gallery blocks duplicated device identity across different articles',()=>{
  assert.equal(r.status,'BLOCKED');
  assert.ok(r.rows.every(x=>x.issues.includes('FRONT_GALLERY_DUPLICATE_DEVICE_ID')));
 });
+
+test('empty cabinet returns UNKNOWN visual evidence instead of a positive review',()=>{
+ const r=gallery({rows:[]},device,()=>({status:'STYLIZED_ONLY'}));
+ assert.equal(r.status,'UNKNOWN');
+ assert.equal(r.code,'FRONT_GALLERY_NO_ARTICLES');
+ assert.equal(r.totals.apparatus,0);
+ assert.equal(r.engineeringApproved,false);
+});
