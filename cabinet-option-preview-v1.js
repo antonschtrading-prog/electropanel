@@ -6,6 +6,8 @@ function epCabinetOptionPreviewV1(project,option,lookup){
  if(!project||!option||!Array.isArray(option.rails)||!Number.isInteger(option.railCount)||
   !Number.isInteger(option.modulesPerRail)||option.railCount<1||option.modulesPerRail<1||
   typeof epDraftBoardPlanV1!=='function')return fail('OPTION_PREVIEW_INPUT_INVALID');
+ if(option.rails.length!==option.railCount||option.railCount>100||option.modulesPerRail>200)
+  return fail('OPTION_PREVIEW_RAIL_COUNT_INVALID');
  const seen=new Set(),positions=[],rails=[];
  for(const rail of option.rails){
   if(!rail||!Number.isInteger(rail.railIndex)||rail.railIndex<0||
@@ -29,7 +31,7 @@ function epCabinetOptionPreviewV1(project,option,lookup){
   rails.push({railIndex:rail.railIndex,capacity:option.modulesPerRail,occupied:occupied.size,
    free:option.modulesPerRail-occupied.size,devices:items});
  }
- if(new Set(rails.map(r=>r.railIndex)).size!==option.railCount)
+ if(rails.length!==option.railCount||new Set(rails.map(r=>r.railIndex)).size!==option.railCount)
   return fail('OPTION_PREVIEW_RAIL_COUNT_INVALID');
  let before,after;
  try{
