@@ -83,7 +83,7 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const brandMax=Math.max(6,Math.floor((width-22)/(brandSize*.58)));
  const seriesMax=Math.max(8,Math.floor((width-22)/(seriesSize*.58)));
  const ratingMax=Math.max(4,Math.floor((width-22)/(ratingSize*.58)));
- const poleLabel=device?.poleConfiguration||(
+ const poleLabel=typeof device?.poleConfiguration==='string'&&device.poleConfiguration.trim()?device.poleConfiguration:(
   Number.isInteger(device?.poles)?device.poles+' полюса, конфигурация не указана':'Полюса не заявлены');
  const legend=esc('Иллюстрация '+(device?.maker||'Условный вид')+' '+series+' '+(device?.sku||deviceId)+
   '. Полюса: '+poleLabel+(rated==='—'?'':'. Обозначение номинала: '+rated)+'. '+visualNote);
