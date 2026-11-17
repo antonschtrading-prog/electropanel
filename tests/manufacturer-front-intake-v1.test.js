@@ -59,3 +59,48 @@ for(const [label,mutation] of wrong)test('exact image intake rejects '+label,t=>
  const {root}=fixture(t),r=auditManufacturerFrontAssets(root,{one:d},{'abb|a1':{...a,...mutation}},visual.epManufacturerFrontResolveV1,visual.epManufacturerFrontKeyV1);
  assert.equal(r.ok,false,label);
 });
+
+test('JPEG with complete start and end markers passes',t=>{
+ const {root}=fixture(t),file=path.join(root,'front.jpg');
+ fs.writeFileSync(file,Buffer.from([255,216,255,224,0,0,255,217]));
+ assert.equal(inspectRaster(file).ok,true);
+});
+test('JPEG without end marker is rejected',t=>{
+ const {root}=fixture(t),file=path.join(root,'front.jpg');
+ fs.writeFileSync(file,Buffer.from([255,216,255,224,0,0,0,0]));
+ assert.ok(inspectRaster(file).issues.includes('RASTER_SIGNATURE_MISMATCH'));
+});
+test('WebP with RIFF length and VP8 marker passes',t=>{
+ const {root}=fixture(t),file=path.join(root,'front.webp');
+ const b=Buffer.alloc(20);b.write('RIFF',0);b.writeUInt32LE(12,4);b.write('WEBP',8);b.write('VP8 ',12);
+ fs.writeFileSync(file,b);assert.equal(inspectRaster(file).ok,true);
+});
+test('WebP with incorrect RIFF length is rejected',t=>{
+ const {root}=fixture(t),file=path.join(root,'front.webp');
+ const b=Buffer.alloc(20);b.write('RIFF',0);b.writeUInt32LE(100,4);b.write('WEBP',8);b.write('VP8 ',12);
+ fs.writeFileSync(file,b);assert.ok(inspectRaster(file).issues.includes('RASTER_SIGNATURE_MISMATCH'));
+});
+test('WebP with unsupported chunk marker is rejected',t=>{
+ const {root}=fixture(t),file=path.join(root,'front.webp');
+ const b=Buffer.alloc(20);b.write('RIFF',0);b.writeUInt32LE(12,4);b.write('WEBP',8);b.write('XXXX',12);
+ fs.writeFileSync(file,b);assert.ok(inspectRaster(file).issues.includes('RASTER_SIGNATURE_MISMATCH'));
+});
+test('intake reports image reuse across distinct exact articles',t=>{
+ const {root}=fixture(t);
+ const other={...d,sku:'A2'};
+ const second={...a,sku:'A2'};
+ const r=auditManufacturerFrontAssets(root,{one:d,two:other},{'abb|a1':a,'abb|a2':second},
+  visual.epManufacturerFrontResolveV1,visual.epManufacturerFrontKeyV1);
+ assert.equal(r.ok,false);assert.ok(r.issues.some(x=>x.startsWith('IMAGE_REUSED:')));
+});
+test('intake rejects raster content that does not match extension',t=>{
+ const {root,file}=fixture(t);fs.writeFileSync(file,Buffer.from('<script>bad</script>'));
+ const r=auditManufacturerFrontAssets(root,{one:d},{'abb|a1':a},
+  visual.epManufacturerFrontResolveV1,visual.epManufacturerFrontKeyV1);
+ assert.equal(r.ok,false);assert.ok(r.issues.some(x=>x.startsWith('RASTER_SIGNATURE_MISMATCH:')));
+});
+test('empty registry leaves original stylized catalogue operational',t=>{
+ const {root}=fixture(t);
+ const r=auditManufacturerFrontAssets(root,{one:d},{},visual.epManufacturerFrontResolveV1,visual.epManufacturerFrontKeyV1);
+ assert.equal(r.ok,true);assert.deepEqual(r.files,[]);
+});
