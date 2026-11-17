@@ -2173,7 +2173,17 @@ function renderBoard(){
    else if(bodyWidth!==null)d.title+=' · Корпус '+bodyWidth+' мм / слот '+(width*18)+' мм';
    const face=epBoardArticleFaceHtmlV2(l,boardId||l.id);
    d.title+=' · '+(visual.source==='CATALOG_DECLARED'?'Каталожные данные, условный внешний вид':'Нет подтверждённой модели, внешний вид условный');
-   d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span>'+face+epDeviceVisualEvidenceHtmlV1(visual)+'</span><span class="ep-terminal ep-terminal-bottom"></span>';
+   const renderedFront=cat&&typeof epManufacturerVisualHtmlV1==='function'?
+    epManufacturerVisualHtmlV1(cat,boardId||l.id):null;
+   d.dataset.frontPresentation=renderedFront?'MANUFACTURER_SERIES_ILLUSTRATION':'LEGACY_PLACEHOLDER';
+   d.dataset.manufacturerImageVerified=String(asset?.status==='REVIEWED_IMAGE');
+   if(renderedFront){
+    d.classList.add('ep-catalog-front-active');
+    d.innerHTML='<span class="ep-front-viewport">'+renderedFront+'</span>'+
+     '<span class="ep-front-meta">'+face+epDeviceVisualEvidenceHtmlV1(visual)+'</span>';
+   }else{
+    d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span>'+face+epDeviceVisualEvidenceHtmlV1(visual)+'</span><span class="ep-terminal ep-terminal-bottom"></span>';
+   }
    rail.appendChild(d);col+=width;
   }
   board.appendChild(holder);
