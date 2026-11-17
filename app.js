@@ -1976,14 +1976,16 @@ function renderCabinetArticleReconciliationV1(){
  target.replaceChildren();
  const title=document.createElement('h4');title.textContent='Согласованность каталога, DIN и спецификации';
  const summary=document.createElement('p');
- summary.textContent='Сопоставлено: '+count.matched+' из '+Math.max(count.board,count.bom,count.visual)+
+ summary.textContent='Сопоставлено: '+count.matched+' из '+(count.expected??Math.max(count.board,count.bom,count.visual))+
   ' аппаратов. Блокирующих замечаний: '+report.issues.filter(x=>x.level==='BLOCKED').length+
   '. Подбор корпуса и монтаж не подтверждены.';
  target.append(title,summary);
  const errors=report.rows.filter(x=>x.status==='BLOCKED').slice(0,20);
+ const totalErrors=report.rows.filter(x=>x.status==='BLOCKED').length;
  if(errors.length){
   const details=document.createElement('details');
-  const heading=document.createElement('summary');heading.textContent='Несовпадения артикулов ('+errors.length+')';
+  const heading=document.createElement('summary');heading.textContent='Несовпадения артикулов ('+totalErrors+')'+
+   (totalErrors>errors.length?' · показаны первые '+errors.length:'');
   const list=document.createElement('ul');
   for(const item of errors){
    const li=document.createElement('li');
