@@ -2006,14 +2006,25 @@ function renderCabinetArticleReconciliationV1(){
    if(!item)continue;
    const card=document.createElement('div');card.className='ep-front-gallery-card';
    const art=document.createElement('div');art.className='ep-front-gallery-art';
-   try{art.innerHTML=epManufacturerVisualHtmlV1(item,'gallery-'+sku);}
-   catch(_){art.textContent='Фасад недоступен';}
+   const asset=typeof epManufacturerFrontResolveV1==='function'?
+    epManufacturerFrontResolveV1(item):null;
+   try{
+    if(asset?.status==='REVIEWED_IMAGE'){
+     const img=document.createElement('img');img.className='ep-manufacturer-front-image';
+     img.src=asset.image.src;img.loading='lazy';img.decoding='async';
+     img.alt='Фасад '+item.maker+' '+item.series+' '+item.sku;
+     art.appendChild(img);
+    }else if(typeof epCatalogFrontSvgV1==='function'){
+     const svg=epCatalogFrontSvgV1(item,'gallery-'+sku);
+     const parsed=new DOMParser().parseFromString(svg,'image/svg+xml');
+     if(parsed.querySelector('parsererror'))throw Error('SVG_INVALID');
+     art.appendChild(document.importNode(parsed.documentElement,true));
+    }else art.textContent='Условный фасад';
+   }catch(_){art.textContent='Фасад недоступен';}
    const title=document.createElement('strong');
    title.textContent=[item.maker,item.series].filter(Boolean).join(' / ');
    const code=document.createElement('span');code.textContent=sku;
    const status=document.createElement('small');
-   const asset=typeof epManufacturerFrontResolveV1==='function'?
-    epManufacturerFrontResolveV1(item):null;
    status.textContent=asset?.status==='REVIEWED_IMAGE'?'Изображение по артикулу':
     asset?.status==='ASSET_REJECTED'?'Изображение отклонено · эскиз':
     'Авторский эскиз';
