@@ -3427,6 +3427,24 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
   ' · переходов между рейками: '+preview.summary.changedRails+
   '. Электрические связи не изменяются.';
  variantPanel.append(heading,summary);
+ if(selected.enclosure){
+  const title=document.createElement('h5');title.textContent='Сравнение с корпусами';
+  const list=document.createElement('ul');
+  selected.enclosure.rows.forEach(item=>{
+   const li=document.createElement('li');
+   const label=item.status==='PRELIMINARY_MATCH'?'предварительно подходит':
+    item.status==='REJECTED'?'не подходит':'недостаточно данных';
+   li.textContent=item.id+' — '+label+
+    ' · ширина '+item.checks[0].result+
+    ' · высота '+item.checks[1].result+
+    ' · глубина '+item.checks[2].result+
+    ' · рейки '+item.railCheck;
+   list.appendChild(li);
+  });
+  const note=document.createElement('p');
+  note.textContent='Проверяются только заявленные полезные размеры. Посадка, проводка и тепловые условия не подтверждены.';
+  variantPanel.append(title,list,note);
+ }
  if(selected.geometry){
   const geo=document.createElement('p');
   geo.textContent='Каталожные габариты: '+selected.geometry.summary.knownDimensions+
