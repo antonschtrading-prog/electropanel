@@ -3425,6 +3425,13 @@ $('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
    selected.geometry.summary.missingDimensions+
    '. Габариты корпуса и монтажные зазоры не подтверждены.';
   variantPanel.appendChild(geo);
+  if(typeof epCabinetApparatusGeometrySvgV1==='function'){
+   const svg=epCabinetApparatusGeometrySvgV1(selected.geometry);
+   if(svg){
+    const diagram=document.createElement('div');diagram.className='ep-cabinet-din-visual';
+    diagram.innerHTML=svg;variantPanel.appendChild(diagram);
+   }
+  }
   const dimensionExport=document.createElement('button');
   dimensionExport.type='button';dimensionExport.className='btn';
   dimensionExport.textContent='Скачать габариты аппаратов CSV';
