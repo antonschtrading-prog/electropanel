@@ -27,7 +27,9 @@ test('unknown article depth cannot satisfy a finite depth constraint',()=>{
  const r=csv(report,{maxUsableDepthMm:300});
  assert.equal(r.status,'REVIEW_REQUIRED');
  assert.match(r.csv,/UNKNOWN/);
- assert.match(r.csv,/EXCEEDS_LIMITS/);
+ assert.match(r.csv,/DIMENSIONS_UNKNOWN/);
+ assert.match(r.csv,/DEPTH_UNKNOWN/);
+ assert.equal(r.summary.unknownDimensions,r.summary.considered);
  assert.equal(r.ready_for_installation,false);
 });
 test('supplier sizing CSV accepts positive limits and never fabricates a cabinet SKU',()=>{
@@ -37,5 +39,32 @@ test('supplier sizing CSV accepts positive limits and never fabricates a cabinet
  assert.match(r.csv,/PRELIMINARY_NOT_MANUFACTURER_FIT/);
  assert.match(r.csv,/REVIEW_REQUIRED/);
  assert.match(r.csv,/enclosure_sku/);
+ assert.equal(r.engineeringApproved,false);
+});
+
+test('constraint reasons distinguish unknown from actual dimension overruns',()=>{
+ const report=plan(project,catalogue);
+ const r=csv(report,{maxUsableWidthMm:1,maxUsableDepthMm:1});
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.match(r.csv,/WIDTH_EXCEEDS_LIMIT\\|DEPTH_EXCEEDS_LIMIT/);
+ assert.equal(r.summary.exceedsLimits,r.summary.considered);
+ assert.equal(r.summary.withinLimits,0);
+});
+test('supplier CSV reports bounded packing method and planning provenance',()=>{
+ const report=plan(project,catalogue);
+ const r=csv(report,{maxUsableWidthMm:2000,maxUsableHeightMm:3000,maxUsableDepthMm:300});
+ assert.match(r.csv,/packing_method/);
+ assert.match(r.csv,/source_dimension_status/);
+ assert.match(r.csv,/DEPTH_ESTIMATE_ONLY/);
+ assert.equal(r.summary.exceedsLimits,0);
+ assert.equal(r.summary.unknownDimensions,0);
+ assert.equal(r.summary.withinLimits,r.summary.considered);
+});
+test('unknown depth with no depth limit remains reviewable, not dimension-verified',()=>{
+ const report=plan({lines:[{id:'L1',modules:1}]});
+ const r=csv(report,{maxUsableWidthMm:2000});
+ assert.equal(r.status,'REVIEW_REQUIRED');
+ assert.equal(r.summary.unknownDimensions,0);
+ assert.match(r.csv,/DEPTH_UNKNOWN/);
  assert.equal(r.engineeringApproved,false);
 });
