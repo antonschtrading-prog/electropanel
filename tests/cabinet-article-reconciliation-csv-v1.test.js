@@ -40,3 +40,10 @@ test('CSV never mutates source report',()=>{
  assert.deepEqual(csv(r),csv(r));
  assert.equal(JSON.stringify(r),before);
 });
+
+test('CSV carries project-level status and blocker count for every apparatus',()=>{
+ const r=csv(sample());
+ assert.match(r.csv,/"report_status"/);
+ assert.match(r.csv,/"global_blocking_issue_count"/);
+ assert.match(r.csv,/"BLOCKED";"1";"NO"/);
+});
