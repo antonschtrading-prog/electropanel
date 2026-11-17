@@ -398,3 +398,9 @@ tr.ep-circuit-active td{background:rgba(211,108,55,.10)}
 .ep-front-delivery-convergence button{justify-self:start;max-width:100%;white-space:normal}
 .ep-front-delivery-convergence[data-convergence-status="BLOCKED"]{border-color:#b85c4b;background:#fff6f2}
 @media(max-width:520px){.ep-front-delivery-convergence{padding:9px}.ep-front-delivery-convergence button{width:100%;max-width:none}}
+
+/* Cabinet option preference is a UI ranking, not an engineering approval. */
+.ep-cabinet-option-preference{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0 12px;font-size:13px;font-weight:600}
+.ep-cabinet-option-preference select{min-width:170px;max-width:100%;padding:7px 10px;border:1px solid #8ea7b8;border-radius:7px;background:#fff;color:#173347;font:inherit}
+.ep-cabinet-option-preference select:focus-visible{outline:2px solid #2563a6;outline-offset:2px}
+@media(max-width:520px){.ep-cabinet-option-preference{align-items:stretch;flex-direction:column}.ep-cabinet-option-preference select{width:100%}}
