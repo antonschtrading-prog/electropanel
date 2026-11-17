@@ -140,3 +140,18 @@ test('replacement reads each catalogue article once for deterministic impact ana
  assert.equal(calls.get('OLD'),1);
  assert.equal(calls.get('OLD2'),1);
 });
+
+test('malformed board project fails safely without changing the original',()=>{
+ const p=project();p.railCount=null;
+ const before=JSON.stringify(p);
+ const r=replace(p,'B1','WIDE',catalogue);
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.code,'REPLACEMENT_LAYOUT_BLOCKED');
+ assert.equal(JSON.stringify(p),before);
+});
+test('missing branch circuit fails safely before calculating replacement',()=>{
+ const p=project();p.branchDevices[0].circuitId='LOST';
+ const r=replace(p,'B1','WIDE',catalogue);
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.code,'REPLACEMENT_BRANCH_CIRCUIT_MISSING');
+});
