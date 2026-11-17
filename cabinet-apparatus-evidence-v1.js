@@ -3,14 +3,16 @@
 // No device-terminal coordinates, heat flow or manufacturer CAD are inferred.
 function epCabinetApparatusEvidenceV1(project,lookup){
  const issues=[],rows=[],add=(code,level='UNKNOWN',deviceId=null)=>issues.push({code,level,deviceId});
+ const hasTraceableSource=x=>x.sourceType==='MANUFACTURER_DATASHEET_MIRROR'&&
+  x.sourceReviewedAt!==null&&x.sourceUrl!==null;
  const finish=()=>({schema:'electropanel.cabinet.apparatus.evidence.1',
   status:issues.some(x=>x.level==='BLOCKED')?'BLOCKED':'REVIEW_REQUIRED',
   rows,issues,knownDimensions:{
    width:rows.filter(x=>x.bodyWidthMm!==null).length,
    height:rows.filter(x=>x.bodyHeightMm!==null).length,
    depth:rows.filter(x=>x.bodyDepthMm!==null).length},
-  sourceReviewed:rows.filter(x=>x.sourceReviewedAt!==null&&x.sourceType!=='PROJECT_DECLARATION').length,
-  sourceCoverage:{total:rows.length,reviewed:rows.filter(x=>x.sourceReviewedAt!==null&&x.sourceUrl!==null&&x.sourceType!=='PROJECT_DECLARATION').length,missingSourceUrl:rows.filter(x=>x.sourceUrl===null).length},
+  sourceReviewed:rows.filter(hasTraceableSource).length,
+  sourceCoverage:{total:rows.length,reviewed:rows.filter(hasTraceableSource).length,missingSourceUrl:rows.filter(x=>x.sourceUrl===null).length},
   dimensionCoverage:{complete:rows.filter(x=>x.bodyDimensionsComplete).length,incomplete:rows.filter(x=>!x.bodyDimensionsComplete).length},
   terminalsLocated:0,engineeringApproved:false,ready_for_installation:false,
   actualMountingPositionVerified:false,actualTerminalCoordinatesVerified:false});
