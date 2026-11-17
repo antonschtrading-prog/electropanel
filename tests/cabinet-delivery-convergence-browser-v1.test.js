@@ -281,7 +281,7 @@ test('multi-alternative selector is populated from verified proposals',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
  assert.ok(html.indexOf('src="cabinet-reflow-alternatives-v1.js"')<html.indexOf('src="app.js"'));
- assert.match(app,/epCabinetReflowAlternativesV1\(state,catalogDevice\)/);
+ assert.match(app,/epCabinetReflowAlternativesV1\(state,catalogDevice,\{enclosures:enclosureCandidates\}\)/);
  assert.match(app,/select.setAttribute\('aria-label','Вариант компоновки DIN'\)/);
  assert.match(app,/select.addEventListener\('change',renderVariant\)/);
  assert.match(app,/strategy:selected.strategy/);
