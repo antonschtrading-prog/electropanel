@@ -3366,6 +3366,26 @@ $('exportCabinetMissingDimensionsBtn')?.addEventListener('click',()=>{
  }
  download(baseName()+'_apparatus_geometry_requests.csv',result.csv,'text/csv;charset=utf-8');
 });
+$('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
+ if(typeof epCabinetCrossRailOptimizeV1!=='function'){
+  notify('Оптимизатор межрядных связей недоступен',true);return;
+ }
+ const proposal=epCabinetCrossRailOptimizeV1(state,catalogDevice);
+ if(proposal.status==='BLOCKED'){
+  notify('Межрядная оптимизация отклонена: '+proposal.code,true);return;
+ }
+ if(!proposal.changes.length){
+  notify('Уменьшить количество связей между DIN-рейками не удалось');return;
+ }
+ const cross=proposal.changes.filter(c=>c.from.railIndex!==c.to.railIndex).length;
+ if(!confirm('Предлагается переместить '+proposal.changes.length+
+  ' аппаратов, из них между DIN-рейками: '+cross+
+  '. Расчётное число межрядных связей: '+proposal.before.cross+' → '+proposal.after.cross+
+  '. Электрические связи не изменятся. Применить компоновку?'))return;
+ checkpoint();state.manualLayoutV1=proposal.project.manualLayoutV1;changed();
+ notify('Межрядные связи: '+proposal.before.cross+' → '+proposal.after.cross+
+  '. Перемещено аппаратов: '+proposal.changes.length+'.');
+});
 $('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
  if(typeof epCabinetGroupReflowV1!=='function'){
   notify('Оптимизатор группировки недоступен',true);return;
