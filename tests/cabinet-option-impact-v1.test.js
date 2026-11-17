@@ -49,3 +49,8 @@ test('stability bad impact blocked',()=>assert.equal(compare(report(),{preferenc
 test('stability duplicate impact blocked',()=>assert.equal(compare(report(),{preference:'stability',impactRows:[run().rows[0],run().rows[0]]}).status,'BLOCKED'));
 test('stability preserves capacity',()=>assert.equal(compare(report(),{preference:'stability',impactRows:run().rows}).rows[0].capacityModules,6));
 test('stability never approves',()=>assert.equal(compare(report(),{preference:'stability',impactRows:run().rows}).engineeringApproved,false));
+
+test('missing movement evidence produces UNKNOWN ranking',()=>assert.equal(compare(report(),{preference:'stability'}).status,'UNKNOWN'));
+test('missing movement evidence does not fabricate recommendation',()=>assert.equal(compare(report(),{preference:'stability'}).recommendedId,null));
+test('missing movement evidence has explicit code',()=>assert.equal(compare(report(),{preference:'stability'}).code,'OPTION_COMPARE_MOVEMENT_UNAVAILABLE'));
+test('known movement evidence restores recommendation',()=>assert.equal(compare(report(),{preference:'stability',impactRows:run().rows}).recommendedId,'stable'));
