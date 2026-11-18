@@ -14,3 +14,7 @@ test('queue never authorizes import',()=>assert.equal(verificationQueue().engine
 test('duplicate SKUs across batches are flagged',()=>{const item={batch:'a',record:{sku:'X',kind:'MCB'},evidence:{}};const r=dashboard([item,{...item,batch:'b'}],[]);assert.equal(r.totals.duplicateSkus,1);assert.equal(r.records.filter(x=>x.duplicate).length,1)});
 test('missing geometry is counted per record',()=>{const r=dashboard([{batch:'a',record:{sku:'X',kind:'MCB'},evidence:{}}],[]);assert.equal(r.totals.missingGeometry,1);assert.deepEqual(r.records[0].missingGeometry,['widthMm','heightMm','depthMm'])});
 test('overlap is based on normalized SKU',()=>{const r=dashboard([{batch:'a',record:{sku:' x ',kind:'MCB'},evidence:{}}],[{sku:'X'}]);assert.equal(r.totals.coreOverlap,1)});
+
+test('core SKU overlap becomes an explicit blocker',()=>{const r=dashboard([{batch:'a',record:{sku:'X',kind:'MCB'},evidence:{}}],[{sku:'X'}]);assert.ok(r.records[0].reasons.includes('CORE_SKU_OVERLAP'));assert.equal(r.totals.readyForHumanReview,0)});
+test('empty SKUs do not create fake duplicate identity',()=>{const item={batch:'a',record:{kind:'MCB'},evidence:{}};const r=dashboard([item,item],[]);assert.equal(r.totals.duplicateSkus,0)});
+test('overlap is included in human verification queue',()=>{const r=verificationQueue([{batch:'a',record:{sku:'X',kind:'MCB'},evidence:{}}],[{sku:'X'}]);assert.ok(r.queue[0].reasons.includes('CORE_SKU_OVERLAP'))});
