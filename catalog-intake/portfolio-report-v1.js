@@ -8,5 +8,5 @@ const summary={
  missingGeometry:result.missingGeometry,duplicateErrors:result.duplicateErrors,
  coreConflicts:result.coreConflicts,blockers:result.blockers
 };
-if(require.main===module)process.stdout.write(JSON.stringify(summary,null,2)+'\n');
+if(require.main===module)process.stdout.write(JSON.stringify({...summary,sourceRecords:result.sourceRecords},null,2)+'\n');
 module.exports={summary};
