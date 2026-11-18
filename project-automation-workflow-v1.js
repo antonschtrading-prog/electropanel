@@ -218,7 +218,8 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
    calculationCode:staleLinked?'WORKFLOW_LINKED_CURRENT_REVIEW_REQUIRED':estimate.code,
    proposedSku:candidate?.sku??null,proposedStatus:candidate?.status??null,
    proposalCaution:candidate?.caution||[],
-   selectedSku:line.catalogSku??null,selectedInCandidates:!!selected,
+   selectedSku:line.catalogSku??null,branchSku,articleConflict,
+   branchAssignments:circuitBranches.length,selectedInCandidates:!!selected,
    candidatesCount:candidates.length,
    cableLengthStatus:'NOT_REQUIRED_FOR_PANEL_PREVIEW'});
  }
