@@ -53,6 +53,9 @@ function epEngineeringIssueRegisterV1(bundle,project){
  if(sections.integratedEvidence)sectionNames.push('integratedEvidence');
  if(sections.faultRoutes)sectionNames.push('faultRoutes');
  if(sections.reconciliation)sectionNames.push('reconciliation');
+ // Delivery trace detects inconsistencies across diagram, DIN, BOM and
+ // workflow. Feed them into the same actionable register as other checks.
+ if(sections.deliveryTrace)sectionNames.push('deliveryTrace');
  for(const name of sectionNames){
   const section=sections[name];
   if(!section||!Array.isArray(section.issues)){
