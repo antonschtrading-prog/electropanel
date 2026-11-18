@@ -24,8 +24,6 @@ function epDraftBoardPlanV1(project,lookupSku){
   const branch=branches?.find(b=>b?.circuitId===line?.id);
   if(branches&&!branch)add('MISSING_BRANCH_DEVICE',line?.id??null,'BLOCKED');
   if(branch&&branch.modules!==line?.modules)add('BRANCH_LINE_WIDTH_CONFLICT',line?.id??null,'BLOCKED');
-  if(branch?.catalogSku&&line?.catalogSku&&branch.catalogSku!==line.catalogSku)
-   add('BRANCH_LINE_ARTICLE_CONFLICT',line?.id??null,'BLOCKED');
   devices.push({id:branch?.id??line?.id,modules:branch?.modules??line?.modules,
    article:branch?.catalogSku??line?.catalogSku??null,kind:'branch'});
  }
