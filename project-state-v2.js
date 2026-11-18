@@ -49,6 +49,11 @@ function epRestoreProjectExtensionsV2(raw,project){
   project.workflowDesignInputsV1=
    epWorkflowInputsV1(raw.workflowDesignInputsV1);
  }
+ if(raw.designReviewNoticeV1!==undefined){
+  if(typeof epDesignReviewNoticeNormalizeV1!=='function')
+   throw Error('DESIGN_REVIEW_NOTICE_MODULE_MISSING');
+  project.designReviewNoticeV1=epDesignReviewNoticeNormalizeV1(raw.designReviewNoticeV1);
+ }
  if(raw.designStageV1!==undefined){
   if(!['PRELIMINARY','BOARD_DESIGN','DETAILED'].includes(raw.designStageV1))
    throw Error('Неизвестная стадия проектирования');

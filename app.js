@@ -43,6 +43,8 @@ function changed(){workflowSplitPlan=null;workflowMergePlan=null;syncBranchDevic
    epApplyCircuitDependencyReviewV1(lastDesignSnapshot,state);
   if(typeof epInvalidateDesignEvidenceV1==='function')
    state=epInvalidateDesignEvidenceV1(state,lastDesignImpact);
+  if(typeof epDesignReviewNoticeUpdateV1==='function'&&lastDesignImpact.affected?.length)
+   state.designReviewNoticeV1=epDesignReviewNoticeUpdateV1(state.designReviewNoticeV1,lastDesignImpact);
  }
  if(typeof epRefreshLinkedCurrentsV1==='function')epRefreshLinkedCurrentsV1(state);
  lastDesignSnapshot=structuredCloneCompat(state);
@@ -1093,9 +1095,14 @@ function epFireControlEditorEventV1(event){
 }
 function renderEngineeringDiagnosticsV1(){
  const impactHolder=$('designChangeImpactPanel');
- if(impactHolder)impactHolder.textContent=lastDesignImpact?.affected?.length?
-  'После изменений перепроверить: '+lastDesignImpact.affected.join(', ')+'.':
-  'Изменения, требующие перепроверки, пока не выявлены.';
+ if(impactHolder){
+  const notice=state.designReviewNoticeV1;
+  impactHolder.textContent=notice?.pendingDomains?.length?
+   'Сохранены требования перепроверки: '+notice.pendingDomains.join(', ')+
+    '. Последнее изменение: '+(notice.lastChangedDomains||[]).join(', ')+
+    '. Это напоминание, не инженерное подтверждение.':
+   'Сохранённых замечаний после изменений пока нет. Инженерные проверки выполняются отдельно.';
+ }
  const evidenceHolder=$('designEvidencePanel');
  if(evidenceHolder)evidenceHolder.innerHTML=typeof assessDesignEvidence==='function'&&typeof epDesignEvidenceHtmlV1==='function'?
   epDesignEvidenceHtmlV1(assessDesignEvidence(state)):'Проверка доказательной базы недоступна.';
