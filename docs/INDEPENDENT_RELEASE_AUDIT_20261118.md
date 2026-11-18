@@ -202,3 +202,12 @@ This is a **targeted safety/control patch**, not a claim of 10x more feature dev
 - Review source test failures and any browser selector/visibility failures before claiming completion.
 - Check merge conflicts in PR #14 (`mergeable:false`) and rebase without overwriting concurrently developed PR #12 work.
 - No release approval until independent workflow, round-trip persistence, and complete document consistency criteria pass.
+
+## Chromium follow-up: invalid draft retention and diagnostic access
+
+The exact commit `bf1f728` passed all three GitHub Actions workflows. New browser checks added after that confirmation:
+- When an inconsistent branch SKU is present, the four **diagnostic** exports (engineering bundle, cross-view CSV/JSON, issue register) remain available; blocking them would hide the information needed to repair the project.
+- A user can still save the full inconsistent project JSON for later correction, without dropping the offending SKU. The save operation is intentionally **not** gated by cross-view release eligibility.
+- Previous negative export tests remain in place and ensure eight engineering deliverables are blocked for the same inconsistency.
+
+These browser checks are pending CI on the new head. Do not interpret a diagnostic export as engineering approval.
