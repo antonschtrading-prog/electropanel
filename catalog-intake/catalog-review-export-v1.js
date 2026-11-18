@@ -51,7 +51,7 @@ function exportProjectCatalogueAudit(project){
 function exportPreliminaryBOM(project){
  const report=projectMaterialDraft(project);
  return {mode:report.mode,engineeringApproved:false,notForProcurement:true,count:report.articles.length,
-  csv:csv([['catalogId','sku','manufacturer','series','kind','quantity','modulesPerUnit','widthMmPerUnit','lines','sourceUrl'],
-   ...report.articles.map(r=>[r.catalogId,r.sku,r.manufacturer,r.series,r.kind,r.quantity,r.modulesPerUnit,r.widthMmPerUnit,r.lines,r.sourceUrl])])};
+  csv:csv([['catalogId','sku','manufacturer','series','kind','quantity','modulesPerUnit','widthMmPerUnit','warnings','lines','sourceUrl'],
+   ...report.articles.map(r=>[r.catalogId,r.sku,r.manufacturer,r.series,r.kind,r.quantity,r.modulesPerUnit,r.widthMmPerUnit,r.warnings,r.lines,r.sourceUrl])])};
 }
 module.exports={csvCell,csv,exportStagingInventory,exportComparison,exportProjectTransferReview,exportQualityDashboard,exportVerificationQueue,exportProjectCatalogueAudit,exportPreliminaryBOM};
