@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const {buildPortfolio,batches}=require('../catalog-intake/portfolio-v1.js');
 test('all four staging batches accounted for',()=>assert.equal(batches.length,4));
 test('portfolio has 46 unique records',()=>assert.equal(buildPortfolio().total,46));
-test('portfolio has 3 MCB records',()=>assert.equal(buildPortfolio().counts.MCB.total,2));
+test('portfolio has 2 MCB records',()=>assert.equal(buildPortfolio().counts.MCB.total,2));
 test('portfolio has 34 RCD records',()=>assert.equal(buildPortfolio().counts.RCD.total,34));
 test('portfolio has 5 RCBO records',()=>assert.equal(buildPortfolio().counts.RCBO.total,5));
 test('portfolio has 5 contactor records',()=>assert.equal(buildPortfolio().counts.CONTACTOR.total,5));
