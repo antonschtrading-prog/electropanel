@@ -243,3 +243,80 @@ test('no automatic changes to manual engineering decisions',()=>{
  const before=JSON.stringify(p);run(p,bundle());
  assert.equal(JSON.stringify(p),before);
 });
+
+test('a previously linked current marked stale is highlighted even without evidence record',()=>{
+ const p=base();p.lines[0].overloadInput={ibA:8.696};
+ p.lines[0].loadCurrentCalculation={powerSource:'circuit',roundedIbA:8.696,
+  inputs:{powerKw:2},stale:true};
+ const r=run(p,bundle());
+ assert.equal(r.rows[0].status,'STALE');
+ assert.equal(r.rows[0].staleCircuits[0].code,'LINKED_IB_STALE');
+ assert.equal(r.rows[3].status,'STALE','protection depends on load current');
+ assert.equal(r.status,'BLOCKED');
+});
+test('overridden linked current is identified and manual Ib is never overwritten',()=>{
+ const p=base();p.lines[0].overloadInput={ibA:10.5};
+ p.lines[0].loadCurrentCalculation={powerSource:'circuit',roundedIbA:8.696,
+  inputs:{powerKw:2}};
+ const before=JSON.stringify(p),r=run(p,bundle());
+ assert.equal(r.rows[0].staleCircuits[0].code,'LINKED_IB_OVERRIDDEN_OR_MISSING');
+ assert.equal(JSON.stringify(p),before);
+});
+test('changing linked circuit power makes current evidence stale',()=>{
+ const p=base();p.lines[0].overloadInput={ibA:8.696};
+ p.lines[0].loadCurrentCalculation={powerSource:'circuit',roundedIbA:8.696,
+  inputs:{powerKw:1.5}};
+ const r=run(p,bundle());
+ assert.equal(r.rows[0].status,'STALE');
+ assert.equal(r.rows[0].staleCircuits[0].code,'LINKED_POWER_CHANGED');
+});
+test('matching linked Ib is not falsely declared stale',()=>{
+ const p=base();p.lines[0].overloadInput={ibA:8.696};
+ p.lines[0].loadCurrentCalculation={powerSource:'circuit',roundedIbA:8.696,
+  inputs:{powerKw:2}};
+ const r=run(p,bundle());
+ assert.equal(r.rows[0].staleCircuits.length,0);
+ assert.equal(r.rows[0].status,'NOT_DOCUMENTED');
+});
+test('engineer-entered manual Ib is outside the linked-current freshness gate',()=>{
+ const p=base();p.lines[0].overloadInput={ibA:13};
+ p.lines[0].loadCurrentCalculation={powerSource:'manual',roundedIbA:9,
+  inputs:{powerKw:1}};
+ const r=run(p,bundle());
+ assert.equal(r.rows[0].staleCircuits.length,0);
+ assert.equal(r.rows[0].status,'NOT_DOCUMENTED');
+});
+test('missing linked overload input remains stale rather than silently inferred',()=>{
+ const p=base();p.lines[0].loadCurrentCalculation={powerSource:'circuit',
+  roundedIbA:9,inputs:{powerKw:2}};
+ const r=run(p,bundle());
+ assert.equal(r.rows[0].status,'STALE');
+ assert.equal(r.rows[0].staleCircuits[0].code,'LINKED_IB_OVERRIDDEN_OR_MISSING');
+});
+test('explicit live section blocker outranks declared verified status',()=>{
+ const p=project('enclosure','verified');
+ const r=run(p,bundle());
+ assert.equal(r.rows[5].status,'PENDING_REVIEW');
+ assert.equal(r.rows[5].liveBlocked,true);
+ assert.equal(r.summary.declared,0);
+});
+test('unrelated blocked section does not invalidate verified load evidence',()=>{
+ const p=project('load','verified');
+ const r=run(p,bundle());
+ assert.equal(r.rows[0].liveBlocked,false);
+ assert.equal(r.rows[0].status,'DECLARED_CURRENT');
+});
+test('stale linked circuit identifiers are escaped when rendered',()=>{
+ const p=base();p.lines[0].id='<img src=x>';
+ p.lines[0].loadCurrentCalculation={powerSource:'circuit',stale:true};
+ const h=html(run(p,bundle()));
+ assert.match(h,/&lt;img src=x&gt;/);
+ assert.doesNotMatch(h,/<img src=x>/);
+});
+test('per-circuit stale detection is bounded to 400 lines',()=>{
+ const p=base();p.lines=Array.from({length:450},(_,i)=>({
+  id:'L'+i,power:1,loadCurrentCalculation:{powerSource:'circuit',stale:true}
+ }));
+ const r=run(p,bundle());
+ assert.equal(r.rows[0].staleCircuits.length,400);
+});
