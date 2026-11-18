@@ -1904,8 +1904,10 @@ const server=http.createServer((req,res)=>{
 
  // Review notifications must survive JSON restoration and an actual reload.
  const savedReview=await page.evaluate(()=>{
+  // Edit a declared phase, not line power: consumer reconciliation
+  // intentionally recalculates power from its linked loads.
   const current=state.lines[0];
-  current.power=(Number(current.power)||0)+0.5;
+  current.phase=current.phase==='L1'?'L2':'L1';
   changed();
   const saved=JSON.parse(localStorage.getItem('electropanel_web_preview'));
   const imported=normalizeImport(saved);
