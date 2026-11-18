@@ -48,3 +48,13 @@ test('insufficient total contiguous space blocks without overlapping placements'
  assert.ok(report.issues.some(x=>x.code==='RAIL_CAPACITY_EXCEEDED'));
  assert.equal(overlap(report.placements),null);
 });
+
+test('board blocks conflicting circuit and branch article declarations',()=>{
+ const p=project([2],8);
+ p.lines[0].catalogSku='A';p.branchDevices[0].catalogSku='B';
+ const report=epDraftBoardPlanV1(p,()=>({modules:2}));
+ assert.equal(report.status,'BLOCKED');
+ assert.ok(report.issues.some(x=>x.code==='BRANCH_LINE_ARTICLE_CONFLICT'));
+ assert.equal(p.lines[0].catalogSku,'A');
+ assert.equal(p.branchDevices[0].catalogSku,'B');
+});
