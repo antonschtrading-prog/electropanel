@@ -4,6 +4,7 @@ const {buildBrowserSnapshot,buildComparison}=require('./catalog-browser-v1.js');
 const {previewProjectTransfer}=require('./project-transfer-preview-v1.js');
 const {dashboard,verificationQueue}=require('./catalog-quality-dashboard-v1.js');
 const {catalogIntegration,projectMaterialDraft}=require('./catalog-project-integration-v1.js');
+const {capacityPreview}=require('./catalog-panel-capacity-v1.js');
 const SAFE=/^[=+@\-\t\r]/;
 function csvCell(value){
  const raw=value==null?'':typeof value==='object'?JSON.stringify(value):String(value);
@@ -54,4 +55,17 @@ function exportPreliminaryBOM(project){
   csv:csv([['catalogId','sku','manufacturer','series','kind','quantity','modulesPerUnit','widthMmPerUnit','warnings','lines','sourceUrl'],
    ...report.articles.map(r=>[r.catalogId,r.sku,r.manufacturer,r.series,r.kind,r.quantity,r.modulesPerUnit,r.widthMmPerUnit,r.warnings,r.lines,r.sourceUrl])])};
 }
-module.exports={csvCell,csv,exportStagingInventory,exportComparison,exportProjectTransferReview,exportQualityDashboard,exportVerificationQueue,exportProjectCatalogueAudit,exportPreliminaryBOM};
+function exportPanelCapacity(project,options={}){
+ const report=capacityPreview(project,options);
+ const rows=report.candidates.map(r=>[r.capacity,r.remainingModules,r.remainingAfterReserve,r.fitsKnownDemand,r.canConfirmFit]);
+ return {mode:report.mode,engineeringApproved:false,capacityConfirmed:report.capacityConfirmed,
+  warnings:report.warnings,csv:csv([['capacity','remainingModules','remainingAfterReserve','fitsKnownDemand','canConfirmFit'],...rows])};
+}
+function exportRailPreview(project,options={}){
+ const report=capacityPreview(project,options);
+ const rows=report.railPreview.rails.flatMap(rail=>rail.devices.map(device=>[rail.index,rail.capacity,rail.remaining,device.lineId,device.catalogId,device.sku,device.modules,device.warnings]));
+ return {mode:'PRELIMINARY_RAIL_EXPORT_ONLY',engineeringApproved:false,notInstallationLayout:true,
+  unknownLines:report.unknownLines,oversized:report.railPreview.oversized,
+  csv:csv([['rail','railCapacity','railRemaining','lineId','catalogId','sku','modules','warnings'],...rows])};
+}
+module.exports={exportPanelCapacity,exportRailPreview,csvCell,csv,exportStagingInventory,exportComparison,exportProjectTransferReview,exportQualityDashboard,exportVerificationQueue,exportProjectCatalogueAudit,exportPreliminaryBOM};
