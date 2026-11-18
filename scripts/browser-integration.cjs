@@ -2074,6 +2074,69 @@ const server=http.createServer((req,res)=>{
  await page.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ошибка:'));
  assert.match(await page.locator('#status').innerText(),/Ошибка:/);
  assert.equal(await page.locator('#export').isDisabled(),true);
+
+ // Independent regression: a conflict introduced AFTER a saved project edit
+ // must survive real page reload and keep coordinated document export blocked.
+ const editPage=await browser.newPage({viewport:{width:1280,height:900}});
+ const editErrors=[];editPage.on('pageerror',e=>editErrors.push(e.message));
+ await editPage.goto('http://127.0.0.1:'+server.address().port);
+ await editPage.locator('#loadDemo').click();
+ const commercialEdit=await editPage.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  if(!branch)return {missingBranch:true};
+  const line=state.lines.find(l=>l.id===branch.circuitId);
+  // The demo intentionally starts without a selected catalogue article.
+  // Use an actual seeded one-module article already covered by this suite.
+  const originalSku=line.catalogSku||branch.catalogSku||'SE-A9F73110';
+  if(!originalSku)return {missingSku:true};
+  // Keep the actual article on the circuit, but assign an inconsistent
+  // branch article. It is a persisted input conflict, not a calculation.
+  line.name='Commercial panel edited circuit';
+  line.catalogSku=originalSku;
+  branch.catalogSku='CONFLICT-ARTICLE-NOT-IN-CATALOG';
+  changed();
+  const saved=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+  const gate=epDraftDocumentExportGate();
+  return {id:line.id,branchId:branch.id,originalSku,
+   savedName:saved.lines.find(x=>x.id===line.id)?.name,
+   savedBranchSku:saved.branchDevices.find(x=>x.id===branch.id)?.catalogSku,
+   blocked:gate.allowed===false,
+   approved:epWorkflowPreviewV1(state,catalogDevice,
+    projectCatalogEntries().map(([id,device])=>({id,device})),
+    state.workflowDesignInputsV1).engineeringApproved};
+ });
+ assert.equal(commercialEdit.missingBranch,undefined,'edited fixture needs linked branch');
+ assert.equal(commercialEdit.missingSku,undefined,'edited fixture needs selected article');
+ assert.equal(commercialEdit.savedName,'Commercial panel edited circuit');
+ assert.equal(commercialEdit.savedBranchSku,'CONFLICT-ARTICLE-NOT-IN-CATALOG');
+ assert.equal(commercialEdit.blocked,true,'conflicting saved project must block document release');
+ assert.equal(commercialEdit.approved,false);
+ await editPage.reload();
+ const reopenedConflict=await editPage.evaluate(({id,branchId})=>{
+  const line=state.lines.find(x=>x.id===id);
+  const branch=state.branchDevices.find(x=>x.id===branchId);
+  const gate=epDraftDocumentExportGate();
+  const workflow=epWorkflowPreviewV1(state,catalogDevice,
+   projectCatalogEntries().map(([id,device])=>({id,device})),
+   state.workflowDesignInputsV1);
+  const scheme=epSingleLineDraftV1(state,catalogDevice);
+  const bom=epDraftBomV1(state,catalogDevice);
+  return {name:line?.name,lineSku:line?.catalogSku,branchSku:branch?.catalogSku,
+   blocked:gate.allowed===false,workflowStatus:workflow.status,
+   articleConflict:workflow.issues.some(x=>x.code==='WORKFLOW_CIRCUIT_BRANCH_ARTICLE_CONFLICT'),
+   schematicCircuit:scheme.nodes.some(x=>x.lineId===id),
+   bomApproved:bom.engineeringApproved};
+ },commercialEdit);
+ assert.equal(reopenedConflict.name,'Commercial panel edited circuit');
+ assert.equal(reopenedConflict.lineSku,commercialEdit.originalSku);
+ assert.equal(reopenedConflict.branchSku,'CONFLICT-ARTICLE-NOT-IN-CATALOG');
+ assert.equal(reopenedConflict.blocked,true,'reload must not silently clear export conflict');
+ assert.equal(reopenedConflict.workflowStatus,'BLOCKED');
+ assert.equal(reopenedConflict.articleConflict,true);
+ assert.equal(reopenedConflict.schematicCircuit,true);
+ assert.equal(reopenedConflict.bomApproved,false);
+ assert.deepEqual(editErrors,[],'edited browser project must not trigger JavaScript errors');
+ await editPage.close();
  assert.deepEqual(errors,[]);
  console.log('PASS: design change review persisted through JSON reload');
  console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');

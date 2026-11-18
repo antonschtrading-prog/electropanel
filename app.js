@@ -3035,7 +3035,7 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
   if(x.terminalVersion!==undefined){if(x.terminalVersion!==1||!Array.isArray(x.terminalLinks))throw Error('Неподдерживаемая версия контактных деклараций');p.terminalLinks=x.terminalLinks.map(l=>({id:l.id,loadId:l.loadId,circuitId:l.circuitId,kind:l.kind,from:l.from,to:l.to,origin:l.origin}));p.terminalVersion=1;}
   if(x.feedVersion===undefined&&Array.isArray(x.feedLinks)&&x.feedLinks.length)throw Error('У питающих связей отсутствует версия');
   if(x.feedVersion!==undefined){if(x.feedVersion!==1||!Array.isArray(x.feedLinks))throw Error('Неподдерживаемая версия питающих связей');p.feedLinks=x.feedLinks.map(f=>({id:f.id,circuitId:f.circuitId,kind:f.kind,from:f.from,to:f.to,origin:f.origin}));p.feedVersion=1;}
-  if(x.branchModelVersion===1){if(!Array.isArray(x.branchDevices))throw Error('Повреждён список отходящих аппаратов');p.branchDevices=x.branchDevices.map(d=>({id:d.id,circuitId:d.circuitId,label:d.label,modules:d.modules,templateId:d.templateId??null}));p.branchModelVersion=1;}
+  if(x.branchModelVersion===1){if(!Array.isArray(x.branchDevices))throw Error('Повреждён список отходящих аппаратов');p.branchDevices=x.branchDevices.map(d=>({id:d.id,circuitId:d.circuitId,label:d.label,modules:d.modules,templateId:d.templateId??null,...(typeof d.catalogSku==='string'&&d.catalogSku.trim()&&d.catalogSku.length<=100?{catalogSku:d.catalogSku}:{})}));p.branchModelVersion=1;}
  }else migrateLegacyEntities(p);
  ensureV2(p);
  if(typeof epRestoreProjectExtensionsV2==='function')epRestoreProjectExtensionsV2(x,p);
