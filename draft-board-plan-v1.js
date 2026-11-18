@@ -83,7 +83,9 @@ function epDraftBoardPlanV1(project,lookupSku){
   }
   const chosen=fixed.get(d.id);
   if(chosen){
-   if(!Number.isInteger(chosen.railIndex)||!Number.isInteger(chosen.startModule)||chosen.railIndex<0||chosen.railIndex>=project.railCount||chosen.startModule<0||chosen.startModule+width>project.railCapacity)continue;
+   if(!Number.isInteger(chosen.railIndex)||!Number.isInteger(chosen.startModule)||chosen.railIndex<0||chosen.railIndex>=project.railCount||chosen.startModule<0||chosen.startModule+width>project.railCapacity){
+    add('MANUAL_LAYOUT_OUT_OF_BOUNDS',d.id,'BLOCKED');continue;
+   }
    placements.push({deviceId:d.id,kind:d.kind,article:d.article,railIndex:chosen.railIndex,startModule:chosen.startModule,modules:width});continue;
   }
   if(fixed.size){
