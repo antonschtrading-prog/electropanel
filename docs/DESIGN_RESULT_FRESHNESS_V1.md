@@ -31,3 +31,17 @@ CSV. Invalid persisted notices and malformed evidence records fail closed.
 
 Acceptance criteria: Node regressions, engineering validation and actual
 Chromium browser checks on the exact commit; use a separate PR into PR #12.
+
+## Line-level stale current cross-check
+
+For each circuit with a saved engine-owned `loadCurrentCalculation`
+(`powerSource: "circuit"`) this report also checks the persisted
+`stale` flag, whether the declared overload Ib still matches the saved
+linked Ib, and whether the input circuit power still matches its saved
+calculation basis. These findings are shown for the load and device
+domains, with circuit identifiers. They do not modify engineer-entered Ib.
+Manual current records are outside this automatic comparison.
+
+A currently BLOCKED related engine section also takes precedence over an
+older `verified` declaration: it becomes `PENDING_REVIEW`, not a false
+freshness claim. This audit is not a substitute for engineering verification.
