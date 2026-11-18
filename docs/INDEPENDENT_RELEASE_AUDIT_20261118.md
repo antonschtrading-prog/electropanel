@@ -185,3 +185,20 @@ Commit series `23d4614` / `2306474` / `79bcebe` implements a **minimal cross-vie
 - Chromium regression mutates only its in-browser demo fixture, attempts the three primary document exports, checks none reaches `download`, and restores state.
 - This is a **candidate fix pending CI**. It does not assert final engineering approval and does not cover every other specialized export handler.
 - The independent audit test inventory is now **72** (previous 71 plus one shared-gate contract).
+
+## Expanded coherent release-control batch
+
+The prior candidate `ceb1b2e` was verified with **three successful GitHub Actions workflows** (JS, engineering validation, Chromium). The following separate batch adds:
+1. Shared cross-view export eligibility checks to **seven additional engineering deliverable entry points**: conductor SVG, conductor trace CSV, circuit dossier JSON, circuit dossier CSV, protection CSV, design-review CSV, and preliminary cabinet drawing SVG.
+2. **56 additional automated source contracts** in `tests/independent-export-surface-matrix-1-0.test.js`: per-entry-point guard presence, ordering before download, single gate invocation, non-approval language, project state linkage; delegated handlers; explicit diagnostics exemptions; fail-closed and draft-UNKNOWN gate semantics.
+3. Chromium regression expanded from three to **eight** primary standalone export buttons with contradictory SKU assignments.
+4. The **diagnostic** bundle, cross-view issue register and cross-view CSV/JSON remain downloadable even when blocked, to support remediation; these must not be gated as engineering deliverables.
+5. **Independent test count is 128** (72 previous plus 56), excluding the additional Chromium assertions.
+
+This is a **targeted safety/control patch**, not a claim of 10x more feature development. New batch must pass fresh JS, validation and browser workflows. Avoid adding blanket gates to JSON project saves or diagnostic reports: an engineer must be able to save and inspect an invalid draft.
+
+### Outstanding
+- Verify every new workflow on the exact head SHA.
+- Review source test failures and any browser selector/visibility failures before claiming completion.
+- Check merge conflicts in PR #14 (`mergeable:false`) and rebase without overwriting concurrently developed PR #12 work.
+- No release approval until independent workflow, round-trip persistence, and complete document consistency criteria pass.
