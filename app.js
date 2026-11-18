@@ -1105,8 +1105,13 @@ function renderEngineeringDiagnosticsV1(){
    // Reuse the existing issue register, not a second independent calculation.
    const report=engineeringBundle?.sections?.reviewActions||
     epDesignReviewActionMatrixV1(state,engineeringBundle?.sections?.issueRegister);
+   const current=engineeringBundle?.sections?.resultFreshness;
+   const freshnessHtml=typeof epDesignResultFreshnessHtmlV1==='function'?
+    epDesignResultFreshnessHtmlV1(current):'<p>Матрица актуальности недоступна.</p>';
    impactHolder.innerHTML=epDesignReviewActionMatrixHtmlV1(report)+
-    (report?.rows?.length?'<button type="button" class="btn" id="exportDesignReviewActionsCsvBtn">Задачи перепроверки CSV</button>':'');
+    (report?.rows?.length?'<button type="button" class="btn" id="exportDesignReviewActionsCsvBtn">Задачи перепроверки CSV</button>':'')+
+    freshnessHtml+
+    (current?.rows?.length?'<button type="button" class="btn" id="exportResultFreshnessCsvBtn">Актуальность расчётов CSV</button>':'');
   }else impactHolder.textContent='Модуль сохранённых перепроверок недоступен. Инженерная проверка не подтверждена.';
  }
  const evidenceHolder=$('designEvidencePanel');
@@ -4526,4 +4531,14 @@ document.addEventListener('click',event=>{
    'text/csv;charset=utf-8');
   notify('Задачи инженерной перепроверки выгружены');
  }catch(error){notify('Экспорт перепроверок: '+error.message,true);}
+});
+
+document.addEventListener('click',event=>{
+ if(!event.target.closest('#exportResultFreshnessCsvBtn'))return;
+ try{
+  const report=epEngineeringBundleV1(state,catalogDevice).sections.resultFreshness;
+  download(baseName()+'-result-freshness_DRAFT.csv',
+   epDesignResultFreshnessCsvV1(report),'text/csv;charset=utf-8');
+  notify('Сведения об актуальности расчётных разделов выгружены');
+ }catch(error){notify('Экспорт актуальности: '+error.message,true);}
 });

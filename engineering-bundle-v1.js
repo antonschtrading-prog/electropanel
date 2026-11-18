@@ -186,6 +186,9 @@ function epEngineeringBundleV1(project,lookupSku){
  sections.reviewActions=section('SAVED_DESIGN_REVIEW_ACTIONS',
   typeof epDesignReviewActionMatrixV1==='function'?
    ()=>epDesignReviewActionMatrixV1(project,sections.issueRegister):null);
+ sections.resultFreshness=section('RESULT_FRESHNESS',
+  typeof epDesignResultFreshnessV1==='function'?
+   ()=>epDesignResultFreshnessV1(project,{sections}):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
  const blockedSections=Object.entries(statuses).filter(([,status])=>status==='BLOCKED').map(([name])=>name);
  const unresolvedSections=Object.entries(statuses).filter(([,status])=>status!=='BLOCKED').map(([name])=>name);

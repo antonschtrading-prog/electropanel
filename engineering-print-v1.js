@@ -24,6 +24,13 @@ function epEngineeringPrintV1(bundle){
   x.title,x.status,x.blocking,x.open,x.deferred,
   x.tasks.length?x.tasks.map(t=>t.code+(t.lineId?' ('+t.lineId+')':'')).join('; '):
    'Нет связанных замечаний, повторная проверка всё равно требуется']));
+ const freshness=sections.resultFreshness;
+ const freshnessTable=rows(['Раздел','Актуальность','Ревизия изменений',
+  'Заявленный статус','Источник','Метод','Связанные расчётные отчёты'],
+  (freshness?.rows||[]).map(x=>[
+   x.title,x.status,x.noticeRevision??'—',x.declaredStatus,
+   x.source||'Не указан',x.method||'Не указан',
+   x.reportSections.map(s=>s.section+':'+s.status).join('; ')]));
  const workQueue=sections.designWorkQueue?.items||[];
  const workQueueTable=rows(['Приоритет','Цепь','Задача','Раздел'],workQueue.map(x=>[x.priority,x.lineId,x.action,x.section]));
  const designReview=sections.designReview?.rows||[];
@@ -398,6 +405,8 @@ function epEngineeringPrintV1(bundle){
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
   '<h2>Паспортные данные выбранного оборудования · источники и ограничения</h2>'+catalogueEvidenceTable+
+  '<h2>Актуальность расчётных результатов и инженерных данных</h2>'+freshnessTable+
+  '<p>DECLARED_CURRENT — сохранённая декларация проверки, а не нормативный допуск. STALE означает устаревшие сведения; PENDING_REVIEW — изменения требуют повторной проверки.</p>'+
   '<h2>Сохранённые задачи перепроверки после изменения проекта</h2>'+savedReviewTable+
   '<p>Сопоставление с текущими замечаниями не подтверждает повторную инженерную проверку и не отменяет устаревшие расчёты.</p>'+
   '<h2>Очередь инженерных задач</h2>'+workQueueTable+
