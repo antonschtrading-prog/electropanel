@@ -38,7 +38,17 @@ function epDraftBoardPlanV1(project,lookupSku){
   fixed.set(entry.deviceId,entry);
   const device=devices.find(x=>x.id===entry.deviceId);
   if(!device){add('MANUAL_LAYOUT_ORPHAN',entry.deviceId,'BLOCKED');continue;}
-  const {railIndex:r,startModule:x}=entry,w=device.modules;
+  const {railIndex:r,startModule:x}=entry;
+  // Reserve the effective catalogue width, not an outdated declared width.
+  // Otherwise an auto-placed device can overlap a wider fixed apparatus.
+  let w=device.modules;
+  if(device.article&&typeof lookupSku==='function'){
+   try{
+    const catalogDevice=lookupSku(device.article);
+    if(Number.isInteger(catalogDevice?.modules)&&catalogDevice.modules>0)
+     w=catalogDevice.modules;
+   }catch(_){/* the device validation below reports lookup failure */}
+  }
   if(!Number.isInteger(r)||!Number.isInteger(x)||r<0||r>=project.railCount||x<0||!Number.isInteger(w)||w<1||x+w>project.railCapacity){
    add('MANUAL_LAYOUT_OUT_OF_BOUNDS',entry.deviceId,'BLOCKED');continue;
   }

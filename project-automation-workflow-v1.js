@@ -120,6 +120,11 @@ function epWorkflowConsumerAuditCsvV1(audit){
   r.powerComplete?r.consumerPowerKw:'UNKNOWN',r.declaredPowerKw??'UNKNOWN',r.comparison]);
  return '\uFEFF'+data.map(row=>row.map(cell).join(';')).join('\r\n')+'\r\n';
 }
+function epWorkflowProjectionBlockedV1(report){
+ return !!report&&(report.status==='BLOCKED'||
+  (Array.isArray(report.issues)&&report.issues.some(issue=>
+   issue?.level==='BLOCKED'||issue?.status==='BLOCKED'||issue?.severity==='BLOCKED')));
+}
 function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  const issues=[],rows=[],add=(code,level='UNKNOWN',lineId=null)=>issues.push({code,level,lineId});
  const result=()=>({schema:'electropanel.project.workflow.draft.1',
@@ -256,20 +261,20 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  summary.occupiedModules=board?.placements?.reduce((sum,x)=>sum+x.modules,0)??null;
  steps.push({key:'LOADS',status:summary.missingInput||summary.unknownPhase||summary.staleLinkedCurrents?'PARTIAL':'READY',
   count:summary.calculated+summary.manualCurrentPreserved});
- steps.push({key:'APPARATUS',status:summary.staleLinkedCurrents?'REVIEW_REQUIRED':summary.assignedArticles===summary.circuits?'SELECTED':
+ steps.push({key:'APPARATUS',status:summary.articleConflicts||summary.duplicateBranchAssignments||summary.orphanBranchDevices?'BLOCKED':summary.staleLinkedCurrents?'REVIEW_REQUIRED':summary.assignedArticles===summary.circuits?'SELECTED':
    summary.protectiveCandidates?'CANDIDATES':'PENDING',count:summary.protectiveCandidates});
- steps.push({key:'SINGLE_LINE',status:schematic?.status??'PENDING',
+ const blockedSchematic=epWorkflowProjectionBlockedV1(schematic);
+ const blockedBoard=epWorkflowProjectionBlockedV1(board);
+ const blockedBom=epWorkflowProjectionBlockedV1(bom);
+ steps.push({key:'SINGLE_LINE',status:blockedSchematic?'BLOCKED':schematic?.status??'PENDING',
   count:schematic?.nodes?.length??0});
- steps.push({key:'BOARD',status:board?.status??'PENDING',
+ steps.push({key:'BOARD',status:blockedBoard?'BLOCKED':board?.status??'PENDING',
   count:board?.placements?.length??0});
- steps.push({key:'BOM',status:bom?.status??'PENDING',
+ steps.push({key:'BOM',status:blockedBom?'BLOCKED':bom?.status??'PENDING',
   count:bom?.items?.length??0});
- if(schematic?.status==='BLOCKED'||schematic?.issues?.some(i=>i.level==='BLOCKED'))
-  add('WORKFLOW_SCHEMATIC_CONFLICT','BLOCKED');
- if(board?.status==='BLOCKED'||board?.issues?.some(i=>i.level==='BLOCKED'))
-  add('WORKFLOW_BOARD_CONFLICT','BLOCKED');
- if(bom?.status==='BLOCKED'||bom?.issues?.some(i=>i.level==='BLOCKED'))
-  add('WORKFLOW_BOM_CONFLICT','BLOCKED');
+ if(blockedSchematic)add('WORKFLOW_SCHEMATIC_CONFLICT','BLOCKED');
+ if(blockedBoard)add('WORKFLOW_BOARD_CONFLICT','BLOCKED');
+ if(blockedBom)add('WORKFLOW_BOM_CONFLICT','BLOCKED');
  return result();
 }
 function epWorkflowArticleChoiceV1(project,lineId,sku,catalogInput){
@@ -452,5 +457,5 @@ function epWorkflowCsvV1(report){
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epWorkflowPositiveV1,epWorkflowInputsV1,epWorkflowLineEstimateV1,
  epWorkflowConsumerAuditV1,epWorkflowConsumerAuditCsvV1,
- epWorkflowPreviewV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
+ epWorkflowPreviewV1,epWorkflowProjectionBlockedV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
  epWorkflowArticleChoiceV1,epWorkflowPhaseSuggestionsV1,epWorkflowCsvV1};
