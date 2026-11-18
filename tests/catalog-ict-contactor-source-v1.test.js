@@ -1,0 +1,16 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {candidates,evidence}=require('../catalog-intake/ict-contactor-source-batch-v1.js');
+const {validateCandidate}=require('../catalog-intake/candidate-schema-v1.js');
+test('five exact manufacturer contactor SKUs',()=>assert.equal(candidates.length,5));
+test('all contactor SKUs distinct',()=>assert.equal(new Set(candidates.map(x=>x.sku)).size,5));
+test('50 and 60 Hz coil ratings not conflated',()=>assert.equal(candidates.find(x=>x.sku==='A9C20632').coilFrequencyHz,60));
+test('24 V coil preserved separately',()=>assert.equal(candidates.find(x=>x.sku==='A9C20132').coilVoltageV,24));
+test('220 V and 230 V nominal coils remain distinct',()=>assert.notEqual(candidates.find(x=>x.sku==='A9C20532').coilVoltageV,candidates.find(x=>x.sku==='A9C20732').coilVoltageV));
+test('2NO+2NC is not represented as 2NO',()=>assert.equal(candidates.find(x=>x.sku==='A9C20838').contactConfiguration,'2NO+2NC'));
+test('contactor utilization category unknown, not guessed',()=>assert.ok(candidates.every(x=>x.utilizationCategory===null)));
+test('dimensions not inferred from current rating',()=>assert.ok(candidates.every(x=>x.widthMm===null)));
+test('schema blocks incomplete contactor geometry',()=>assert.ok(validateCandidate(candidates[0]).some(x=>x.code==='REQUIRED_SPEC_UNKNOWN')));
+test('every contactor has exact-SKU manufacturer evidence',()=>assert.ok(candidates.every(x=>evidence[x.sku].sku.exactSku===x.sku)));
+test('no contactor is automatically approved',()=>assert.ok(candidates.every(x=>x.engineeringApproved===false)));
+test('all manufacturer source URLs use HTTPS',()=>assert.ok(candidates.every(x=>x.source.startsWith('https://www.se.com/'))));

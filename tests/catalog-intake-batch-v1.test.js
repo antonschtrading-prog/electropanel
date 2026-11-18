@@ -1,0 +1,14 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {inspectBatch,compareAgainstLegacy,normalizedId}=require('../catalog-intake/batch-review-v1.js');
+const sample={maker:'SYNTHETIC',series:'EXAMPLE',sku:'TEST-001',kind:'MCB',inA:16,poles:1,modules:1,widthMm:18,icnKa:6,icnVoltageV:230,icnStandard:'IEC 60898-1'};
+test('batch rejects non-arrays without throwing',()=>assert.equal(inspectBatch(null).issues[0].code,'BATCH_NOT_ARRAY'));
+test('batch accepts empty list without claiming engineering approval',()=>{const r=inspectBatch([]);assert.equal(r.engineeringApproved,false);assert.equal(r.items.length,0)});
+test('batch detects duplicate composite article IDs',()=>assert.ok(inspectBatch([sample,{...sample}]).issues.some(x=>x.issues.some(y=>y.code==='DUPLICATE_ARTICLE_ID'))));
+test('batch groups all six equipment kinds',()=>assert.equal(Object.keys(inspectBatch([]).groups).length,6));
+test('batch never approves synthetic entries lacking evidence',()=>{const r=inspectBatch([sample]);assert.equal(r.status,'BLOCKED');assert.equal(r.groups.MCB.blocked,1)});
+test('SKU identity is normalized without mutating source',()=>{const original={...sample,maker:' synthetic '};assert.equal(normalizedId(original),'SYNTHETIC::EXAMPLE::TEST-001');assert.equal(original.maker,' synthetic ')});
+test('legacy comparison finds conflicts in existing SKU',()=>{const r=compareAgainstLegacy([{...sample,inA:20}],[sample]);assert.deepEqual(r[0].differences,['inA']);assert.equal(r[0].requiresHumanReview,true)});
+test('legacy comparison flags exact duplicates for review',()=>{const r=compareAgainstLegacy([sample],[sample]);assert.equal(r.length,1);assert.deepEqual(r[0].differences,[])});
+test('legacy comparison leaves unknown SKU untouched',()=>assert.deepEqual(compareAgainstLegacy([sample],[]),[]));
+test('legacy comparison does not overwrite source arrays',()=>{const input=[sample],legacy=[{...sample,inA:10}];compareAgainstLegacy(input,legacy);assert.equal(input[0].inA,16);assert.equal(legacy[0].inA,10)});
