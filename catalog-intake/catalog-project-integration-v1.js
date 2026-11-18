@@ -20,7 +20,7 @@ function catalogIntegration(project={},seed=EP_CATALOG,staged=items){
   const seedMatch=sku?seedBySku.get(sku):null;
   const selected=match||(seedMatch?.device||null);
   const selectedId=match?requested:seedMatch?.id||null;
-  const staging=sku?stagedBySku.get(sku)||[]:requested?stagedBySku.get(norm(requested))||[]:[];
+  const staging=[...(stagedBySku.get(sku)||[]),...(requested&&norm(requested)!==sku?stagedBySku.get(norm(requested))||[]:[])];
   const source=match?(Object.hasOwn(projectCatalog.customArticles,requested)?'USER_DECLARED':'CURATED_SEED'):seedMatch?'CURATED_SEED':staging.length?'STAGING_ONLY':'UNRESOLVED';
   const warnings=[];
   if(requested&&!match)warnings.push('UNKNOWN_CATALOG_ID');
@@ -29,18 +29,19 @@ function catalogIntegration(project={},seed=EP_CATALOG,staged=items){
    const compatible=single?(selected.poles===1||(selected.poles===2&&(selected.kind==='RCBO'||['1P+N','2P'].includes(selected.poleConfiguration)))):(three&&(selected.poles===3||selected.poles===4));
    if(!compatible)warnings.push('PHASE_POLES_CONFLICT');
   }
-  if(sku&&!seedMatch&&!match&&staging.length)warnings.push('STAGED_SKU_NOT_SELECTABLE');
+  if(!selected&&staging.length)warnings.push('STAGED_SKU_NOT_SELECTABLE');
   if(sku&&selected&&norm(selected.sku)!==sku)warnings.push('SKU_CONFLICT');
   if(selected&&Number.isFinite(line.modules)&&line.modules!==selected.modules)warnings.push('MODULE_COUNT_CONFLICT');
   if(selected&&Number.isFinite(line.inA)&&Number.isFinite(selected.inA)&&line.inA!==selected.inA)warnings.push('RATED_CURRENT_CONFLICT');
   if(selected&&typeof line.device==='string'&&line.device&&line.device!==selected.label)warnings.push('DEVICE_LABEL_CONFLICT');
   if(!selected&&requested)warnings.push('ARTICLE_NOT_FOUND');
+  if(!selected&&!requested&&!sku)warnings.push('ARTICLE_UNASSIGNED');
   if(match&&Object.hasOwn(projectCatalog.customArticles,requested))warnings.push('USER_DECLARED_ARTICLE_UNVERIFIED');
   const row={lineId:id,lineName:String(line?.name||''),catalogId:selectedId,sku:selected?.sku||sku||null,
    source,kind:selected?.kind||null,manufacturer:selected?.maker||null,series:selected?.series||null,
    modules:selected?.modules??null,widthMm:selected?.widthMm??null,heightMm:selected?.heightMm??null,
    depthMm:selected?.depthMm??null,inA:selected?.inA??null,sourceUrl:selected?.source||null,
-   warnings,stagedMatches:staging.map(x=>({sku:x.record.sku,batch:x.batch,status:reviewCandidate(x.record,x.evidence).status,selectable:false})),
+   warnings:[...new Set(warnings)],stagedMatches:staging.map(x=>({sku:x.record.sku,batch:x.batch,status:reviewCandidate(x.record,x.evidence).status,selectable:false})),
    manufacturerSuitabilityConfirmed:false,engineeringApproved:false};
   records.push(row);
  }
@@ -62,12 +63,15 @@ function projectMaterialDraft(project={},seed=EP_CATALOG,staged=items){
   const key=row.catalogId;
   if(!grouped.has(key))grouped.set(key,{catalogId:key,sku:row.sku,manufacturer:row.manufacturer,
    series:row.series,kind:row.kind,quantity:0,modulesPerUnit:row.modules,widthMmPerUnit:row.widthMm,
-   sourceUrl:row.sourceUrl,engineeringApproved:false,lines:[]});
+   sourceUrl:row.sourceUrl,engineeringApproved:false,lines:[],warnings:[]});
   const g=grouped.get(key);g.quantity++;g.lines.push(row.lineId);
+  for(const warning of row.warnings)if(!g.warnings.includes(warning))g.warnings.push(warning);
  }
  const articles=[...grouped.values()].sort((a,b)=>a.catalogId.localeCompare(b.catalogId));
  return {mode:'PRELIMINARY_BOM_ONLY',notForProcurement:true,engineeringApproved:false,
   quantity:articles.reduce((n,a)=>n+a.quantity,0),distinctArticles:articles.length,articles,
+  articlesNeedingReview:articles.filter(a=>a.warnings.length).length,
+  totalKnownWidthMm:articles.reduce((n,a)=>n+(Number.isFinite(a.widthMmPerUnit)?a.widthMmPerUnit*a.quantity:0),0),
   unresolved:report.records.filter(x=>!x.catalogId).map(x=>({lineId:x.lineId,sku:x.sku,reason:x.warnings})),
   issues:report.issues};
 }
