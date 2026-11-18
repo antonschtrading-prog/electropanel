@@ -80,3 +80,5 @@ test('deletion preserves undo snapshot before fire-control dependency cleanup',(
  assert.equal(x.state.fireControlScenariosV1.length,0);
  assert.equal(JSON.parse(x.checkpoints[0]).fireControlScenariosV1.length,1);
 });
+
+test('deletion accepts legacy project with no loads array',()=>{const x=run({loads:undefined});assert.doesNotThrow(()=>x.remove('L1'));assert.equal(x.state.lines.length,1)});
