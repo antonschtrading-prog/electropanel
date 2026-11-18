@@ -10,3 +10,6 @@ test('inventory filter is honored',()=>{const r=exportStagingInventory({search:'
 test('comparison rejects too few SKUs',()=>assert.equal(exportComparison(['one']).ok,false));
 test('comparison rejects duplicate SKUs',()=>assert.equal(exportComparison(['one','ONE']).ok,false));
 test('transfer export never permits transfer',()=>{const r=exportProjectTransferReview({lines:[]});assert.equal(r.transferAllowed,false);assert.match(r.csv,/blockers/);});
+
+test('preliminary BOM CSV carries safety warnings for reviewer',()=>{const {exportPreliminaryBOM}=require('../catalog-intake/catalog-review-export-v1.js');const {EP_CATALOG}=require('../catalog.js');const id=Object.keys(EP_CATALOG)[0];const r=exportPreliminaryBOM({lines:[{id:'line',catalogSku:id,modules:99}]});assert.equal(r.notForProcurement,true);assert.match(r.csv,/MODULE_COUNT_CONFLICT/);assert.match(r.csv,/warnings/)});
+test('project catalogue audit CSV exposes unresolved articles',()=>{const {exportProjectCatalogueAudit}=require('../catalog-intake/catalog-review-export-v1.js');const r=exportProjectCatalogueAudit({lines:[{id:'line',catalogSku:'UNKNOWN'}]});assert.equal(r.engineeringApproved,false);assert.match(r.csv,/ARTICLE_NOT_FOUND/)});
