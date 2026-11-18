@@ -2672,6 +2672,7 @@ $('cabinetGeometryPanel').addEventListener('click',e=>{
   checkpoint();state=saved.project;changed();notify('Резерв корпуса '+id+' удалён');return;
  }
  if(e.target.id==='cabinetExportSvgBtn'){
+ if(!epRequireDraftDocumentExport())return;
   const drawing=typeof epCabinetDrawingSvgV1==='function'?epCabinetDrawingSvgV1(state,catalogDevice):null;
   if(!drawing?.svg)return notify('Чертёж корпуса недоступен: проверьте введённые габариты',true);
   download(baseName()+'-cabinet-plan-DRAFT.svg',drawing.svg,'image/svg+xml;charset=utf-8');
@@ -3926,6 +3927,7 @@ $('deviceSupplyPanel').addEventListener('click',e=>{
  notify('Стадия проектирования обновлена; необязательные проверки не блокируют щит.');
 });
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
   return notify('Ведомость защиты недоступна',true);
  const catalog=Object.entries(EP_CATALOG).map(([id,device])=>({id,device}));
@@ -3951,6 +3953,7 @@ $('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
  download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
 });
 $('exportCircuitTraceSvgBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitWiringTraceV1!=='function'||typeof epConductorTraceSvgV1!=='function')
   return notify('Схема проводников недоступна',true);
  if(!selectedLine)return notify('Сначала выберите отходящую цепь',true);
@@ -4010,6 +4013,7 @@ $('crossViewAuditPanel').addEventListener('click',e=>{
  selectedLine=id;render();
 });
 $('exportWiringTraceCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitWiringTraceV1!=='function'||typeof epCircuitWiringTraceCsvV1!=='function')
   return notify('Прослеживаемость проводников недоступна',true);
  const report=epCircuitWiringTraceV1(state);
@@ -4049,6 +4053,7 @@ $('circuitDesignReviewPanel').addEventListener('click',e=>{
  const focus=e.target.closest('[data-design-focus]');
  if(focus){selectedLine=focus.getAttribute('data-design-focus');render();return;}
  if(e.target.closest('#exportDesignReviewCsvBtn')){
+ if(!epRequireDraftDocumentExport())return;
   const report=epCircuitDesignReviewV1(state,catalogDevice);
   download(baseName()+'_design_review.csv',epCircuitDesignReviewCsvV1(report),'text/csv;charset=utf-8');
  }
@@ -4173,11 +4178,13 @@ $('designEvidencePanel').addEventListener('click',e=>{
 });
 $('exportEngineeringGateBtn').addEventListener('click',exportEngineeringGateV1);
 $('exportCircuitDossierJsonBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitDossierV1!=='function'){notify('Модуль ведомости не загружен',true);return;}
  download(baseName()+'_circuit_dossier_DRAFT.json',
   JSON.stringify(epCircuitDossierV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
 });
 $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitDossierV1!=='function'||typeof epCircuitDossierCsvV1!=='function'){
   notify('Модуль ведомости не загружен',true);return;
  }
