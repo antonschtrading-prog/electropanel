@@ -1980,6 +1980,7 @@ const server=http.createServer((req,res)=>{
    dimensionsKnown:false}]};
  await page.locator('#file').setInputFiles({name:'review.json',mimeType:'application/json',
   buffer:Buffer.from(JSON.stringify(safeJson))});
+ await page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('Отчёт загружен локально'));
  assert.match(await page.locator('#status').innerText(),/Отчёт загружен локально/);
  assert.match(await page.locator('#counts').innerText(),/Показано 1 из 1/);
  assert.match(await page.locator('#rows').innerText(),/DEMO-REVIEW-01/);
@@ -1990,6 +1991,7 @@ const server=http.createServer((req,res)=>{
  assert.equal((await catalogueDownload).suggestedFilename(),'electropanel-staging-review.csv');
  await page.locator('#file').setInputFiles({name:'invalid.json',mimeType:'application/json',
   buffer:Buffer.from(JSON.stringify({...safeJson,engineeringApproved:true}))});
+ await page.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ошибка:'));
  assert.match(await page.locator('#status').innerText(),/Ошибка:/);
  assert.equal(await page.locator('#export').isDisabled(),true);
  assert.deepEqual(errors,[]);
