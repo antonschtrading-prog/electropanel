@@ -5,6 +5,7 @@ const {previewProjectTransfer}=require('./project-transfer-preview-v1.js');
 const {dashboard,verificationQueue}=require('./catalog-quality-dashboard-v1.js');
 const {catalogIntegration,projectMaterialDraft}=require('./catalog-project-integration-v1.js');
 const {capacityPreview}=require('./catalog-panel-capacity-v1.js');
+const {layoutOptions}=require('./catalog-layout-options-v1.js');
 const SAFE=/^[=+@\-\t\r]/;
 function csvCell(value){
  const raw=value==null?'':typeof value==='object'?JSON.stringify(value):String(value);
@@ -68,4 +69,11 @@ function exportRailPreview(project,options={}){
   unknownLines:report.unknownLines,oversized:report.railPreview.oversized,
   csv:csv([['rail','railCapacity','railRemaining','lineId','catalogId','sku','modules','warnings'],...rows])};
 }
-module.exports={exportPanelCapacity,exportRailPreview,csvCell,csv,exportStagingInventory,exportComparison,exportProjectTransferReview,exportQualityDashboard,exportVerificationQueue,exportProjectCatalogueAudit,exportPreliminaryBOM};
+function exportLayoutOptions(project,options={}){
+ const report=layoutOptions(project,options);
+ const rows=report.alternatives.flatMap(a=>a.variants.map(v=>[a.capacity,v.orientation,a.railCount,a.railModules,a.usedRails,a.remainingAfterReserve,a.feasible,a.reviewRequired]));
+ return {mode:report.mode,engineeringApproved:false,notInstallationDrawing:true,
+  unresolved:report.unresolved,warnings:report.warnings,
+  csv:csv([['capacity','orientation','rails','modulesPerRail','usedRails','remainingAfterReserve','geometricallyFeasible','reviewRequired'],...rows])};
+}
+module.exports={exportLayoutOptions,exportPanelCapacity,exportRailPreview,csvCell,csv,exportStagingInventory,exportComparison,exportProjectTransferReview,exportQualityDashboard,exportVerificationQueue,exportProjectCatalogueAudit,exportPreliminaryBOM};
