@@ -2085,7 +2085,9 @@ const server=http.createServer((req,res)=>{
   const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
   if(!branch)return {missingBranch:true};
   const line=state.lines.find(l=>l.id===branch.circuitId);
-  const originalSku=line.catalogSku||branch.catalogSku;
+  // The demo intentionally starts without a selected catalogue article.
+  // Use an actual seeded one-module article already covered by this suite.
+  const originalSku=line.catalogSku||branch.catalogSku||'SE-A9F73110';
   if(!originalSku)return {missingSku:true};
   // Keep the actual article on the circuit, but assign an inconsistent
   // branch article. It is a persisted input conflict, not a calculation.
