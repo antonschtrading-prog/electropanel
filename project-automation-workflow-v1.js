@@ -412,6 +412,9 @@ function epWorkflowHtmlV1(report,stored={}){
   ', уже заданных токов: '+esc(report?.summary?.manualCurrentPreserved??0)+
   ', требующих пересчёта Ib: '+esc(report?.summary?.staleLinkedCurrents??0)+
   ', предложений аппаратов: '+esc(report?.summary?.protectiveCandidates??0)+
+  ', конфликтов артикулов: '+esc(report?.summary?.articleConflicts??0)+
+  ', дублированных аппаратов цепи: '+esc(report?.summary?.duplicateBranchAssignments??0)+
+  ', аппаратов без цепи: '+esc(report?.summary?.orphanBranchDevices??0)+
   '.</p><p class="muted">Сверка потребителей: отсутствующие цепи — '+
   esc(report?.summary?.consumerReconciliation?.orphanConsumers??0)+
   ', дубли идентификаторов — '+
