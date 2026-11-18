@@ -35,14 +35,7 @@ function epDesignResultFreshnessV1(project,bundle){
     noticeRevision:notice?.pendingDomains.includes(domain)?notice.revision:null,
     source:'',method:'',declaredStatus:'INVALID',requiresReview:true,reportSections:[]};
   const hasPending=!!notice?.pendingDomains.includes(domain);
-  const stale=entry?.stale===true;
   const failed=entry?.status==='failed';
-  // A legacy engineer-declared 'verified' value has no statement that it
-  // was re-reviewed after the latest project change. Pending always wins.
-  const status=stale?'STALE':failed?'FAILED':
-   hasPending?'PENDING_REVIEW':
-   entry?.status==='verified'?'DECLARED_CURRENT':
-   hasEntry?'UNCONFIRMED':'NOT_DOCUMENTED';
   const related=EP_FRESHNESS_SECTIONS_V1[domain];
   const sections=bundle?.sections||{};
   const reportSections=related.map(section=>{
@@ -50,13 +43,43 @@ function epDesignResultFreshnessV1(project,bundle){
    return {section,status:typeof report?.status==='string'?report.status:'UNAVAILABLE',
     issueCount:Array.isArray(report?.issues)?report.issues.length:null};
   });
+  // A saved 'verified' declaration may predate a currently blocked engine
+  // report. It must not hide an unresolved contradiction in the live design.
+  const liveBlocked=reportSections.some(x=>x.status==='BLOCKED');
+  const staleCircuits=[];
+  if((domain==='load'||domain==='device')&&Array.isArray(project.lines)){
+   for(const line of project.lines.slice(0,400)){
+    const linked=line?.loadCurrentCalculation;
+    if(!linked||linked.powerSource!=='circuit')continue;
+    const id=typeof line?.id==='string'?line.id:null;
+    const saved=Number(linked.roundedIbA),given=Number(line?.overloadInput?.ibA);
+    const power=Number(line?.power??line?.powerKw);
+    const basis=Number(linked.inputs?.powerKw);
+    let code=null;
+    if(linked.stale===true)code='LINKED_IB_STALE';
+    else if(!Number.isFinite(saved)||!Number.isFinite(given)||
+     line?.overloadInput?.ibA===undefined||Math.abs(saved-given)>0.001)
+     code='LINKED_IB_OVERRIDDEN_OR_MISSING';
+    else if(!Number.isFinite(power)||!Number.isFinite(basis)||
+     (line?.power??line?.powerKw)===undefined||Math.abs(power-basis)>0.000001)
+     code='LINKED_POWER_CHANGED';
+    if(code)staleCircuits.push({lineId:id,code});
+   }
+  }
+  // A prior verified entry does not overrule either an edited project or a
+  // demonstrated stale circuit-linked load current.
+  const stale=entry?.stale===true||staleCircuits.length>0;
+  const status=stale?'STALE':failed?'FAILED':
+   hasPending||liveBlocked?'PENDING_REVIEW':
+   entry?.status==='verified'?'DECLARED_CURRENT':
+   hasEntry?'UNCONFIRMED':'NOT_DOCUMENTED';
   return {domain,title:EP_FRESHNESS_TITLES_V1[domain],status,
    noticeRevision:hasPending?notice.revision:null,
    source:typeof entry?.source==='string'?entry.source.slice(0,300):'',
    method:typeof entry?.method==='string'?entry.method.slice(0,300):'',
    declaredStatus:typeof entry?.status==='string'?entry.status.slice(0,50):'NOT_DECLARED',
    requiresReview:status!=='DECLARED_CURRENT',
-   reportSections};
+   staleCircuits,liveBlocked,reportSections};
  });
  if(rows.some(x=>x.status==='INVALID_EVIDENCE'))
   return blocked('RESULT_FRESHNESS_EVIDENCE_ENTRY_INVALID');
@@ -76,7 +99,9 @@ function epDesignResultFreshnessHtmlV1(report){
  if(!Array.isArray(report?.rows)||!report.rows.length)
   return '<p>Проверка актуальности расчётных разделов недоступна.</p>';
  const trs=report.rows.map(x=>'<tr><td>'+esc(x.title)+'</td><td>'+esc(x.status)+'</td><td>'+
-  esc(x.noticeRevision??'—')+'</td><td>'+esc(x.source||'Не указан')+'</td><td>'+
+  esc(x.noticeRevision??'—')+'</td><td>'+esc(x.source||'Не указан')+
+  (x.staleCircuits?.length?' · устаревшие цепи: '+esc(x.staleCircuits.map(y=>y.lineId??'?').join(', ')):'')+
+  '</td><td>'+
   esc(x.reportSections.map(s=>s.section+':'+s.status).join('; '))+'</td></tr>').join('');
  return '<details class="ep-freshness-matrix"><summary>Актуальность инженерных разделов · устаревших '+
   esc(report.summary.stale)+', ожидают перепроверки '+esc(report.summary.pending)+
