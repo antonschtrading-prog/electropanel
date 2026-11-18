@@ -9,7 +9,7 @@ function epProjectDeliveryTraceHtmlV1(report){
   '<td>'+esc(x.schematic?'Есть':'Нет')+'</td>'+
   '<td>'+esc(x.board?('Ряд '+(x.board.railIndex+1)+', модуль '+(x.board.startModule+1)):'Нет')+'</td>'+
   '<td>'+esc(x.bom?'Есть':'Нет')+'</td>'+
-  '<td>'+esc(x.crossViewStatus)+'</td></tr>').join('');
+  '<td>'+esc(x.crossViewStatus)+(x.reviewIssueCount?' · замечаний '+esc(x.reviewIssueCount):'')+'</td></tr>').join('');
  const issues=(report.issues||[]).slice(0,30).map(x=>'<li>'+esc(x.code)+(x.lineId?' — '+esc(x.lineId):'')+'</li>').join('');
  return '<section class="card" id="projectDeliveryTracePanel"><h3>Сквозная трассировка проекта</h3>'+
   '<p>Нагрузки → расчёт → схема → DIN → спецификация. Только проектные данные; статус: <strong>'+esc(report.status)+'</strong>. Не является разрешением к монтажу.</p>'+
@@ -20,9 +20,9 @@ function epProjectDeliveryTraceHtmlV1(report){
 }
 function epProjectDeliveryTraceCsvV1(report){
  const q=x=>'"'+String(x??'').replace(/"/g,'""').replace(/^[=+@-]/,v=>"'"+v)+'"';
- const rows=[['line_id','name','consumer_count','article_sku','workflow','single_line','board_rail','board_start','bom','status']];
+ const rows=[['line_id','name','consumer_count','article_sku','workflow','single_line','board_rail','board_start','bom','status','review_issue_count']];
  for(const r of report?.rows||[])rows.push([r.lineId,r.name,r.consumerCount,r.articleSku,
-  !!r.workflow,!!r.schematic,r.board?.railIndex??'',r.board?.startModule??'',!!r.bom,r.crossViewStatus]);
+  !!r.workflow,!!r.schematic,r.board?.railIndex??'',r.board?.startModule??'',!!r.bom,r.crossViewStatus,r.reviewIssueCount??0]);
  return {schema:'electropanel.project.delivery-trace.csv.1',status:report?.status??'UNKNOWN',
   csv:rows.map(row=>row.map(q).join(';')).join('\r\n')+'\r\n',
   engineeringApproved:false,ready_for_installation:false};
