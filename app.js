@@ -1094,15 +1094,17 @@ function epFireControlEditorEventV1(event){
  }catch(error){notify('Пожарное управление: '+error.message,true);}
 }
 function renderEngineeringDiagnosticsV1(){
+ // Reuse one generated engineering bundle for both the saved review matrix
+ // and the existing issues/cross-view panels; never run the full audit twice.
+ const engineeringBundle=typeof epEngineeringBundleV1==='function'?
+  epEngineeringBundleV1(state,catalogDevice):null;
  const impactHolder=$('designChangeImpactPanel');
  if(impactHolder){
   if(typeof epDesignReviewActionMatrixV1==='function'&&
      typeof epDesignReviewActionMatrixHtmlV1==='function'){
    // Reuse the existing issue register, not a second independent calculation.
-   const bundle=typeof epEngineeringBundleV1==='function'?
-    epEngineeringBundleV1(state,catalogDevice):null;
-   const report=bundle?.sections?.reviewActions||
-    epDesignReviewActionMatrixV1(state,bundle?.sections?.issueRegister);
+   const report=engineeringBundle?.sections?.reviewActions||
+    epDesignReviewActionMatrixV1(state,engineeringBundle?.sections?.issueRegister);
    impactHolder.innerHTML=epDesignReviewActionMatrixHtmlV1(report)+
     (report?.rows?.length?'<button type="button" class="btn" id="exportDesignReviewActionsCsvBtn">Задачи перепроверки CSV</button>':'');
   }else impactHolder.textContent='Модуль сохранённых перепроверок недоступен. Инженерная проверка не подтверждена.';
@@ -1199,12 +1201,11 @@ function renderEngineeringDiagnosticsV1(){
   epNeutralSegregationHtmlV1(epNeutralSegregationV1(state),selectedLine):
   'Проверка разделения нейтралей недоступна.';
  const crossView=$('crossViewAuditPanel'),issueHolder=$('engineeringIssueRegister');
- if(typeof epEngineeringBundleV1==='function'&&(crossView||issueHolder)){
-  const bundle=epEngineeringBundleV1(state,catalogDevice);
+ if(engineeringBundle&&(crossView||issueHolder)){
   if(crossView)crossView.innerHTML=typeof epCrossViewAuditHtmlV1==='function'?
-   epCrossViewAuditHtmlV1(bundle.sections.crossView,selectedLine):'Сквозная проверка недоступна.';
+   epCrossViewAuditHtmlV1(engineeringBundle.sections.crossView,selectedLine):'Сквозная проверка недоступна.';
   if(issueHolder)issueHolder.innerHTML=typeof epEngineeringIssueRegisterHtmlV1==='function'?
-   epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
+   epEngineeringIssueRegisterHtmlV1(engineeringBundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
  }
  const faultPanel=$('faultRoutePanel');
  if(faultPanel)faultPanel.innerHTML=epFaultRouteHtmlV2(state,selectedLine,catalogDevice);
