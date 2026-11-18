@@ -85,6 +85,24 @@ const server=http.createServer((req,res)=>{
  assert.equal(diagnosticAvailability.length,4,JSON.stringify(diagnosticAvailability));
  assert.ok(diagnosticAvailability.every(name=>name.includes('DRAFT')));
 
+ // JSON project save must remain available even when export gate rejects documents.
+ const invalidDraftSave=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const oldDownload=download;
+  const names=[];
+  download=function(name,content){names.push({name,content});};
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  try{saveProject();}
+  finally{branch.catalogSku=original;download=oldDownload;}
+  return {count:names.length,name:names[0]?.name,
+   hasConflict:names[0]?.content.includes('AUDIT_CONFLICT_SKU_NOT_IN_CATALOG')};
+ });
+ assert.equal(invalidDraftSave.count,1);
+ assert.match(invalidDraftSave.name,/\.json$/);
+ assert.equal(invalidDraftSave.hasConflict,true,'draft save preserves original discrepancy for repair');
+
+
 
 
  // New unified engineer workflow: consumer power -> existing arithmetic engine ->
