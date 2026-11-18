@@ -110,9 +110,18 @@ function epDraftBoardPlanV1(project,lookupSku){
   note:'Draft layout only. No electrical design or installation approval.'};
 }
 function epMoveBoardDeviceV1(project,deviceId,railIndex,startModule,lookup){
+ if(typeof deviceId!=='string'||!deviceId.trim()||!Number.isInteger(railIndex)||
+  !Number.isInteger(startModule)||railIndex<0||startModule<0)
+  return {project:null,code:'MOVE_INPUT_INVALID',engineeringApproved:false};
  const current=epDraftBoardPlanV1(project,lookup);
- if(!current.placements.some(x=>x.deviceId===deviceId))return {project:null,code:'DEVICE_NOT_PLACED'};
- const copy=JSON.parse(JSON.stringify(project));
+ if(current.status==='BLOCKED')
+  return {project:null,code:'MOVE_SOURCE_BLOCKED',issues:current.issues.filter(x=>x.level==='BLOCKED'),
+   engineeringApproved:false};
+ if(current.placements.filter(x=>x.deviceId===deviceId).length!==1)
+  return {project:null,code:'DEVICE_NOT_PLACED',engineeringApproved:false};
+ let copy;
+ try{copy=JSON.parse(JSON.stringify(project));}
+ catch(_){return {project:null,code:'MOVE_PROJECT_NOT_SERIALIZABLE',engineeringApproved:false};}
  // Freeze all current positions, so moving one apparatus never silently relocates another.
  copy.manualLayoutV1=current.placements.map(x=>({deviceId:x.deviceId,railIndex:x.deviceId===deviceId?railIndex:x.railIndex,startModule:x.deviceId===deviceId?startModule:x.startModule}));
  const next=epDraftBoardPlanV1(copy,lookup);
