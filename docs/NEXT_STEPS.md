@@ -251,9 +251,9 @@ Only after that gate, continue P1: independently sourced manufacturer catalogue/
 
 ## 2026-11-19 — current continuation queue after local P1 slice
 
-This section supersedes older unchecked queues where they conflict. P0 is published at `3993d1f34bce56df3722f955e9fb68d9feb2626b`; the P1 catalogue/shared-RCD/cabinet/touch slice has fresh local green checks but still requires commit-specific GitHub CI after publication to PR #12. Do not merge or rebase `main`.
+This section supersedes older unchecked queues where they conflict. P0 is published at `3993d1f34bce56df3722f955e9fb68d9feb2626b`; P1 implementation is published at `d65210720585a7239d056c872704c18ad2b99836`, and all five exact-head GitHub Actions runs succeeded. Do not merge or rebase `main`.
 
-1. **Publish and verify this P1 slice.** Review the final diff, commit immediately, push only the PR #12 head branch and inspect all required GitHub Actions on the exact new SHA.
+1. **P1 publication and implementation CI — complete.** The final diff was reviewed, committed and pushed only to the PR #12 head branch. All five workflows passed on `d65210720585a7239d056c872704c18ad2b99836`; repeat exact-head CI for any later commit.
 2. **Rights-cleared manufacturer visuals/CAD.** Technical product evidence and image/CAD reuse rights are independent gates. Obtain explicit permission or another legally usable asset before adding official raster imagery. Do not infer permission from public accessibility or from `sourceType`/`sourceReviewedAt`.
 3. **Independent enclosure geometry.** Collect verified internal cabinet, DIN, cover, terminal and wiring-space geometry. Source-backed apparatus body dimensions alone must not set `confirmedCabinetFit`, engineering approval or installation readiness.
 4. **Physical Apple-device checks.** Repeat core creation/edit/reload/export flows on a real Mac and iPhone, including Safari/WebKit. Chromium touch emulation and four viewport widths are useful regressions but do not establish physical-device compatibility.

@@ -50,7 +50,7 @@ Local verification on this source state: **5255/5255 Node tests passed**, all JS
 
 ## 19 November 2026 — local P1 catalogue, apparatus and cabinet evidence slice
 
-Baseline: published P0 head `3993d1f34bce56df3722f955e9fb68d9feb2626b` in PR #12. This P1 slice is local until the commit containing this note is pushed; GitHub CI for that new head is pending. `main` remains untouched.
+Baseline: published P0 head `3993d1f34bce56df3722f955e9fb68d9feb2626b` in PR #12. P1 implementation was published as `d65210720585a7239d056c872704c18ad2b99836`; all five exact-head GitHub Actions runs (two JS, two Chromium and one engineering validation) succeeded. `main` remains untouched.
 
 - Enriched Schneider `A9F74116` with source-backed 85 × 78.5 mm body height/depth and separate Icu data. Added live Hager `CDA440D`: RCD, 3P+N, four poles/modules, 40 A, 30 mA type A, 6 kA conditional short-circuit rating and 70 × 83 × 70 mm body dimensions. Both records retain official HTTPS sources and review date 2026-11-19; neither is promoted to `VERIFIED` merely by having a product page.
 - Closed the existing UI gap for `sharedDevices[].catalogSku`: a specific RCD can now be selected both when creating and editing a shared group. The internal key and manufacturer SKU reach DIN, BOM, single-line SVG, project JSON and reload without renaming QD1 or rewriting Ib/Iz/Ik.

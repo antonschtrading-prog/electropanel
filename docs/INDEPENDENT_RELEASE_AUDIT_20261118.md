@@ -275,7 +275,7 @@ The conflicting state persisted across reload and continued to block coordinated
 
 ### Baseline and publication boundary
 
-The P0 commercial-panel route was published to PR #12 as `3993d1f34bce56df3722f955e9fb68d9feb2626b`; its required GitHub Actions workflows succeeded. `main` was not changed. The present P1 work starts from that exact published tree. At the time of writing, P1 is a local candidate in the commit containing this note; new-head GitHub CI remains pending until push. Older statements that P0 was local-only or lacked write access are superseded.
+The P0 commercial-panel route was published to PR #12 as `3993d1f34bce56df3722f955e9fb68d9feb2626b`; its required GitHub Actions workflows succeeded. `main` was not changed. P1 implementation starts from that exact published tree and was published as `d65210720585a7239d056c872704c18ad2b99836`; all five exact-head GitHub Actions runs succeeded. Older statements that P0 was local-only or lacked write access are superseded.
 
 ### P1 scope independently rechecked after workspace loss
 
@@ -298,4 +298,4 @@ An earlier uncommitted P1 workspace was lost with `/tmp`; no published P0 work w
 
 ### Remaining release and engineering limits
 
-Required GitHub Actions must be observed on the exact P1 commit after push; local green checks are not remote CI. Rights-cleared official visuals/CAD, independent enclosure/cover/terminal/wiring geometry, physical Apple-device/Safari checks and full normative fault/selectivity/thermal verification remain open. The accepted result is a traceable editable DRAFT and regression-tested software route, not a certified electrical design, manufacturer-approved assembly or permission to install.
+All five GitHub Actions runs succeeded on P1 implementation head `d65210720585a7239d056c872704c18ad2b99836`; local green checks were not treated as a substitute for remote CI. Any later head requires its own checks. Rights-cleared official visuals/CAD, independent enclosure/cover/terminal/wiring geometry, physical Apple-device/Safari checks and full normative fault/selectivity/thermal verification remain open. The accepted result is a traceable editable DRAFT and regression-tested software route, not a certified electrical design, manufacturer-approved assembly or permission to install.
