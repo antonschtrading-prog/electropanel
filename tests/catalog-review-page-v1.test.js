@@ -26,3 +26,17 @@ test('rejects invalid URL protocols',()=>assert.equal(parseReport({...report,sou
 
 test('real portfolio report has the explicit non-import flag',()=>{const {buildPortfolio}=require('../catalog-intake/portfolio-v1.js');const r=buildPortfolio();assert.equal(r.autoImportAllowed,false);assert.equal(parseReport(r).length,r.total)});
 test('CLI report exports all records and explicit safety boundary',()=>{const {execFileSync}=require('node:child_process');const output=JSON.parse(execFileSync(process.execPath,['catalog-intake/portfolio-report-v1.js'],{cwd:require('node:path').resolve(__dirname,'..'),encoding:'utf8'}));assert.equal(output.autoImportAllowed,false);assert.equal(parseReport(output).length,output.total)});
+
+test('site builder publishes complete review workbench and staging JSON',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const {buildSite}=require('../scripts/build-site.js');
+ const out=fs.mkdtempSync(path.join(os.tmpdir(),'electropanel-review-'));
+ try{
+  buildSite(path.resolve(__dirname,'..'),out);
+  const base=path.join(out,'catalog-intake');
+  for(const file of ['catalog-review-page.html','catalog-review-page.js','catalog-portfolio.json'])
+   assert.ok(fs.statSync(path.join(base,file)).size>0,file);
+  const data=JSON.parse(fs.readFileSync(path.join(base,'catalog-portfolio.json'),'utf8'));
+  assert.equal(data.autoImportAllowed,false);assert.equal(parseReport(data).length,data.total);
+ }finally{fs.rmSync(out,{recursive:true,force:true})}
+});
