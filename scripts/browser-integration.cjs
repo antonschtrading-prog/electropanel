@@ -1949,6 +1949,26 @@ const server=http.createServer((req,res)=>{
  assert.equal(lastMatrix.revision,reviewActions.revision);
  assert.equal(lastMatrix.summary.domains,reviewActions.domains);
  assert.equal(lastMatrix.engineeringApproved,false);
+ const freshness=await page.evaluate(()=>{
+  const next=epEngineeringBundleV1(state,catalogDevice).sections.resultFreshness;
+  return {states:next.rows.map(x=>x.status),domains:next.rows.map(x=>x.domain),
+   revision:next.noticeRevision,summary:next.summary,
+   installation:next.ready_for_installation,printed:epEngineeringPrintV1(
+    epEngineeringBundleV1(state,catalogDevice)).includes('Актуальность расчётных результатов')};
+ });
+ assert.equal(freshness.domains.length,6);
+ assert.equal(freshness.installation,false);
+ assert.ok(freshness.states.some(x=>x==='PENDING_REVIEW'||x==='STALE'));
+ assert.equal(freshness.printed,true);
+ await page.evaluate(()=>switchView('board'));
+ assert.equal(await page.locator('#exportResultFreshnessCsvBtn').count(),1);
+ assert.match(await page.locator('#designChangeImpactPanel').innerText(),/Актуальность инженерных разделов/);
+ const beforeFreshExport=await page.evaluate(()=>JSON.stringify(state));
+ const freshnessDownload=page.waitForEvent('download');
+ await page.locator('#exportResultFreshnessCsvBtn').click();
+ assert.match((await freshnessDownload).suggestedFilename(),/-result-freshness_DRAFT[.]csv$/);
+ assert.equal(await page.evaluate(()=>JSON.stringify(state)),beforeFreshExport,
+  'A freshness report export must never change engineer inputs');
  assert.deepEqual(errors,[]);
  console.log('PASS: design change review persisted through JSON reload');
  console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
