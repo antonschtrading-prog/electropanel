@@ -16,15 +16,31 @@ function epDesignChangeImpactV1(before,after){
  const areas={
   load:[lines(before,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),lines(after,['power','powerKw','phase','source','loadCurrentCalculation','overloadInput']),before.loads,after.loads,
    before.workflowDesignInputsV1,after.workflowDesignInputsV1,
+   before.consumerLoadsV1,after.consumerLoadsV1,
    before.consumerGroupMergeRulesV1,after.consumerGroupMergeRulesV1,
    before.consumerGroupSplitRulesV1,after.consumerGroupSplitRulesV1],
   network:[before.network,after.network,before.earthing,after.earthing,before.voltage,after.voltage,
+   before.supplyNetworkV1,after.supplyNetworkV1,
+   before.incomingMaximumStudiesV1,after.incomingMaximumStudiesV1,
+   before.calculatedDeviceFaultBindingsV1,after.calculatedDeviceFaultBindingsV1,
    lines(before,['maximumFaultInput','faultRouteInput','faultInput']),lines(after,['maximumFaultInput','faultRouteInput','faultInput'])],
-  cable:[lines(before,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput']),lines(after,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput']),before.cables,after.cables,before.conductorRoutes,after.conductorRoutes],
-  device:[before.catalogArticles,after.catalogArticles,before.manufacturerEvidenceRecords,after.manufacturerEvidenceRecords,lines(before,['catalogSku','device','modules','templateId','articleReplacementReview']),lines(after,['catalogSku','device','modules','templateId','articleReplacementReview']),before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection],
-  topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1,before.terminalLinks,after.terminalLinks,before.feedLinks,after.feedLinks,before.groupInputLinks,after.groupInputLinks],
+  cable:[lines(before,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput','route44Input','cableInput','lv43Input']),lines(after,['cableReferenceInput','cableDesignInput','overloadCoordinationInput','shortCircuitThermalInput','letThroughInput','voltageDropDesignInput','faultRouteInput','route44Input','cableInput','lv43Input']),before.cables,after.cables,before.conductorRoutes,after.conductorRoutes,
+   before.cableRoutesV1,after.cableRoutesV1],
+  device:[before.catalogArticles,after.catalogArticles,before.manufacturerEvidenceRecords,after.manufacturerEvidenceRecords,lines(before,['catalogSku','device','modules','templateId','articleReplacementReview']),lines(after,['catalogSku','device','modules','templateId','articleReplacementReview']),before.branchDevices,after.branchDevices,before.sharedDevices,after.sharedDevices,before.catalogueSelection,after.catalogueSelection,
+   before.deviceFaultScenariosV1,after.deviceFaultScenariosV1,
+   before.deviceCoordinationEvidenceV1,after.deviceCoordinationEvidenceV1,
+   before.protectionEvidenceMatrixV1,after.protectionEvidenceMatrixV1],
+  topology:[before.wiringModelV18,after.wiringModelV18,before.endpointBindingsV1,after.endpointBindingsV1,before.terminalLinks,after.terminalLinks,before.feedLinks,after.feedLinks,before.groupInputLinks,after.groupInputLinks,
+   before.protectionLinks,after.protectionLinks,
+   before.deviceSupplyV1,after.deviceSupplyV1,
+   before.incomingTerminalBindingsV1,after.incomingTerminalBindingsV1,
+   before.fireControlV1,after.fireControlV1,
+   before.supplyDeviceGraphV1,after.supplyDeviceGraphV1,
+   before.neutralSegregationV1,after.neutralSegregationV1],
   enclosure:[before.manualLayoutV1,after.manualLayoutV1,before.railCount,after.railCount,before.railCapacity,after.railCapacity,before.enclosure,after.enclosure,
-   before.cabinetGeometryV1,after.cabinetGeometryV1]
+   before.cabinetGeometryV1,after.cabinetGeometryV1,
+   before.cabinetSizingPreferencesV1,after.cabinetSizingPreferencesV1,
+   before.enclosureLayoutV1,after.enclosureLayoutV1]
  };
  const changed=[];
  for(const [key,parts] of Object.entries(areas)){
