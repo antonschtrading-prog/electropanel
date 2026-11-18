@@ -6,7 +6,7 @@ const {validateCandidate}=require('./candidate-schema-v1.js');
 const {EP_CATALOG}=require('../catalog.js');
 function normalize(s){return String(s||'').trim().toUpperCase()}
 function dashboard(source=items,core=Object.values(EP_CATALOG)){
- const existing=new Set(core.map(x=>normalize(x.sku)));
+ const existing=new Set(core.map(x=>normalize(x.sku)).filter(Boolean));
  const seen=new Map(),records=[],totals={records:0,readyForHumanReview:0,blocked:0,coreOverlap:0,missingGeometry:0,missingIdentityEvidence:0,missingKeyFieldEvidence:0,missingKeySpecifications:0,duplicateSkus:0};
  for(const item of source){
   const d=item.record||{},e=item.evidence||{},sku=normalize(d.sku);
@@ -15,15 +15,15 @@ function dashboard(source=items,core=Object.values(EP_CATALOG)){
   const missingSpecifications=(KEY_FIELDS[d.kind]||[]).filter(k=>d[k]==null);
   const missingEvidence=(KEY_FIELDS[d.kind]||[]).filter(k=>d[k]!=null&&(!e[k]||!e[k].url||!e[k].locator||!e[k].reviewedAt||!e[k].documentTitle));
   const identityMissing=review.errors.some(x=>x.code==='SKU_IDENTITY_EVIDENCE_MISSING');
-  const duplicate=seen.has(sku);
-  const reasons=[...new Set([...review.errors.map(x=>x.code),...schema.map(x=>x.code),...(duplicate?['DUPLICATE_SKU']:[])])].sort();
+  const duplicate=Boolean(sku)&&seen.has(sku);
+  const reasons=[...new Set([...review.errors.map(x=>x.code),...schema.map(x=>x.code),...(duplicate?['DUPLICATE_SKU']:[]),...(existing.has(sku)?['CORE_SKU_OVERLAP']:[])])].sort();
   const row={sku,batch:item.batch,kind:d.kind||null,maker:d.maker||null,reviewStatus:review.status,
    coreOverlap:existing.has(sku),duplicate,duplicateWith:duplicate?seen.get(sku):null,
    missingGeometry,missingSpecifications,missingEvidence,identityMissing,reasons,
    engineeringApproved:false,selectable:false};
-  if(!duplicate)seen.set(sku,item.batch);
+  if(sku&&!duplicate)seen.set(sku,item.batch);
   records.push(row);totals.records++;
-  if(review.status==='READY_FOR_HUMAN_REVIEW'&&!duplicate)totals.readyForHumanReview++;else totals.blocked++;
+  if(review.status==='READY_FOR_HUMAN_REVIEW'&&!duplicate&&!row.coreOverlap)totals.readyForHumanReview++;else totals.blocked++;
   if(row.coreOverlap)totals.coreOverlap++;
   if(missingGeometry.length)totals.missingGeometry++;
   if(identityMissing)totals.missingIdentityEvidence++;
@@ -32,7 +32,7 @@ function dashboard(source=items,core=Object.values(EP_CATALOG)){
   if(duplicate)totals.duplicateSkus++;
  }
  records.sort((a,b)=>a.sku.localeCompare(b.sku)||String(a.batch).localeCompare(String(b.batch)));
- const byKind={};for(const r of records){const k=r.kind||'UNKNOWN';(byKind[k]??={total:0,blocked:0}).total++;if(r.reviewStatus==='BLOCKED'||r.duplicate)byKind[k].blocked++}
+ const byKind={};for(const r of records){const k=r.kind||'UNKNOWN';(byKind[k]??={total:0,blocked:0}).total++;if(r.reviewStatus==='BLOCKED'||r.duplicate||r.coreOverlap)byKind[k].blocked++}
  return {mode:'CATALOG_QUALITY_READ_ONLY',engineeringApproved:false,autoImportAllowed:false,totals,byKind,records};
 }
 function verificationQueue(source=items,core=Object.values(EP_CATALOG)){
