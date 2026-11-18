@@ -8,6 +8,7 @@ const {catalogIntegration,projectMaterialDraft}=require('./catalog-project-integ
 const {coverage}=require('./catalog-seed-coverage-v1.js');
 const {dashboard,verificationQueue}=require('./catalog-quality-dashboard-v1.js');
 const {capacityPreview}=require('./catalog-panel-capacity-v1.js');
+const {layoutOptions}=require('./catalog-layout-options-v1.js');
 function handleCatalogueRequest(request={}){
  if(!request||typeof request!=='object'||Array.isArray(request))return {ok:false,error:'INVALID_REQUEST'};
  const {operation='list',criteria={},availableModules,filters={}}=request;
@@ -26,6 +27,7 @@ function handleCatalogueRequest(request={}){
    case 'project-audit':return {ok:true,operation,...catalogIntegration(request.project||{})};
    case 'preliminary-bom':return {ok:true,operation,...projectMaterialDraft(request.project||{})};
    case 'panel-capacity':return {ok:true,operation,...capacityPreview(request.project||{},request.options||{})};
+   case 'layout-options':return {ok:true,operation,...layoutOptions(request.project||{},request.options||{})};
    case 'review':{
     const bundle=buildReleaseBundle();
     return {ok:true,operation,...bundle};
