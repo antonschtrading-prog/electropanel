@@ -15,6 +15,96 @@ const server=http.createServer((req,res)=>{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
+
+ // Independent release gate: conflicting article assignment must prevent standalone
+ // schematic/BOM downloads in the actual packaged browser UI.
+ const exportGateProbe=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const line=state.lines.find(l=>l.id===branch.circuitId);
+  const original=branch.catalogSku;
+  const alternate='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  branch.catalogSku=alternate;
+  const gate=epDraftDocumentExportGate();
+  branch.catalogSku=original;
+  return {allowed:gate.allowed,reason:gate.reason};
+ });
+ assert.equal(exportGateProbe.allowed,false,JSON.stringify(exportGateProbe));
+ const blockedExportNames=await page.evaluate(async()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const oldDownload=download;
+  const recorded=[];
+  download=function(name){recorded.push(name);};
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  try{
+   for(const id of ['exportSingleLineSvgBtn','exportDraftBomCsvBtn','exportDraftBomJsonBtn',
+    'exportCircuitTraceSvgBtn','exportWiringTraceCsvBtn',
+    'exportCircuitDossierJsonBtn','exportCircuitDossierCsvBtn',
+    'exportProtectionCsvBtn']){
+    document.getElementById(id).click();
+   }
+  }finally{
+   branch.catalogSku=original;
+   download=oldDownload;
+  }
+  return recorded;
+ });
+ assert.deepEqual(blockedExportNames,[],'inconsistent documents cannot be downloaded');
+
+ // Gate is read-only, and a corrected project must be exportable again.
+ const gateRecovery=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const before=JSON.stringify(state);
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  const blocked=epDraftDocumentExportGate();
+  const unchangedWhileBlocked=JSON.stringify(state);
+  branch.catalogSku=original;
+  const after=JSON.stringify(state);
+  return {blocked:blocked.allowed,unchangedWhileBlocked:unchangedWhileBlocked===before.replace(JSON.stringify(original),JSON.stringify('AUDIT_CONFLICT_SKU_NOT_IN_CATALOG')),restored:after===before};
+ });
+ assert.equal(gateRecovery.blocked,false);
+ assert.equal(gateRecovery.restored,true,'gate must not alter project state');
+
+ // Diagnostic artifacts remain available even when engineering exports are blocked.
+ const diagnosticAvailability=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const oldDownload=download;
+  const names=[];
+  download=function(name){names.push(name);};
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  try{
+   for(const id of ['exportEngineeringBundleBtn','exportCrossViewCsvBtn',
+    'exportCrossViewJsonBtn','exportIssueRegisterCsvBtn']){
+    document.getElementById(id).click();
+   }
+  }finally{branch.catalogSku=original;download=oldDownload;}
+  return names;
+ });
+ assert.equal(diagnosticAvailability.length,4,JSON.stringify(diagnosticAvailability));
+ assert.ok(diagnosticAvailability.every(name=>name.includes('DRAFT')));
+
+ // JSON project save must remain available even when export gate rejects documents.
+ const invalidDraftSave=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const oldDownload=download;
+  const names=[];
+  download=function(name,content){names.push({name,content});};
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  try{saveProject();}
+  finally{branch.catalogSku=original;download=oldDownload;}
+  return {count:names.length,name:names[0]?.name,
+   hasConflict:names[0]?.content.includes('AUDIT_CONFLICT_SKU_NOT_IN_CATALOG')};
+ });
+ assert.equal(invalidDraftSave.count,1);
+ assert.match(invalidDraftSave.name,/\.json$/);
+ assert.equal(invalidDraftSave.hasConflict,true,'draft save preserves original discrepancy for repair');
+
+
+
+
  // New unified engineer workflow: consumer power -> existing arithmetic engine ->
  // candidate shortlist and linked diagram/DIN/BOM. Inputs remain user-owned.
  await page.evaluate(()=>switchView('loads'));
