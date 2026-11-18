@@ -51,6 +51,22 @@ const server=http.createServer((req,res)=>{
  });
  assert.deepEqual(blockedExportNames,[],'inconsistent documents cannot be downloaded');
 
+ // Gate is read-only, and a corrected project must be exportable again.
+ const gateRecovery=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const before=JSON.stringify(state);
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  const blocked=epDraftDocumentExportGate();
+  const unchangedWhileBlocked=JSON.stringify(state);
+  branch.catalogSku=original;
+  const after=JSON.stringify(state);
+  return {blocked:blocked.allowed,unchangedWhileBlocked:unchangedWhileBlocked===before.replace(JSON.stringify(original),JSON.stringify('AUDIT_CONFLICT_SKU_NOT_IN_CATALOG')),restored:after===before};
+ });
+ assert.equal(gateRecovery.blocked,false);
+ assert.equal(gateRecovery.restored,true,'gate must not alter project state');
+
+
  // New unified engineer workflow: consumer power -> existing arithmetic engine ->
  // candidate shortlist and linked diagram/DIN/BOM. Inputs remain user-owned.
  await page.evaluate(()=>switchView('loads'));
