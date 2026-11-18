@@ -18,3 +18,11 @@ Run the existing JavaScript, engineering validation and Chromium workflows. The 
 ## Out of scope
 
 No laboratory verification, physical equipment testing, hidden cable-length assumptions or automatic approval of engineering decisions.
+
+## DIN catalogue snapshot and compatibility
+
+The existing sequential draft planner and the separate compact packing alternative remain independent. The draft planner now snapshots each catalogue SKU once per run, using the same module width for manually reserved slots and final device validation. Catalogue lookup exceptions remain blocking engineering evidence; no replacement SKU or width is guessed.
+
+A deliberately different circuit fallback SKU and selected branch-device SKU are retained in the board model: the branch-device selection takes precedence in the established cabinet article reconciliation and replacement workflows. Do not add a second competing board-level article rule. The workflow-level discrepancy report remains diagnostic and requires independent integration review.
+
+Regression cases cover shared SKU lookup counts, non-deterministic lookup callbacks, lookup failures, manual overlap, over-capacity devices and project immutability.
