@@ -1969,6 +1969,29 @@ const server=http.createServer((req,res)=>{
  assert.match((await freshnessDownload).suggestedFilename(),/-result-freshness_DRAFT[.]csv$/);
  assert.equal(await page.evaluate(()=>JSON.stringify(state)),beforeFreshExport,
   'A freshness report export must never change engineer inputs');
+ // Verify the actual bundled nested catalogue page, not a mock.
+ assert.equal(await page.locator('a[href="catalog-intake/catalog-review-page.html"]').count(),1);
+ await page.goto('http://127.0.0.1:'+server.address().port+'/catalog-intake/catalog-review-page.html');
+ assert.match(await page.locator('h1').innerText(),/Каталог оборудования/);
+ assert.match(await page.locator('.notice').innerText(),/Неутверждённая номенклатура/);
+ const safeJson={mode:'STAGING_ONLY',engineeringApproved:false,autoImportAllowed:false,
+  sourceRecords:[{sku:'DEMO-REVIEW-01',maker:'Review manufacturer',series:'TEST',
+   kind:'MCB',reviewStatus:'BLOCKED',problems:['SOURCE_REQUIRED'],
+   dimensionsKnown:false}]};
+ await page.locator('#file').setInputFiles({name:'review.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify(safeJson))});
+ assert.match(await page.locator('#status').innerText(),/Отчёт загружен локально/);
+ assert.match(await page.locator('#counts').innerText(),/Показано 1 из 1/);
+ assert.match(await page.locator('#rows').innerText(),/DEMO-REVIEW-01/);
+ await page.locator('#rows button').first().click();
+ assert.match(await page.locator('#detail').innerText(),/Допуск к проектированию: НЕТ/);
+ const catalogueDownload=page.waitForEvent('download');
+ await page.locator('#export').click();
+ assert.equal((await catalogueDownload).suggestedFilename(),'electropanel-staging-review.csv');
+ await page.locator('#file').setInputFiles({name:'invalid.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify({...safeJson,engineeringApproved:true}))});
+ assert.match(await page.locator('#status').innerText(),/Ошибка:/);
+ assert.equal(await page.locator('#export').isDisabled(),true);
  assert.deepEqual(errors,[]);
  console.log('PASS: design change review persisted through JSON reload');
  console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
