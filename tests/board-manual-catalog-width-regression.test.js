@@ -63,3 +63,19 @@ test('catalogue records are read-only during board draft',()=>{
  epDraftBoardPlanV1(p,()=>article);
  assert.equal(JSON.stringify(p),before);
 });
+
+test('fixed apparatus expanded beyond DIN capacity reports both width and placement defects',()=>{
+ const p=project();
+ const report=epDraftBoardPlanV1(p,sku=>({modules:sku==='A'?8:1}));
+ assert.equal(report.status,'BLOCKED');
+ assert.ok(report.issues.some(x=>x.code==='MANUAL_LAYOUT_OUT_OF_BOUNDS'));
+ assert.ok(report.issues.some(x=>x.code==='DEVICE_WIDTH_INVALID'));
+ assert.ok(!report.placements.some(x=>x.deviceId==='Q1'));
+});
+test('manual overlap with catalogue-expanded device is blocked',()=>{
+ const p=project();
+ p.manualLayoutV1.push({deviceId:'Q2',railIndex:0,startModule:1});
+ const report=epDraftBoardPlanV1(p,sku=>({modules:sku==='A'?3:1}));
+ assert.equal(report.status,'BLOCKED');
+ assert.ok(report.issues.some(x=>x.code==='MANUAL_LAYOUT_OVERLAP'));
+});
