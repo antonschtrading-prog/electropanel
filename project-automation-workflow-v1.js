@@ -272,6 +272,11 @@ function epWorkflowArticleChoiceV1(project,lineId,sku,catalogInput){
  if(!line)throw Error('WORKFLOW_ARTICLE_LINE_MISSING');
  if(line.catalogSku&&line.catalogSku!==sku)
   throw Error('WORKFLOW_ARTICLE_ALREADY_SELECTED');
+ const branchDevices=Array.isArray(project.branchDevices)?project.branchDevices:[];
+ const linked=branchDevices.filter(x=>x?.circuitId===lineId);
+ if(linked.length>1)throw Error('WORKFLOW_ARTICLE_DUPLICATE_BRANCH_ASSIGNMENT');
+ if(linked[0]?.catalogSku&&linked[0].catalogSku!==sku)
+  throw Error('WORKFLOW_ARTICLE_BRANCH_MISMATCH');
  if(typeof epProtectiveDeviceShortlistV1!=='function')
   throw Error('WORKFLOW_ARTICLE_SHORTLIST_UNAVAILABLE');
  const assessment=epProtectiveDeviceShortlistV1(line,catalogInput);
