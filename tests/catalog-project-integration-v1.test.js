@@ -24,3 +24,10 @@ test('live catalogSku field resolves selected device',()=>{const r=catalogIntegr
 test('live catalogSku mismatch checks pole count',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'A',phase:'3Ф'}]},seed,[]);assert.ok(r.records[0].warnings.includes('PHASE_POLES_CONFLICT'))});
 test('live catalogSku checks displayed label',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'A',device:'Other'}]}, {...seed,A:{...seed.A,label:'Expected'}},[]);assert.ok(r.records[0].warnings.includes('DEVICE_LABEL_CONFLICT'))});
 test('live catalogSku matching label does not warn',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'A',device:'Expected'}]}, {...seed,A:{...seed.A,label:'Expected'}},[]);assert.ok(!r.records[0].warnings.includes('DEVICE_LABEL_CONFLICT'))});
+
+test('staged article referenced as catalogSku remains unresolved',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'SKU-2'}]},seed,[{batch:'intake',record:{sku:'SKU-2',kind:'MCB'},evidence:{}}]);assert.equal(r.totals.resolved,0);assert.equal(r.totals.stagedOnly,1);assert.ok(r.records[0].warnings.includes('STAGED_SKU_NOT_SELECTABLE'))});
+test('unassigned article is explicitly identified',()=>assert.ok(catalogIntegration({lines:[{id:'L1'}]},seed,[]).records[0].warnings.includes('ARTICLE_UNASSIGNED')));
+test('BOM propagates source line warnings',()=>{const r=projectMaterialDraft({lines:[line({modules:2})]},seed,[]);assert.ok(r.articles[0].warnings.includes('MODULE_COUNT_CONFLICT'));assert.equal(r.articlesNeedingReview,1)});
+test('BOM totals known widths with quantities',()=>{const r=projectMaterialDraft({lines:[line(),line({id:'L2'})]},seed,[]);assert.equal(r.totalKnownWidthMm,36)});
+test('BOM does not count unresolved geometry',()=>{const r=projectMaterialDraft({lines:[{id:'L1',catalogSku:'UNLISTED'}]},seed,[]);assert.equal(r.totalKnownWidthMm,0)});
+test('BOM does not duplicate warning codes',()=>{const r=projectMaterialDraft({lines:[line({modules:2}),line({id:'L2',modules:2})]},seed,[]);assert.deepEqual(r.articles[0].warnings,['MODULE_COUNT_CONFLICT'])});
