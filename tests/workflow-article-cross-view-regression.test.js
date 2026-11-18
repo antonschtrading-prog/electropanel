@@ -48,3 +48,12 @@ test('article assignment refuses duplicate board devices before shortlist',()=>{
  const p=project([{id:'Q1',circuitId:'L1',catalogSku:'SKU-A'},{id:'Q2',circuitId:'L1',catalogSku:'SKU-A'}]);
  assert.throws(()=>epWorkflowArticleChoiceV1(p,'L1','SKU-A',[]),/WORKFLOW_ARTICLE_DUPLICATE_BRANCH_ASSIGNMENT/);
 });
+
+test('orphan branch apparatus blocks workflow and remains available for repair',()=>{
+ const p=project([{id:'Q404',circuitId:'MISSING',catalogSku:'SKU-B'}]);
+ const report=preview(p);
+ assert.equal(report.status,'BLOCKED');
+ assert.equal(report.summary.orphanBranchDevices,1);
+ assert.ok(report.issues.some(x=>x.code==='WORKFLOW_ORPHAN_BRANCH_DEVICE'));
+ assert.equal(p.branchDevices[0].circuitId,'MISSING');
+});
