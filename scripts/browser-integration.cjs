@@ -37,7 +37,10 @@ const server=http.createServer((req,res)=>{
   download=function(name){recorded.push(name);};
   branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
   try{
-   for(const id of ['exportSingleLineSvgBtn','exportDraftBomCsvBtn','exportDraftBomJsonBtn']){
+   for(const id of ['exportSingleLineSvgBtn','exportDraftBomCsvBtn','exportDraftBomJsonBtn',
+    'exportCircuitTraceSvgBtn','exportWiringTraceCsvBtn',
+    'exportCircuitDossierJsonBtn','exportCircuitDossierCsvBtn',
+    'exportProtectionCsvBtn']){
     document.getElementById(id).click();
    }
   }finally{
