@@ -92,3 +92,5 @@ test('deletion accepts legacy project with no feed links',()=>{const x=run({feed
 test('shared RCD keeps surviving circuit and group reference',()=>{const x=run({sharedDevices:[{id:'R1',circuitIds:['L1','L2']}],groupInputLinks:[{groupId:'R1'}]});x.remove('L1');assert.deepEqual(Array.from(x.state.sharedDevices[0].circuitIds),['L2']);assert.equal(x.state.groupInputLinks.length,1)});
 
 test('last shared RCD member removal deletes orphan group input',()=>{const x=run({sharedDevices:[{id:'R1',circuitIds:['L1']}],groupInputLinks:[{groupId:'R1'},{groupId:'OTHER'}]});x.remove('L1');assert.equal(x.state.sharedDevices.length,0);assert.equal(x.state.groupInputLinks.length,0)});
+
+test('manual placements remove deleted branch and retain survivor',()=>{const x=run({manualLayoutV1:[{deviceId:'Q1'},{deviceId:'Q2'}]});x.remove('L1');assert.equal(x.state.manualLayoutV1.length,1);assert.equal(x.state.manualLayoutV1[0].deviceId,'Q2')});
