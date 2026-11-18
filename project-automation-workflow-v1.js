@@ -386,7 +386,7 @@ function epWorkflowHtmlV1(report,stored={}){
   (r.proposedSku?' <small>('+esc(r.proposedStatus)+
    (r.proposedStatus==='INCOMPLETE'?'; условия требуют уточнения':'')+')</small>':'')+
   '</td><td>'+
-  (r.proposedSku&&!r.selectedSku?
+  (r.proposedSku&&!r.selectedSku&&!r.articleConflict&&r.branchAssignments<=1&&(!r.branchSku||r.branchSku===r.proposedSku)?
    '<button type="button" class="btn tiny" data-workflow-article="'+
    esc(r.proposedSku)+'" data-workflow-line="'+esc(r.lineId)+
    '">Назначить черновой артикул</button>':'—')+'</td></tr>').join('');
