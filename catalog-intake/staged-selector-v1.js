@@ -7,11 +7,14 @@ const allowed=new Set(['MCB','RCD','RCBO','METER','RELAY','CONTACTOR']);
 function normalizeCriteria(c={}){
  if(!c||typeof c!=='object'||Array.isArray(c))throw new TypeError('Criteria must be an object');
  if(c.kind!=null&&!allowed.has(c.kind))throw new RangeError('Unsupported device kind');
- for(const k of ['inA','poles','modules','maxWidthMm','residualCurrentMa','icnKa','coilVoltageV','coilFrequencyHz']){
+ for(const k of ['inA','poles','modules','maxWidthMm','residualCurrentMa','icnKa','coilVoltageV','coilFrequencyHz','protectedPoles','icnVoltageV']){
   if(c[k]!=null&&(!Number.isFinite(c[k])||c[k]<=0))throw new RangeError('Invalid numeric criterion '+k);
  }
  if(c.poles!=null&&!Number.isInteger(c.poles))throw new RangeError('Poles must be integer');
  if(c.modules!=null&&!Number.isInteger(c.modules))throw new RangeError('Modules must be integer');
+ if(c.protectedPoles!=null&&!Number.isInteger(c.protectedPoles))throw new RangeError('Protected poles must be integer');
+ if(c.icnStandard!=null&&c.icnKa==null)throw new RangeError('Icn standard requires Icn threshold');
+ if(c.icnVoltageV!=null&&c.icnKa==null)throw new RangeError('Icn voltage requires Icn threshold');
  return {...c};
 }
 function findStagedDevices(criteria={},source=items){
@@ -19,7 +22,7 @@ function findStagedDevices(criteria={},source=items){
  for(const item of source){
   const d=item.record,why=[];
   if(c.kind&&d.kind!==c.kind)why.push('KIND_MISMATCH');
-  for(const k of ['inA','poles','modules','residualCurrentMa','coilVoltageV','coilFrequencyHz']){
+  for(const k of ['inA','poles','modules','residualCurrentMa','coilVoltageV','coilFrequencyHz','protectedPoles']){
    if(c[k]==null)continue;
    if(d[k]==null)why.push('UNKNOWN_'+k.toUpperCase());
    else if(d[k]!==c[k])why.push('MISMATCH_'+k.toUpperCase());
