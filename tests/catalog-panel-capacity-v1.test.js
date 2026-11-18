@@ -22,3 +22,7 @@ test('duplicate capacities are rejected',()=>assert.throws(()=>capacityPreview(p
 test('invalid rail size is rejected',()=>assert.throws(()=>capacityPreview(project(1),{railModules:0}),RangeError));
 test('API exposes capacity preview without authorizing selection',()=>{const r=handleCatalogueRequest({operation:'panel-capacity',project:project(1)});assert.equal(r.ok,true);assert.equal(r.engineeringApproved,false);assert.equal(r.projectMutationAllowed,false)});
 test('API invalid geometry is fail closed',()=>assert.equal(handleCatalogueRequest({operation:'panel-capacity',options:{railModules:0}}).error,'INVALID_CRITERIA'));
+
+test('capacity CSV exports explicit uncertainty',()=>{const {exportPanelCapacity}=require('../catalog-intake/catalog-review-export-v1.js');const r=exportPanelCapacity({lines:[{id:'x',catalogSku:'UNKNOWN'}]});assert.equal(r.capacityConfirmed,false);assert.match(r.csv,/canConfirmFit/);assert.ok(r.warnings.includes('UNRESOLVED_EQUIPMENT'))});
+test('rail CSV enumerates assigned lines',()=>{const {exportRailPreview}=require('../catalog-intake/catalog-review-export-v1.js');const r=exportRailPreview(project(3));assert.equal(r.engineeringApproved,false);assert.equal(r.notInstallationLayout,true);for(let i=0;i<3;i++)assert.ok(r.csv.includes('L'+i))});
+test('rail CSV exposes unplaceable devices separately',()=>{const {exportRailPreview}=require('../catalog-intake/catalog-review-export-v1.js');const r=exportRailPreview({lines:[{id:'x',catalogSku:'UNKNOWN'}]});assert.equal(r.unknownLines.length,1)});
