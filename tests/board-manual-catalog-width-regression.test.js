@@ -29,3 +29,37 @@ test('catalogue width expansion beyond rail is blocked',()=>{
  assert.equal(report.status,'BLOCKED');
  assert.ok(report.issues.some(x=>x.code==='MANUAL_LAYOUT_OUT_OF_BOUNDS'));
 });
+
+test('manual and automatic apparatus share a single catalogue snapshot',()=>{
+ const p=project();let calls=0;
+ const report=epDraftBoardPlanV1(p,sku=>{
+  if(sku==='A'){calls++;return {modules:calls===1?2:4};}
+  return {modules:1};
+ });
+ assert.equal(calls,1);
+ assert.equal(report.placements.find(x=>x.deviceId==='Q1').modules,2);
+ assert.equal(report.placements.find(x=>x.deviceId==='Q2').startModule,2);
+});
+test('identical article shared by multiple devices is fetched only once',()=>{
+ const p=project();p.lines[1].catalogSku='A';p.branchDevices[1].catalogSku='A';
+ let calls=0;
+ const report=epDraftBoardPlanV1(p,sku=>{calls++;return {modules:1};});
+ assert.equal(calls,1);
+ assert.equal(report.placements.length,2);
+});
+test('catalogue exception for a manually placed device is reported without repeated lookup',()=>{
+ const p=project();let calls=0;
+ const report=epDraftBoardPlanV1(p,sku=>{
+  if(sku==='A'){calls++;throw Error('offline');}
+  return {modules:1};
+ });
+ assert.equal(calls,1);
+ assert.equal(report.status,'BLOCKED');
+ assert.ok(report.issues.some(x=>x.code==='ARTICLE_LOOKUP_FAILED'));
+});
+test('catalogue records are read-only during board draft',()=>{
+ const p=project();const before=JSON.stringify(p);
+ const article=Object.freeze({modules:1,sku:'A'});
+ epDraftBoardPlanV1(p,()=>article);
+ assert.equal(JSON.stringify(p),before);
+});
