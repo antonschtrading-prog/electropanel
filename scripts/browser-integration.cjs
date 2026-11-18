@@ -15,6 +15,37 @@ const server=http.createServer((req,res)=>{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
+ // Independent source audit: a conflicting branch SKU blocks deliverables,
+ // but does not mutate inputs or prevent diagnostics/project JSON save.
+ const blockedExports=await page.evaluate(()=>{
+  const branch=state.branchDevices?.find(b=>state.lines?.some(l=>l.id===b.circuitId));
+  if(!branch)return {setupFailed:true};
+  const original=branch.catalogSku,baseline=JSON.stringify(state);
+  const savedDownload=download,filenames=[];
+  download=function(filename){filenames.push(filename);};
+  try{
+   branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+   const edited=JSON.stringify(state);
+   const gate=epDraftDocumentExportGate();
+   for(const id of ['exportSingleLineSvgBtn','exportDraftBomCsvBtn',
+     'exportDraftBomJsonBtn','exportCircuitTraceSvgBtn',
+     'exportWiringTraceCsvBtn','exportProtectionCsvBtn']){
+    document.getElementById(id)?.click();
+   }
+   const prevented=filenames.length===0;
+   document.getElementById('exportEngineeringBundleBtn')?.click();
+   const diagnosticExported=filenames.some(x=>x.includes('engineering_bundle_DRAFT.json'));
+   return {blocked:gate.allowed===false,reason:gate.reason,
+    unchanged:JSON.stringify(state)===edited,prevented,diagnosticExported,
+    originalRetained:baseline.includes(branch.id)};
+  }finally{branch.catalogSku=original;download=savedDownload;}
+ });
+ assert.equal(blockedExports.setupFailed,undefined,'demo must contain a linked branch apparatus');
+ assert.equal(blockedExports.blocked,true,JSON.stringify(blockedExports));
+ assert.equal(blockedExports.prevented,true,'inconsistent standalone drawings/BOM must not be exported');
+ assert.equal(blockedExports.unchanged,true,'export gate must not alter designer source data');
+ assert.equal(blockedExports.diagnosticExported,true,'diagnostic draft export remains available');
+
  // New unified engineer workflow: consumer power -> existing arithmetic engine ->
  // candidate shortlist and linked diagram/DIN/BOM. Inputs remain user-owned.
  await page.evaluate(()=>switchView('loads'));
