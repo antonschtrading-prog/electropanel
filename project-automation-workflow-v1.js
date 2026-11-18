@@ -424,11 +424,11 @@ function epWorkflowCsvV1(report){
   return '"'+s.replace(/"/g,'""')+'"';
  };
  const rows=[['Circuit','Designation','Consumers','Phase','Power kW',
-  'Ib A','Ib source','Selected SKU','Suggested SKU','Candidate status',
+  'Ib A','Ib source','Selected SKU','Branch SKU','Article conflict','Branch assignments','Suggested SKU','Candidate status',
   'Review warnings','Calculation status']];
  for(const r of report?.rows||[])rows.push([r.lineId,r.name,
   (r.consumers||[]).map(x=>x.name).join(', '),r.phase,r.powerKw,
-  r.ibA,r.ibSource,r.selectedSku,r.proposedSku,r.proposedStatus,
+  r.ibA,r.ibSource,r.selectedSku,r.branchSku,r.articleConflict?'BLOCKED':'',r.branchAssignments,r.proposedSku,r.proposedStatus,
   (r.proposalCaution||[]).join(', '),r.calculationStatus]);
  return '\uFEFF'+rows.map(row=>row.map(cell).join(';')).join('\r\n')+'\r\n';
 }
