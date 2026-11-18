@@ -49,12 +49,12 @@ test('insufficient total contiguous space blocks without overlapping placements'
  assert.equal(overlap(report.placements),null);
 });
 
-test('board blocks conflicting circuit and branch article declarations',()=>{
+test('board honors selected branch article while preserving line fallback evidence',()=>{
  const p=project([2],8);
  p.lines[0].catalogSku='A';p.branchDevices[0].catalogSku='B';
  const report=epDraftBoardPlanV1(p,()=>({modules:2}));
- assert.equal(report.status,'BLOCKED');
- assert.ok(report.issues.some(x=>x.code==='BRANCH_LINE_ARTICLE_CONFLICT'));
+ assert.notEqual(report.status,'BLOCKED');
+ assert.equal(report.placements[0].article,'B');
  assert.equal(p.lines[0].catalogSku,'A');
  assert.equal(p.branchDevices[0].catalogSku,'B');
 });
