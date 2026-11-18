@@ -376,6 +376,7 @@ function epWorkflowHtmlV1(report,stored={}){
   '</td><td>'+esc(r.name)+'</td><td>'+esc((r.consumers||[]).map(x=>x.name).join(', ')||'—')+'</td><td>'+esc(r.phase??'—')+
   '</td><td>'+esc(r.powerKw??'—')+'</td><td>'+esc(r.ibA??'—')+
   '</td><td>'+esc(r.ibSource)+'</td><td>'+esc(r.selectedSku??'—')+
+  '</td><td>'+esc(r.branchSku??'—')+'</td><td>'+esc(r.articleConflict?'КОНФЛИКТ':r.branchAssignments>1?'ДУБЛЬ':'—')+
   '</td><td>'+esc(r.proposedSku??'—')+
   (r.proposedSku?' <small>('+esc(r.proposedStatus)+
    (r.proposedStatus==='INCOMPLETE'?'; условия требуют уточнения':'')+')</small>':'')+
@@ -413,8 +414,8 @@ function epWorkflowHtmlV1(report,stored={}){
   '. Рекомендация не изменяет схему.</p>'+
   '<div class="table-scroll"><table><thead><tr><th>Цепь</th><th>Назначение</th>'+
   '<th>Потребители группы</th><th>Фаза</th><th>кВт</th><th>Ib, А</th><th>Источник Ib</th>'+
-  '<th>Выбранный артикул</th><th>Предварительный кандидат</th><th>Действие</th></tr></thead><tbody>'+
-  (rows||'<tr><td colspan="10">Добавьте цепи и потребителей</td></tr>')+
+  '<th>Артикул цепи</th><th>Артикул аппарата</th><th>Сверка</th><th>Предварительный кандидат</th><th>Действие</th></tr></thead><tbody>'+
+  (rows||'<tr><td colspan="12">Добавьте цепи и потребителей</td></tr>')+
   '</tbody></table></div></div>';
 }
 function epWorkflowCsvV1(report){
