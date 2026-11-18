@@ -21,13 +21,19 @@ function catalogIntegration(project={},seed=EP_CATALOG,staged=items){
   const selected=match||(seedMatch?.device||null);
   const selectedId=match?requested:seedMatch?.id||null;
   const staging=sku?stagedBySku.get(sku)||[]:requested?stagedBySku.get(norm(requested))||[]:[];
-  const source=match?'PROJECT_CATALOG':seedMatch?'CURATED_SEED':staging.length?'STAGING_ONLY':'UNRESOLVED';
+  const source=match?(Object.hasOwn(projectCatalog.customArticles,requested)?'USER_DECLARED':'CURATED_SEED'):seedMatch?'CURATED_SEED':staging.length?'STAGING_ONLY':'UNRESOLVED';
   const warnings=[];
   if(requested&&!match)warnings.push('UNKNOWN_CATALOG_ID');
+  if(selected&&line?.phase&&['MCB','RCBO'].includes(selected.kind)){
+   const single=['L1','L2','L3'].includes(line.phase),three=line.phase==='3Ф';
+   const compatible=single?(selected.poles===1||(selected.poles===2&&(selected.kind==='RCBO'||['1P+N','2P'].includes(selected.poleConfiguration)))):(three&&(selected.poles===3||selected.poles===4));
+   if(!compatible)warnings.push('PHASE_POLES_CONFLICT');
+  }
   if(sku&&!seedMatch&&!match&&staging.length)warnings.push('STAGED_SKU_NOT_SELECTABLE');
   if(sku&&selected&&norm(selected.sku)!==sku)warnings.push('SKU_CONFLICT');
   if(selected&&Number.isFinite(line.modules)&&line.modules!==selected.modules)warnings.push('MODULE_COUNT_CONFLICT');
   if(selected&&Number.isFinite(line.inA)&&Number.isFinite(selected.inA)&&line.inA!==selected.inA)warnings.push('RATED_CURRENT_CONFLICT');
+  if(selected&&typeof line.device==='string'&&line.device&&line.device!==selected.label)warnings.push('DEVICE_LABEL_CONFLICT');
   if(!selected&&requested)warnings.push('ARTICLE_NOT_FOUND');
   if(match&&Object.hasOwn(projectCatalog.customArticles,requested))warnings.push('USER_DECLARED_ARTICLE_UNVERIFIED');
   const row={lineId:id,lineName:String(line?.name||''),catalogId:selectedId,sku:selected?.sku||sku||null,
