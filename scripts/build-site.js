@@ -33,6 +33,10 @@ function buildSite(root=path.resolve(__dirname,'..'),output=path.join(root,'dist
   imageFiles.push(...report.files);
  }
  files.push(...imageFiles);
+ // The isolated review page is linked from index.html; publish its complete, non-selectable dataset.
+ const reviewFiles=['catalog-intake/catalog-review-page.html','catalog-intake/catalog-review-page.js'];
+ for(const name of reviewFiles){if(!fs.existsSync(path.join(root,name)))throw Error('Missing review asset: '+name)}
+ files.push(...reviewFiles);
  const rootPath=path.resolve(root),outPath=path.resolve(output);
  if(outPath===rootPath||rootPath.startsWith(outPath+path.sep))
   throw Error('Output must not overwrite source root or its parent');
@@ -48,6 +52,11 @@ function buildSite(root=path.resolve(__dirname,'..'),output=path.join(root,'dist
   fs.mkdirSync(path.dirname(target),{recursive:true});
   fs.copyFileSync(source,target);
  }
+ const {buildPortfolio}=require(path.join(root,'catalog-intake/portfolio-v1.js'));
+ const portfolio=buildPortfolio();
+ if(portfolio.mode!=='STAGING_ONLY'||portfolio.engineeringApproved!==false||portfolio.autoImportAllowed!==false)
+  throw Error('Catalogue staging approval boundary violated');
+ fs.writeFileSync(path.join(output,'catalog-intake','catalog-portfolio.json'),JSON.stringify(portfolio,null,2)+'\n');
  fs.writeFileSync(path.join(output,'.nojekyll'),'');
  for(const file of files)if(!fs.existsSync(path.join(output,file)))throw Error('Not packaged: '+file);
  return {scripts:references.length,assets:files.length,files};
