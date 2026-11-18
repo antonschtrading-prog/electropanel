@@ -53,17 +53,23 @@
   }
   if(visible.length>500)byId('counts').textContent+=' · отображены первые 500; экспорт содержит все отфильтрованные';
  }
+ async function loadData(data){
+  all=parseReport(data);loaded=true;option(byId('kind'),all.map(x=>x.kind));option(byId('maker'),all.map(x=>x.maker));
+  byId('search').value='';byId('kind').value='';byId('maker').value='';byId('blocked').checked=false;
+  byId('status').textContent='Реестр загружен · только для проверки';render();
+ }
  byId('file').addEventListener('change',async e=>{
   const file=e.target.files&&e.target.files[0];if(!file)return;
   loaded=false;all=[];byId('detail').textContent='';byId('status').textContent='';render();
   try{if(file.size>MAX_BYTES)throw Error('Размер файла превышает 5 МБ');
-   const data=JSON.parse(await file.text());all=parseReport(data);loaded=true;
-   option(byId('kind'),all.map(x=>x.kind));option(byId('maker'),all.map(x=>x.maker));
-   byId('search').value='';byId('kind').value='';byId('maker').value='';byId('blocked').checked=false;
-   byId('status').textContent='Отчёт загружен локально';render();
+   await loadData(JSON.parse(await file.text()));
   }catch(err){byId('status').textContent='Ошибка: '+err.message;render()}
  });
  for(const id of ['search','kind','maker','blocked'])byId(id).addEventListener('input',render);
+ // Static catalogue data is bundled by the site build; a manual file remains an offline fallback.
+ if(typeof root.fetch==='function')root.fetch('catalog-portfolio.json',{cache:'no-store'})
+  .then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
+  .then(loadData).catch(()=>{byId('status').textContent='Автозагрузка недоступна. Выберите JSON-файл вручную.'});
  byId('export').addEventListener('click',()=>{
   if(!loaded)return;const blob=new Blob(['\ufeff'+exportCsv(visible)],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=doc.createElement('a');a.href=url;a.download='electropanel-staging-review.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
