@@ -1902,6 +1902,29 @@ const server=http.createServer((req,res)=>{
  assert.match(await page.locator('#cabinetCurrentEnclosurePanel').innerText(),
   /NEW — предварительно подходит/);
 
- assert.deepEqual(errors,[]);console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
+ // Review notifications must survive JSON restoration and an actual reload.
+ const savedReview=await page.evaluate(()=>{
+  const current=state.lines[0];
+  current.power=(Number(current.power)||0)+0.5;
+  changed();
+  const saved=JSON.parse(localStorage.getItem('electropanel_web_preview'));
+  const imported=normalizeImport(saved);
+  return {live:state.designReviewNoticeV1,
+   stored:saved.designReviewNoticeV1,imported:imported.designReviewNoticeV1};
+ });
+ assert.ok(savedReview.live?.pendingDomains.includes('load'));
+ assert.deepEqual(savedReview.live,savedReview.stored);
+ assert.deepEqual(savedReview.live,savedReview.imported);
+ await page.reload();
+ const restoredReview=await page.evaluate(()=>({
+  saved:state.designReviewNoticeV1,
+  notice:document.getElementById('designChangeImpactPanel')?.textContent
+ }));
+ assert.deepEqual(restoredReview.saved,savedReview.live);
+ assert.match(restoredReview.notice,/Сохранены требования перепроверки/);
+ assert.match(restoredReview.notice,/не инженерное подтверждение/);
+ assert.deepEqual(errors,[]);
+ console.log('PASS: design change review persisted through JSON reload');
+ console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
