@@ -263,18 +263,18 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   count:summary.calculated+summary.manualCurrentPreserved});
  steps.push({key:'APPARATUS',status:summary.staleLinkedCurrents?'REVIEW_REQUIRED':summary.assignedArticles===summary.circuits?'SELECTED':
    summary.protectiveCandidates?'CANDIDATES':'PENDING',count:summary.protectiveCandidates});
- steps.push({key:'SINGLE_LINE',status:schematic?.status??'PENDING',
+ const blockedSchematic=epWorkflowProjectionBlockedV1(schematic);
+ const blockedBoard=epWorkflowProjectionBlockedV1(board);
+ const blockedBom=epWorkflowProjectionBlockedV1(bom);
+ steps.push({key:'SINGLE_LINE',status:blockedSchematic?'BLOCKED':schematic?.status??'PENDING',
   count:schematic?.nodes?.length??0});
- steps.push({key:'BOARD',status:board?.status??'PENDING',
+ steps.push({key:'BOARD',status:blockedBoard?'BLOCKED':board?.status??'PENDING',
   count:board?.placements?.length??0});
- steps.push({key:'BOM',status:bom?.status??'PENDING',
+ steps.push({key:'BOM',status:blockedBom?'BLOCKED':bom?.status??'PENDING',
   count:bom?.items?.length??0});
- if(schematic?.status==='BLOCKED'||schematic?.issues?.some(i=>i.level==='BLOCKED'))
-  add('WORKFLOW_SCHEMATIC_CONFLICT','BLOCKED');
- if(board?.status==='BLOCKED'||board?.issues?.some(i=>i.level==='BLOCKED'))
-  add('WORKFLOW_BOARD_CONFLICT','BLOCKED');
- if(bom?.status==='BLOCKED'||bom?.issues?.some(i=>i.level==='BLOCKED'))
-  add('WORKFLOW_BOM_CONFLICT','BLOCKED');
+ if(blockedSchematic)add('WORKFLOW_SCHEMATIC_CONFLICT','BLOCKED');
+ if(blockedBoard)add('WORKFLOW_BOARD_CONFLICT','BLOCKED');
+ if(blockedBom)add('WORKFLOW_BOM_CONFLICT','BLOCKED');
  return result();
 }
 function epWorkflowArticleChoiceV1(project,lineId,sku,catalogInput){
