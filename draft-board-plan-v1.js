@@ -7,6 +7,16 @@ function epDraftBoardPlanV1(project,lookupSku){
  project.railCount>100||project.railCapacity>200)
  return {status:'BLOCKED',issues:[{code:'BOARD_INPUT_INVALID',level:'BLOCKED'}],
  placements:[],engineeringApproved:false,ready_for_installation:false};
+ // Snapshot catalogue records once per SKU for stable reservation and validation.
+ const catalogueCache=new Map();
+ const catalogFor=sku=>{
+  if(catalogueCache.has(sku))return catalogueCache.get(sku);
+  let result;
+  try{result={value:typeof lookupSku==='function'?lookupSku(sku):null,error:false};}
+  catch(_){result={value:null,error:true};}
+  catalogueCache.set(sku,result);
+  return result;
+ };
  const branches=Array.isArray(project.branchDevices)?project.branchDevices:null;
  const devices=Array.isArray(project.sharedDevices)?project.sharedDevices.map(d=>({
   id:d?.id,modules:d?.modules,article:d?.catalogSku??null,kind:'shared'
@@ -43,11 +53,9 @@ function epDraftBoardPlanV1(project,lookupSku){
   // Otherwise an auto-placed device can overlap a wider fixed apparatus.
   let w=device.modules;
   if(device.article&&typeof lookupSku==='function'){
-   try{
-    const catalogDevice=lookupSku(device.article);
-    if(Number.isInteger(catalogDevice?.modules)&&catalogDevice.modules>0)
-     w=catalogDevice.modules;
-   }catch(_){/* the device validation below reports lookup failure */}
+   const catalogDevice=catalogFor(device.article).value;
+   if(Number.isInteger(catalogDevice?.modules)&&catalogDevice.modules>0)
+    w=catalogDevice.modules;
   }
   if(!Number.isInteger(r)||!Number.isInteger(x)||r<0||r>=project.railCount||x<0||!Number.isInteger(w)||w<1||x+w>project.railCapacity){
    add('MANUAL_LAYOUT_OUT_OF_BOUNDS',entry.deviceId,'BLOCKED');continue;
@@ -63,8 +71,8 @@ function epDraftBoardPlanV1(project,lookupSku){
   ids.add(d.id);
   let width=d.modules;
   if(d.article){
-   let c=null;
-   try{c=typeof lookupSku==='function'?lookupSku(d.article):null;}catch(_){add('ARTICLE_LOOKUP_FAILED',d.id,'BLOCKED');}
+   const catalog=catalogFor(d.article),c=catalog.value;
+   if(catalog.error)add('ARTICLE_LOOKUP_FAILED',d.id,'BLOCKED');
    if(!c){add('ARTICLE_UNKNOWN',d.id,'BLOCKED');continue;}
    if(!Number.isInteger(c.modules)||c.modules<1){add('CATALOG_MODULES_UNKNOWN',d.id,'BLOCKED');continue;}
    if(width!==c.modules)add('CATALOG_WIDTH_CONFLICT',d.id,'BLOCKED');
