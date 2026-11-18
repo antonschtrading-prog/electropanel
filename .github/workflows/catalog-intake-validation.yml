@@ -41,3 +41,23 @@ jobs:
           if-no-files-found: error
       - name: Full application Node regression tests
         run: node --test tests/*.test.js
+      - name: Engineering and site build smoke check
+        run: |
+          node scripts/build-site.js
+          test -f dist/index.html || test -f site/index.html || test -f build/index.html || test -f index.html
+  catalog-chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium test runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build and run browser integration
+        run: |
+          node scripts/build-site.js
+          node scripts/browser-integration.cjs
