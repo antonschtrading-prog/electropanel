@@ -120,6 +120,11 @@ function epWorkflowConsumerAuditCsvV1(audit){
   r.powerComplete?r.consumerPowerKw:'UNKNOWN',r.declaredPowerKw??'UNKNOWN',r.comparison]);
  return '\uFEFF'+data.map(row=>row.map(cell).join(';')).join('\r\n')+'\r\n';
 }
+function epWorkflowProjectionBlockedV1(report){
+ return !!report&&(report.status==='BLOCKED'||
+  (Array.isArray(report.issues)&&report.issues.some(issue=>
+   issue?.level==='BLOCKED'||issue?.status==='BLOCKED'||issue?.severity==='BLOCKED')));
+}
 function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  const issues=[],rows=[],add=(code,level='UNKNOWN',lineId=null)=>issues.push({code,level,lineId});
  const result=()=>({schema:'electropanel.project.workflow.draft.1',
