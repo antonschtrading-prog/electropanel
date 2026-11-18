@@ -26,5 +26,15 @@ jobs:
           done
       - name: Catalogue intake regression tests
         run: node --test tests/catalog-*.test.js
+      - name: Export machine-readable catalogue intake report
+        run: |
+          mkdir -p artifacts
+          node catalog-intake/portfolio-report-v1.js > artifacts/catalog-portfolio.json
+      - name: Upload catalogue intake report
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-portfolio
+          path: artifacts/catalog-portfolio.json
+          if-no-files-found: error
       - name: Full application Node regression tests
         run: node --test tests/*.test.js
