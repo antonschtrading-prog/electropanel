@@ -17,6 +17,13 @@ function epEngineeringPrintV1(bundle){
  const replacementTable=rows(['Цепь','Предыдущий артикул','Назначенный артикул','Текущий артикул','Предупреждения','Статус'],
   replacementRows.map(x=>[x.lineId,x.from??'Не указан',x.to??'Не указан',
    x.currentSku??'Не указан',(x.warnings||[]).join('; '),x.status]));
+ const savedReviewActions=sections.reviewActions;
+ const savedReviewTable=rows(['Раздел перепроверки','Статус','Блокирующих','Всего замечаний',
+  'Отложено','Что требует внимания'],
+ (savedReviewActions?.rows||[]).map(x=>[
+  x.title,x.status,x.blocking,x.open,x.deferred,
+  x.tasks.length?x.tasks.map(t=>t.code+(t.lineId?' ('+t.lineId+')':'')).join('; '):
+   'Нет связанных замечаний, повторная проверка всё равно требуется']));
  const workQueue=sections.designWorkQueue?.items||[];
  const workQueueTable=rows(['Приоритет','Цепь','Задача','Раздел'],workQueue.map(x=>[x.priority,x.lineId,x.action,x.section]));
  const designReview=sections.designReview?.rows||[];
@@ -391,6 +398,8 @@ function epEngineeringPrintV1(bundle){
   '<h2>DIN-компоновка</h2>'+boardTable+
   '<h2>Спецификация оборудования</h2>'+bomTable+
   '<h2>Паспортные данные выбранного оборудования · источники и ограничения</h2>'+catalogueEvidenceTable+
+  '<h2>Сохранённые задачи перепроверки после изменения проекта</h2>'+savedReviewTable+
+  '<p>Сопоставление с текущими замечаниями не подтверждает повторную инженерную проверку и не отменяет устаревшие расчёты.</p>'+
   '<h2>Очередь инженерных задач</h2>'+workQueueTable+
   '<h2>Сверка исходных токов КЗ · только при явно совпадающем сценарии</h2>'+faultReconciliationTable+
   '<h2>Матрица проектных расчётов</h2>'+designReviewTable+

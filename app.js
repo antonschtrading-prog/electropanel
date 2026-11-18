@@ -1096,12 +1096,16 @@ function epFireControlEditorEventV1(event){
 function renderEngineeringDiagnosticsV1(){
  const impactHolder=$('designChangeImpactPanel');
  if(impactHolder){
-  const notice=state.designReviewNoticeV1;
-  impactHolder.textContent=notice?.pendingDomains?.length?
-   'Сохранены требования перепроверки: '+notice.pendingDomains.join(', ')+
-    '. Последнее изменение: '+(notice.lastChangedDomains||[]).join(', ')+
-    '. Это напоминание, не инженерное подтверждение.':
-   'Сохранённых замечаний после изменений пока нет. Инженерные проверки выполняются отдельно.';
+  if(typeof epDesignReviewActionMatrixV1==='function'&&
+     typeof epDesignReviewActionMatrixHtmlV1==='function'){
+   // Reuse the existing issue register, not a second independent calculation.
+   const bundle=typeof epEngineeringBundleV1==='function'?
+    epEngineeringBundleV1(state,catalogDevice):null;
+   const report=bundle?.sections?.reviewActions||
+    epDesignReviewActionMatrixV1(state,bundle?.sections?.issueRegister);
+   impactHolder.innerHTML=epDesignReviewActionMatrixHtmlV1(report)+
+    (report?.rows?.length?'<button type="button" class="btn" id="exportDesignReviewActionsCsvBtn">Задачи перепроверки CSV</button>':'');
+  }else impactHolder.textContent='Модуль сохранённых перепроверок недоступен. Инженерная проверка не подтверждена.';
  }
  const evidenceHolder=$('designEvidencePanel');
  if(evidenceHolder)evidenceHolder.innerHTML=typeof assessDesignEvidence==='function'&&typeof epDesignEvidenceHtmlV1==='function'?
@@ -4510,4 +4514,15 @@ document.addEventListener('click',event=>{
   download(baseName()+'-project-delivery-trace.csv',csv.csv,'text/csv;charset=utf-8');
   notify('Сквозная трассировка проекта CSV выгружена');
  }catch(e){notify('Ошибка трассировки: '+e.message);}
+});
+
+document.addEventListener('click',event=>{
+ if(!event.target.closest('#exportDesignReviewActionsCsvBtn'))return;
+ try{
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  const report=bundle.sections.reviewActions;
+  download(baseName()+'-design-rechecks_DRAFT.csv',epDesignReviewActionMatrixCsvV1(report),
+   'text/csv;charset=utf-8');
+  notify('Задачи инженерной перепроверки выгружены');
+ }catch(error){notify('Экспорт перепроверок: '+error.message,true);}
 });

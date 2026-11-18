@@ -183,6 +183,9 @@ function epEngineeringBundleV1(project,lookupSku){
  const sections={cabinetFit,cabinetCapacity,cabinetConnectionProximity,cabinetConnectionSpace,cabinetApparatusEvidence,boardCapacity,deviceIdentity,deliveryTrace,fireControl,fireControlBill,fireControlTrace,fireControlDesign,fireControlSchedule,fireCatalog,fireDin,fireGate,fireChecklist,fireTopology,fireDiagram,fireWiring,fireWiringDiagram,fireContinuity,workflowPreview,consumerReconciliation,consumerGrouping,consumerMerge,designStageScope,manufacturerFacts,manufacturerEvidence,protectionTopology,protectionDeviceChain,supplyDeviceGraph,deviceSupply,supplyTerminals,incomingTerminalBindings,supplyCrossEvidence,deviceFaultScenarios,deviceCoordinationEvidence,calculatedDeviceFault,incomingMaximum,protectionEvidenceMatrix,faultSourceConvergence,protectionDecision,replacementReview,catalogueIntegrity,catalogEvidence,faultRoutes,reconciliation,integratedEvidence,designWorkQueue,designReview,cableReference,loadCurrent,designEvidence,dossier,bom,board,layoutAlternatives,protection,protectionSelection,crossView,wiringTrace,neutralSegregation,neutralWireIsolation,singleLine,engineering};
  sections.issueRegister=section('ISSUE_REGISTER',typeof epEngineeringIssueRegisterV1==='function'?
   ()=>epEngineeringIssueRegisterV1({sections},project):null);
+ sections.reviewActions=section('SAVED_DESIGN_REVIEW_ACTIONS',
+  typeof epDesignReviewActionMatrixV1==='function'?
+   ()=>epDesignReviewActionMatrixV1(project,sections.issueRegister):null);
  const statuses=Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v?.status||'UNKNOWN']));
  const blockedSections=Object.entries(statuses).filter(([,status])=>status==='BLOCKED').map(([name])=>name);
  const unresolvedSections=Object.entries(statuses).filter(([,status])=>status!=='BLOCKED').map(([name])=>name);
