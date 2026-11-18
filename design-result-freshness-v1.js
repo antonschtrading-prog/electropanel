@@ -70,7 +70,7 @@ function epDesignResultFreshnessV1(project,bundle){
   // demonstrated stale circuit-linked load current.
   const stale=entry?.stale===true||staleCircuits.length>0;
   const status=stale?'STALE':failed?'FAILED':
-   hasPending||liveBlocked?'PENDING_REVIEW':
+   hasPending||(liveBlocked&&entry?.status==='verified')?'PENDING_REVIEW':
    entry?.status==='verified'?'DECLARED_CURRENT':
    hasEntry?'UNCONFIRMED':'NOT_DOCUMENTED';
   return {domain,title:EP_FRESHNESS_TITLES_V1[domain],status,
