@@ -28,8 +28,24 @@ function epProjectDeliveryTraceV1(project,lookupSku){
    if(data?.status==='BLOCKED')add('DELIVERY_'+name+'_BLOCKED','BLOCKED');
   }catch(_){sections[name]={status:'FAILED'};add('DELIVERY_'+name+'_FAILED','BLOCKED');}
  }
- const ids=new Set(),loads=new Map();
+ const ids=new Set(),loads=new Map(),loadIds=new Set();
+ // Compare only explicitly present projection fields. Missing engineering
+ // inputs are tracked by their own audit, not silently fabricated here.
+ const number=v=>{
+  if(v===null||v===undefined||typeof v==='boolean'||typeof v==='object'||String(v).trim()==='')return null;
+  const str=String(v).trim().replace(',','.');
+  if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(str))return null;
+  const n=Number(str);return Number.isFinite(n)?n:null;
+ };
+ const unequalCurrent=(a,b)=>number(a)!==null&&number(b)!==null&&Math.abs(number(a)-number(b))>0.001;
+ const compareValue=(value,expected)=>value!==undefined&&value!==null&&expected!==undefined&&expected!==null&&value!==expected;
+
  for(const load of project.loads){
+  if(load?.id!==undefined){
+   if(typeof load.id!=='string'||!load.id.trim()||loadIds.has(load.id))
+    add('DELIVERY_CONSUMER_ID_INVALID_OR_DUPLICATE','BLOCKED',load?.circuitId??null);
+   else loadIds.add(load.id);
+  }
   if(!load||typeof load.circuitId!=='string'){add('DELIVERY_LOAD_UNASSIGNED');continue;}
   loads.set(load.circuitId,(loads.get(load.circuitId)||0)+1);
  }
@@ -63,15 +79,33 @@ function epProjectDeliveryTraceV1(project,lookupSku){
   if(p[0]&&Number.isInteger(line.modules)&&p[0].modules!==line.modules)add('DELIVERY_BOARD_WIDTH_MISMATCH','BLOCKED',line.id);
   if(line.catalogSku&&b[0]&&b[0].sku!==line.catalogSku)add('DELIVERY_BOM_SKU_MISMATCH','BLOCKED',line.id);
   if(line.catalogSku&&s[0]&&s[0].sku!==line.catalogSku)add('DELIVERY_SCHEMATIC_SKU_MISMATCH','BLOCKED',line.id);
+  if(line.catalogSku&&p[0]&&p[0].article!==undefined&&p[0].article!==line.catalogSku)
+   add('DELIVERY_BOARD_SKU_MISMATCH','BLOCKED',line.id);
+  if(p[0]&&b[0]&&p[0].article!==undefined&&b[0].sku!==undefined&&
+     p[0].article!==b[0].sku)add('DELIVERY_BOARD_BOM_SKU_MISMATCH','BLOCKED',line.id);
+  if(p[0]&&b[0]&&Number.isInteger(b[0].modules)&&
+     p[0].modules!==b[0].modules)add('DELIVERY_BOARD_BOM_WIDTH_MISMATCH','BLOCKED',line.id);
+  if(s[0]&&compareValue(s[0].phase,line.phase))
+   add('DELIVERY_SCHEMATIC_PHASE_MISMATCH','BLOCKED',line.id);
+  if(w[0]&&compareValue(w[0].phase,line.phase))
+   add('DELIVERY_WORKFLOW_PHASE_MISMATCH','BLOCKED',line.id);
+  if(s[0]&&unequalCurrent(s[0].design?.ibA,line.overloadInput?.ibA))
+   add('DELIVERY_SCHEMATIC_IB_MISMATCH','BLOCKED',line.id);
+  if(w[0]&&unequalCurrent(w[0].ibA,line.overloadInput?.ibA))
+   add('DELIVERY_WORKFLOW_IB_MISMATCH','BLOCKED',line.id);
+  if(w[0]?.ibSource==='STALE_LINKED_CURRENT'||w[0]?.calculationStatus==='STALE_REVIEW')
+   add('DELIVERY_LINKED_IB_RECALCULATION_REQUIRED','UNKNOWN',line.id);
   if(!line.catalogSku)add('DELIVERY_SKU_NOT_SELECTED','UNKNOWN',line.id);
   if(!loads.has(line.id))add('DELIVERY_CONSUMERS_NOT_LINKED','UNKNOWN',line.id);
   rows.push({lineId:line.id,name:line.name??line.id,deviceId,consumerCount:loads.get(line.id)||0,
+   reviewIssueCount:issues.length-issuesBefore,
    articleSku:line.catalogSku??null,phase:line.phase??null,board:p[0]??null,
    bom:b[0]??null,schematic:s[0]??null,workflow:w[0]??null,
    crossViewStatus:issues.length>issuesBefore?'REVIEW_REQUIRED':'LINKED_DRAFT'});
  }
  for(const id of loads.keys())if(!ids.has(id))add('DELIVERY_ORPHAN_CONSUMER','BLOCKED',id);
- for(const p of placements)if(!rows.some(r=>r.deviceId===p.deviceId)&&!project.sharedDevices?.some(x=>x.id===p.deviceId))
+ for(const p of placements)if(!rows.some(r=>r.deviceId===p.deviceId)&&!
+    (Array.isArray(project.sharedDevices)&&project.sharedDevices.some(x=>x?.id===p.deviceId)))
   add('DELIVERY_ORPHAN_PLACEMENT','BLOCKED',p.deviceId);
  for(const d of devices)if(d.kind==='branch'&&!ids.has(d.owner))add('DELIVERY_ORPHAN_BOM_DEVICE','BLOCKED',d.owner);
  for(const n of nodes)if(n.type==='circuit'&&!ids.has(n.id.slice(8)))add('DELIVERY_ORPHAN_SCHEMATIC_CIRCUIT','BLOCKED',n.id);
