@@ -1923,8 +1923,30 @@ const server=http.createServer((req,res)=>{
   notice:document.getElementById('designChangeImpactPanel')?.textContent
  }));
  assert.deepEqual(restoredReview.saved,savedReview.live);
- assert.match(restoredReview.notice,/Сохранены требования перепроверки/);
- assert.match(restoredReview.notice,/не инженерное подтверждение/);
+ assert.match(restoredReview.notice,/Сохранённые перепроверки/);
+ const reviewActions=await page.evaluate(()=>{
+  const b=epEngineeringBundleV1(state,catalogDevice),r=b.sections.reviewActions;
+  return {revision:r.revision,domains:r.summary.domains,open:r.summary.open,
+   status:r.status,approved:r.engineeringApproved,
+   printed:epEngineeringPrintV1(b).includes('Сохранённые задачи перепроверки')};
+ });
+ assert.ok(reviewActions.revision>=1);
+ assert.ok(reviewActions.domains>=1);
+ assert.ok(['BLOCKED','REVIEW_REQUIRED'].includes(reviewActions.status));
+ assert.equal(reviewActions.approved,false);
+ assert.equal(reviewActions.printed,true);
+ assert.equal(await page.locator('#exportDesignReviewActionsCsvBtn').count(),1);
+ const priorReviewExport=await page.evaluate(()=>JSON.stringify(state));
+ const reviewDownload=page.waitForEvent('download');
+ await page.locator('#exportDesignReviewActionsCsvBtn').click();
+ assert.match((await reviewDownload).suggestedFilename(),/-design-rechecks_DRAFT[.]csv$/);
+ assert.equal(await page.evaluate(()=>JSON.stringify(state)),priorReviewExport,
+  'Review action CSV must not change the project');
+ await page.reload();
+ const lastMatrix=await page.evaluate(()=>epEngineeringBundleV1(state,catalogDevice).sections.reviewActions);
+ assert.equal(lastMatrix.revision,reviewActions.revision);
+ assert.equal(lastMatrix.summary.domains,reviewActions.domains);
+ assert.equal(lastMatrix.engineeringApproved,false);
  assert.deepEqual(errors,[]);
  console.log('PASS: design change review persisted through JSON reload');
  console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
