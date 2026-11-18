@@ -30,11 +30,14 @@ jobs:
         run: |
           mkdir -p artifacts
           node catalog-intake/portfolio-report-v1.js > artifacts/catalog-portfolio.json
+          node catalog-intake/review-bundle-v1.js > artifacts/catalog-review-bundle.json
       - name: Upload catalogue intake report
         uses: actions/upload-artifact@v4
         with:
           name: catalog-portfolio
-          path: artifacts/catalog-portfolio.json
+          path: |
+            artifacts/catalog-portfolio.json
+            artifacts/catalog-review-bundle.json
           if-no-files-found: error
       - name: Full application Node regression tests
         run: node --test tests/*.test.js
