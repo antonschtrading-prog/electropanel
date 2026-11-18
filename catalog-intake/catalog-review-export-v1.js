@@ -2,6 +2,7 @@
 // Read-only, deterministic export for engineering review. Never approves staged devices.
 const {buildBrowserSnapshot,buildComparison}=require('./catalog-browser-v1.js');
 const {previewProjectTransfer}=require('./project-transfer-preview-v1.js');
+const {dashboard,verificationQueue}=require('./catalog-quality-dashboard-v1.js');
 const SAFE=/^[=+@\-\t\r]/;
 function csvCell(value){
  const raw=value==null?'':typeof value==='object'?JSON.stringify(value):String(value);
@@ -13,7 +14,7 @@ function exportStagingInventory(filters={}){
  const snapshot=buildBrowserSnapshot(filters);
  const cards=snapshot.results||[];
  const headers=['sku','manufacturer','series','kind','reviewStatus','fields','missing','source'];
- const rows=cards.map(c=>[c.sku,c.manufacturer,c.series,c.kind,c.reviewStatus||'UNREVIEWED',c.fields||{},c.missing||[],c.source||'']);
+ const rows=cards.map(c=>[c.sku,c.manufacturer,c.series,c.kind,c.reviewStatus||'UNREVIEWED',c.fields||{},c.missingRequired||[],c.sourceUrl||'']);
  return {mode:'STAGING_EXPORT_ONLY',engineeringApproved:false,count:rows.length,filename:'electropanel-staging-inventory.csv',csv:csv([headers,...rows])};
 }
 function exportComparison(skus){
@@ -28,4 +29,16 @@ function exportProjectTransferReview(project){
  return {mode:'PREVIEW_ONLY',engineeringApproved:false,transferAllowed:false,total:rows.length,
   csv:csv([['sku','kind','schemaCompatible','duplicate','blockers','source'],...rows])};
 }
-module.exports={csvCell,csv,exportStagingInventory,exportComparison,exportProjectTransferReview};
+function exportQualityDashboard(){
+ const report=dashboard();
+ const rows=report.records.map(r=>[r.sku,r.batch,r.kind,r.maker,r.reviewStatus,r.coreOverlap,r.duplicate,r.missingGeometry,r.missingSpecifications,r.missingEvidence,r.identityMissing,r.reasons]);
+ return {mode:'QUALITY_AUDIT_ONLY',engineeringApproved:false,count:rows.length,
+  csv:csv([['sku','batch','kind','manufacturer','reviewStatus','coreOverlap','duplicate','missingGeometry','missingSpecifications','missingEvidence','identityMissing','blockers'],...rows])};
+}
+function exportVerificationQueue(){
+ const report=verificationQueue();
+ const rows=report.queue.map(r=>[r.priority,r.sku,r.kind,r.batch,r.missingSpecifications,r.missingGeometry,r.missingEvidence,r.reasons]);
+ return {mode:'VERIFICATION_QUEUE_ONLY',engineeringApproved:false,count:rows.length,
+  csv:csv([['priority','sku','kind','batch','missingSpecifications','missingGeometry','missingEvidence','blockers'],...rows])};
+}
+module.exports={csvCell,csv,exportStagingInventory,exportComparison,exportProjectTransferReview,exportQualityDashboard,exportVerificationQueue};
