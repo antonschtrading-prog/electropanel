@@ -149,6 +149,14 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
  }
  summary.articleConflicts=0;
  summary.duplicateBranchAssignments=0;
+ summary.orphanBranchDevices=0;
+ const circuitIds=new Set(project.lines.filter(x=>x&&typeof x.id==='string').map(x=>x.id));
+ for(const branch of branches){
+  if(!branch||typeof branch.circuitId!=='string'||!circuitIds.has(branch.circuitId)){
+   summary.orphanBranchDevices++;
+   add('WORKFLOW_ORPHAN_BRANCH_DEVICE','BLOCKED',branch?.circuitId??null);
+  }
+ }
  const consumerAudit=epWorkflowConsumerAuditV1(project);
  summary.consumerReconciliation=consumerAudit.summary;
  summary.unassignedLoads=consumerAudit.summary.orphanConsumers;
