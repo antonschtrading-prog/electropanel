@@ -90,3 +90,5 @@ test('deletion accepts legacy project with no terminal links',()=>{const x=run({
 test('deletion accepts legacy project with no feed links',()=>{const x=run({feedLinks:undefined});assert.doesNotThrow(()=>x.remove('L1'));assert.equal(x.state.lines.length,1)});
 
 test('shared RCD keeps surviving circuit and group reference',()=>{const x=run({sharedDevices:[{id:'R1',circuitIds:['L1','L2']}],groupInputLinks:[{groupId:'R1'}]});x.remove('L1');assert.deepEqual(Array.from(x.state.sharedDevices[0].circuitIds),['L2']);assert.equal(x.state.groupInputLinks.length,1)});
+
+test('last shared RCD member removal deletes orphan group input',()=>{const x=run({sharedDevices:[{id:'R1',circuitIds:['L1']}],groupInputLinks:[{groupId:'R1'},{groupId:'OTHER'}]});x.remove('L1');assert.equal(x.state.sharedDevices.length,0);assert.equal(x.state.groupInputLinks.length,0)});
