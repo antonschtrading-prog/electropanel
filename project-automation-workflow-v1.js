@@ -138,6 +138,17 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   catch(e){add(e.message,'BLOCKED');}
  }
  const catalog=Array.isArray(catalogInput)?catalogInput:[];
+ // Circuit and branch apparatus must not silently disagree across schematic,
+ // board layout and bill of materials. Keep both declarations for review.
+ const branches=Array.isArray(project.branchDevices)?project.branchDevices:[];
+ const branchByCircuit=new Map();
+ for(const branch of branches){
+  if(!branch||typeof branch.circuitId!=='string')continue;
+  if(!branchByCircuit.has(branch.circuitId))branchByCircuit.set(branch.circuitId,[]);
+  branchByCircuit.get(branch.circuitId).push(branch);
+ }
+ summary.articleConflicts=0;
+ summary.duplicateBranchAssignments=0;
  const consumerAudit=epWorkflowConsumerAuditV1(project);
  summary.consumerReconciliation=consumerAudit.summary;
  summary.unassignedLoads=consumerAudit.summary.orphanConsumers;
