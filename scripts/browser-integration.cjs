@@ -1935,6 +1935,8 @@ const server=http.createServer((req,res)=>{
  assert.ok(['BLOCKED','REVIEW_REQUIRED'].includes(reviewActions.status));
  assert.equal(reviewActions.approved,false);
  assert.equal(reviewActions.printed,true);
+ // The diagnostic panel is in the board workspace, hidden on overview.
+ await page.evaluate(()=>switchView('board'));
  assert.equal(await page.locator('#exportDesignReviewActionsCsvBtn').count(),1);
  const priorReviewExport=await page.evaluate(()=>JSON.stringify(state));
  const reviewDownload=page.waitForEvent('download');
