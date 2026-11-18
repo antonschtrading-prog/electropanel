@@ -151,7 +151,7 @@ test('cross-view audit is loaded before bundle and app',()=>{
  assert.ok(scripts.indexOf('cross-view-audit-ui-v1.js')>scripts.indexOf('cross-view-audit-v1.js'));
  assert.ok(scripts.indexOf('cross-view-audit-ui-v1.js')<scripts.indexOf('app.js'));
  assert.match(html,/id="crossViewAuditPanel"/);
- assert.match(app,/epCrossViewAuditHtmlV1\(bundle.sections.crossView,selectedLine\)/);
+ assert.match(app,/epCrossViewAuditHtmlV1\(engineeringBundle.sections.crossView,selectedLine\)/);
 });
 test('cross-view issue navigation and exports use current project',()=>{
  assert.match(app,/\$\('crossViewAuditPanel'\)\.addEventListener\('click'/);
@@ -176,7 +176,7 @@ test('unified issue register loads before bundle and is accessible in board view
  assert.ok(scripts.indexOf('engineering-issue-register-v1.js')<scripts.indexOf('engineering-bundle-v1.js'));
  assert.match(html,/id="engineeringIssueRegister"/);
  assert.match(html,/id="exportIssueRegisterCsvBtn"/);
- assert.match(app,/epEngineeringIssueRegisterHtmlV1\(bundle.sections.issueRegister,selectedLine\)/);
+ assert.match(app,/epEngineeringIssueRegisterHtmlV1\(engineeringBundle.sections.issueRegister,selectedLine\)/);
  assert.match(app,/\$\('engineeringIssueRegister'\)\.addEventListener\('click'/);
  assert.match(app,/_issues_DRAFT\.csv/);
 });
@@ -192,7 +192,12 @@ test('engineering bundle is computed once for the two read-only audit panels',()
  const end=app.indexOf("const protection=$('protectionWorkbench')",start);
  assert.ok(start>0&&end>start);
  const fragment=app.slice(start,end);
- assert.equal((fragment.match(/epEngineeringBundleV1\(state,catalogDevice\)/g)||[]).length,1);
+ const renderStart=app.indexOf('function renderEngineeringDiagnosticsV1(){');
+ const rendering=app.slice(renderStart,end);
+ assert.equal((rendering.match(/epEngineeringBundleV1\(state,catalogDevice\)/g)||[]).length,1);
+ assert.match(rendering,/const engineeringBundle=/);
+ assert.match(fragment,/engineeringBundle.sections.crossView/);
+ assert.match(fragment,/engineeringBundle.sections.issueRegister/);
 });
 
 test('Russian issue guidance is loaded before register and app',()=>{
