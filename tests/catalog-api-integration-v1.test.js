@@ -1,0 +1,18 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {handleCatalogueRequest:api}=require('../catalog-intake/catalog-api-v1.js');
+const {EP_CATALOG}=require('../catalog.js');
+const [id,article]=Object.entries(EP_CATALOG)[0];
+test('coverage operation is read only',()=>{const r=api({operation:'coverage'});assert.equal(r.ok,true);assert.equal(r.engineeringApproved,false);assert.ok(r.total>0)});
+test('quality operation retains staging boundary',()=>{const r=api({operation:'quality'});assert.equal(r.ok,true);assert.equal(r.autoImportAllowed,false);assert.equal(r.engineeringApproved,false)});
+test('verification queue is read only',()=>{const r=api({operation:'verification-queue'});assert.equal(r.ok,true);assert.equal(r.engineeringApproved,false);assert.ok(r.count>0)});
+test('project audit resolves catalogSku',()=>{const r=api({operation:'project-audit',project:{lines:[{id:'1',catalogSku:id}]}});assert.equal(r.ok,true);assert.equal(r.totals.resolved,1);assert.equal(r.records[0].sku,article.sku)});
+test('project audit leaves project untouched',()=>{const p={lines:[{id:'1',catalogSku:id}]};api({operation:'project-audit',project:p});assert.deepEqual(p,{lines:[{id:'1',catalogSku:id}]})});
+test('preliminary BOM groups repeated lines',()=>{const r=api({operation:'preliminary-bom',project:{lines:[{id:'1',catalogSku:id},{id:'2',catalogSku:id}]}});assert.equal(r.ok,true);assert.equal(r.articles[0].quantity,2);assert.equal(r.notForProcurement,true)});
+test('preliminary BOM rejects staged-only selection',()=>{const r=api({operation:'preliminary-bom',project:{lines:[{id:'1',catalogSku:'NOT-IN-CATALOG'}]}});assert.equal(r.quantity,0);assert.equal(r.unresolved.length,1)});
+test('unknown operation still rejected',()=>assert.equal(api({operation:'arbitrary'}).ok,false));
+test('null request remains rejected',()=>assert.equal(api(null).error,'INVALID_REQUEST'));
+test('existing list remains available',()=>assert.equal(api({operation:'list'}).ok,true));
+test('existing summary remains available',()=>assert.equal(api({operation:'summary'}).ok,true));
+test('existing get remains available',()=>assert.equal(api({operation:'get',sku:'INVALID'}).error,'SKU_NOT_FOUND'));
+test('new operations never grant selection',()=>{for(const operation of ['coverage','quality','verification-queue','project-audit','preliminary-bom']){const r=api({operation});assert.notEqual(r.engineeringApproved,true)}});
