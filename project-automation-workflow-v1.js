@@ -457,5 +457,5 @@ function epWorkflowCsvV1(report){
 if(typeof module!=='undefined'&&module.exports)module.exports={
  epWorkflowPositiveV1,epWorkflowInputsV1,epWorkflowLineEstimateV1,
  epWorkflowConsumerAuditV1,epWorkflowConsumerAuditCsvV1,
- epWorkflowPreviewV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
+ epWorkflowPreviewV1,epWorkflowProjectionBlockedV1,epWorkflowApplyCurrentsV1,epWorkflowHtmlV1,
  epWorkflowArticleChoiceV1,epWorkflowPhaseSuggestionsV1,epWorkflowCsvV1};
