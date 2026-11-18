@@ -86,3 +86,5 @@ test('deletion accepts legacy project with no loads array',()=>{const x=run({loa
 test('deletion accepts legacy project with no conductor routes',()=>{const x=run({conductorRoutes:undefined});assert.doesNotThrow(()=>x.remove('L1'));assert.equal(x.state.lines.length,1)});
 
 test('deletion accepts legacy project with no terminal links',()=>{const x=run({terminalLinks:undefined});assert.doesNotThrow(()=>x.remove('L1'));assert.equal(x.state.lines.length,1)});
+
+test('deletion accepts legacy project with no feed links',()=>{const x=run({feedLinks:undefined});assert.doesNotThrow(()=>x.remove('L1'));assert.equal(x.state.lines.length,1)});
