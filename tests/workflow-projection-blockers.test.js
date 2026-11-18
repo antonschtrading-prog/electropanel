@@ -41,3 +41,18 @@ test('board and BOM issue blockers are propagated independently',()=>{
   if(previous[1]===undefined)delete global.epDraftBomV1;else global.epDraftBomV1=previous[1];
  }
 });
+
+test('apparatus stage reports blocked when article identity conflicts',()=>{
+ const report=epWorkflowPreviewV1({
+  lines:[{id:'L1',name:'Circuit',phase:'L1',power:1,catalogSku:'SKU-A'}],
+  loads:[],sharedDevices:[],branchDevices:[{id:'Q1',circuitId:'L1',catalogSku:'SKU-B'}]
+ },()=>null,[]);
+ assert.equal(report.status,'BLOCKED');
+ assert.equal(report.steps.find(x=>x.key==='APPARATUS').status,'BLOCKED');
+});
+test('apparatus stage reports blocked for orphan branch devices',()=>{
+ const report=epWorkflowPreviewV1({
+  lines:[],loads:[],sharedDevices:[],branchDevices:[{id:'Q1',circuitId:'MISSING',catalogSku:'SKU-A'}]
+ },()=>null,[]);
+ assert.equal(report.steps.find(x=>x.key==='APPARATUS').status,'BLOCKED');
+});
