@@ -19,3 +19,8 @@ test('BOM preserves line traceability',()=>assert.deepEqual(projectMaterialDraft
 test('BOM excludes unresolved devices',()=>{const r=projectMaterialDraft({lines:[{id:'L1'}]},seed,[]);assert.equal(r.quantity,0);assert.equal(r.unresolved.length,1)});
 test('BOM is not a procurement specification',()=>{const r=projectMaterialDraft({lines:[line()]},seed,[]);assert.equal(r.notForProcurement,true);assert.equal(r.engineeringApproved,false)});
 test('BOM never adds staged only SKUs',()=>{const r=projectMaterialDraft({lines:[{id:'L1',sku:'SKU-2'}]},seed,[{batch:'x',record:{sku:'SKU-2',kind:'MCB'},evidence:{}}]);assert.equal(r.quantity,0)});
+
+test('live catalogSku field resolves selected device',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'A',phase:'L1',modules:1,device:'Device'}]}, {A:{...seed.A,label:'Device'}},[]);assert.equal(r.records[0].catalogId,'A');assert.equal(r.records[0].source,'CURATED_SEED')});
+test('live catalogSku mismatch checks pole count',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'A',phase:'3Ф'}]},seed,[]);assert.ok(r.records[0].warnings.includes('PHASE_POLES_CONFLICT'))});
+test('live catalogSku checks displayed label',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'A',device:'Other'}]}, {...seed,A:{...seed.A,label:'Expected'}},[]);assert.ok(r.records[0].warnings.includes('DEVICE_LABEL_CONFLICT'))});
+test('live catalogSku matching label does not warn',()=>{const r=catalogIntegration({lines:[{id:'L1',catalogSku:'A',device:'Expected'}]}, {...seed,A:{...seed.A,label:'Expected'}},[]);assert.ok(!r.records[0].warnings.includes('DEVICE_LABEL_CONFLICT'))});
