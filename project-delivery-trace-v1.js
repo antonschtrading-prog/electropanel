@@ -34,7 +34,7 @@ function epProjectDeliveryTraceV1(project,lookupSku){
  const number=v=>{
   if(v===null||v===undefined||typeof v==='boolean'||typeof v==='object'||String(v).trim()==='')return null;
   const str=String(v).trim().replace(',','.');
-  if(!/^(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(str))return null;
+  if(!/^(?:[0-9]+(?:[.][0-9]*)?|[.][0-9]+)$/.test(str))return null;
   const n=Number(str);return Number.isFinite(n)?n:null;
  };
  const unequalCurrent=(a,b)=>number(a)!==null&&number(b)!==null&&Math.abs(number(a)-number(b))>0.001;
