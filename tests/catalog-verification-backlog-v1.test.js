@@ -1,0 +1,15 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {makeBacklog,summary}=require('../catalog-intake/verification-backlog-v1.js');
+test('verification queue covers every staged SKU',()=>assert.equal(makeBacklog().length,46));
+test('verification queue never approves live use',()=>assert.ok(makeBacklog().every(x=>!x.readyForLiveSelection)));
+test('queue is deterministically sorted',()=>assert.deepEqual(makeBacklog(),makeBacklog()));
+test('ABB RCD has missing geometry tasks',()=>assert.ok(makeBacklog().find(x=>x.sku==='2CSF202101R1250').tasks.some(x=>x.type==='VERIFY_GEOMETRY')));
+test('contactor needs utilization category',()=>assert.ok(makeBacklog().find(x=>x.sku==='A9C20132').tasks.some(x=>x.field==='utilizationCategory')));
+test('overlap with core is separately prioritized',()=>assert.equal(makeBacklog().filter(x=>x.priority==='CORE_RECONCILIATION').length,2));
+test('all records carry manufacturer source URLs',()=>assert.ok(makeBacklog().every(x=>x.source?.startsWith('https://'))));
+test('all records have lifecycle review tasks',()=>assert.ok(makeBacklog().every(x=>x.tasks.some(t=>t.type==='CHECK_LIFECYCLE'))));
+test('backlog task summary is internally consistent',()=>{const s=summary();assert.equal(s.taskCount,Object.values(s.taskTypes).reduce((a,b)=>a+b,0))});
+test('backlog does not mutate staged catalogue',()=>{const a=makeBacklog(),b=makeBacklog();assert.deepEqual(a,b)});
+test('empty batch returns empty task summary',()=>assert.deepEqual(summary([]).taskTypes,{}));
+test('priority count adds up to all records',()=>assert.equal(Object.values(summary().byPriority).reduce((a,b)=>a+b,0),46));
