@@ -10,6 +10,11 @@ function buildSite(root=path.resolve(__dirname,'..'),output=path.join(root,'dist
  if(references.length<2)throw Error('Missing local JavaScript references');
  if(new Set(references).size!==references.length)throw Error('Duplicate script reference');
  const files=['index.html','styles.css','browser_check.html'];
+ // Only an explicitly linked, isolated review page is published. This does
+ // not add staged manufacturer records to the verified engineering catalogue.
+ const reviewPath='catalog-intake/catalog-review-page.html';
+ const reviewAssets=html.includes('href="'+reviewPath+'"')?
+  [reviewPath,'catalog-intake/catalog-review-page.js']:[];
  for(const ref of references){
   if(!/^[A-Za-z0-9_-][A-Za-z0-9_.-]*\.js$/.test(ref)||ref.includes('..'))
    throw Error('Unsafe or non-local script: '+ref);
@@ -32,7 +37,7 @@ function buildSite(root=path.resolve(__dirname,'..'),output=path.join(root,'dist
   }
   imageFiles.push(...report.files);
  }
- files.push(...imageFiles);
+ files.push(...imageFiles,...reviewAssets);
  const rootPath=path.resolve(root),outPath=path.resolve(output);
  if(outPath===rootPath||rootPath.startsWith(outPath+path.sep))
   throw Error('Output must not overwrite source root or its parent');
@@ -40,6 +45,8 @@ function buildSite(root=path.resolve(__dirname,'..'),output=path.join(root,'dist
   throw Error('Output directory must not be a symlink');
  fs.mkdirSync(output,{recursive:true});
  fs.rmSync(path.join(output,'assets','device-fronts'),{recursive:true,force:true});
+ // Avoid stale review pages persisting after the link is removed.
+ fs.rmSync(path.join(output,'catalog-intake'),{recursive:true,force:true});
  for(const name of files){
   const source=path.join(root,name);
   if(!fs.existsSync(source)||!fs.statSync(source).isFile()||fs.lstatSync(source).isSymbolicLink()||fs.statSync(source).size===0)
