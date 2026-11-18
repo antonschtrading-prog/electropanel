@@ -1,5 +1,5 @@
 # Electropanel — очередь работ
-Обновлено: 2026-11-13. Короткий план для продолжения в новом чате.
+Обновлено: 2026-11-18. Короткий план для продолжения в новом чате.
 
 ## P0 — закончить аудит старого и нового источников
 - Найти/проверить исходный архив v4.14 и доступность всех 172 файлов; проверить точный состав 51 Python-модуля.
@@ -230,3 +230,20 @@ This cycle prioritises one short-circuit calculation chain rather than isolated 
 - Added regression tests covering source-versus-manual reconciliation, incomplete/stale scope, isolated L–N versus 3-phase cases, wrong apparatus Icn versus independent higher-rated candidates, and unchanged project/catalogue data. Added Chromium coverage for current-point-aware selection in the actual browser bundle.
 - **Known boundary:** the underlying maximum-current R/X inputs are engineer-provided; this module does not implement an independently verified IEC 60909 network study, all fault topologies, normative time-current compliance, or automatic installation approval. Physical investigations remain out of scope.
 - Confirm JS, validation and browser CI on the **exact final commit** before declaring this step complete.
+
+
+## 2026-11-18 — P0 commercial-panel handoff and next gate
+
+Completed locally on `integration-pr12` after the PR #32 → PR #12 merge:
+- [x] Real-UI commercial acceptance across consumer input, currents, catalogue selection, grouping, one-line, DIN, cabinet, BOM/documents, save/reload, edit and repeat issue.
+- [x] Parse downloaded artifacts and verify canonical IDs/articles, draft markings and unresolved engineering status rather than checking downloads alone.
+- [x] Verify conflicting article assignments block coordinated exports, including DIN CSV, while diagnostics and project save remain available.
+- [x] Make Ik optional for a panel-only manual Ib/Iz declaration; preserve fail-closed malformed-input behavior and project reload.
+- [x] Run 5255/5255 Node tests, syntax checks, Pages build and full Chromium integration locally.
+
+Immediate remaining P0 handoff:
+1. [ ] Publish the exact local commit to PR #12 when write access is available; do not merge or rebase `main` as part of this handoff.
+2. [ ] Confirm JavaScript/Node, engineering validation and browser GitHub Actions on that exact published head. Local green results do not substitute for this check.
+3. [ ] Review the published diff and preserve the exclusions: no `.playwright-cli/` artifacts, no blind import of stale audit/catalogue PRs, no second application architecture.
+
+Only after that gate, continue P1: independently sourced manufacturer catalogue/visual assets, verified enclosure/front geometry and Mac/iPhone interaction checks. Fire-alarm interfaces and optional room-plan/network contour B remain separate later work; neither is required for panel-only drafting. Full selectivity, applicable disconnection evidence, thermal/physical fit and installation approval remain open engineering work.

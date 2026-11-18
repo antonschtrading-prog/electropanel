@@ -1,5 +1,5 @@
 # Electropanel — архитектурные решения и правила
-Обновлено: 2026-11-13. Различаем утверждённые требования, рабочие технические решения и гипотезы.
+Обновлено: 2026-11-18. Различаем утверждённые требования, рабочие технические решения и гипотезы.
 
 ## Утверждённые требования
 - Конечная пользовательская версия должна работать в браузере, с размещением на GitHub Pages без обязательного Python-сервера.
@@ -30,3 +30,12 @@ Retain the existing Web schema and stable branch IDs. Add versioned extensions i
 
 ## 2026-11-14 — minimum-fault and maximum-fault separation
 A route-derived minimum L–PE current cannot populate maximum-fault Icn inputs. Ia, required time and supporting references are explicit declarations, never inferred from the letter B/C/D alone. Manufacturer-authored mirrored PDFs may support catalogue dimensions when cross-checked against official product identity; provenance is retained and not relabelled as a manufacturer's hosted source. Updating used custom articles is atomic with geometry checks.
+
+
+## 2026-11-18 — panel-only manual current and document-issue contract
+
+For a panel-only draft, manual Ib and Iz are a required positive pair, but Ik is optional because upstream fault evidence may legitimately be unavailable. Only an explicitly blank Ik form field removes an earlier manual declaration; omitted, null, zero, negative and malformed values are rejected. Calculated Ik and calculated/display voltage must not silently become manual declarations when the form is reopened. Missing Ik leaves breaking-capacity review incomplete and never creates engineering approval.
+
+Project import accepts the actual persisted representation: positive numeric or string `ikKa`, absent `ikKa`, optional bounded voltage and supported textual fault provenance. Unknown or malformed fields fail closed. A valid project with manual Ib/Iz and no Ik must survive save/reload rather than being discarded as a whole.
+
+All coordinated draft-document entry points use the shared cross-view export gate, including DIN placement CSV. Blocking coordinated documents must not block diagnostic bundle/audit exports or raw project JSON: engineers need those artifacts to repair an invalid draft. UNKNOWN may remain a marked DRAFT, while contradictory identities are blocked. This contract does not turn a successful export into normative, physical-fit or installation approval.

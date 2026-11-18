@@ -12,8 +12,9 @@ function epProtectionInputsV1(project,lineId,raw){
   if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;
   const n=Number(s);return Number.isFinite(n)&&n>0&&n<=max?n:null;
  };
- const ib=parse(raw.ibA,100000),iz=parse(raw.izA,100000),ik=parse(raw.ikKa,1000);
- if(ib===null||iz===null||ik===null)return {status:'BLOCKED',code:'POSITIVE_DECLARATIONS_REQUIRED',project:null};
+ const emptyIk=typeof raw.ikKa==='string'&&raw.ikKa.trim()==='';
+ const ib=parse(raw.ibA,100000),iz=parse(raw.izA,100000),ik=emptyIk?null:parse(raw.ikKa,1000);
+ if(ib===null||iz===null||(!emptyIk&&ik===null))return {status:'BLOCKED',code:'POSITIVE_DECLARATIONS_REQUIRED',project:null};
  if(ib>iz)return {status:'BLOCKED',code:'IB_EXCEEDS_IZ',project:null};
  const voltageSupplied=Object.prototype.hasOwnProperty.call(raw,'voltageV');
  const emptyVoltage=raw.voltageV===null||raw.voltageV===undefined||raw.voltageV==='';
@@ -23,7 +24,11 @@ function epProtectionInputsV1(project,lineId,raw){
  const copy=JSON.parse(JSON.stringify(project));
  const target=copy.lines.find(x=>x.id===lineId);
  target.overloadInput={...(target.overloadInput||{}),ibA:ib,izA:iz};
- target.faultInput={...(target.faultInput||{}),ikKa:ik};
+ target.faultInput={...(target.faultInput||{})};
+ // Ik is optional for a panel-only draft. Only an explicitly emptied form field
+ // removes an earlier declaration; omitted, null and malformed values stay invalid.
+ if(emptyIk)delete target.faultInput.ikKa;
+ else target.faultInput.ikKa=ik;
  if(voltageSupplied){
   if(emptyVoltage)delete target.faultInput.voltageV;
   else target.faultInput.voltageV=voltage;

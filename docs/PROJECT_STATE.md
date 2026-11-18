@@ -1,5 +1,5 @@
 # Electropanel — состояние проекта
-Обновлено: 2026-11-13. Это оперативная карта, не сертификат инженерной пригодности.
+Обновлено: 2026-11-18. Это оперативная карта, не сертификат инженерной пригодности.
 
 ## Источники
 1. Старый Electropanel v4.14: Python-архив electropanel_core_v4.14.zip, 172 файла, 51 Python-модуль (по существующему реестру); ранее зафиксированы 883 успешных Python-теста. Архив и тесты требуют независимого повторного подтверждения при очередном аудите.
@@ -35,3 +35,14 @@ The native project reconciliation and draft BOM now participate in the combined 
 
 ## 14 November 2026 — manufacturer body dimensions across design outputs
 PR #12: editable manufacturer declaration retains optional height/depth and propagates width/height/depth into the DIN evidence bridge, catalogue audit, draft BOM, CSV, printable engineering report and visual DIN preview. Inputs are bounded and malformed edits are transactional. Unknown dimensions remain explicit. Manufacturer-certified CAD/3D fit and thermal/enclosure clearance are not established. Verify commit-specific CI before treating this block as regression-tested.
+
+
+## 18 November 2026 — local P0 commercial-panel acceptance
+
+Current Web work is on local `integration-pr12`, not `main`. PR #32 (`fd77adf97361cd5a369083287b4417e35f33a552`) was merged locally into PR #12 (`b1b74b22b4ba5d0c4039ee6f80a231331b30021e`) as merge `dfa84e38c85a77e95d882224dbfce94b975c36d1`; subsequent P0 source, test and documentation changes are in the commit containing this note. Nothing was pushed because GitHub write access was unavailable, so CI for the new head remains unverified.
+
+The real-Chromium commercial acceptance now exercises four consumer categories, calculated and manually declared currents, concrete catalogue articles, a shared four-pole RCD group, one-line/DIN/cabinet projections, project save and actual reload, subsequent UI editing, repeated issue and content-level checks of BOM JSON/CSV, single-line SVG, DIN CSV, engineering bundle JSON, print HTML and project JSON. A deliberately conflicting line/branch article blocks coordinated deliverables, including DIN CSV; diagnostic exports and raw project JSON remain available. Reimporting the corrected project restores export.
+
+Panel-only manual Ib/Iz no longer require Ik. A blank Ik explicitly removes an earlier declaration; omitted, null, zero, negative and malformed values remain invalid. Calculated Ik/voltage are not copied into manual declarations. Numeric or absent `ikKa`, optional voltage and supported fault metadata now survive JSON/localStorage round trips instead of causing the saved project to be discarded. Chromium `/v` pattern syntax and the favicon 404 were also corrected.
+
+Local verification on this source state: **5255/5255 Node tests passed**, all JS/CJS syntax checks passed, Pages package passed (**183 scripts / 188 assets**), and both full Chromium scenarios passed with zero page errors, console warnings/errors and HTTP 4xx/5xx. See `INDEPENDENT_RELEASE_AUDIT_20261118.md` for evidence boundaries. These are local results, not a new GitHub CI claim and not engineering or installation approval.

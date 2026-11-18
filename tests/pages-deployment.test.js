@@ -43,6 +43,10 @@ test('builder refuses missing, duplicate, or unsafe script references',()=>{
   assert.throws(()=>buildSite(dir,output),/Unsafe/);
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+test('published HTML declares an inline favicon without a missing server asset',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ assert.match(html,/<link rel="icon" href="data:image\/svg\+xml,/);
+});
 test('v4.14 calculations load before app.js with no Python runtime',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(m=>m[1]);

@@ -1,5 +1,15 @@
 # Electropanel 1.0 — independent release readiness audit (2026-11-18)
 
+## Current verification status — local P0 commercial panel
+
+This addendum supersedes the earlier pending/NO GO conclusions **only for the local P0 evidence recorded in the final section below**. Earlier sections remain the historical audit trail for their respective commits.
+
+- Baseline: local branch `integration-pr12`; merge `dfa84e38c85a77e95d882224dbfce94b975c36d1` combines PR #12 `b1b74b22b4ba5d0c4039ee6f80a231331b30021e` and PR #32 `fd77adf97361cd5a369083287b4417e35f33a552`, followed by the P0 fixes documented below.
+- **Local P0 UI acceptance: PASS.** The full commercial-panel route, post-reload editing, repeated document issue, conflict blocking and correction were exercised in real Chromium; downloaded artifacts were parsed and checked.
+- **Local regression: PASS.** 5255/5255 Node tests, JavaScript syntax checks, Pages build and the complete Chromium integration passed.
+- **GitHub publication and new-head CI: PENDING.** No write access was available; the new commit was not published and no new GitHub Actions result is claimed. `main` was not changed.
+- **Engineering/installation release: NOT APPROVED.** `engineeringApproved` and `ready_for_installation` remain false. Arithmetic, drafts and browser evidence do not replace applicable engineering review or verified physical fit.
+
 ## Baseline and independence
 - Source: PR #12 head `8f1230d25649deb7c673e0a1741626a196cbafa9`.
 - Approved scope: `docs/APPROVED_TWO_STAGE_PRODUCT_SCOPE_20261116.md`.
@@ -211,3 +221,51 @@ The exact commit `bf1f728` passed all three GitHub Actions workflows. New browse
 - Previous negative export tests remain in place and ensure eight engineering deliverables are blocked for the same inconsistency.
 
 These browser checks are pending CI on the new head. Do not interpret a diagnostic export as engineering approval.
+
+
+## Final local P0 acceptance update — integrated PR #32 and commercial UI route
+
+### Baseline actually exercised
+
+The production baseline is the local `integration-pr12` branch. Merge `dfa84e38c85a77e95d882224dbfce94b975c36d1` has PR #12 head `b1b74b22b4ba5d0c4039ee6f80a231331b30021e` and PR #32 head `fd77adf97361cd5a369083287b4417e35f33a552` as parents; its tree matched PR #32 before the subsequent P0 fixes. The three GitHub workflows had previously passed on each source head. That historical CI does **not** cover the new local merge plus fixes. `main` was not modified.
+
+### Closed local evidence gaps and corrected defects
+
+1. **GAP-01 / nine-stage interactive evidence — closed for the agreed local P0 draft route.** A fresh Chromium page used actual visible controls to load the commercial fixture, enter 230/400 V and electrical factors, calculate/apply currents, select articles, create a shared RCD group, apply a cabinet, enter manual current evidence, create cabinet geometry, save, reload, edit and issue documents again. This was not a module-only projection test.
+2. **Manual Ib/Iz without Ik — corrected and browser-verified.** Ik is optional only for an explicitly blank form field in a panel-only draft. Ib/Iz remain mandatory and positive. Null, omitted, zero, negative and malformed Ik values remain invalid. Empty Ik removes an old declaration; calculated Ik/voltage do not silently become manual declarations. Missing Ik leaves breaking-capacity review unresolved.
+3. **Saved-project loss after manual input — corrected and browser-verified.** Import normalization now accepts persisted numeric/string positive Ik, absent Ik, optional voltage and supported fault metadata, while rejecting malformed/unknown fields. A project with `faultInput:{}` and manual Ib/Iz survives actual reload instead of being discarded.
+4. **DEFECT-03 export-bypass surface — rechecked and extended.** Coordinated SVG/BOM/document exports remain gated; DIN placement CSV now also requires the shared draft-document gate before its own placement validation and download. In Chromium, a deliberate line/branch article conflict produced no downloads for single-line SVG, BOM CSV/JSON, DIN CSV, circuit dossier JSON, protection CSV and wiring trace CSV. The corrected project restored export.
+5. **Diagnostic access retained.** Under the same conflict, engineering bundle, cross-view diagnostic JSON and raw project JSON remained downloadable and exposed the blocked/conflicting state. Blocking these would impede correction and is not required by the release gate.
+6. **Browser hygiene corrected.** The cabinet obstacle identifier pattern is valid under modern Chromium HTML pattern `/v` semantics (`WD-1` passes `checkValidity()`), and the inline favicon removes the former `/favicon.ico` 404.
+
+### Commercial acceptance artifact inspection
+
+The UI scenario covered lighting, sockets, HVAC and another commercial load, with calculated currents plus a manual Ib/Iz declaration, four concrete branch article assignments and a four-pole shared RCD. A two-pole RCD was not used to bypass the valid different-phase group restriction.
+
+After reload, the circuit name, group and L1 article were edited through real controls. The second issue was inspected by parsing the downloaded files, not merely observing download events:
+
+- BOM JSON: draft schema, four branch devices with articles and one article-less device, L1 rebound to `SE-A9F74116`, unresolved engineering status;
+- BOM CSV: actual article and device material rows;
+- single-line SVG: DRAFT heading, L1/L4, `iC60N C16`, QD1;
+- DIN CSV: `device_id`, selected article, real branch/group IDs and `actual_terminal_access_verified` field;
+- engineering bundle JSON: `bom`, `board`, `singleLine`, `workflowPreview`, `crossView` sections;
+- print HTML: `НЕ ДЛЯ МОНТАЖА` and the edited circuit name;
+- project JSON: saved project state and reimport/correction path.
+
+The conflicting state persisted across reload and continued to block coordinated exports. Reimporting the valid JSON restored a checked BOM download. `engineeringApproved:false` and `ready_for_installation:false` were asserted, not inferred from green tests.
+
+### Executed local verification
+
+- Full Node suite: **5255 tests, 5255 passed, 0 failed**.
+- Syntax check for all repository `.js`/`.cjs` files outside dependencies/build/browser artifacts: **PASS**.
+- GitHub Pages package: **PASS — 183 scripts / 188 assets**, nonempty `dist/index.html` and `dist/app.js`.
+- Complete `scripts/browser-integration.cjs`: **PASS**, including commercial UI acceptance, persisted design-change review and the prior PR #32 Chromium route.
+- Browser runtime: **0 page errors, 0 console warnings/errors, 0 HTTP 4xx/5xx**.
+
+### Current decision and remaining gates
+
+**LOCAL P0 COMMERCIAL-DRAFT ACCEPTANCE: PASS.** This supersedes the old blanket `NOT YET VERIFIED / NO GO pending evidence` for the specific local route and artifacts above.
+
+**GITHUB HEAD VERIFICATION: PENDING.** The commit containing this update must be published to PR #12 and all three workflows must pass on that exact SHA. No such run is claimed here.
+
+**ENGINEERING / IFC / INSTALLATION RELEASE: NOT APPROVED.** Manufacturer-specific final enclosure fit, verified front/CAD geometry, full applicable fault/selectivity/thermal evidence and independent engineering review remain open. Preliminary cabinet capacity and schematic visuals are not verified physical fit. P1 catalogue/visual/geometry and Mac/iPhone checks, fire-alarm interfaces and optional room-plan contour B are outside this P0 acceptance.

@@ -25,8 +25,9 @@ test('source contract: workflow CSV export requires shared gate',()=>{
  assert.ok(section.includes('epWorkflowCsvV1(report)'));
  assert.ok(section.includes('if(!epRequireDraftDocumentExport())return;'));
 });
-test('source control: DIN placement CSV independently checks BLOCKED',()=>{
+test('source control: DIN placement CSV requires shared gate and independently checks BLOCKED',()=>{
  const section=findHandler('DIN',"$('boardChecks').addEventListener('click',e=>{\n if(!e.target.closest('#boardPlacementCsvBtn'))return;");
+ assert.ok(section.includes('if(!epRequireDraftDocumentExport())return;'));
  assert.ok(section.includes("result.status==='BLOCKED'"));
  assert.ok(section.includes('return;'));
  assert.ok(section.includes("download("));

@@ -2075,6 +2075,186 @@ const server=http.createServer((req,res)=>{
  assert.match(await page.locator('#status').innerText(),/Ошибка:/);
  assert.equal(await page.locator('#export').isDisabled(),true);
 
+ // End-to-end commercial panel acceptance using only real user controls for edits.
+ // Downloaded artifacts are parsed and checked, not merely observed as download events.
+ const commercialPage=await browser.newPage({viewport:{width:1440,height:1000},acceptDownloads:true});
+ const commercialErrors=[],commercialConsole=[],commercialHttpErrors=[];
+ commercialPage.on('pageerror',e=>commercialErrors.push(e.message));
+ commercialPage.on('console',m=>{if(['warning','error'].includes(m.type()))commercialConsole.push(m.text());});
+ commercialPage.on('response',r=>{if(r.status()>=400)commercialHttpErrors.push(r.status()+' '+r.url());});
+ await commercialPage.goto('http://127.0.0.1:'+server.address().port);
+ await commercialPage.locator('#loadCommercial').click();
+ for(const [selector,value] of [['#workflow-singleVoltageV','230'],['#workflow-threeVoltageV','400'],
+  ['#workflow-powerFactor','0,9'],['#workflow-efficiency','1'],['#workflow-demandFactor','1']])
+  await commercialPage.locator(selector).fill(value);
+ await commercialPage.locator('#workflowPreviewBtn').click();
+ await commercialPage.locator('#workflowApplyCurrentsBtn').click();
+ for(const [line,sku] of [['L1','ABB-2CDS251001R0164'],['L2','LE-406775'],
+  ['L3','SE-A9F74316'],['L4','SE-A9F73110']]){
+  const choice=commercialPage.locator('[data-workflow-line="'+line+'"][data-workflow-article="'+sku+'"]');
+  assert.equal(await choice.count(),1,'commercial UI offer '+line+' '+sku);
+  await choice.click();
+ }
+ await commercialPage.locator('#sharedRcdType').selectOption('RCD_4P');
+ await commercialPage.locator('#sharedRcdLabel').fill('QD1');
+ await commercialPage.locator('[data-rcd-circuit="L1"]').check();
+ await commercialPage.locator('#addRcdBtn').click();
+ assert.deepEqual(await commercialPage.evaluate(()=>state.sharedDevices.map(x=>x.circuitIds)),[['L1']]);
+ await commercialPage.locator('[data-view="board"]').click();
+ await commercialPage.locator('[data-apply-cabinet-option="1x12"]').click();
+ assert.equal(await commercialPage.evaluate(()=>state.railCount===1&&state.railCapacity===12),true);
+ await commercialPage.locator('#boardCanvas [data-line="L1"]').click();
+ const calculatedIb=await commercialPage.evaluate(()=>state.lines.find(x=>x.id==='L1').overloadInput.ibA);
+ const manualForm=commercialPage.locator('[data-protection-input-form="L1"]');
+ await manualForm.locator('[name="ibA"]').fill(String(calculatedIb));
+ await manualForm.locator('[name="izA"]').fill('25');
+ await manualForm.locator('[name="ikKa"]').fill('');
+ await manualForm.locator('[name="voltageV"]').fill('');
+ await manualForm.locator('button[type="submit"]').click();
+ const manualSaved=await commercialPage.evaluate(()=>{
+  const line=state.lines.find(x=>x.id==='L1');
+  const persisted=JSON.parse(localStorage.getItem('electropanel_web_preview')).lines.find(x=>x.id==='L1');
+  return {ib:line.overloadInput.ibA,iz:line.overloadInput.izA,ik:line.faultInput?.ikKa??null,
+   source:line.protectionInputSource,persistedIb:persisted.overloadInput.ibA,
+   review:line.calculationReview?.required,approved:epDraftBomV1(state,catalogDevice).engineeringApproved};
+ });
+ assert.equal(manualSaved.ib,calculatedIb);assert.equal(manualSaved.iz,25);
+ assert.equal(manualSaved.ik,null,'blank Ik must stay undeclared');
+ assert.equal(manualSaved.source,'manual_declaration');assert.equal(manualSaved.persistedIb,calculatedIb);
+ assert.equal(manualSaved.review,true);assert.equal(manualSaved.approved,false);
+ // Exercise the actual /v-pattern form in Chromium, then persist a reserved zone.
+ const autoCabinet=commercialPage.locator('[data-cabinet-autoplan]');
+ for(const [name,value] of Object.entries({interiorWidthMm:'600',interiorHeightMm:'600',interiorDepthMm:'200',
+  marginMm:'20',firstRowYMm:'50',zoneHeightMm:'120',rowGapMm:'30'}))
+  await autoCabinet.locator('[name="'+name+'"]').fill(value);
+ await autoCabinet.locator('button[type="submit"]').click();
+ await commercialPage.locator('#cabinetGeometryPanel summary').filter({hasText:'Кабель-каналы'}).click();
+ const obstacle=commercialPage.locator('[data-cabinet-obstacle]');
+ await obstacle.locator('[name="id"]').fill('WD-1');
+ assert.equal(await obstacle.locator('[name="id"]').evaluate(el=>el.checkValidity()),true,
+  'HTML /v pattern must accept the same hyphenated ID as the JS validator');
+ for(const [name,value] of Object.entries({xMm:'20',yMm:'350',widthMm:'500',heightMm:'40'}))
+  await obstacle.locator('[name="'+name+'"]').fill(value);
+ await obstacle.locator('button[type="submit"]').click();
+ assert.equal(await commercialPage.evaluate(()=>state.cabinetGeometryV1.obstacles.some(x=>x.id==='WD-1')),true);
+ assert.equal(await commercialPage.evaluate(()=>epDraftDocumentExportGate().allowed),true);
+ const readDownload=async locator=>{
+  const pending=commercialPage.waitForEvent('download');await locator.click();
+  const file=await pending,filePath=await file.path();
+  return {name:file.suggestedFilename(),text:fs.readFileSync(filePath,'utf8')};
+ };
+ const initialProjectFile=await readDownload(commercialPage.locator('#saveProjectBtn'));
+ const initialProject=JSON.parse(initialProjectFile.text);
+ assert.equal(initialProject.sharedDevices.length,1);
+ assert.equal(initialProject.lines.find(x=>x.id==='L1').faultInput?.ikKa,undefined);
+ await commercialPage.reload();
+ const reopened=await commercialPage.evaluate(()=>({
+  name:state.lines.find(x=>x.id==='L1').name,
+  ib:state.lines.find(x=>x.id==='L1').overloadInput.ibA,
+  sku:state.lines.find(x=>x.id==='L1').catalogSku,
+  groups:state.sharedDevices.map(x=>({id:x.id,label:x.label,circuits:x.circuitIds})),
+  obstacle:state.cabinetGeometryV1?.obstacles?.some(x=>x.id==='WD-1'),
+  railCount:state.railCount,railCapacity:state.railCapacity,gate:epDraftDocumentExportGate().allowed
+ }));
+ assert.equal(Number(reopened.ib),calculatedIb);assert.equal(reopened.sku,'ABB-2CDS251001R0164');
+ assert.equal(reopened.groups[0].label,'QD1');assert.deepEqual(reopened.groups[0].circuits,['L1']);
+ assert.equal(reopened.obstacle,true);assert.equal(reopened.railCount,1);assert.equal(reopened.railCapacity,12);
+ assert.equal(reopened.gate,true);
+ // Edit circuit name, grouping and a concrete article through visible controls.
+ await commercialPage.locator('[data-view="loads"]').click();
+ const editedName='Освещение торгового зала · повторный выпуск';
+ const nameInput=commercialPage.locator('#loadRows tr[data-id="L1"] [data-key="name"]');
+ await nameInput.fill(editedName);await nameInput.press('Tab');
+ assert.equal(await commercialPage.evaluate(()=>state.lines.find(x=>x.id==='L1').name),editedName);
+ await commercialPage.locator('[data-remove-rcd="'+reopened.groups[0].id+'"]').click();
+ await commercialPage.locator('#sharedRcdType').selectOption('RCD_4P');
+ await commercialPage.locator('#sharedRcdLabel').fill('QD1');
+ await commercialPage.locator('[data-rcd-circuit="L1"]').check();
+ await commercialPage.locator('[data-rcd-circuit="L2"]').check();
+ await commercialPage.locator('#addRcdBtn').click();
+ await commercialPage.locator('[data-view="board"]').click();
+ await commercialPage.locator('#boardCanvas [data-line="L1"]').click();
+ await commercialPage.locator('#catalogSku').selectOption('SE-A9F74116');
+ const secondRelease=await commercialPage.evaluate(()=>({
+  sku:state.lines.find(x=>x.id==='L1').catalogSku,
+  groups:state.sharedDevices.map(x=>x.circuitIds),gate:epDraftDocumentExportGate().allowed,
+  branchId:state.branchDevices.find(x=>x.circuitId==='L1').id,groupId:state.sharedDevices[0].id
+ }));
+ assert.equal(secondRelease.sku,'SE-A9F74116');assert.deepEqual(secondRelease.groups,[['L1','L2']]);
+ assert.equal(secondRelease.gate,true,JSON.stringify(secondRelease));
+ const bomJsonFile=await readDownload(commercialPage.locator('#exportDraftBomJsonBtn'));
+ assert.match(bomJsonFile.name,/_equipment_BOM_DRAFT[.]json$/);
+ const bom=JSON.parse(bomJsonFile.text);
+ assert.equal(bom.schema,'electropanel.bom.draft.1');assert.notEqual(bom.status,'BLOCKED');
+ assert.equal(bom.engineeringApproved,false);assert.equal(bom.ready_for_installation,false);
+ assert.equal(bom.totalCataloguedDevices,4);assert.equal(bom.missingDevices,1);
+ assert.ok(bom.items.find(x=>x.key==='SE-A9F74116'&&x.owners.includes('L1')));
+ for(const id of ['L1','L2','L3','L4'])assert.ok(bom.devices.some(x=>x.owner===id),'BOM owner '+id);
+ const bomCsv=await readDownload(commercialPage.locator('#exportDraftBomCsvBtn'));
+ assert.match(bomCsv.name,/_equipment_BOM_DRAFT[.]csv$/);
+ assert.ok(bomCsv.text.includes('SE-A9F74116'));assert.ok(bomCsv.text.includes('A9F74116'));
+ assert.ok(bomCsv.text.includes('L1'));assert.ok(bomCsv.text.includes('Количество'));
+ const singleLine=await readDownload(commercialPage.locator('#exportSingleLineSvgBtn'));
+ assert.match(singleLine.name,/_single_line_DRAFT[.]svg$/);
+ assert.ok(singleLine.text.startsWith('<svg'));assert.ok(singleLine.text.includes('ОДНОЛИНЕЙНАЯ СХЕМА · ЧЕРНОВИК'));
+ for(const marker of ['L1','L4','iC60N C16','QD1'])assert.ok(singleLine.text.includes(marker),'single-line '+marker);
+ const dinCsv=await readDownload(commercialPage.locator('#boardPlacementCsvBtn'));
+ assert.match(dinCsv.name,/-din-placement[.]csv$/);
+ for(const marker of ['device_id','SE-A9F74116',secondRelease.branchId,secondRelease.groupId,
+  'actual_terminal_access_verified'])assert.ok(dinCsv.text.includes(marker),'DIN CSV '+marker);
+ const bundleFile=await readDownload(commercialPage.locator('#exportEngineeringBundleBtn'));
+ const bundle=JSON.parse(bundleFile.text);
+ for(const section of ['bom','board','singleLine','workflowPreview','crossView'])assert.ok(bundle.sections[section],section);
+ assert.equal(bundle.engineeringApproved,false);assert.equal(bundle.ready_for_installation,false);
+ assert.equal(bundle.sections.bom.items.find(x=>x.key==='SE-A9F74116').owners[0],'L1');
+ const printFile=await readDownload(commercialPage.locator('#exportEngineeringPrintBtn'));
+ assert.ok(printFile.text.includes('НЕ ДЛЯ МОНТАЖА'));assert.ok(printFile.text.includes(editedName));
+ const editedProjectFile=await readDownload(commercialPage.locator('#saveProjectBtn'));
+ const editedProject=JSON.parse(editedProjectFile.text);
+ assert.equal(editedProject.lines.find(x=>x.id==='L1').name,editedName);
+ assert.equal(editedProject.lines.find(x=>x.id==='L1').catalogSku,'SE-A9F74116');
+ assert.deepEqual(editedProject.sharedDevices[0].circuitIds,['L1','L2']);
+ // Import a user-supplied inconsistent JSON through the real Open JSON control.
+ const conflictProject=JSON.parse(JSON.stringify(editedProject));
+ conflictProject.branchDevices.find(x=>x.circuitId==='L1').catalogSku='CONFLICT-ARTICLE-NOT-IN-CATALOG';
+ const importConflict=async project=>{
+  const chooserPromise=commercialPage.waitForEvent('filechooser');
+  await commercialPage.locator('#importProjectBtn').click();
+  const chooser=await chooserPromise;
+  await chooser.setFiles({name:'commercial-panel.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
+  await commercialPage.waitForFunction(()=>state.lines.some(x=>x.id==='L1'));
+ };
+ await importConflict(conflictProject);
+ await commercialPage.locator('[data-view="board"]').click();
+ assert.equal(await commercialPage.evaluate(()=>epDraftDocumentExportGate().allowed),false);
+ const unexpectedDownloads=[],unexpectedListener=d=>unexpectedDownloads.push(d.suggestedFilename());
+ commercialPage.on('download',unexpectedListener);
+ for(const id of ['exportSingleLineSvgBtn','exportDraftBomCsvBtn','exportDraftBomJsonBtn',
+  'boardPlacementCsvBtn','exportCircuitDossierJsonBtn','exportProtectionCsvBtn','exportWiringTraceCsvBtn'])
+  await commercialPage.locator('#'+id).click();
+ await commercialPage.waitForTimeout(150);
+ commercialPage.off('download',unexpectedListener);
+ assert.deepEqual(unexpectedDownloads,[],'all coordinated exports must fail closed');
+ const blockedCross=JSON.parse((await readDownload(commercialPage.locator('#exportCrossViewJsonBtn'))).text);
+ assert.equal(blockedCross.status,'BLOCKED');
+ const blockedBundleText=(await readDownload(commercialPage.locator('#exportEngineeringBundleBtn'))).text;
+ assert.match(blockedBundleText,/CONFLICT|STALE/);
+ const blockedBundle=JSON.parse(blockedBundleText);assert.equal(blockedBundle.engineeringApproved,false);
+ const blockedRaw=JSON.parse((await readDownload(commercialPage.locator('#saveProjectBtn'))).text);
+ assert.equal(blockedRaw.branchDevices.find(x=>x.circuitId==='L1').catalogSku,'CONFLICT-ARTICLE-NOT-IN-CATALOG');
+ await commercialPage.reload();
+ assert.equal(await commercialPage.evaluate(()=>epDraftDocumentExportGate().allowed),false,
+  'reload must not clear a persisted conflict');
+ await importConflict(editedProject);
+ await commercialPage.locator('[data-view="board"]').click();
+ assert.equal(await commercialPage.evaluate(()=>epDraftDocumentExportGate().allowed),true);
+ const correctedBom=JSON.parse((await readDownload(commercialPage.locator('#exportDraftBomJsonBtn'))).text);
+ assert.notEqual(correctedBom.status,'BLOCKED');assert.ok(correctedBom.items.some(x=>x.key==='SE-A9F74116'));
+ assert.deepEqual(commercialErrors,[]);assert.deepEqual(commercialConsole,[]);
+ assert.deepEqual(commercialHttpErrors,[],'no favicon or other missing browser assets');
+ await commercialPage.close();
+ console.log('PASS: commercial UI manual currents → grouping → cabinet → save/reload → edit → verified exports → conflict block/correction');
+
  // Independent regression: a conflict introduced AFTER a saved project edit
  // must survive real page reload and keep coordinated document export blocked.
  const editPage=await browser.newPage({viewport:{width:1280,height:900}});

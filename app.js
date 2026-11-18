@@ -2702,6 +2702,7 @@ $('cabinetGeometryPanel').addEventListener('click',e=>{
 });
 $('boardChecks').addEventListener('click',e=>{
  if(!e.target.closest('#boardPlacementCsvBtn'))return;
+ if(!epRequireDraftDocumentExport())return;
  const result=epBoardPlacementCsvV1(state,catalogDevice);
  if(result.status==='BLOCKED'){notify('Экспорт DIN содержит ошибки проекта; исправьте компоновку',true);return;}
  download(baseName()+'-din-placement.csv',result.csv,'text/csv;charset=utf-8');
@@ -3008,13 +3009,33 @@ function normalizeV30Import(value){
  return out;
 }
 function normalizeFaultImport(value){
- if(!value||typeof value!=='object'||typeof value.ikKa!=='string'||epParsePositiveCurrentKa(value.ikKa)===null)
-  throw Error('Некорректное значение ожидаемого тока КЗ в импортируемом проекте');
- if(value.source!==undefined&&typeof value.source!=='string')
-  throw Error('Некорректное происхождение тока КЗ в импортируемом проекте');
- if(typeof value.source==='string'&&value.source.length>200)
-  throw Error('Слишком длинное описание источника тока КЗ');
- return {ikKa:value.ikKa,source:value.source||''};
+ if(!value||typeof value!=='object'||Array.isArray(value))
+  throw Error('Некорректные исходные данные тока КЗ');
+ const textFields=['source','comparisonPoint','faultModel','model','purpose'];
+ if(Object.keys(value).some(k=>!['ikKa','voltageV',...textFields].includes(k)))
+  throw Error('Неизвестные поля исходных данных тока КЗ');
+ for(const key of textFields){
+  if(value[key]!==undefined&&typeof value[key]!=='string')
+   throw Error('Некорректное происхождение тока КЗ');
+  if(typeof value[key]==='string'&&value[key].length>200)
+   throw Error('Слишком длинное описание исходных данных тока КЗ');
+ }
+ const out={source:value.source||''};
+ if(value.ikKa!==undefined){
+  if(epParsePositiveCurrentKa(value.ikKa)===null)
+   throw Error('Некорректное значение ожидаемого тока КЗ в импортируемом проекте');
+  out.ikKa=value.ikKa;
+ }
+ if(value.voltageV!==undefined){
+  const raw=typeof value.voltageV==='string'||typeof value.voltageV==='number'?
+   String(value.voltageV).trim().replace(',','.'):'';
+  const voltage=Number(raw);
+  if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)||!Number.isFinite(voltage)||voltage<=0||voltage>1500)
+   throw Error('Некорректное напряжение сети в импортируемом проекте');
+  out.voltageV=value.voltageV;
+ }
+ for(const key of textFields)if(key!=='source'&&value[key]!==undefined)out[key]=value[key];
+ return out;
 }
 function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=4&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;if(x.ttContext!==undefined)p.ttContext=epNormalizeTTContext(x.ttContext);if(x.wiringModelV18!==undefined)p.wiringModelV18=normalizeWiring18Import(x.wiringModelV18);if(x.deviceModelV19!==undefined)p.deviceModelV19=normalizeDevice19Import(x.deviceModelV19);if(x.boardBindingsV1!==undefined)p.boardBindingsV1=epNormalizeBoardBindingsV1(x.boardBindingsV1);if(x.endpointBindingsV1!==undefined)p.endpointBindingsV1=epNormalizeEndpointBindingsV1(x.endpointBindingsV1);const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.lv43Input!==undefined?{lv43Input:normalizeLV43Import(l.lv43Input)}:{}),...(l.route44Input!==undefined?{route44Input:normalizeRoute44Import(l.route44Input)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){

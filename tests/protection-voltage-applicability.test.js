@@ -227,6 +227,15 @@ test('HTML form exposes a separate declared rated-voltage input',()=>{
  assert.match(markup,/value="400"/);
  assert.match(markup,/Напряжение сети для проверки Icn/);
 });
+test('manual form keeps Ik optional and never turns calculated screening values into declarations',()=>{
+ const {p,d,lookup}=fixture(230,400),w=workbench(p,lookup,[{id:'B16',device:d}]);
+ w.selected.ikKa=6;w.selected.manualIkKa=3;w.selected.voltageV=400;w.selected.manualVoltageV=230;
+ const markup=html(w);
+ assert.match(markup,/name="ikKa" type="text" inputmode="decimal" value="3"/);
+ assert.match(markup,/name="voltageV" type="text" inputmode="decimal" value="230"/);
+ assert.doesNotMatch(markup,/name="ikKa"[^>]*required/);
+ assert.match(markup,/расчётные значения не подставляются/);
+});
 test('project protection view preserves explicit voltage',()=>{
  const {p,d,lookup}=fixture(400,400);
  const row=workbench(p,lookup,[{id:'B16',device:d}]).rows[0];

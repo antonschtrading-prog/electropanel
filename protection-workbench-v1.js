@@ -179,8 +179,9 @@ function epProtectionWorkbenchHtmlV1(report){
   '<fieldset><legend>Исходные токи (ввод инженером, без автоматического расчёта)</legend>'+
   '<label>Ib, А <input name="ibA" type="text" inputmode="decimal" required value="'+(x.ibA===null?'':esc(x.ibA))+'"></label>'+
   '<label>Iz, А <input name="izA" type="text" inputmode="decimal" required value="'+(x.izA===null?'':esc(x.izA))+'"></label>'+
-  '<label>Ik, кА <input name="ikKa" type="text" inputmode="decimal" required value="'+(x.ikKa===null?'':esc(x.ikKa))+'"></label>'+
-  '<label>Напряжение сети для проверки Icn, В (по исходным данным) <input name="voltageV" type="text" inputmode="decimal" value="'+(x.voltageV===null?'':esc(x.voltageV))+'"></label>'+
+  '<label>Ik, кА (необязательно) <input name="ikKa" type="text" inputmode="decimal" value="'+(x.manualIkKa===null?'':esc(x.manualIkKa))+'"></label>'+
+  '<label>Напряжение сети для проверки Icn, В (по исходным данным) <input name="voltageV" type="text" inputmode="decimal" value="'+(x.manualVoltageV===null?'':esc(x.manualVoltageV))+'"></label>'+
+  '<p class="muted">Ik не требуется для чернового щита. Без него проверка отключающей способности остаётся незавершённой. Пустое поле Ik или напряжения удаляет ранее введённую ручную декларацию; расчётные значения не подставляются в эту форму.</p>'+
   '<button type="submit" class="btn">Записать исходные токи</button></fieldset></form>'+
   '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
   '<th>In, А</th><th>Icn, кА</th><th>Оценка</th><th>Причины</th><th>Действие</th></tr></thead><tbody>'+

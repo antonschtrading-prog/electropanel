@@ -19,6 +19,29 @@ test('catalog references concrete documents and physical width, no fake generate
 test('a catalogue device can be attached only to a single phase circuit',()=>{const c=env();assert.throws(()=>run(c,"applyCatalogueSku(state,'L6','SE-A9F74116')"),/полюс|фазност|1P/i);});
 test('documented model populates the corresponding branch without changing other lines',()=>{const c=env();run(c,"applyCatalogueSku(state,'L1','ABB-2CDS251001R0164')");assert.equal(run(c,'state.lines[0].catalogSku'),'ABB-2CDS251001R0164');assert.equal(run(c,'state.branchDevices[0].label'),'S201-C16');assert.equal(run(c,'state.lines[1].catalogSku'),undefined);});
 test('catalogue SKU survives JSON export/import roundtrip',()=>{const c=env();run(c,"applyCatalogueSku(state,'L1','IEK-MVA20-1-016-C');copy=normalizeImport(JSON.parse(JSON.stringify(state)))");assert.equal(run(c,'copy.lines[0].catalogSku'),'IEK-MVA20-1-016-C');});
+test('manual numeric fault declarations and rated voltage survive JSON roundtrip',()=>{
+ const c=env();
+ run(c,"state.lines[0].faultInput={ikKa:4.5,voltageV:230,source:'Расчёт 1',model:'SINGLE_PHASE_L_N',comparisonPoint:'PANEL-OUT-L1'};copy=normalizeImport(JSON.parse(JSON.stringify(state)))");
+ assert.equal(run(c,'copy.lines[0].faultInput.ikKa'),4.5);
+ assert.equal(run(c,'copy.lines[0].faultInput.voltageV'),230);
+ assert.equal(run(c,'copy.lines[0].faultInput.source'),'Расчёт 1');
+ assert.equal(run(c,'copy.lines[0].faultInput.model'),'SINGLE_PHASE_L_N');
+ assert.equal(run(c,'copy.lines[0].faultInput.comparisonPoint'),'PANEL-OUT-L1');
+});
+test('panel-only manual Ib and Iz with undeclared Ik survive JSON roundtrip',()=>{
+ const c=env();
+ run(c,"state.lines[0].overloadInput={ibA:12,izA:25};state.lines[0].faultInput={source:'',voltageV:230};copy=normalizeImport(JSON.parse(JSON.stringify(state)))");
+ assert.equal(run(c,'copy.lines[0].overloadInput.ibA'),'12');
+ assert.equal(run(c,'copy.lines[0].faultInput.ikKa'),undefined);
+ assert.equal(run(c,'copy.lines[0].faultInput.voltageV'),230);
+});
+test('malformed optional fault declarations still fail closed on import',()=>{
+ const c=env();
+ for(const value of ['{ikKa:0}','{ikKa:null}','{voltageV:0}','{voltageV:"230+10"}','{unknown:true}']){
+  run(c,"state.lines[0].faultInput="+value+";copy=JSON.parse(JSON.stringify(state))");
+  assert.throws(()=>run(c,'normalizeImport(copy)'),/тока КЗ|напряжение|поля/,value);
+ }
+});
 test('every manufacturer has a distinct facade family',()=>{const c=env();const a=JSON.parse(run(c,"JSON.stringify(Object.keys(EP_CATALOG).map(id=>{const d=EP_CATALOG[id];return deviceAppearance({catalogSku:id}).type}))"));for(const family of ['schneider','abb','iek','hager','legrand','siemens','chint','eaton'])assert.ok(a.includes(family));assert.equal(new Set(a).size,8);});
 test('unknown catalogue SKU is refused without modifying the model',()=>{const c=env();const prior=run(c,'JSON.stringify(state)');assert.throws(()=>run(c,"applyCatalogueSku(state,'L1','FAKE-SKU')"),/артикул/);assert.equal(run(c,'JSON.stringify(state)'),prior);});
 test('catalogue mismatch is detected after phase change and not silently rewritten',()=>{const c=env();run(c,"applyCatalogueSku(state,'L1','SE-A9F74116');state.lines[0].phase='3Ф'");assert.equal(run(c,"catalogAudit(state).issues.some(x=>x.code==='CATALOG_MISMATCH')"),true);});

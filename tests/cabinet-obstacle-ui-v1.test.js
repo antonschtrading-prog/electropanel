@@ -17,6 +17,8 @@ test('editor shows stable IDs, kind, add form, remove controls and reserved-zone
  assert.match(h,/data-cabinet-obstacle-remove="WD1"/);
  assert.match(h,/ep-cabinet-obstacle/);
  assert.match(h,/Клеммная область/);
+ assert.match(h,/pattern="\[A-Za-z0-9_\\-\]\{1,40\}"/);
+ assert.doesNotMatch(h,/pattern="\[A-Za-z0-9_-\]/);
 });
 test('drawing marks reserved rectangles separately from mounted devices',()=>{
  const report=epCabinetDrawingSvgV1(p());

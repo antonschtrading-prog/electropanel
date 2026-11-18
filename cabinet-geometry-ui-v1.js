@@ -32,7 +32,7 @@ function epCabinetGeometryUiV1(project,lookup){
    ' · '+o.xMm+' / '+o.yMm+' / '+o.widthMm+' × '+o.heightMm+' мм'+
    ' <button class="btn tiny" type="button" data-cabinet-obstacle-remove="'+safe(o.id)+'">Удалить</button></li>').join('')+'</ul>'+
   '<form data-cabinet-obstacle class="ep-cabinet-zone-form">'+
-   '<label>Код области<input name="id" type="text" maxlength="40" pattern="[A-Za-z0-9_-]{1,40}" required placeholder="WD1"></label>'+
+   '<label>Код области<input name="id" type="text" maxlength="40" pattern="[A-Za-z0-9_\\-]{1,40}" required placeholder="WD1"></label>'+
    '<label>Назначение<select name="kind"><option value="WIRE_DUCT">Кабель-канал</option>'+
    '<option value="TERMINAL_REGION">Клеммная область</option>'+
    '<option value="RESERVED">Резерв</option></select></label>'+
