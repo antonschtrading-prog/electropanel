@@ -40,3 +40,20 @@ test('site builder publishes complete review workbench and staging JSON',()=>{
   assert.equal(data.autoImportAllowed,false);assert.equal(parseReport(data).length,data.total);
  }finally{fs.rmSync(out,{recursive:true,force:true})}
 });
+
+test('site builder remains compatible with standalone deployments lacking catalogue page',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const {buildSite}=require('../scripts/build-site.js');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'ep-isolated-root-'));
+ const out=fs.mkdtempSync(path.join(os.tmpdir(),'ep-isolated-out-'));
+ try{
+  fs.writeFileSync(path.join(root,'index.html'),'<script src="one.js"></script><script src="two.js"></script>');
+  fs.writeFileSync(path.join(root,'styles.css'),'body{}');
+  fs.writeFileSync(path.join(root,'browser_check.html'),'<p>ok</p>');
+  fs.writeFileSync(path.join(root,'one.js'),'void 0;');
+  fs.writeFileSync(path.join(root,'two.js'),'void 0;');
+  const result=buildSite(root,out);
+  assert.equal(result.scripts,2);
+  assert.equal(fs.existsSync(path.join(out,'catalog-intake','catalog-portfolio.json')),false);
+ }finally{fs.rmSync(root,{recursive:true,force:true});fs.rmSync(out,{recursive:true,force:true})}
+});
