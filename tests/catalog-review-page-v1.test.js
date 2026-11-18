@@ -23,3 +23,6 @@ test('CSV neutralizes formula cells',()=>assert.ok(csvCell('=1+1').startsWith('"
 test('CSV includes all filtered records',()=>assert.match(exportCsv(parseReport(report)),/SCH-002/));
 test('CSV does not contain executable HTML',()=>{const r=parseReport({...report,sourceRecords:[{...report.sourceRecords[0],sku:'<img src=x>'}]});assert.equal(r[0].sku,'<img src=x>')});
 test('rejects invalid URL protocols',()=>assert.equal(parseReport({...report,sourceRecords:[{...report.sourceRecords[0],source:'javascript:alert(1)'}]})[0].source,null));
+
+test('real portfolio report has the explicit non-import flag',()=>{const {buildPortfolio}=require('../catalog-intake/portfolio-v1.js');const r=buildPortfolio();assert.equal(r.autoImportAllowed,false);assert.equal(parseReport(r).length,r.total)});
+test('CLI report exports all records and explicit safety boundary',()=>{const {execFileSync}=require('node:child_process');const output=JSON.parse(execFileSync(process.execPath,['catalog-intake/portfolio-report-v1.js'],{cwd:require('node:path').resolve(__dirname,'..'),encoding:'utf8'}));assert.equal(output.autoImportAllowed,false);assert.equal(parseReport(output).length,output.total)});
