@@ -78,21 +78,19 @@ function epDraftBoardPlanV1(project,lookupSku){
    if(!Number.isInteger(chosen.railIndex)||!Number.isInteger(chosen.startModule)||chosen.railIndex<0||chosen.railIndex>=project.railCount||chosen.startModule<0||chosen.startModule+width>project.railCapacity)continue;
    placements.push({deviceId:d.id,kind:d.kind,article:d.article,railIndex:chosen.railIndex,startModule:chosen.startModule,modules:width});continue;
   }
-  // A fixed device must not make automatic placement jump backwards:
-  // find the first contiguous free range in deterministic rail/slot order.
-  let found=null;
-  for(let r=0;r<project.railCount&&!found;r++){
-   for(let x=0;x+width<=project.railCapacity;x++){
-    let available=true;
-    for(let j=x;j<x+width;j++)if(occupied[r].has(j)){available=false;break;}
-    if(available){found={r,x};break;}
+  if(fixed.size){
+   let found=null;
+   for(let r=0;r<project.railCount&&!found;r++)for(let x=0;x+width<=project.railCapacity;x++){
+    if(Array.from({length:width},(_,i)=>x+i).every(i=>!occupied[r].has(i))){found={r,x};break;}
    }
-  }
-  if(!found){add('RAIL_CAPACITY_EXCEEDED',d.id,'BLOCKED');continue;}
-  rail=found.r;slot=found.x;
-  for(let j=slot;j<slot+width;j++)occupied[rail].add(j);
+   if(!found){add('RAIL_CAPACITY_EXCEEDED',d.id,'BLOCKED');continue;}
+   rail=found.r;slot=found.x;
+   for(let j=slot;j<slot+width;j++)occupied[rail].add(j);
+  }else if(slot+width>project.railCapacity){rail++;slot=0;}
+  if(rail>=project.railCount){add('RAIL_CAPACITY_EXCEEDED',d.id,'BLOCKED');continue;}
   placements.push({deviceId:d.id,kind:d.kind,article:d.article,railIndex:rail,
    startModule:slot,modules:width});
+  slot+=width;
  }
  if(!devices.length)add('NO_DEVICES',null,'BLOCKED');
  add('PHYSICAL_CLEARANCE_THERMAL_AND_WIRING_NOT_VERIFIED');
