@@ -66,6 +66,26 @@ const server=http.createServer((req,res)=>{
  assert.equal(gateRecovery.blocked,false);
  assert.equal(gateRecovery.restored,true,'gate must not alter project state');
 
+ // Diagnostic artifacts remain available even when engineering exports are blocked.
+ const diagnosticAvailability=await page.evaluate(()=>{
+  const branch=state.branchDevices.find(b=>state.lines.some(l=>l.id===b.circuitId));
+  const original=branch.catalogSku;
+  const oldDownload=download;
+  const names=[];
+  download=function(name){names.push(name);};
+  branch.catalogSku='AUDIT_CONFLICT_SKU_NOT_IN_CATALOG';
+  try{
+   for(const id of ['exportEngineeringBundleBtn','exportCrossViewCsvBtn',
+    'exportCrossViewJsonBtn','exportIssueRegisterCsvBtn']){
+    document.getElementById(id).click();
+   }
+  }finally{branch.catalogSku=original;download=oldDownload;}
+  return names;
+ });
+ assert.equal(diagnosticAvailability.length,4,JSON.stringify(diagnosticAvailability));
+ assert.ok(diagnosticAvailability.every(name=>name.includes('DRAFT')));
+
+
 
  // New unified engineer workflow: consumer power -> existing arithmetic engine ->
  // candidate shortlist and linked diagram/DIN/BOM. Inputs remain user-owned.
