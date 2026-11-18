@@ -62,3 +62,21 @@ test('deletion tolerates missing branch device without inventing node IDs',()=>{
  assert.doesNotThrow(()=>x.remove('L1'));
  assert.equal(JSON.stringify(x.state.deviceCoordinationEvidenceV1),old);
 });
+
+test('deletion clears only fault-current bindings of the removed branch',()=>{
+ const x=run({calculatedDeviceFaultBindingsV1:[{deviceNodeId:'BRANCH:Q1'},{deviceNodeId:'BRANCH:Q2'}]});
+ x.remove('L1');assert.equal(x.state.calculatedDeviceFaultBindingsV1.length,1);
+ assert.equal(x.state.calculatedDeviceFaultBindingsV1[0].deviceNodeId,'BRANCH:Q2');
+});
+test('missing branch device leaves unrelated fault-current bindings intact',()=>{
+ const x=run({branchDevices:[{id:'Q2',circuitId:'L2'}],
+  calculatedDeviceFaultBindingsV1:[{deviceNodeId:'BRANCH:undefined'},{deviceNodeId:'BRANCH:Q2'}]});
+ x.remove('L1');assert.equal(x.state.calculatedDeviceFaultBindingsV1.length,2);
+});
+test('deletion preserves undo snapshot before fire-control dependency cleanup',()=>{
+ const x=run({fireControlScenariosV1:[{id:'F1',circuitId:'L1'}]});
+ x.ctx.epFireControlCircuitDeleteV1=(state,id)=>{state.fireControlScenariosV1=state.fireControlScenariosV1.filter(x=>x.circuitId!==id)};
+ x.remove('L1');
+ assert.equal(x.state.fireControlScenariosV1.length,0);
+ assert.equal(JSON.parse(x.checkpoints[0]).fireControlScenariosV1.length,1);
+});
