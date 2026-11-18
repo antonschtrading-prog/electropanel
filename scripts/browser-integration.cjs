@@ -15,6 +15,55 @@ const server=http.createServer((req,res)=>{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
+
+ // Commercial acceptance: a user-created demo project survives a genuine
+ // browser navigation/reload, retaining consumer/circuit/device identities.
+ const commercialBeforeReload=await page.evaluate(()=>{
+  const stored=localStorage.getItem('electropanel_web_preview');
+  const saved=stored?JSON.parse(stored):null;
+  return {
+   title:state.title,
+   lines:state.lines.map(x=>x.id).sort(),
+   consumers:(state.loads||[]).map(x=>[x.id,x.circuitId]).sort((a,b)=>a[0].localeCompare(b[0])),
+   branches:(state.branchDevices||[]).map(x=>[x.id,x.circuitId]).sort((a,b)=>a[0].localeCompare(b[0])),
+   savedLines:saved?.lines?.length??0,
+   savedConsumers:saved?.loads?.length??0,
+   savedBranches:saved?.branchDevices?.length??0
+  };
+ });
+ assert.ok(commercialBeforeReload.lines.length>0,'demo must create real circuit records');
+ assert.ok(commercialBeforeReload.branches.length>0,'demo must include linked devices');
+ assert.equal(commercialBeforeReload.savedLines,commercialBeforeReload.lines.length,
+  'browser autosave must persist every circuit before reload');
+ assert.equal(commercialBeforeReload.savedConsumers,commercialBeforeReload.consumers.length,
+  'browser autosave must persist every consumer before reload');
+ assert.equal(commercialBeforeReload.savedBranches,commercialBeforeReload.branches.length,
+  'browser autosave must persist every device before reload');
+ await page.reload();
+ const commercialAfterReload=await page.evaluate(()=>({
+  title:state.title,
+  lines:state.lines.map(x=>x.id).sort(),
+  consumers:(state.loads||[]).map(x=>[x.id,x.circuitId]).sort((a,b)=>a[0].localeCompare(b[0])),
+  branches:(state.branchDevices||[]).map(x=>[x.id,x.circuitId]).sort((a,b)=>a[0].localeCompare(b[0]))
+ }));
+ for(const field of ['title','lines','consumers','branches'])
+  assert.deepEqual(commercialAfterReload[field],commercialBeforeReload[field],
+   'reload must preserve commercial project '+field);
+ const reopenedCommercialViews=await page.evaluate(()=>{
+  const catalogue=projectCatalogEntries().map(([id,device])=>({id,device}));
+  const v=epWorkflowPreviewV1(state,catalogDevice,catalogue,state.workflowDesignInputsV1);
+  const s=epSingleLineDraftV1(state,catalogDevice);
+  const b=epDraftBoardPlanV1(state,catalogDevice);
+  const bom=epDraftBomV1(state,catalogDevice);
+  return {workflowApproved:v.engineeringApproved,schematicApproved:s.engineeringApproved,
+   boardApproved:b.engineeringApproved,bomApproved:bom.engineeringApproved,
+   circuitIds:s.nodes.filter(x=>x.type==='circuit').map(x=>x.lineId).sort()};
+ });
+ assert.deepEqual(reopenedCommercialViews.circuitIds,commercialBeforeReload.lines,
+  'reopened one-line drawing must retain all original circuit identities');
+ for(const key of ['workflowApproved','schematicApproved','boardApproved','bomApproved'])
+  assert.equal(reopenedCommercialViews[key],false,'reopened drafts cannot assert engineering approval');
+
  // Independent source audit: a conflicting branch SKU blocks deliverables,
  // but does not mutate inputs or prevent diagnostics/project JSON save.
  const blockedExports=await page.evaluate(()=>{
