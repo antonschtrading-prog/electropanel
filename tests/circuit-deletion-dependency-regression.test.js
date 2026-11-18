@@ -94,3 +94,5 @@ test('shared RCD keeps surviving circuit and group reference',()=>{const x=run({
 test('last shared RCD member removal deletes orphan group input',()=>{const x=run({sharedDevices:[{id:'R1',circuitIds:['L1']}],groupInputLinks:[{groupId:'R1'},{groupId:'OTHER'}]});x.remove('L1');assert.equal(x.state.sharedDevices.length,0);assert.equal(x.state.groupInputLinks.length,0)});
 
 test('manual placements remove deleted branch and retain survivor',()=>{const x=run({manualLayoutV1:[{deviceId:'Q1'},{deviceId:'Q2'}]});x.remove('L1');assert.equal(x.state.manualLayoutV1.length,1);assert.equal(x.state.manualLayoutV1[0].deviceId,'Q2')});
+
+test('unassigned manual placement survives missing branch identity',()=>{const x=run({branchDevices:[{id:'Q2',circuitId:'L2'}],manualLayoutV1:[{slot:1},{deviceId:'Q2'}]});x.remove('L1');assert.equal(x.state.manualLayoutV1.length,2)});
