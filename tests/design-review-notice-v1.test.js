@@ -93,8 +93,8 @@ test('project import uses explicit validation for preserved review notice',()=>{
 test('change handler preserves review notices and UI renders saved state',()=>{
  const source=root('app.js');
  assert.match(source,/state.designReviewNoticeV1=epDesignReviewNoticeUpdateV1/);
- assert.match(source,/const notice=state.designReviewNoticeV1/);
- assert.match(source,/Сохранены требования перепроверки/);
+ assert.match(source,/epDesignReviewActionMatrixV1\(state,engineeringBundle\?\.sections\?\.issueRegister\)/);
+ assert.match(source,/epDesignReviewActionMatrixHtmlV1\(report\)/);
 });
 test('review notice is advisory, not a new electrical approval flag',()=>{
  const a=p(),b=structuredClone(a);b.lines[0].power=5;
