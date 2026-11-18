@@ -6,7 +6,7 @@ test('verification queue never approves live use',()=>assert.ok(makeBacklog().ev
 test('queue is deterministically sorted',()=>assert.deepEqual(makeBacklog(),makeBacklog()));
 test('ABB RCD has missing geometry tasks',()=>assert.ok(makeBacklog().find(x=>x.sku==='2CSF202101R1250').tasks.some(x=>x.type==='VERIFY_GEOMETRY')));
 test('contactor needs utilization category',()=>assert.ok(makeBacklog().find(x=>x.sku==='A9C20132').tasks.some(x=>x.field==='utilizationCategory')));
-test('overlap with core is separately prioritized',()=>assert.equal(makeBacklog().filter(x=>x.priority==='CORE_RECONCILIATION').length,2));
+test('overlap with core is separately prioritized',()=>assert.equal(makeBacklog().filter(x=>x.priority==='CORE_RECONCILIATION').length,3));
 test('all records carry manufacturer source URLs',()=>assert.ok(makeBacklog().every(x=>x.source?.startsWith('https://'))));
 test('all records have lifecycle review tasks',()=>assert.ok(makeBacklog().every(x=>x.tasks.some(t=>t.type==='CHECK_LIFECYCLE'))));
 test('backlog task summary is internally consistent',()=>{const s=summary();assert.equal(s.taskCount,Object.values(s.taskTypes).reduce((a,b)=>a+b,0))});

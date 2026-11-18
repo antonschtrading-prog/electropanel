@@ -4,8 +4,9 @@
 const EP_CATALOG = Object.freeze({
   'SE-A9F74116':Object.freeze({
     maker:'Schneider Electric',series:'Acti9 iC60N',sku:'A9F74116',label:'iC60N C16',kind:'MCB',
-    poles:1,modules:1,widthMm:18,inA:16,curve:'C',icnKa:6,appearance:'schneider',
-    icnVoltageV:230,icnStandard:'IEC/EN 60898-1',
+    poles:1,modules:1,widthMm:18,heightMm:85,depthMm:78.5,inA:16,curve:'C',icnKa:6,appearance:'schneider',
+    icnVoltageV:230,icnStandard:'IEC/EN 60898-1',icuKa:10,icuVoltageV:230,
+    sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-19',
     source:'https://eshop.se.com/sg/ic60n-miniature-circuit-breaker-1p-16a-c-curve-a9f74116.html'
   }),
   'SE-A9F73110':Object.freeze({
@@ -47,6 +48,15 @@ const EP_CATALOG = Object.freeze({
     inA:16,curve:'B',icnKa:6,icnVoltageV:230,icnStandard:'IEC 60898-1',appearance:'hager',
     sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-14',
     source:'https://hager.com/en-tr/catalogue/product-information/mbn116-mcb-1p-6ka-b-16a-1m'
+  }),
+  'HA-CDA440D':Object.freeze({
+    maker:'Hager',series:'CDA',sku:'CDA440D',label:'CDA440D 40A 30mA',kind:'RCD',
+    poles:4,poleConfiguration:'3P+N',modules:4,widthMm:70,heightMm:83,depthMm:70,
+    inA:40,residualCurrentMa:30,residualType:'A',conditionalShortCircuitKa:6,
+    conditionalShortCircuitStandard:'EN 61008-1',appearance:'hager',frontProfile:'HAGER_CDA_LINKED_RCD_V1',
+    sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-11-19',
+    source:'https://hager.com/de/katalog/produkt/cda440d-fi-schalter-3p-n-6ka-40a-30ma-typ-a',
+    productSource:'https://assets.hager.com/step-content/P/PDS_157723390101DE/Document/std.lang.all/CDA440D_0101_de-DE.pdf'
   }),
   'LE-406775':Object.freeze({
     maker:'Legrand',series:'DNX3 4500',sku:'406775',label:'DNX3 C20 1P+N',kind:'MCB',

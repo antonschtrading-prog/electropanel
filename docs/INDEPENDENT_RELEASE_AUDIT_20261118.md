@@ -269,3 +269,33 @@ The conflicting state persisted across reload and continued to block coordinated
 **GITHUB HEAD VERIFICATION: PENDING.** The commit containing this update must be published to PR #12 and all three workflows must pass on that exact SHA. No such run is claimed here.
 
 **ENGINEERING / IFC / INSTALLATION RELEASE: NOT APPROVED.** Manufacturer-specific final enclosure fit, verified front/CAD geometry, full applicable fault/selectivity/thermal evidence and independent engineering review remain open. Preliminary cabinet capacity and schematic visuals are not verified physical fit. P1 catalogue/visual/geometry and Mac/iPhone checks, fire-alarm interfaces and optional room-plan contour B are outside this P0 acceptance.
+
+
+## 2026-11-19 — P0 publication confirmation and restored P1 local acceptance
+
+### Baseline and publication boundary
+
+The P0 commercial-panel route was published to PR #12 as `3993d1f34bce56df3722f955e9fb68d9feb2626b`; its required GitHub Actions workflows succeeded. `main` was not changed. The present P1 work starts from that exact published tree. At the time of writing, P1 is a local candidate in the commit containing this note; new-head GitHub CI remains pending until push. Older statements that P0 was local-only or lacked write access are superseded.
+
+### P1 scope independently rechecked after workspace loss
+
+An earlier uncommitted P1 workspace was lost with `/tmp`; no published P0 work was lost. The current candidate was reconstructed in persistent storage and every result below was rerun. No green result is inherited merely from the lost workspace.
+
+1. **Catalogue/source records.** Schneider A9F74116 now carries source-backed body height/depth and separate Icu fields. Hager CDA440D is a live shared-RCD record with exact maker/series/SKU, RCD kind, 3P+N/four-pole identity, four modules, 40 A, 30 mA type A, conditional 6 kA rating and 70 × 83 × 70 mm body dimensions. Official HTTPS sources and review dates are present. Neither record becomes `VERIFIED` solely from source metadata.
+2. **Real shared-RCD route.** Chromium selects `HA-CDA440D` through `#sharedRcdSku` during group creation, sees an original RCD SVG with one linked lever, saves/reloads, removes/recreates the group through visible controls and issues coordinated documents. Project JSON, BOM JSON/CSV, DIN CSV and single-line SVG are parsed for the manufacturer SKU `CDA440D`, not just the internal key. The accepted commercial BOM has five catalogued devices and zero missing devices.
+3. **Transactional integrity.** Node regressions cover unknown/wrong-kind/wrong-pole rejection without state mutation, manual-current preservation, linked-circuit review on clearing, JSON projection and a full-rail width increase that must fail atomically. The implementation preflights the actual board planner rather than checking only arithmetic module totals.
+4. **Cabinet evidence.** The real cabinet panel shows `Hager / CDA / CDA440D` and `70 × 83 × 70`, with an official source link and the `USER_DECLARED` enclosure boundary. Tests explicitly retain false engineering/installation approval and unverified actual mounting/terminal coordinates; Chromium confirms `confirmedCabinetFit:false`.
+5. **Visual rights boundary.** Official technical sources and image reuse rights are independent. Hager image-use conditions reviewed in the prior session did not establish redistribution permission for this project. No official raster was copied, no permission status was invented and the manufacturer front-asset library remains empty. Original SVG labels explicitly deny photo/CAD status; malformed review dates cannot obtain source-backed presentation.
+6. **Touch/responsive regression.** A real Chromium mobile/touch context creates QD1 with CDA440D through actual controls, verifies no page overflow at 375, 390, 768 and 1024 px, checks a 44 px selector and visible original front, then clears/reselects the article and reloads. This is not physical Mac/iPhone or Safari/WebKit evidence.
+
+### Fresh verification evidence
+
+- `node --test tests/*.test.js`: **5266 passed, 0 failed**.
+- Changed JavaScript/CJS syntax checks and `git diff --check`: passed.
+- `node scripts/build-site.js`: **183 scripts / 188 assets**.
+- Complete `scripts/browser-integration.cjs` in real Chromium: commercial acceptance, touch 375/390/768/1024 select/clear/reselect/reload, design-review reload, and general load/catalogue/calculation/DIN/history/JSON/bundle scenarios all passed.
+- Final commercial, general/catalogue-review and touch listeners reported no page errors, console warnings/errors or HTTP 4xx/5xx. The catalogue-review inline favicon removes the previous early 404 rather than filtering it from results.
+
+### Remaining release and engineering limits
+
+Required GitHub Actions must be observed on the exact P1 commit after push; local green checks are not remote CI. Rights-cleared official visuals/CAD, independent enclosure/cover/terminal/wiring geometry, physical Apple-device/Safari checks and full normative fault/selectivity/thermal verification remain open. The accepted result is a traceable editable DRAFT and regression-tested software route, not a certified electrical design, manufacturer-approved assembly or permission to install.

@@ -41,7 +41,10 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const widthStatus=!Number.isFinite(device?.widthMm)||device.widthMm<=0?'UNKNOWN':
   device.widthMm>modules*18+0.05?'EXCEEDS_DIN_SLOT':'DECLARED_WITHIN_SLOT';
  const evidenceVerified=device?.verificationStatus==='VERIFIED'&&geometryKnown;
- const visualNote=evidenceVerified?'Эскиз, не официальный фасад':'Условный эскиз · геометрия/паспорт не подтверждены';
+ const sourceReviewedAt=String(device?.sourceReviewedAt||''),sourceReviewedDate=/^\d{4}-\d{2}-\d{2}$/.test(sourceReviewedAt)?new Date(sourceReviewedAt+'T00:00:00Z'):null;
+ const sourceReviewed=!!sourceReviewedDate&&Number.isFinite(sourceReviewedDate.getTime())&&sourceReviewedDate.toISOString().slice(0,10)===sourceReviewedAt;
+ const sourceBackedGeometry=geometryKnown&&sourceReviewed&&['MANUFACTURER_PRODUCT_PAGE','MANUFACTURER_DATASHEET'].includes(device?.sourceType);
+ const visualNote=evidenceVerified?'Эскиз, не официальный фасад':sourceBackedGeometry?'Авторский эскиз по официальному источнику; не фото и не CAD':'Условный эскиз · геометрия/паспорт не подтверждены';
  const width=Math.max(92,Math.min(480,Math.round((geometryKnown?device.widthMm:modules*18)*5.1)));
  const height=240;
  const gradientSeed=[family,deviceId,device?.sku,device?.series,device?.kind,modules,device?.widthMm].join('|');
@@ -55,7 +58,8 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const rated=['MCB','RCBO'].includes(breaker)?curve+inA:
   ['RCD','SWITCH','CONTACTOR','RELAY'].includes(breaker)?
    (inA==='—'?'—':'In '+inA+' A'):'—';
- const levers=Array.from({length:poles},(_,i)=>{
+ const linkedRcd=breaker==='RCD';
+ const levers=linkedRcd?(()=>{const leverWidth=Math.min(42,width*.3),cx=width*.42;return '<rect data-lever="true" data-linked-lever="true" x="'+(cx-leverWidth/2)+'" y="127" width="'+leverWidth+'" height="45" rx="4" fill="#252d35"/><rect x="'+(cx-leverWidth*.4)+'" y="124" width="'+(leverWidth*.8)+'" height="28" rx="4" fill="#424b54"/>';})():Array.from({length:poles},(_,i)=>{
   const cx=width*(i+.5)/poles,leverWidth=Math.min(18,width/poles*.65);
   return '<rect data-lever="true" x="'+(cx-leverWidth/2)+'" y="127" width="'+leverWidth+'" height="45" rx="3" fill="#252d35"/>'+
    '<rect x="'+(cx-leverWidth*.34)+'" y="124" width="'+(leverWidth*.68)+'" height="28" rx="3" fill="#424b54"/>';
@@ -63,7 +67,7 @@ function epCatalogFrontSvgV1(device,deviceId=''){
  const faceShape=(()=>{
   if(['MCB','SWITCH','RCD','RCBO','AFDD'].includes(breaker)){
    const testButton=['RCD','RCBO','AFDD'].includes(breaker)?
-    '<circle data-test-control="true" cx="'+(width-15)+'" cy="163" r="7" fill="#f9f5df" stroke="#3c4650"/>'+
+    '<circle data-test-control="true" cx="'+(width-15)+'" cy="163" r="7" fill="'+(device?.frontProfile==='HAGER_CDA_LINKED_RCD_V1'?'#527cad':'#f9f5df')+'" stroke="#3c4650"/>'+
     '<text x="'+(width-17.5)+'" y="166" font-family="Arial" font-size="9" fill="#2d353b">T</text>':'';
    return levers+testButton;
   }

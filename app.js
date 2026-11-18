@@ -316,12 +316,38 @@ function editConsumerIn(project,id,name,powerKw){
  reconcileCircuitPowers(project);return l;
 }
 function removeConsumerFrom(project,id){const idx=project.loads.findIndex(x=>x.id===id);if(idx<0)return false;if(typeof epFireControlConsumerDeleteV1==='function')epFireControlConsumerDeleteV1(project,id);project.loads.splice(idx,1);if(Array.isArray(project.terminalLinks))project.terminalLinks=project.terminalLinks.filter(x=>x.loadId!==id);reconcileCircuitPowers(project);return true;}
-function addSharedRCDTo(project,templateId,label,circuitIds){
+function sharedCatalogueDevice(project,templateId,sku){
+ if(!sku)return null;
+ if(typeof sku!=='string')throw Error('Некорректный артикул общего УЗО');
+ const dev=projectCatalogEntries(project).find(([id])=>id===sku)?.[1];
+ if(!dev)throw Error('Не найден артикул общего УЗО');
+ if(dev.kind!=='RCD')throw Error('Общий аппарат должен быть УЗО');
+ const poles=templateId==='RCD_2P'?2:templateId==='RCD_4P'?4:0;
+ if(!poles||dev.poles!==poles)throw Error('Полюса каталожного УЗО не соответствуют типу группы');
+ if(!Number.isInteger(dev.modules)||dev.modules<1||dev.modules>24||!Number.isFinite(dev.widthMm)||dev.widthMm<=0||dev.widthMm>dev.modules*18+0.001||!Number.isFinite(dev.inA)||dev.inA<=0)throw Error('Артикул УЗО содержит недопустимые габариты или номинальный ток');
+ return dev;
+}
+function addSharedRCDTo(project,templateId,label,circuitIds,catalogSku=''){
  const template=DEVICE_TEMPLATES[templateId];if(!template||!['RCD_2P','RCD_4P'].includes(templateId))throw Error('Общий аппарат должен быть УЗО 2P или 4P');
  if(templateId==='RCD_2P'&&project.lines.some(l=>circuitIds.includes(l.id)&&!['L1','L2','L3'].includes(l.phase)))throw Error('УЗО 2P требует указанных однофазных цепей');
  if(templateId==='RCD_2P'&&new Set(project.lines.filter(l=>circuitIds.includes(l.id)).map(l=>l.phase)).size!==1)throw Error('УЗО 2P нельзя объединять цепи разных фаз в этой модели');
- const d={id:uniqueEntityId('RCD',project.sharedDevices),templateId,label,modules:template.modules,circuitIds:[...circuitIds]};
+ const dev=sharedCatalogueDevice(project,templateId,catalogSku);
+ const d={id:uniqueEntityId('RCD',project.sharedDevices),templateId,label,modules:dev?.modules||template.modules,circuitIds:[...circuitIds],...(dev?{catalogSku}:{})};
  project.sharedDevices.push(d);try{validateEntities(project);}catch(e){project.sharedDevices.pop();throw e;}return d;
+}
+function applySharedCatalogueSku(project,sharedId,sku=''){
+ const group=project.sharedDevices.find(x=>x.id===sharedId);if(!group)throw Error('Не найден общий аппарат');
+ const dev=sharedCatalogueDevice(project,group.templateId,sku),modules=dev?.modules||DEVICE_TEMPLATES[group.templateId].modules;
+ if(modules!==group.modules){
+  if(typeof epDraftBoardPlanV1!=='function')throw Error('Проверка размещения DIN недоступна; замена отменена');
+  const candidate=structuredCloneCompat(project),proposed=candidate.sharedDevices.find(x=>x.id===sharedId);proposed.modules=modules;
+  if(dev)proposed.catalogSku=sku;else delete proposed.catalogSku;
+  const entries=projectCatalogEntries(candidate),report=epDraftBoardPlanV1(candidate,key=>entries.find(([id])=>id===key)?.[1]||null);
+  if(report.status==='BLOCKED')throw Error('Замена не помещается в текущую DIN-компоновку; скорректируйте размещение');
+ }
+ const current=group.catalogSku||'',next=dev?sku:'';group.modules=modules;if(dev)group.catalogSku=sku;else delete group.catalogSku;
+ if(current!==next)for(const line of project.lines.filter(x=>group.circuitIds.includes(x.id)))markCalculationReview(line,'SHARED_RCD_ARTICLE_CHANGED');
+ return dev;
 }
 function removeSharedDeviceFrom(project,id){const i=project.sharedDevices.findIndex(x=>x.id===id);if(i<0)return false;project.sharedDevices.splice(i,1);if(Array.isArray(project.groupInputLinks))project.groupInputLinks=project.groupInputLinks.filter(x=>x.groupId!==id);return true;}
 // v0.7: branch protective apparatus is a separate stable entity. Legacy line fields
@@ -1638,11 +1664,28 @@ function renderConsumers(){
  const loads=state.loads.filter(l=>l.circuitId===selectedLine);
  el.innerHTML=`<label>Отходящая цепь<select id="consumerCircuit">${choices}</select></label><div class="consumer-list">${loads.map(l=>`<div class="consumer-row"><div class="consumer-fields"><input aria-label="Название потребителя ${safeText(l.id)}" data-consumer-name="${safeText(l.id)}" maxlength="100" value="${safeText(l.name)}"><input aria-label="Мощность потребителя ${safeText(l.id)}" data-consumer-power="${safeText(l.id)}" inputmode="decimal" value="${l.powerKw??''}"></div><button class="btn tiny" data-save-consumer="${safeText(l.id)}">Сохранить</button><button class="btn tiny" data-remove-consumer="${safeText(l.id)}">Удалить</button></div>`).join('')||'<p class="muted">Нет потребителей</p>'}</div><div class="form-grid"><label>Потребитель<input id="consumerName" placeholder="Например, холодильник" maxlength="100"></label><label>Мощность, кВт<input id="consumerPower" inputmode="decimal" placeholder="1,2"></label></div><button class="btn" id="addConsumerBtn">Добавить потребителя в цепь</button>`;
 }
+function sharedRcdArticleOptions(selected='',templateId=''){
+ const required=templateId==='RCD_2P'?2:templateId==='RCD_4P'?4:0;
+ return '<option value="">Без конкретного артикула</option>'+projectCatalogEntries().filter(([,d])=>d.kind==='RCD').map(([id,d])=>{
+  const disabled=required&&d.poles!==required?' disabled':'';
+  return '<option value="'+safeText(id)+'"'+(id===selected?' selected':'')+disabled+'>'+safeText([d.maker,d.sku,d.poleConfiguration||d.poles+'P',d.inA+' A',d.residualCurrentMa?('IΔn '+d.residualCurrentMa+' мА'):'',d.residualType?('тип '+d.residualType):''].filter(Boolean).join(' · '))+'</option>';
+ }).join('');
+}
+function syncSharedRcdArticleOptions(){
+ const select=$('sharedRcdSku');if(!select)return;const selected=select.value;select.innerHTML=sharedRcdArticleOptions(selected,$('sharedRcdType').value);if(select.value!==selected)select.value='';
+}
 function renderSharedDevices(){
  const el=$('sharedDeviceEditor');if(!el)return;ensureV2(state);
- const rows=state.sharedDevices.map(d=>`<div class="consumer-row"><span>${safeText(d.label)} · ${d.modules}M → ${safeText(d.circuitIds.join(', '))}</span><button class="btn tiny" data-remove-rcd="${safeText(d.id)}">Удалить</button></div>`).join('');
+ const entries=projectCatalogEntries(state);
+ const rows=state.sharedDevices.map(d=>{
+  const article=entries.find(([id])=>id===d.catalogSku)?.[1]||null;
+  const front=article&&typeof epManufacturerVisualHtmlV1==='function'?'<div class="shared-device-front">'+epManufacturerVisualHtmlV1(article,d.id)+'<span>Авторский SVG · не фото/CAD</span></div>':'';
+  const source=article?.source?' · <a href="'+safeText(article.source)+'" target="_blank" rel="noopener noreferrer">источник артикула</a>':'';
+  const detail=article?safeText([article.maker,article.series,article.sku,article.poleConfiguration||article.poles+'P','In '+article.inA+' A',article.residualCurrentMa?'IΔn '+article.residualCurrentMa+' мА':'',article.residualType?'тип '+article.residualType:''].filter(Boolean).join(' · '))+source:'Артикул не выбран · геометрия шаблона';
+  return '<div class="consumer-row shared-device-row"><div class="shared-device-summary"><strong>'+safeText(d.label)+' · '+d.modules+'M → '+safeText(d.circuitIds.join(', '))+'</strong><label>Артикул общего УЗО<select data-shared-rcd-sku="'+safeText(d.id)+'">'+sharedRcdArticleOptions(d.catalogSku||'',d.templateId)+'</select></label><small>'+detail+'</small></div>'+front+'<button class="btn tiny" data-remove-rcd="'+safeText(d.id)+'">Удалить</button></div>';
+ }).join('');
  const checkboxes=state.lines.map(l=>`<label class="check-choice"><input type="checkbox" data-rcd-circuit="${safeText(l.id)}"> ${safeText(l.id)} · ${safeText(l.name)}</label>`).join('');
- el.innerHTML=`${rows||'<p class="muted">Общих УЗО пока нет.</p>'}<div class="form-grid"><label>Тип общего УЗО<select id="sharedRcdType"><option value="RCD_2P">УЗО 2P · 2M</option><option value="RCD_4P">УЗО 4P · 4M</option></select></label><label>Обозначение<input id="sharedRcdLabel" maxlength="50" placeholder="Например, QD1"></label></div><div class="check-choices">${checkboxes}</div><button class="btn" id="addRcdBtn">Добавить общее УЗО</button><p class="muted">Группировка — заявленная логическая принадлежность. Не подтверждает схему N/PE, тип и номинал УЗО, селективность или защиту при повреждении.</p>`;
+ el.innerHTML=`${rows||'<p class="muted">Общих УЗО пока нет.</p>'}<div class="form-grid"><label>Тип общего УЗО<select id="sharedRcdType"><option value="RCD_2P">УЗО 2P · 2M</option><option value="RCD_4P">УЗО 4P · 4M</option></select></label><label>Артикул<select id="sharedRcdSku">${sharedRcdArticleOptions('','RCD_2P')}</select></label><label>Обозначение<input id="sharedRcdLabel" maxlength="50" placeholder="Например, QD1"></label></div><div class="check-choices">${checkboxes}</div><button class="btn" id="addRcdBtn">Добавить общее УЗО</button><p class="muted">Группировка и выбор артикула — заявленные данные. Они не подтверждают схему N/PE, тип и номинал УЗО, селективность или защиту при повреждении.</p>`;
 }
 function renderCircuitGraph(){
  const host=$('circuitGraph');if(!host)return;
@@ -3722,11 +3765,19 @@ $('consumerEditor').addEventListener('click',e=>{
  const name=$('consumerName').value.trim(),p=numeric($('consumerPower').value);
  try{if(p===null)throw Error('Введите положительную мощность');const draft=structuredCloneCompat(ensureV2(state));addConsumerTo(draft,selectedLine,name,p);checkpoint();state.loads=draft.loads;state.lines=draft.lines;changed();}catch(err){notify(err.message,true);}
 });
+$('sharedDeviceEditor').addEventListener('change',e=>{
+ if(e.target.id==='sharedRcdType'){syncSharedRcdArticleOptions();return;}
+ const select=e.target.closest('[data-shared-rcd-sku]');if(!select)return;
+ try{
+  const draft=structuredCloneCompat(ensureV2(state)),dev=applySharedCatalogueSku(draft,select.dataset.sharedRcdSku,select.value);
+  checkpoint();state=draft;changed();notify(dev?'Артикул общего УЗО выбран; пригодность защиты не подтверждена':'Артикул общего УЗО очищен');
+ }catch(err){notify(err.message,true);renderSharedDevices();}
+});
 $('sharedDeviceEditor').addEventListener('click',e=>{
  const remove=e.target.closest('[data-remove-rcd]');if(remove){checkpoint();removeSharedDeviceFrom(ensureV2(state),remove.dataset.removeRcd);changed();return;}
  if(e.target.id!=='addRcdBtn')return;
  const ids=[...document.querySelectorAll('[data-rcd-circuit]:checked')].map(x=>x.dataset.rcdCircuit);
- try{const draft=JSON.parse(JSON.stringify(ensureV2(state)));addSharedRCDTo(draft,$('sharedRcdType').value,$('sharedRcdLabel').value.trim(),ids);checkpoint();state.sharedDevices=draft.sharedDevices;changed();notify('Общее УЗО добавлено как черновая логическая группа');}catch(err){notify(err.message,true);}
+ try{const draft=JSON.parse(JSON.stringify(ensureV2(state)));addSharedRCDTo(draft,$('sharedRcdType').value,$('sharedRcdLabel').value.trim(),ids,$('sharedRcdSku').value);checkpoint();state.sharedDevices=draft.sharedDevices;changed();notify('Общее УЗО добавлено как черновая логическая группа');}catch(err){notify(err.message,true);}
 });
 $('exportGraphSvgBtn').onclick=()=>download(baseName()+'_logical_graph.svg',graphSvg(state),'image/svg+xml;charset=utf-8');
 $('conductorEditor').addEventListener('click',e=>{

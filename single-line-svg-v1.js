@@ -30,16 +30,18 @@ function epSingleLineSvgV1(report,selectedId=null){
    (parent.templateId||'УЗО')+' · '+(parent.article?.poleConfiguration||'полюса не уточнены')+' · IΔn '+(parent.article?.residualCurrentMa??'—')+
     ' мА · '+(parent.article?.residualType||'тип не задан'):
    'Непосредственно от ввода · декларация';
+  const groupIdentity=parent?(parent.article?[parent.article.maker,parent.article.series,parent.article.sku||parent.sku].filter(Boolean).join(' / '):'Артикул группового УЗО не выбран'):'Без группового УЗО';
   content+='<path d="M 227 84 H 252 V '+center+' H 265" stroke="#708399" stroke-width="2" stroke-dasharray="5 5" fill="none"/>'+
-   '<rect x="265" y="'+(center-22)+'" width="215" height="44" rx="5" fill="'+(parent?'#e7e5f6':'#e9edf0')+'" stroke="#7a8ba0"/>'+
-   '<text x="275" y="'+(center-5)+'" fill="#28374a" font-size="12" font-weight="700">'+esc(title)+'</text>'+
-   '<text x="275" y="'+(center+11)+'" fill="#596c80" font-size="10">'+
+   '<rect x="265" y="'+(center-29)+'" width="215" height="58" rx="5" fill="'+(parent?'#e7e5f6':'#e9edf0')+'" stroke="#7a8ba0"/>'+
+   '<text x="275" y="'+(center-16)+'" fill="#28374a" font-size="12" font-weight="700">'+esc(title)+'</text>'+
+   '<text x="275" y="'+(center-2)+'" fill="#465f78" font-size="9">'+esc(groupIdentity)+'</text>'+
+   '<text x="275" y="'+(center+14)+'" fill="#596c80" font-size="10">'+
    esc(groupDetail)+'</text>';
   if(lane.lines.length){
    content+='<path d="M 480 '+center+' H 502 V '+(laneY+21)+'" stroke="#708399" stroke-width="2" stroke-dasharray="5 5" fill="none"/>';
    for(let i=0;i<lane.lines.length;i++){
     const l=lane.lines[i],cy=laneY+i*rowHeight+21,active=l.lineId===selectedId;
-    const detail=l.article?[l.article.maker,l.article.series,l.article.label].filter(Boolean).join(' / '):
+    const detail=l.article?[l.article.maker,l.article.series,l.article.sku,l.article.label].filter(Boolean).join(' / '):
      'Артикул не выбран или не найден';
     const electrical=l.article?
      'Тип '+(l.article.kind||'не указан')+' · In '+(l.article.inA??'?')+

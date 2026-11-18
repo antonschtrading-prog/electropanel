@@ -108,3 +108,17 @@ test('SVG exposes declared DIN width evidence without claiming manufacturer fit'
  assert.match(invalid,/data-width-status="EXCEEDS_DIN_SLOT"/);
  assert.match(invalid,/геометрия\/паспорт не подтверждены/);
 });
+
+
+test('RCD has one linked operating lever and an explicit test control',()=>{
+ const {EP_CATALOG}=require('../catalog.js'),svg=epCatalogFrontSvgV1(EP_CATALOG['HA-CDA440D'],'RCD1');
+ assert.equal((svg.match(/data-lever="true"/g)||[]).length,1);assert.match(svg,/data-linked-lever="true"/);assert.match(svg,/data-test-control="true"/);assert.match(svg,/CDA440D/);
+});
+test('source-backed facade remains an original SVG without manufacturer image claims',()=>{
+ const {EP_CATALOG}=require('../catalog.js'),device=EP_CATALOG['HA-CDA440D'],svg=epCatalogFrontSvgV1(device,'RCD1');
+ assert.match(svg,/Авторский эскиз по официальному источнику; не фото и не CAD/);assert.doesNotMatch(svg,/<image|data:image/);assert.equal(device.verificationStatus,undefined);
+});
+test('invalid source review date cannot upgrade visual disclosure',()=>{
+ const svg=epCatalogFrontSvgV1({maker:'Hager',series:'CDA',sku:'BAD',kind:'RCD',poles:4,modules:4,widthMm:70,sourceType:'MANUFACTURER_PRODUCT_PAGE',sourceReviewedAt:'2026-02-30'});
+ assert.match(svg,/геометрия\/паспорт не подтверждены/);assert.doesNotMatch(svg,/Авторский эскиз по официальному источнику/);
+});

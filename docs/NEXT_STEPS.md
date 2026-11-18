@@ -1,5 +1,5 @@
 # Electropanel — очередь работ
-Обновлено: 2026-11-18. Короткий план для продолжения в новом чате.
+Обновлено: 2026-11-19. Короткий план для продолжения в новом чате.
 
 ## P0 — закончить аудит старого и нового источников
 - Найти/проверить исходный архив v4.14 и доступность всех 172 файлов; проверить точный состав 51 Python-модуля.
@@ -247,3 +247,17 @@ Immediate remaining P0 handoff:
 3. [ ] Review the published diff and preserve the exclusions: no `.playwright-cli/` artifacts, no blind import of stale audit/catalogue PRs, no second application architecture.
 
 Only after that gate, continue P1: independently sourced manufacturer catalogue/visual assets, verified enclosure/front geometry and Mac/iPhone interaction checks. Fire-alarm interfaces and optional room-plan/network contour B remain separate later work; neither is required for panel-only drafting. Full selectivity, applicable disconnection evidence, thermal/physical fit and installation approval remain open engineering work.
+
+
+## 2026-11-19 — current continuation queue after local P1 slice
+
+This section supersedes older unchecked queues where they conflict. P0 is published at `3993d1f34bce56df3722f955e9fb68d9feb2626b`; the P1 catalogue/shared-RCD/cabinet/touch slice has fresh local green checks but still requires commit-specific GitHub CI after publication to PR #12. Do not merge or rebase `main`.
+
+1. **Publish and verify this P1 slice.** Review the final diff, commit immediately, push only the PR #12 head branch and inspect all required GitHub Actions on the exact new SHA.
+2. **Rights-cleared manufacturer visuals/CAD.** Technical product evidence and image/CAD reuse rights are independent gates. Obtain explicit permission or another legally usable asset before adding official raster imagery. Do not infer permission from public accessibility or from `sourceType`/`sourceReviewedAt`.
+3. **Independent enclosure geometry.** Collect verified internal cabinet, DIN, cover, terminal and wiring-space geometry. Source-backed apparatus body dimensions alone must not set `confirmedCabinetFit`, engineering approval or installation readiness.
+4. **Physical Apple-device checks.** Repeat core creation/edit/reload/export flows on a real Mac and iPhone, including Safari/WebKit. Chromium touch emulation and four viewport widths are useful regressions but do not establish physical-device compatibility.
+5. **Open engineering work.** Continue independently sourced fault-current, disconnection, selectivity, cable, thermal and N/PE evidence. Keep UNKNOWN/BLOCKED where inputs or applicability are unproven; never turn numerical PASS into normative clearance.
+6. **Later separate scope.** Fire interfaces and optional room-plan contour B remain subsequent work; they were not started in this slice.
+
+Required closure for every block: full Node tests, engineering validation, Pages build, real Chromium, documentation update and exact-head CI. No second architecture, duplicate repository or silent migration of these changes into `main`.

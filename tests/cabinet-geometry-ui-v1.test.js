@@ -43,3 +43,15 @@ test('declared invalid zones are marked as blocking',()=>{
  const x=p();x.cabinetGeometryV1.zones[0].widthMm=20;
  assert.match(ui(x),/CABINET_RAIL_SPAN_TOO_NARROW/);
 });
+
+
+test('specific shared RCD dimensions are source-backed but never confirm cabinet fit',()=>{
+ const realNow=Date.now;Date.now=()=>Date.parse('2026-11-19T12:00:00Z');
+ global.epCabinetApparatusEvidenceV1=require('../cabinet-apparatus-evidence-v1.js').epCabinetApparatusEvidenceV1;
+ try{
+  const {EP_CATALOG}=require('../catalog.js'),x=p();x.railCapacity=8;x.sharedDevices=[{id:'RCD1',templateId:'RCD_4P',label:'QD1',modules:4,circuitIds:['L1'],catalogSku:'HA-CDA440D'}];
+  const lookup=id=>EP_CATALOG[id]||null,h=ui(x,lookup),evidence=global.epCabinetApparatusEvidenceV1(x,lookup),row=evidence.rows.find(r=>r.deviceId==='RCD1');
+  assert.match(h,/data-cabinet-apparatus="RCD1"/);assert.match(h,/Hager \/ CDA \/ CDA440D/);assert.match(h,/70 × 83 × 70/);assert.match(h,/USER_DECLARED/);assert.match(h,/не подтверждает посадку на DIN/);assert.match(h,/https:\/\/hager\.com\/de\/katalog\/produkt\/cda440d/);
+  assert.equal(row.bodyDimensionsComplete,true);assert.equal(row.status,'REVIEW_REQUIRED');assert.equal(evidence.engineeringApproved,false);assert.equal(evidence.ready_for_installation,false);assert.equal(evidence.actualMountingPositionVerified,false);assert.equal(evidence.actualTerminalCoordinatesVerified,false);
+ }finally{Date.now=realNow;delete global.epCabinetApparatusEvidenceV1;}
+});

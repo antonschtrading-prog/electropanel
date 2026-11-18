@@ -21,7 +21,7 @@ test('CHINT 814014 maintains distinct Icu and unverified Icn',()=>{
  assert.match(epCatalogFrontSvgV1(a),/data-appearance-family="chint"/);
 });
 test('new records are counted as articles and do not fill remaining brands',()=>{
- assert.equal(Object.keys(EP_CATALOG).length,11);
+ assert.equal(Object.keys(EP_CATALOG).length,12);
  const c=epBrandCoverage().flatMap(g=>g.makers);
  assert.equal(c.find(x=>x.maker==='Eaton').articles,1);
  assert.equal(c.find(x=>x.maker==='CHINT').articles,1);

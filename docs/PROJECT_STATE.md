@@ -1,5 +1,5 @@
 # Electropanel — состояние проекта
-Обновлено: 2026-11-18. Это оперативная карта, не сертификат инженерной пригодности.
+Обновлено: 2026-11-19. Это оперативная карта, не сертификат инженерной пригодности.
 
 ## Источники
 1. Старый Electropanel v4.14: Python-архив electropanel_core_v4.14.zip, 172 файла, 51 Python-модуль (по существующему реестру); ранее зафиксированы 883 успешных Python-теста. Архив и тесты требуют независимого повторного подтверждения при очередном аудите.
@@ -39,10 +39,24 @@ PR #12: editable manufacturer declaration retains optional height/depth and prop
 
 ## 18 November 2026 — local P0 commercial-panel acceptance
 
-Current Web work is on local `integration-pr12`, not `main`. PR #32 (`fd77adf97361cd5a369083287b4417e35f33a552`) was merged locally into PR #12 (`b1b74b22b4ba5d0c4039ee6f80a231331b30021e`) as merge `dfa84e38c85a77e95d882224dbfce94b975c36d1`; subsequent P0 source, test and documentation changes are in the commit containing this note. Nothing was pushed because GitHub write access was unavailable, so CI for the new head remains unverified.
+Web work remains on `integration-pr12`, not `main`. PR #32 (`fd77adf97361cd5a369083287b4417e35f33a552`) was integrated into PR #12 (`b1b74b22b4ba5d0c4039ee6f80a231331b30021e`) as merge `dfa84e38c85a77e95d882224dbfce94b975c36d1`. The completed P0 commercial-panel acceptance was published to PR #12 at `3993d1f34bce56df3722f955e9fb68d9feb2626b`; required GitHub Actions workflows passed on that exact head. `main` was not modified and the PR was not merged.
 
 The real-Chromium commercial acceptance now exercises four consumer categories, calculated and manually declared currents, concrete catalogue articles, a shared four-pole RCD group, one-line/DIN/cabinet projections, project save and actual reload, subsequent UI editing, repeated issue and content-level checks of BOM JSON/CSV, single-line SVG, DIN CSV, engineering bundle JSON, print HTML and project JSON. A deliberately conflicting line/branch article blocks coordinated deliverables, including DIN CSV; diagnostic exports and raw project JSON remain available. Reimporting the corrected project restores export.
 
 Panel-only manual Ib/Iz no longer require Ik. A blank Ik explicitly removes an earlier declaration; omitted, null, zero, negative and malformed values remain invalid. Calculated Ik/voltage are not copied into manual declarations. Numeric or absent `ikKa`, optional voltage and supported fault metadata now survive JSON/localStorage round trips instead of causing the saved project to be discarded. Chromium `/v` pattern syntax and the favicon 404 were also corrected.
 
 Local verification on this source state: **5255/5255 Node tests passed**, all JS/CJS syntax checks passed, Pages package passed (**183 scripts / 188 assets**), and both full Chromium scenarios passed with zero page errors, console warnings/errors and HTTP 4xx/5xx. See `INDEPENDENT_RELEASE_AUDIT_20261118.md` for evidence boundaries. These are local results, not a new GitHub CI claim and not engineering or installation approval.
+
+
+## 19 November 2026 — local P1 catalogue, apparatus and cabinet evidence slice
+
+Baseline: published P0 head `3993d1f34bce56df3722f955e9fb68d9feb2626b` in PR #12. This P1 slice is local until the commit containing this note is pushed; GitHub CI for that new head is pending. `main` remains untouched.
+
+- Enriched Schneider `A9F74116` with source-backed 85 × 78.5 mm body height/depth and separate Icu data. Added live Hager `CDA440D`: RCD, 3P+N, four poles/modules, 40 A, 30 mA type A, 6 kA conditional short-circuit rating and 70 × 83 × 70 mm body dimensions. Both records retain official HTTPS sources and review date 2026-11-19; neither is promoted to `VERIFIED` merely by having a product page.
+- Closed the existing UI gap for `sharedDevices[].catalogSku`: a specific RCD can now be selected both when creating and editing a shared group. The internal key and manufacturer SKU reach DIN, BOM, single-line SVG, project JSON and reload without renaming QD1 or rewriting Ib/Iz/Ik.
+- Shared-RCD replacement validates kind, poles, current and body/module geometry. Width changes are preflighted on a clone through the full DIN planner; a blocked result leaves the entire project unchanged. Clearing the selection restores template width. Only linked circuits with manual declarations receive `SHARED_RCD_ARTICLE_CHANGED` review.
+- RCD illustrations use one linked operating lever and an explicit test control. They remain original SVG illustrations, not official photos or CAD. No raster manufacturer assets were added; `EP_MANUFACTURER_FRONT_ASSETS_V1` remains empty because image reuse permission is not established.
+- The cabinet UI now exposes the existing apparatus-evidence projection, including exact article and source-backed body dimensions. Cabinet dimensions remain `USER_DECLARED`; an apparatus source does not verify DIN attachment, terminals, door clearance, wiring space, thermal clearance or `confirmedCabinetFit`.
+- Responsive containment and permanent real-Chromium touch regression cover 375/390/768/1024 px, a 44 px selector target, select/clear/reselect and reload without horizontal page overflow. This is Chromium emulation, not a physical Mac/iPhone or Safari/WebKit test.
+
+Repeated local verification on the restored source state: **5266/5266 Node tests passed**, changed JS/CJS syntax and `git diff --check` passed, Pages package passed (**183 scripts / 188 assets**), and the complete real-Chromium suite passed. Commercial exports were parsed for `CDA440D`; final commercial, general and touch scenarios had no page errors, console warnings/errors or HTTP 4xx/5xx. `engineeringApproved`, `ready_for_installation` and `confirmedCabinetFit` remain false. These results are software-regression evidence, not normative design or installation approval.

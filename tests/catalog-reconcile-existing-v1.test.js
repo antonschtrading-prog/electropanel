@@ -5,8 +5,8 @@ const {candidates}=require('../catalog-intake/manufacturer-source-batch-v1.js');
 test('two staged MCB SKUs already exist in integrated catalog',()=>{
  const result=reconcile();assert.ok(result.overlaps.some(x=>x.sku==='A9F74116'));assert.ok(result.overlaps.some(x=>x.sku==='2CDS251001R0164'));
 });
-test('Hager staged RCD is a new SKU and not imported',()=>{
- const result=reconcile();assert.ok(result.newArticles.some(x=>x.sku==='CDA440D'));assert.equal(result.autoImportAllowed,false);
+test('Hager staged RCD overlaps the live SKU and is not auto-imported',()=>{
+ const result=reconcile();assert.ok(result.overlaps.some(x=>x.sku==='CDA440D'));assert.ok(!result.newArticles.some(x=>x.sku==='CDA440D'));assert.equal(result.autoImportAllowed,false);
 });
 test('overlapping records never overwrite original catalogue',()=>{
  const result=reconcile();assert.ok(result.overlaps.every(x=>x.action==='MANUAL_REVIEW_NO_OVERWRITE'));

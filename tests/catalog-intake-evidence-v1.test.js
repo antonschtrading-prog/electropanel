@@ -12,8 +12,8 @@ test('all existing articles are accounted for without modifying the catalogue',(
 test('V1 category gaps are explicit, not populated with fictitious SKUs',()=>{
  const report=auditCatalog();
  assert.deepEqual(REQUIRED_KINDS,['MCB','RCD','RCBO','METER','RELAY','CONTACTOR']);
- assert.equal(report.counts.MCB,11);
- for(const kind of ['RCD','RCBO','METER','RELAY','CONTACTOR'])
+ assert.equal(report.counts.MCB,11);assert.equal(report.counts.RCD,1);
+ for(const kind of ['RCBO','METER','RELAY','CONTACTOR'])
   assert.ok(report.missingKinds.includes(kind));
 });
 test('Icu is never treated as Icn',()=>{
@@ -21,7 +21,7 @@ test('Icu is never treated as Icn',()=>{
  assert.ok(issues.some(x=>x.code==='ICU_NOT_SUBSTITUTE_FOR_ICN'));
 });
 test('unreviewed sources and unknown body dimensions stay visible',()=>{
- const issues=auditArticle('SE-A9F74116',EP_CATALOG['SE-A9F74116']);
+ const issues=auditArticle('IEK-MVA20-1-016-C',EP_CATALOG['IEK-MVA20-1-016-C']);
  assert.ok(issues.some(x=>x.code==='REVIEW_DATE_MISSING'));
  assert.ok(issues.some(x=>x.code==='BODY_GEOMETRY_INCOMPLETE'));
 });

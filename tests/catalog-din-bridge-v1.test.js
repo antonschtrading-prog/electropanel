@@ -9,7 +9,8 @@ test('catalogue seeds remain unverified and never approved',()=>{
  assert.equal(r.record.verificationStatus,'UNVERIFIED');
  assert.equal(r.record.engineeringApproved,false);
  assert.equal(r.record.visual.verified,false);
- assert.equal(r.record.geometry.heightMm,null);
+ assert.equal(r.record.geometry.heightMm,85);
+ assert.equal(r.record.geometry.depthMm,78.5);
 });
 test('every seed can be reviewed without invented dimensions',()=>{
  const a=epCatalogDinBridgeAuditV1(EP_CATALOG);

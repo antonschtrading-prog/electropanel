@@ -4,6 +4,7 @@
 function epCabinetGeometryUiV1(project,lookup){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const fit=typeof epCabinetFitAuditV1==='function'?epCabinetFitAuditV1(project,lookup):null;
+ const apparatus=typeof epCabinetApparatusEvidenceV1==='function'?epCabinetApparatusEvidenceV1(project,lookup):null;
  const raw=fit?.geometry||null,inner=raw?.interior||{},planning=raw?.planning||{};
  const input=(name,label,value,min=0)=>'<label>'+label+
   '<input name="'+name+'" type="number" step="any" min="'+min+'" inputmode="decimal" required value="'+safe(value??'')+'"></label>';
@@ -58,6 +59,12 @@ function epCabinetGeometryUiV1(project,lookup){
    rect(20,20,W*scale,H*scale,'ep-cabinet-interior')+zones+reserves+bodies+'</svg>'+
    '<p class="muted">Масштабная схема распределения зон, без учёта крепежа, расстояния до дверцы, клемм и проводов.</p></div>';
  }
+ const apparatusEvidence=apparatus?'<details class="ep-cabinet-apparatus-evidence"><summary>Паспортные размеры конкретных аппаратов</summary>'+
+  '<p class="muted">Размеры корпуса — USER_DECLARED. Источник аппарата подтверждает только указанные паспортные данные; он не подтверждает посадку на DIN, крепёж, клеммы, дверцу, провода или тепловые зазоры.</p>'+
+  '<div class="table-scroll"><table class="ep-cabinet-apparatus-table"><thead><tr><th>Аппарат</th><th>Артикул</th><th>Ш × В × Г, мм</th><th>Источник</th></tr></thead><tbody>'+
+  apparatus.rows.map(r=>'<tr data-cabinet-apparatus="'+safe(r.deviceId)+'"><td>'+safe(r.deviceId)+'</td><td>'+safe([r.maker,r.series,r.articleSku].filter(Boolean).join(' / ')||r.articleId||'Не выбран')+'</td><td>'+safe([r.bodyWidthMm,r.bodyHeightMm,r.bodyDepthMm].map(x=>x??'—').join(' × '))+'</td><td>'+
+   (r.sourceUrl?'<a href="'+safe(r.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Источник</a>'+(r.sourceReviewedAt?' · просмотрен '+safe(r.sourceReviewedAt):' · дата просмотра не принята'):'Источник не подтверждён')+'</td></tr>').join('')+
+  '</tbody></table></div></details>':'';
  const problems=(fit?.issues||[]).filter(x=>x.level==='BLOCKED');
  const issues=problems.length?'<details class="ep-cabinet-problems"><summary>Ошибки геометрии: '+problems.length+'</summary><ul>'+
   problems.slice(0,30).map(x=>'<li>'+safe(x.code)+(x.deviceId?' · '+safe(x.deviceId):x.railIndex!==null&&x.railIndex!==undefined?' · DIN '+(x.railIndex+1):'')+'</li>').join('')+
@@ -68,7 +75,7 @@ function epCabinetGeometryUiV1(project,lookup){
  return '<section class="ep-cabinet-panel"><h3>Геометрия корпуса · черновик</h3>'+
   '<p><strong>'+safe(heading)+'</strong></p><p>Состояние: <strong>'+safe(status)+'</strong> · проверено аппаратов: '+(fit?.rows.length||0)+
   ' · замечаний: '+(fit?.issues.length||0)+'. Совместимость и возможность монтажа не подтверждены.</p>'+
-  schematic+issues+editing+rows+obstacles+
+  schematic+issues+apparatusEvidence+editing+rows+obstacles+
   (raw?'<button id="cabinetExportSvgBtn" class="btn" type="button">Экспорт схемы корпуса SVG</button>':'')+
   (project?.cabinetGeometryV1?'<button id="cabinetGeometryClearBtn" class="btn" type="button">Очистить модель корпуса</button>':'')+
   '</section>';

@@ -32,7 +32,7 @@ function epSingleLineDraftV1(project,lookupSku){
   }
   nodes.push({id,type:'rcd',name:group.label||group.id,phase:null,sku:group.catalogSku||null,
    article:groupArticle?{maker:groupArticle.maker||null,series:groupArticle.series||null,
-    label:groupArticle.label||null,kind:groupArticle.kind||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
+    label:groupArticle.label||null,sku:groupArticle.sku||null,kind:groupArticle.kind||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
     icuKa:groupArticle.icuKa??null,icuVoltageV:groupArticle.icuVoltageV??null,
     poles:groupArticle.poles??null,modules:groupArticle.modules??null,
     poleConfiguration:groupArticle.poleConfiguration??null,
@@ -78,7 +78,7 @@ function epSingleLineDraftV1(project,lookupSku){
   };
   nodes.push({id,type:'circuit',lineId:line.id,name:line.name||line.id,phase:line.phase||null,
    sku:line.catalogSku||null,article:article?{maker:article.maker||null,series:article.series||null,
-    label:article.label||null,kind:article.kind||null,inA:article.inA??null,icnKa:article.icnKa??null,
+    label:article.label||null,sku:article.sku||null,kind:article.kind||null,inA:article.inA??null,icnKa:article.icnKa??null,
     icuKa:article.icuKa??null,icuVoltageV:article.icuVoltageV??null,
     poles:article.poles??null,modules:article.modules??null,
     poleConfiguration:article.poleConfiguration??null,

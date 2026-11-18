@@ -12,7 +12,7 @@ const server=http.createServer((req,res)=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const browser=await chromium.launch({headless:true,...(process.env.EP_CHROMIUM?{executablePath:process.env.EP_CHROMIUM}:{})});
  try{
- const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],pageHttpErrors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))console.log('Browser:',m.text());});page.on('response',r=>{if(r.status()>=400)pageHttpErrors.push(r.status()+' '+r.url());});
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.locator('#loadDemo').click();
 
@@ -2096,11 +2096,15 @@ const server=http.createServer((req,res)=>{
   await choice.click();
  }
  await commercialPage.locator('#sharedRcdType').selectOption('RCD_4P');
+ await commercialPage.locator('#sharedRcdSku').selectOption('HA-CDA440D');
  await commercialPage.locator('#sharedRcdLabel').fill('QD1');
  await commercialPage.locator('[data-rcd-circuit="L1"]').check();
  await commercialPage.locator('#addRcdBtn').click();
  assert.deepEqual(await commercialPage.evaluate(()=>state.sharedDevices.map(x=>x.circuitIds)),[['L1']]);
+ assert.equal(await commercialPage.evaluate(()=>state.sharedDevices[0].catalogSku),'HA-CDA440D');
+ assert.equal(await commercialPage.locator('.shared-device-front svg[data-device-kind="RCD"]').count(),1);
  await commercialPage.locator('[data-view="board"]').click();
+ assert.equal(await commercialPage.locator('#boardCanvas svg[data-device-kind="RCD"] [data-linked-lever="true"]').count(),1);
  await commercialPage.locator('[data-apply-cabinet-option="1x12"]').click();
  assert.equal(await commercialPage.evaluate(()=>state.railCount===1&&state.railCapacity===12),true);
  await commercialPage.locator('#boardCanvas [data-line="L1"]').click();
@@ -2137,6 +2141,11 @@ const server=http.createServer((req,res)=>{
   await obstacle.locator('[name="'+name+'"]').fill(value);
  await obstacle.locator('button[type="submit"]').click();
  assert.equal(await commercialPage.evaluate(()=>state.cabinetGeometryV1.obstacles.some(x=>x.id==='WD-1')),true);
+ await commercialPage.locator('.ep-cabinet-apparatus-evidence summary').click();
+ const cabinetRcd=commercialPage.locator('[data-cabinet-apparatus="RCD1"]');
+ assert.equal(await cabinetRcd.isVisible(),true);assert.match(await cabinetRcd.innerText(),/Hager \/ CDA \/ CDA440D/);assert.match(await cabinetRcd.innerText(),/70 × 83 × 70/);
+ assert.match(await commercialPage.locator('.ep-cabinet-apparatus-evidence').innerText(),/USER_DECLARED/);
+ assert.equal(await commercialPage.evaluate(()=>epCabinetFitAuditV1(state,catalogDevice).confirmedCabinetFit),false);
  assert.equal(await commercialPage.evaluate(()=>epDraftDocumentExportGate().allowed),true);
  const readDownload=async locator=>{
   const pending=commercialPage.waitForEvent('download');await locator.click();
@@ -2152,12 +2161,12 @@ const server=http.createServer((req,res)=>{
   name:state.lines.find(x=>x.id==='L1').name,
   ib:state.lines.find(x=>x.id==='L1').overloadInput.ibA,
   sku:state.lines.find(x=>x.id==='L1').catalogSku,
-  groups:state.sharedDevices.map(x=>({id:x.id,label:x.label,circuits:x.circuitIds})),
+  groups:state.sharedDevices.map(x=>({id:x.id,label:x.label,circuits:x.circuitIds,sku:x.catalogSku})),
   obstacle:state.cabinetGeometryV1?.obstacles?.some(x=>x.id==='WD-1'),
   railCount:state.railCount,railCapacity:state.railCapacity,gate:epDraftDocumentExportGate().allowed
  }));
  assert.equal(Number(reopened.ib),calculatedIb);assert.equal(reopened.sku,'ABB-2CDS251001R0164');
- assert.equal(reopened.groups[0].label,'QD1');assert.deepEqual(reopened.groups[0].circuits,['L1']);
+ assert.equal(reopened.groups[0].label,'QD1');assert.deepEqual(reopened.groups[0].circuits,['L1']);assert.equal(reopened.groups[0].sku,'HA-CDA440D');
  assert.equal(reopened.obstacle,true);assert.equal(reopened.railCount,1);assert.equal(reopened.railCapacity,12);
  assert.equal(reopened.gate,true);
  // Edit circuit name, grouping and a concrete article through visible controls.
@@ -2168,6 +2177,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await commercialPage.evaluate(()=>state.lines.find(x=>x.id==='L1').name),editedName);
  await commercialPage.locator('[data-remove-rcd="'+reopened.groups[0].id+'"]').click();
  await commercialPage.locator('#sharedRcdType').selectOption('RCD_4P');
+ await commercialPage.locator('#sharedRcdSku').selectOption('HA-CDA440D');
  await commercialPage.locator('#sharedRcdLabel').fill('QD1');
  await commercialPage.locator('[data-rcd-circuit="L1"]').check();
  await commercialPage.locator('[data-rcd-circuit="L2"]').check();
@@ -2178,29 +2188,31 @@ const server=http.createServer((req,res)=>{
  const secondRelease=await commercialPage.evaluate(()=>({
   sku:state.lines.find(x=>x.id==='L1').catalogSku,
   groups:state.sharedDevices.map(x=>x.circuitIds),gate:epDraftDocumentExportGate().allowed,
+  groupSku:state.sharedDevices[0].catalogSku,
   branchId:state.branchDevices.find(x=>x.circuitId==='L1').id,groupId:state.sharedDevices[0].id
  }));
- assert.equal(secondRelease.sku,'SE-A9F74116');assert.deepEqual(secondRelease.groups,[['L1','L2']]);
+ assert.equal(secondRelease.sku,'SE-A9F74116');assert.deepEqual(secondRelease.groups,[['L1','L2']]);assert.equal(secondRelease.groupSku,'HA-CDA440D');
  assert.equal(secondRelease.gate,true,JSON.stringify(secondRelease));
  const bomJsonFile=await readDownload(commercialPage.locator('#exportDraftBomJsonBtn'));
  assert.match(bomJsonFile.name,/_equipment_BOM_DRAFT[.]json$/);
  const bom=JSON.parse(bomJsonFile.text);
  assert.equal(bom.schema,'electropanel.bom.draft.1');assert.notEqual(bom.status,'BLOCKED');
  assert.equal(bom.engineeringApproved,false);assert.equal(bom.ready_for_installation,false);
- assert.equal(bom.totalCataloguedDevices,4);assert.equal(bom.missingDevices,1);
+ assert.equal(bom.totalCataloguedDevices,5);assert.equal(bom.missingDevices,0);
+ assert.ok(bom.items.find(x=>x.key==='HA-CDA440D'&&x.owners.includes(secondRelease.groupId)));
  assert.ok(bom.items.find(x=>x.key==='SE-A9F74116'&&x.owners.includes('L1')));
  for(const id of ['L1','L2','L3','L4'])assert.ok(bom.devices.some(x=>x.owner===id),'BOM owner '+id);
  const bomCsv=await readDownload(commercialPage.locator('#exportDraftBomCsvBtn'));
  assert.match(bomCsv.name,/_equipment_BOM_DRAFT[.]csv$/);
- assert.ok(bomCsv.text.includes('SE-A9F74116'));assert.ok(bomCsv.text.includes('A9F74116'));
+ assert.ok(bomCsv.text.includes('SE-A9F74116'));assert.ok(bomCsv.text.includes('A9F74116'));assert.ok(bomCsv.text.includes('CDA440D'));
  assert.ok(bomCsv.text.includes('L1'));assert.ok(bomCsv.text.includes('Количество'));
  const singleLine=await readDownload(commercialPage.locator('#exportSingleLineSvgBtn'));
  assert.match(singleLine.name,/_single_line_DRAFT[.]svg$/);
  assert.ok(singleLine.text.startsWith('<svg'));assert.ok(singleLine.text.includes('ОДНОЛИНЕЙНАЯ СХЕМА · ЧЕРНОВИК'));
- for(const marker of ['L1','L4','iC60N C16','QD1'])assert.ok(singleLine.text.includes(marker),'single-line '+marker);
+ for(const marker of ['L1','L4','iC60N C16','QD1','CDA440D'])assert.ok(singleLine.text.includes(marker),'single-line '+marker);
  const dinCsv=await readDownload(commercialPage.locator('#boardPlacementCsvBtn'));
  assert.match(dinCsv.name,/-din-placement[.]csv$/);
- for(const marker of ['device_id','SE-A9F74116',secondRelease.branchId,secondRelease.groupId,
+ for(const marker of ['device_id','SE-A9F74116','HA-CDA440D',secondRelease.branchId,secondRelease.groupId,
   'actual_terminal_access_verified'])assert.ok(dinCsv.text.includes(marker),'DIN CSV '+marker);
  const bundleFile=await readDownload(commercialPage.locator('#exportEngineeringBundleBtn'));
  const bundle=JSON.parse(bundleFile.text);
@@ -2213,7 +2225,7 @@ const server=http.createServer((req,res)=>{
  const editedProject=JSON.parse(editedProjectFile.text);
  assert.equal(editedProject.lines.find(x=>x.id==='L1').name,editedName);
  assert.equal(editedProject.lines.find(x=>x.id==='L1').catalogSku,'SE-A9F74116');
- assert.deepEqual(editedProject.sharedDevices[0].circuitIds,['L1','L2']);
+ assert.deepEqual(editedProject.sharedDevices[0].circuitIds,['L1','L2']);assert.equal(editedProject.sharedDevices[0].catalogSku,'HA-CDA440D');
  // Import a user-supplied inconsistent JSON through the real Open JSON control.
  const conflictProject=JSON.parse(JSON.stringify(editedProject));
  conflictProject.branchDevices.find(x=>x.circuitId==='L1').catalogSku='CONFLICT-ARTICLE-NOT-IN-CATALOG';
@@ -2249,11 +2261,38 @@ const server=http.createServer((req,res)=>{
  await commercialPage.locator('[data-view="board"]').click();
  assert.equal(await commercialPage.evaluate(()=>epDraftDocumentExportGate().allowed),true);
  const correctedBom=JSON.parse((await readDownload(commercialPage.locator('#exportDraftBomJsonBtn'))).text);
- assert.notEqual(correctedBom.status,'BLOCKED');assert.ok(correctedBom.items.some(x=>x.key==='SE-A9F74116'));
+ assert.notEqual(correctedBom.status,'BLOCKED');assert.ok(correctedBom.items.some(x=>x.key==='SE-A9F74116'));assert.ok(correctedBom.items.some(x=>x.key==='HA-CDA440D'));
  assert.deepEqual(commercialErrors,[]);assert.deepEqual(commercialConsole,[]);
  assert.deepEqual(commercialHttpErrors,[],'no favicon or other missing browser assets');
  await commercialPage.close();
  console.log('PASS: commercial UI manual currents → grouping → cabinet → save/reload → edit → verified exports → conflict block/correction');
+
+ // Real Chromium touch/mobile emulation; this is not a physical Apple-device or Safari test.
+ const touchContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2,acceptDownloads:true});
+ const touchPage=await touchContext.newPage(),touchErrors=[],touchConsole=[],touchHttp=[];
+ touchPage.on('pageerror',e=>touchErrors.push(e.message));touchPage.on('console',m=>{if(['warning','error'].includes(m.type()))touchConsole.push(m.text());});touchPage.on('response',r=>{if(r.status()>=400)touchHttp.push(r.status()+' '+r.url());});
+ await touchPage.goto('http://127.0.0.1:'+server.address().port);
+ await touchPage.locator('#loadCommercial').click();
+ await touchPage.locator('#sharedRcdType').selectOption('RCD_4P');await touchPage.locator('#sharedRcdSku').selectOption('HA-CDA440D');
+ await touchPage.locator('#sharedRcdLabel').fill('QD1');await touchPage.locator('[data-rcd-circuit="L1"]').check();await touchPage.locator('#addRcdBtn').click();
+ assert.equal(await touchPage.evaluate(()=>state.sharedDevices[0].catalogSku),'HA-CDA440D');
+ for(const width of [375,390,768,1024]){
+  await touchPage.setViewportSize({width,height:844});
+  const dimensions=await touchPage.evaluate(()=>({inner:innerWidth,document:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
+  assert.deepEqual(dimensions,{inner:width,document:width,body:width},'no page overflow at '+width);
+ }
+ await touchPage.setViewportSize({width:390,height:844});
+ const touchSelect=touchPage.locator('[data-shared-rcd-sku="RCD1"]');
+ assert.ok((await touchSelect.boundingBox()).height>=44,'touch selector target must be at least 44 px');
+ assert.ok((await touchPage.locator('.shared-device-front svg').boundingBox()).width>=90);
+ await touchSelect.selectOption('');assert.equal(await touchPage.locator('.shared-device-front svg').count(),0);assert.equal(await touchPage.evaluate(()=>state.sharedDevices[0].catalogSku),undefined);
+ await touchSelect.selectOption('HA-CDA440D');assert.equal(await touchPage.locator('.shared-device-front svg').count(),1);
+ await touchPage.reload();
+ const touchPersisted=await touchPage.evaluate(()=>{const bom=epDraftBomV1(state,catalogDevice);return {sku:state.sharedDevices[0].catalogSku,approved:bom.engineeringApproved,ready:bom.ready_for_installation};});
+ assert.deepEqual(touchPersisted,{sku:'HA-CDA440D',approved:false,ready:false});
+ assert.deepEqual(touchErrors,[]);assert.deepEqual(touchConsole,[]);assert.deepEqual(touchHttp,[]);
+ await touchContext.close();
+ console.log('PASS: touch 375/390/768/1024 layout → shared RCD select/clear/reselect → reload, no page overflow');
 
  // Independent regression: a conflict introduced AFTER a saved project edit
  // must survive real page reload and keep coordinated document export blocked.
@@ -2317,7 +2356,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(reopenedConflict.bomApproved,false);
  assert.deepEqual(editErrors,[],'edited browser project must not trigger JavaScript errors');
  await editPage.close();
- assert.deepEqual(errors,[]);
+ assert.deepEqual(errors,[]);assert.deepEqual(pageHttpErrors,[],'all general and catalogue-review browser assets must load');
  console.log('PASS: design change review persisted through JSON reload');
  console.log('PASS: real Chromium load → catalogue → calculation → DIN move → undo/redo → reload → JSON roundtrip → bundle');
  }finally{await browser.close();}
