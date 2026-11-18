@@ -78,8 +78,9 @@ test('unrecognized declared status stays unconfirmed, not verified',()=>{
 test('a no-notice prior verified record remains draft rather than installation-approved',()=>{
  const p=base();for(const d of domains)p.evidence[d]={status:'verified'};
  const r=run(p,bundle());
- assert.equal(r.summary.declared,6);
- assert.equal(r.status,'DRAFT');
+ assert.equal(r.summary.declared,5);
+ assert.equal(r.summary.pending,1,'live blocked enclosure cannot be declared current');
+ assert.equal(r.status,'REVIEW_REQUIRED');
  assert.equal(r.ready_for_installation,false);
 });
 test('empty evidence and one pending domain still require review',()=>{
