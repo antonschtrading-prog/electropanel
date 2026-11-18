@@ -233,8 +233,12 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   count:board?.placements?.length??0});
  steps.push({key:'BOM',status:bom?.status??'PENDING',
   count:bom?.items?.length??0});
- if(board?.issues?.some(i=>i.level==='BLOCKED'))add('WORKFLOW_BOARD_CONFLICT','BLOCKED');
- if(bom?.issues?.some(i=>i.level==='BLOCKED'))add('WORKFLOW_BOM_CONFLICT','BLOCKED');
+ if(schematic?.status==='BLOCKED'||schematic?.issues?.some(i=>i.level==='BLOCKED'))
+  add('WORKFLOW_SCHEMATIC_CONFLICT','BLOCKED');
+ if(board?.status==='BLOCKED'||board?.issues?.some(i=>i.level==='BLOCKED'))
+  add('WORKFLOW_BOARD_CONFLICT','BLOCKED');
+ if(bom?.status==='BLOCKED'||bom?.issues?.some(i=>i.level==='BLOCKED'))
+  add('WORKFLOW_BOM_CONFLICT','BLOCKED');
  return result();
 }
 function epWorkflowArticleChoiceV1(project,lineId,sku,catalogInput){
