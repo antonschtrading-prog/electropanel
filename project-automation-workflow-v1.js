@@ -196,6 +196,17 @@ function epWorkflowPreviewV1(project,lookup,catalogInput,rawInputs){
   if(line.catalogSku)summary.assignedArticles++;
   const selected=candidates.find(x=>x.sku===line.catalogSku)||null;
   const candidate=candidates[0]||null;
+  const circuitBranches=branchByCircuit.get(line.id)||[];
+  const branchSku=circuitBranches[0]?.catalogSku??null;
+  const articleConflict=!!(line.catalogSku&&branchSku&&line.catalogSku!==branchSku);
+  if(articleConflict){
+   summary.articleConflicts++;
+   add('WORKFLOW_CIRCUIT_BRANCH_ARTICLE_CONFLICT','BLOCKED',line.id);
+  }
+  if(circuitBranches.length>1){
+   summary.duplicateBranchAssignments++;
+   add('WORKFLOW_MULTIPLE_BRANCH_DEVICES_FOR_CIRCUIT','BLOCKED',line.id);
+  }
   const consumers=project.loads.filter(x=>x.circuitId===line.id);
   rows.push({lineId:line.id,name:line.name??line.id,
    consumers:consumers.map(x=>({id:x.id,name:x.name,powerKw:x.powerKw})),
