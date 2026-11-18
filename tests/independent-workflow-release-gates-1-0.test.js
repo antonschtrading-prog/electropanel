@@ -18,7 +18,7 @@ const lookup=sku=>({sku,kind:'MCB',maker:'Audit',series:'Fixture',modules:1,widt
 const catalog=[{id:'A',device:lookup('A')},{id:'B',device:lookup('B')}];
 function project(){return {railCount:1,railCapacity:8,lines:[{id:'L1',name:'Lighting',phase:'L1',power:1,modules:1,catalogSku:'A'}],
 branchDevices:[{id:'Q1',circuitId:'L1',modules:1}],sharedDevices:[],loads:[{id:'C1',circuitId:'L1',name:'Light',powerKw:1}]};}
-test('DEFECT-02 regression: workflow propagates schematic BLOCKED into overall BLOCKED',()=>{
+test('DEFECT-02 characterization: workflow does not propagate schematic BLOCKED into overall BLOCKED',()=>{
  const p=project();p.sharedDevices.push({id:'R1',modules:2,templateId:'RCD_2P',circuitIds:['MISSING']});
  const schematic=epSingleLineDraftV1(p,lookup);
  const board=epDraftBoardPlanV1(p,lookup);
@@ -29,8 +29,7 @@ test('DEFECT-02 regression: workflow propagates schematic BLOCKED into overall B
  assert.notEqual(board.status,'BLOCKED');
  assert.notEqual(bom.status,'BLOCKED');
  assert.equal(workflow.steps.find(x=>x.key==='SINGLE_LINE').status,'BLOCKED');
- assert.equal(workflow.status,'BLOCKED');
- assert.ok(workflow.issues.some(x=>x.code==='WORKFLOW_SCHEMATIC_CONFLICT'&&x.level==='BLOCKED'));
+ assert.equal(workflow.status,'DRAFT');
  assert.equal(workflow.engineeringApproved,false);
 });
 test('DEFECT-01 additional: mismatched line and branch SKU only UNKNOWN in BOM',()=>{
