@@ -18,3 +18,6 @@ test('oversized devices remain unplaced',()=>{const r=layoutOptions(project(1),{
 test('no matching capacity reports explicit warning',()=>{const r=layoutOptions(project(20),{capacities:[1]});assert.ok(r.warnings.includes('NO_CAPACITY_OPTIONS'));assert.equal(r.alternatives.length,0)});
 test('invalid options fail closed via API',()=>{const r=handleCatalogueRequest({operation:'layout-options',options:{reservePercent:200}});assert.equal(r.ok,false);assert.equal(r.error,'INVALID_CRITERIA')});
 test('module sums match known apparatus',()=>{const r=layoutOptions(project(4));assert.equal(r.knownModules,device.modules*4)});
+
+test('layout CSV lists all orientations for each enclosure',()=>{const {exportLayoutOptions}=require('../catalog-intake/catalog-review-export-v1.js');const r=exportLayoutOptions(project(2),{capacities:[24]});assert.equal(r.engineeringApproved,false);for(const o of ['HORIZONTAL','VERTICAL','BALANCED'])assert.match(r.csv,new RegExp(o));assert.match(r.csv,/reviewRequired/)});
+test('layout CSV keeps unresolved lines in metadata',()=>{const {exportLayoutOptions}=require('../catalog-intake/catalog-review-export-v1.js');const r=exportLayoutOptions({lines:[{id:'x',catalogSku:'UNKNOWN'}]});assert.equal(r.unresolved.length,1)});
