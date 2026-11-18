@@ -9,6 +9,21 @@ function epProjectDeliveryTraceV1(project,lookupSku){
  if(!project||!Array.isArray(project.lines)||!Array.isArray(project.loads)||project.lines.length>400){
   add('DELIVERY_PROJECT_INVALID','BLOCKED');return result();
  }
+ // Resolve project and curated seed equipment from the same source used
+ // by the project editor and engineering bundle. A trace must not create a
+ // misleading empty protective shortlist when catalogue data are available.
+ const seed=typeof EP_CATALOG==='object'&&EP_CATALOG!==null?EP_CATALOG:{};
+ let workflowCatalog=[];
+ if(typeof epProjectCatalogV1==='function'){
+  try{
+   const combined=epProjectCatalogV1(project,seed);
+   if(!combined||!combined.articles||typeof combined.articles!=='object')
+    throw Error('CATALOG_RESULT_INVALID');
+   workflowCatalog=Object.entries(combined.articles).map(([id,device])=>({id,device}));
+   if(combined.status==='BLOCKED')
+    add('DELIVERY_PROJECT_CATALOGUE_INVALID','BLOCKED');
+  }catch(_){add('DELIVERY_PROJECT_CATALOGUE_FAILED','BLOCKED');}
+ }
  const engines=[
   ['BOARD','epDraftBoardPlanV1'],['BOM','epDraftBomV1'],['SINGLE_LINE','epSingleLineDraftV1'],
   ['WORKFLOW','epWorkflowPreviewV1']
@@ -23,7 +38,7 @@ function epProjectDeliveryTraceV1(project,lookupSku){
   const fn=engine(name);
   if(!fn){sections[name]={status:'UNAVAILABLE'};add('DELIVERY_'+name+'_ENGINE_UNAVAILABLE','BLOCKED');continue;}
   try{
-   const data=name==='WORKFLOW'?fn(project,lookupSku,[],project.workflowDesignInputsV1):fn(project,lookupSku);
+   const data=name==='WORKFLOW'?fn(project,lookupSku,workflowCatalog,project.workflowDesignInputsV1):fn(project,lookupSku);
    sections[name]={status:data?.status??'UNKNOWN',issues:data?.issues?.length??0,data};
    if(data?.status==='BLOCKED')add('DELIVERY_'+name+'_BLOCKED','BLOCKED');
   }catch(_){sections[name]={status:'FAILED'};add('DELIVERY_'+name+'_FAILED','BLOCKED');}
