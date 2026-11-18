@@ -89,6 +89,17 @@ function epEngineeringPrintV1(bundle){
   (sections.workflowPreview?.rows||[]).map(x=>[x.lineId,x.name,x.phase??'—',
    x.powerKw??'—',x.ibA??'—',x.ibSource,x.selectedSku??'—',
    x.proposedSku??'—',x.calculationStatus]));
+ const deliveryTraceTable=rows(['Цепь','Потребители','Артикул проекта',
+  'Расчётный Ib, А','Схема','DIN-рейка','Начальный модуль',
+  'Артикул спецификации','Результат сверки','Замечания'],
+  (sections.deliveryTrace?.rows||[]).map(x=>[
+   x.lineId,x.consumerCount,x.articleSku??'Не выбран',
+   x.workflow?.ibA??'—',x.schematic?.id??'Нет',
+   x.board?x.board.railIndex+1:'Нет',
+   x.board?x.board.startModule+1:'Нет',
+   x.bom?.sku??'Нет',x.crossViewStatus,x.reviewIssueCount??0]));
+ const deliveryTraceIssueTable=rows(['Уровень','Код','Цепь'],
+  (sections.deliveryTrace?.issues||[]).map(x=>[x.level,x.code,x.lineId??'—']));
  const consumerAudit=sections.consumerReconciliation;
  const consumerAuditTable=rows(['Цепь','Количество потребителей',
   'Суммарная мощность потребителей, кВт','Мощность линии, кВт','Сверка'],
@@ -282,6 +293,9 @@ function epEngineeringPrintV1(bundle){
   '<p>Проект: '+esc(bundle?.projectTitle||'Без названия')+' · Состояние: '+esc(status)+'</p>'+
   '<p class="warning">НЕ ДЛЯ МОНТАЖА. Электрическая безопасность, нормативное соответствие, паспортные данные и физическая компоновка не подтверждены.</p>'+
   '<h2>Единый предварительный маршрут: нагрузки, токи и аппараты</h2>'+workflowRows+
+  '<h3>Сквозная согласованность нагрузок, схемы, DIN и спецификации</h3>'+
+  deliveryTraceTable+deliveryTraceIssueTable+
+  '<p>Сопоставление проектных представлений показывает лишь согласованность записей. Даже совпадающие данные не означают подтверждения инженерной пригодности.</p>'+
   '<h3>Сверка мощностей потребителей и электрических линий</h3>'+consumerAuditTable+
   '<p>Сумма заявленных мощностей не обязана равняться расчётной мощности линии при коэффициентах спроса, режимах и инженерных корректировках. Несовпадение — запрос на проверку, не автоматическое изменение данных.</p>'+
   '<p>Предварительные предложения аппаратов не являются утверждённой спецификацией. Параметры источника и потребителей задаёт инженер.</p>'+
