@@ -18,39 +18,113 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
    issues.push({code:'CIRCUIT_ID_INVALID_OR_DUPLICATE',level:'BLOCKED',lineId:line?.id??null});continue;
   }
   ids.add(line.id);
+  const faultBasis=typeof epSelectionFaultBasisV1==='function'?
+   epSelectionFaultBasisV1(project,line,lookupSku):null;
+  // The maximum-current comparison must use the same explicitly declared
+  // scenario and point. A scoped result supersedes manual Ik for screening;
+  // missing/stale evidence cannot silently fall back to manual approval.
+  const screeningLine=faultBasis?.mode==='CALCULATED_MAXIMUM'?
+   {...line,faultInput:{...(line.faultInput||{}),ikKa:faultBasis.ikMaxKa,
+     voltageV:faultBasis.voltageV}}:line;
   const raw=typeof epProtectiveDeviceShortlistV1==='function'?
-   epProtectiveDeviceShortlistV1(line,catalogue):
+   epProtectiveDeviceShortlistV1(screeningLine,catalogue):
    {candidates:[],issues:[{code:'SHORTLIST_UNAVAILABLE',level:'BLOCKED'}]};
+  const ranking=typeof epProtectiveCandidateRankingV1==='function'?
+   epProtectiveCandidateRankingV1(screeningLine,raw,faultBasis):null;
   const ib=safePositive(line.overloadInput?.ibA),iz=safePositive(line.overloadInput?.izA),
-   ik=safePositive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa);
+   ik=safePositive(line.faultInput?.ikKa??line.ikKa??line.breakingCapacityInput?.ikKa),
+   voltageV=safePositive(line.faultInput?.voltageV);
+  const displayIk=faultBasis?.mode==='CALCULATED_MAXIMUM'?faultBasis.ikMaxKa:ik;
+  const displayVoltage=faultBasis?.mode==='CALCULATED_MAXIMUM'?faultBasis.voltageV:voltageV;
   const sku=line.catalogSku||null;
   let article=null;
   if(sku&&typeof lookupSku==='function'){try{article=lookupSku(sku);}catch(_){}}
   const selectedCandidate=raw.candidates.find(c=>c.sku===sku);
   const reasons=[];
+  for(const issue of faultBasis?.issues||[]){
+   if(issue.level==='BLOCKED')reasons.push(issue.code);
+  }
+  if(faultBasis?.mode==='CALCULATED_UNUSABLE')
+   reasons.push('SELECTION_MAXIMUM_CURRENT_UNUSABLE');
   if(!sku)reasons.push('ARTICLE_NOT_SELECTED');
   else if(!article)reasons.push('ARTICLE_UNKNOWN');
-  else if(article.kind!=='MCB')reasons.push('SELECTED_ARTICLE_NOT_MCB');
+  else if(!['MCB','RCBO'].includes(article.kind))reasons.push('SELECTED_ARTICLE_NOT_MCB');
   else if(!selectedCandidate)reasons.push('ARTICLE_NOT_IN_SHORTLIST');
   else reasons.push(...selectedCandidate.reasons);
+  if(article&&article.verificationStatus!=='VERIFIED')reasons.push('CATALOG_DATA_UNVERIFIED');
+  if(article&&(!Number.isFinite(article.icnKa)||article.icnKa<=0)){
+   reasons.push('ARTICLE_ICN_UNDECLARED');
+   if(Number.isFinite(article.icuKa)&&article.icuKa>0)reasons.push('ICU_CANNOT_REPLACE_ICN');
+  }
+  if(article&&!article.source)reasons.push('DATASHEET_SOURCE_MISSING');
+  if(line.loadCurrentCalculation?.stale)reasons.push('LOAD_CURRENT_STALE');
+  const derivedIb=safePositive(line.loadCurrentCalculation?.roundedIbA);
+  if(derivedIb!==null&&ib!==derivedIb)reasons.push('IB_DIFFERS_FROM_CALCULATION');
+  if(voltageV===null)reasons.push('FAULT_VOLTAGE_UNDECLARED');
+  if(article&&voltageV!==null){
+   if(!Number.isFinite(article.icnVoltageV))reasons.push('ARTICLE_ICN_VOLTAGE_UNDECLARED');
+   else if(article.icnVoltageV<voltageV)reasons.push('ARTICLE_ICN_VOLTAGE_LT_DECLARED');
+  }
+  if(article&&article.kind==='RCBO'){
+   reasons.push('RCBO_RESIDUAL_PROTECTION_UNVERIFIED');
+   if(!Number.isFinite(article.residualCurrentMa)||article.residualCurrentMa<=0)
+    reasons.push('RCBO_RESIDUAL_CURRENT_UNDECLARED');
+   if(!['AC','A','F','B','B+'].includes(article.residualType))
+    reasons.push('RCBO_RESIDUAL_TYPE_UNDECLARED');
+  }
+  if(article&&article.kind==='MCB')reasons.push('MCB_DISCONNECTION_UNVERIFIED');
   if(ib===null)reasons.push('IB_MISSING_OR_INVALID');
   if(iz===null)reasons.push('IZ_MISSING_OR_INVALID');
   if(ik===null)reasons.push('IK_MISSING_OR_INVALID');
   if(line.calculationReview?.required)reasons.push('CALCULATION_REVIEW_STALE');
   if(article&&Number.isInteger(article.modules)&&line.modules!==article.modules)
    reasons.push('ARTICLE_MODULE_WIDTH_MISMATCH');
+  if(article&&article.label&&line.device&&line.device!==article.label)
+   reasons.push('ARTICLE_LABEL_MISMATCH');
+  if(article&&article.modules!==undefined&&(!Number.isInteger(article.modules)||article.modules<1||article.modules>12))
+   reasons.push('ARTICLE_MODULES_INVALID');
+  if(article&&article.widthMm!==undefined&&
+    (!Number.isFinite(article.widthMm)||article.widthMm<=0||article.widthMm>article.modules*18))
+   reasons.push('ARTICLE_GEOMETRY_INVALID');
+  if(article&&(['L1','L2','L3'].includes(line.phase)?!(article.poles===1||article.poles===2&&
+    (article.kind==='RCBO'||['1P+N','2P'].includes(article.poleConfiguration))):
+     line.phase==='3Ф'?![3,4].includes(article.poles):false))
+   reasons.push('ARTICLE_POLES_MISMATCH');
+  if(article&&Array.isArray(project.branchDevices)){
+   const branches=project.branchDevices.filter(b=>b?.circuitId===line.id);
+   if(branches.length>1)reasons.push('BRANCH_ASSIGNMENT_DUPLICATE');
+   if(!branches.length)reasons.push('BRANCH_ASSIGNMENT_MISSING');
+   for(const b of branches){
+    if(Number.isInteger(article.modules)&&b.modules!==article.modules)reasons.push('BRANCH_WIDTH_MISMATCH');
+    if(article.label&&b.label!==article.label)reasons.push('BRANCH_LABEL_MISMATCH');
+   }
+  }
   if(article&&!article.source)reasons.push('ARTICLE_SOURCE_MISSING');
-  const blocking=new Set(['ARTICLE_UNKNOWN','SELECTED_ARTICLE_NOT_MCB','ARTICLE_NOT_IN_SHORTLIST',
+  const blocking=new Set(['SELECTION_MANUAL_IK_UNDERSTATES_SAME_POINT_MAX',
+   'SELECTION_FAULT_VOLTAGE_CONTEXT_MISMATCH',
+   'ARTICLE_UNKNOWN','SELECTED_ARTICLE_NOT_MCB','ARTICLE_NOT_IN_SHORTLIST',
    'IN_LT_IB','IN_GT_IZ','ICN_LT_DECLARED_IK','POLES_INCOMPATIBLE','CATALOG_SPEC_INVALID',
-   'ARTICLE_MODULE_WIDTH_MISMATCH']);
+   'ARTICLE_ICN_UNDECLARED','MANUFACTURER_SOURCE_CONFLICT',
+   'ARTICLE_MODULE_WIDTH_MISMATCH','ARTICLE_LABEL_MISMATCH','ARTICLE_MODULES_INVALID',
+   'ARTICLE_GEOMETRY_INVALID','ARTICLE_POLES_MISMATCH','BRANCH_ASSIGNMENT_DUPLICATE',
+   'BRANCH_ASSIGNMENT_MISSING','BRANCH_WIDTH_MISMATCH','BRANCH_LABEL_MISMATCH',
+   'IB_DIFFERS_FROM_CALCULATION','ICN_VOLTAGE_LT_DECLARED',
+   'ARTICLE_ICN_VOLTAGE_LT_DECLARED']);
   const status=reasons.some(x=>blocking.has(x))?'BLOCKED':'UNKNOWN';
   for(const code of reasons)issues.push({code,lineId:line.id,level:blocking.has(code)?'BLOCKED':'UNKNOWN'});
   rows.push({lineId:line.id,name:line.name||line.device||'',phase:line.phase||null,
-   ibA:ib,izA:iz,ikKa:ik,selectedSku:sku,selectedArticle:article?
+   ibA:ib,izA:iz,ikKa:displayIk,manualIkKa:ik,ikSource:line.faultInput?.source??null,
+   voltageV:displayVoltage,manualVoltageV:voltageV,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
-    inA:article.inA??null,icnKa:article.icnKa??null,poles:article.poles??null,
-    modules:article.modules??null,source:article.source||null}:null,
-   status,reasons,candidates:raw.candidates,engineeringApproved:false});
+    kind:article.kind||null,label:article.label||null,
+    residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
+    inA:article.inA??null,icnKa:article.icnKa??null,
+    icuKa:article.icuKa??null,icuVoltageV:article.icuVoltageV??null,poles:article.poles??null,
+    poleConfiguration:article.poleConfiguration??null,
+    icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
+    modules:article.modules??null,source:article.source||null,
+    verificationStatus:article.verificationStatus||'UNKNOWN'}:null,
+   status,reasons,candidates:raw.candidates,ranking,faultBasis,engineeringApproved:false});
  }
  const selected=rows.find(x=>x.lineId===selectedId)||rows[0]||null;
  return {schema:'electropanel.protection.workbench.draft.1',
@@ -65,10 +139,23 @@ function epProtectionWorkbenchHtmlV1(report){
  if(!report?.selected)return '<p>Добавьте отходящую цепь, чтобы проверить подбор защиты.</p>';
  const x=report.selected,fmt=v=>v===null||v===undefined?'Не задано':esc(v);
  const article=x.selectedArticle;
+ const ranked=x.ranking?.rows||[];
+ const rankingHtml='<h4>Порядок инженерной проверки кандидатов (не допуск)</h4>'+
+  '<div class="table-scroll"><table><thead><tr><th>Артикул</th><th>Оценка</th><th>Запас In−Ib, А</th>'+
+  '<th>Запас Iz−In, А</th><th>Запас Icn−Ik, кА</th><th>Запас Uном−Uсети, В</th>'+
+  '<th>Неподтверждённые данные</th></tr></thead><tbody>'+
+  ranked.map(c=>'<tr><td>'+esc(c.catalogKey)+'</td><td>'+esc(c.classification)+
+   '</td><td>'+fmt(c.currentHeadroomA)+'</td><td>'+fmt(c.cableHeadroomA)+
+   '</td><td>'+fmt(c.breakingHeadroomKa)+'</td><td>'+fmt(c.voltageHeadroomV)+
+   '</td><td>'+esc(c.openEvidence.join('; '))+'</td></tr>').join('')+'</tbody></table></div>'+
+  '<p>Ранжирование — порядок просмотра, не автоматическое разрешение на установку.</p>';
  const rows=x.candidates.map(c=>{
-  const reasons=c.reasons.length?c.reasons.join(', '):'Арифметических противоречий не выявлено';
+  const reasons=(c.reasons.length?c.reasons.join(', '):'Арифметических противоречий не выявлено')+
+   (c.caution?.length?' · требуют проверки: '+c.caution.join(', '):'');
   return '<tr><td>'+esc(c.maker||'—')+'</td><td>'+esc(c.series||'—')+'</td><td>'+
-   esc(c.sku)+'</td><td>'+fmt(c.inA)+'</td><td>'+fmt(c.icnKa)+'</td><td>'+
+   esc(c.sku)+' ('+esc(c.kind||'MCB')+
+   (c.kind==='RCBO'?' · IΔn '+fmt(c.residualCurrentMa)+' мА · '+esc(c.residualType||'тип не задан'):'')+
+   ')</td><td>'+fmt(c.inA)+'</td><td>'+fmt(c.icnKa)+'</td><td>'+
    esc(c.status)+'</td><td>'+esc(reasons)+'</td><td>'+
    '<button type="button" class="btn tiny" data-protection-sku="'+esc(c.sku)+'" data-protection-line="'+esc(x.lineId)+'"'+
    (c.status==='REJECTED'?' disabled title="Кандидат не проходит заявленные проверки"':'')+
@@ -76,18 +163,25 @@ function epProtectionWorkbenchHtmlV1(report){
  }).join('');
  return '<section class="ep-protection-workbench" aria-label="Черновой подбор защиты">'+
   '<h3>Защита цепи '+esc(x.lineId)+' · '+esc(x.name)+'</h3>'+
-  '<p>Ib: '+fmt(x.ibA)+' А · Iz: '+fmt(x.izA)+' А · Ik: '+fmt(x.ikKa)+' кА · фаза: '+fmt(x.phase)+
+  '<p>Ib: '+fmt(x.ibA)+' А · Iz: '+fmt(x.izA)+' А · Ik: '+fmt(x.ikKa)+' кА · напряжение для Icn: '+fmt(x.voltageV)+' В · фаза: '+fmt(x.phase)+
   '. Выбран: '+esc(x.selectedSku||'нет')+'; статус: '+esc(x.status)+'.</p>'+
   '<p>Паспорт выбранного аппарата: '+(article?
    esc(article.maker)+' / '+esc(article.series)+' / '+esc(article.sku)+
-   ' · In '+fmt(article.inA)+' А · Icn '+fmt(article.icnKa)+' кА · '+fmt(article.poles)+' пол.':
+   ' · In '+fmt(article.inA)+' А · Icn '+fmt(article.icnKa)+' кА · Icu '+fmt(article.icuKa)+' кА · '+fmt(article.poles)+' пол.':
    'Артикул не выбран или отсутствует в каталоге')+'</p>'+
+  '<p>Основание сравнения Icn: '+esc(x.faultBasis?.mode??'только введённый вручную ток')+
+   ' · точка: '+esc(x.faultBasis?.comparisonPoint??'не указана')+
+   ' · вид КЗ: '+esc(x.faultBasis?.model??'не указан')+
+   ' · расчётный Ik,max: '+fmt(x.faultBasis?.calculatedIkMaxKa)+' кА</p>'+
   '<p>Замечания: '+(x.reasons.length?x.reasons.map(esc).join('; '):'Нет по проверяемым входным данным')+'</p>'+
+  rankingHtml+
   '<form data-protection-input-form="'+esc(x.lineId)+'" class="ep-protection-inputs">'+
   '<fieldset><legend>Исходные токи (ввод инженером, без автоматического расчёта)</legend>'+
   '<label>Ib, А <input name="ibA" type="text" inputmode="decimal" required value="'+(x.ibA===null?'':esc(x.ibA))+'"></label>'+
   '<label>Iz, А <input name="izA" type="text" inputmode="decimal" required value="'+(x.izA===null?'':esc(x.izA))+'"></label>'+
-  '<label>Ik, кА <input name="ikKa" type="text" inputmode="decimal" required value="'+(x.ikKa===null?'':esc(x.ikKa))+'"></label>'+
+  '<label>Ik, кА (необязательно) <input name="ikKa" type="text" inputmode="decimal" value="'+(x.manualIkKa===null?'':esc(x.manualIkKa))+'"></label>'+
+  '<label>Напряжение сети для проверки Icn, В (по исходным данным) <input name="voltageV" type="text" inputmode="decimal" value="'+(x.manualVoltageV===null?'':esc(x.manualVoltageV))+'"></label>'+
+  '<p class="muted">Ik не требуется для чернового щита. Без него проверка отключающей способности остаётся незавершённой. Пустое поле Ik или напряжения удаляет ранее введённую ручную декларацию; расчётные значения не подставляются в эту форму.</p>'+
   '<button type="submit" class="btn">Записать исходные токи</button></fieldset></form>'+
   '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
   '<th>In, А</th><th>Icn, кА</th><th>Оценка</th><th>Причины</th><th>Действие</th></tr></thead><tbody>'+
@@ -100,9 +194,9 @@ function epProtectionWorkbenchCsvV1(report){
   if(/^[\s\u0000-\u001f]*[=+@-]/.test(s))s="'"+s;
   return '"'+s.replace(/"/g,'""')+'"';
  };
- const head=['Цепь','Назначение','Фаза','Ib А','Iz А','Ik кА','Выбранный артикул',
+ const head=['Цепь','Назначение','Фаза','Ib А','Iz А','Ik кА','Источник ручного Ik','Выбранный артикул',
   'Производитель','Серия','In А','Icn кА','Статус','Замечания','Кандидаты POTENTIAL'];
- const rows=(report?.rows||[]).map(x=>[x.lineId,x.name,x.phase,x.ibA,x.izA,x.ikKa,
+ const rows=(report?.rows||[]).map(x=>[x.lineId,x.name,x.phase,x.ibA,x.izA,x.ikKa,x.ikSource||'Не указан',
   x.selectedSku,x.selectedArticle?.maker,x.selectedArticle?.series,x.selectedArticle?.inA,
   x.selectedArticle?.icnKa,x.status,x.reasons.join('; '),
   x.candidates.filter(c=>c.status==='POTENTIAL').map(c=>c.sku).join(', ')]);

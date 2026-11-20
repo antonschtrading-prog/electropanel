@@ -9,17 +9,47 @@ const demoCommercial = () => ({schema:'electropanel.web.preview.1',title:'Ком
  {id:'L2',name:'Розеточная группа',power:3.8,phase:'L2',device:'C16',modules:1,source:'demo'},
  {id:'L3',name:'Кондиционирование',power:4.5,phase:'3Ф',device:'C16',modules:3,source:'demo'},
  {id:'L4',name:'Вентиляция',power:1.5,phase:'L3',device:'C16',modules:1,source:'demo'}],plan:null,changedAt:new Date().toISOString()});
-let state = initial(); let selectedLine = null; let currentView = 'overview'; let pendingRows = []; let planPreviewUrl = null; const MAX_LINES=400;
+let workflowPreviewInputs=null;
+let workflowSplitPlan=null;
+let workflowMergePlan=null;
+let workflowSplitRuleInput=null;
+let workflowMergeRuleInput=null;
+let state = initial(); let lastDesignSnapshot=null; let lastDesignImpact=null; let selectedLine = null; let currentView = 'overview'; let pendingRows = []; let planPreviewUrl = null; const MAX_LINES=400;
 const historyUndo=[], historyRedo=[]; let dragLineId=null; const MAX_HISTORY=30;
 const SOURCES=Object.freeze({manual:'Ручной ввод',tz:'Техническое задание',csv:'Импорт CSV',demo:'Учебный пример',unknown:'Источник неизвестен'});
 function snapshot(){ensureV2(state);return JSON.stringify(state);}
 function checkpoint(){historyUndo.push(snapshot());if(historyUndo.length>MAX_HISTORY)historyUndo.shift();historyRedo.length=0;}
-function restoreHistory(from,to){if(!from.length)return;to.push(snapshot());const next=normalizeImport(JSON.parse(from.pop()));if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=next;selectedLine=null;changed();notify('История изменений восстановлена');}
+function restoreHistory(from,to){if(!from.length)return;to.push(snapshot());const next=normalizeImport(JSON.parse(from.pop()));if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=next;workflowPreviewInputs=null;workflowSplitPlan=null;workflowSplitRuleInput=null;workflowMergePlan=null;workflowMergeRuleInput=null;selectedLine=null;changed();notify('История изменений восстановлена');}
 function reorderLine(sourceId,targetId){const from=state.lines.findIndex(l=>l.id===sourceId),to=state.lines.findIndex(l=>l.id===targetId);if(from<0||to<0||from===to)return false;checkpoint();const [moved]=state.lines.splice(from,1);state.lines.splice(to,0,moved);changed();return true;}
-function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();ensureV2(state);state.loads=state.loads.filter(x=>x.circuitId!==id);state.conductorRoutes=state.conductorRoutes.filter(x=>x.circuitId!==id);state.terminalLinks=state.terminalLinks.filter(x=>x.circuitId!==id);state.feedLinks=state.feedLinks.filter(x=>x.circuitId!==id);state.sharedDevices.forEach(d=>d.circuitIds=d.circuitIds.filter(c=>c!==id));state.sharedDevices=state.sharedDevices.filter(d=>d.circuitIds.length);state.groupInputLinks=state.groupInputLinks.filter(f=>state.sharedDevices.some(d=>d.id===f.groupId));state.lines=state.lines.filter(x=>x.id!==id);if(selectedLine===id)selectedLine=null;changed();return true;}
+function removeLine(id){if(!state.lines.some(l=>l.id===id))return false;checkpoint();if(typeof epFireControlCircuitDeleteV1==='function')epFireControlCircuitDeleteV1(state,id);ensureV2(state);if(Array.isArray(state.loads))state.loads=state.loads.filter(x=>x?.circuitId!==id);if(Array.isArray(state.conductorRoutes))state.conductorRoutes=state.conductorRoutes.filter(x=>x?.circuitId!==id);if(Array.isArray(state.terminalLinks))state.terminalLinks=state.terminalLinks.filter(x=>x?.circuitId!==id);if(Array.isArray(state.feedLinks))state.feedLinks=state.feedLinks.filter(x=>x?.circuitId!==id);if(Array.isArray(state.sharedDevices))state.sharedDevices.forEach(d=>{if(d&&Array.isArray(d.circuitIds))d.circuitIds=d.circuitIds.filter(c=>c!==id)});if(Array.isArray(state.sharedDevices))state.sharedDevices=state.sharedDevices.filter(d=>d&&Array.isArray(d.circuitIds)&&d.circuitIds.length);if(Array.isArray(state.groupInputLinks))state.groupInputLinks=state.groupInputLinks.filter(f=>f&&Array.isArray(state.sharedDevices)&&state.sharedDevices.some(d=>d.id===f.groupId));if(Array.isArray(state.manualLayoutV1)){const removed=Array.isArray(state.branchDevices)?state.branchDevices.find(x=>x?.circuitId===id)?.id:undefined;state.manualLayoutV1=state.manualLayoutV1.filter(x=>x&&(removed===undefined||x.deviceId!==removed)&&x.deviceId!==id);}const removedBranchId=Array.isArray(state.branchDevices)?state.branchDevices.find(x=>x?.circuitId===id)?.id:undefined;state.lines=state.lines.filter(x=>x.id!==id);if(Array.isArray(state.branchDevices))state.branchDevices=state.branchDevices.filter(x=>x?.circuitId!==id);if(Array.isArray(state.protectionLinks))state.protectionLinks=state.protectionLinks.filter(x=>x&&x.downstreamLineId!==id&&x.upstreamLineId!==id);const removedNode=removedBranchId===undefined?null:'BRANCH:'+removedBranchId;const availableBoardIds=new Set([...(state.branchDevices||[]).map(x=>x?.id),...(state.sharedDevices||[]).map(x=>x?.id)].filter(id=>id&&id!==removedBranchId));if(Array.isArray(state.boardBindingsV1))state.boardBindingsV1=state.boardBindingsV1.filter(x=>availableBoardIds.has(x?.boardDeviceId));if(Array.isArray(state.endpointBindingsV1)){const activeEndpointRefs=new Set([...(state.terminalLinks||[]),...(state.feedLinks||[]),...(state.groupInputLinks||[])].flatMap(x=>[x?.from,x?.to]));state.endpointBindingsV1=state.endpointBindingsV1.filter(x=>activeEndpointRefs.has(x?.symbolicRef));}if(removedNode&&Array.isArray(state.calculatedDeviceFaultBindingsV1))state.calculatedDeviceFaultBindingsV1=state.calculatedDeviceFaultBindingsV1.filter(x=>x.deviceNodeId!==removedNode);if(removedNode&&Array.isArray(state.deviceFaultScenariosV1))state.deviceFaultScenariosV1=state.deviceFaultScenariosV1.filter(x=>x.deviceNodeId!==removedNode);if(removedNode&&Array.isArray(state.deviceCoordinationEvidenceV1))state.deviceCoordinationEvidenceV1=state.deviceCoordinationEvidenceV1.filter(x=>x.from!==removedNode&&x.to!==removedNode);if(removedNode&&Array.isArray(state.deviceSupplyV1?.links))state.deviceSupplyV1.links=state.deviceSupplyV1.links.filter(x=>x.from!==removedNode&&x.to!==removedNode);if(selectedLine===id)selectedLine=null;changed();return true;}
 function safeText(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function notify(message,error=false){const t=document.createElement('div');t.className='toast'+(error?' error':'');t.textContent=message;document.body.appendChild(t);setTimeout(()=>t.remove(),3800);}
-function changed(){syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);state.changedAt=new Date().toISOString();try{localStorage.setItem('electropanel_web_preview',JSON.stringify(state));}catch(e){notify('Не удалось сохранить автокопию в браузере',true);}render();}
+function changed(){workflowSplitPlan=null;workflowMergePlan=null;syncBranchDevices(state);state.branchModelVersion=1;ensureV2(state);
+ if(Array.isArray(state.lines)){
+  for(const line of state.lines){
+   const calculated=line?.loadCurrentCalculation;
+   if(calculated&&Number.isFinite(Number(calculated.roundedIbA))&&
+      Number(calculated.roundedIbA)!==Number(line.overloadInput?.ibA)){
+    calculated.stale=true;
+    if(typeof epMarkCalculationReviewV1==='function')
+     epMarkCalculationReviewV1(line,'IB_DIFFERS_FROM_CALCULATED_CURRENT',['overloadInput'],true);
+    else markCalculationReview(line,'IB_DIFFERS_FROM_CALCULATED_CURRENT');
+   }
+  }
+ }
+ if(lastDesignSnapshot&&typeof epDesignChangeImpactV1==='function'){
+  lastDesignImpact=epDesignChangeImpactV1(lastDesignSnapshot,state);
+  if(typeof epApplyCircuitDependencyReviewV1==='function')
+   epApplyCircuitDependencyReviewV1(lastDesignSnapshot,state);
+  if(typeof epInvalidateDesignEvidenceV1==='function')
+   state=epInvalidateDesignEvidenceV1(state,lastDesignImpact);
+  if(typeof epDesignReviewNoticeUpdateV1==='function'&&lastDesignImpact.affected?.length)
+   state.designReviewNoticeV1=epDesignReviewNoticeUpdateV1(state.designReviewNoticeV1,lastDesignImpact);
+ }
+ if(typeof epRefreshLinkedCurrentsV1==='function')epRefreshLinkedCurrentsV1(state);
+ lastDesignSnapshot=structuredCloneCompat(state);
+ state.changedAt=new Date().toISOString();try{localStorage.setItem('electropanel_web_preview',JSON.stringify(state));}catch(e){notify('Не удалось сохранить автокопию в браузере',true);}render();}
+function resetDesignBaseline(){lastDesignSnapshot=null;lastDesignImpact=null;}
 function switchView(view){currentView=view;document.querySelectorAll('.view').forEach(n=>n.classList.toggle('active',n.id==='view-'+view));document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===view));$('breadcrumbTitle').textContent=state.title||'Новый проект';$('menuToggle').closest('.main').previousElementSibling.classList.remove('open');render();}
 // UI templates are generic layout hints, NOT verified manufacturer catalogue records.
 const DEVICE_TEMPLATES=Object.freeze({
@@ -33,11 +63,21 @@ const DEVICE_TEMPLATES=Object.freeze({
 });
 
 
-function catalogDevice(sku){return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
+function projectCatalogEntries(project=state){return typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(project,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles):Object.entries(typeof EP_CATALOG==='object'?EP_CATALOG:{});}
+function catalogDevice(sku){if(typeof epProjectCatalogV1==='function'){const c=epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{});return c.lookup(sku);}return typeof epCatalogSku==='function'?epCatalogSku(sku):null;}
 // UI filters are temporary preferences, never electrical or catalogue data.
-let catalogMakerFilter='',catalogSeriesFilter='';
+let catalogMakerFilter='',catalogSeriesFilter='',catalogTierFilter='';
+function catalogBranchPolesCompatible(phase,device){
+ if(!device||!['MCB','RCBO'].includes(device.kind))return false;
+ if(['L1','L2','L3'].includes(phase))
+  return device.poles===1||(device.poles===2&&
+   (device.kind==='RCBO'||['1P+N','2P'].includes(device.poleConfiguration)));
+ if(phase==='3Ф')return device.poles===3||device.poles===4;
+ return false;
+}
 function catalogChoices(selected,phase=''){
- const items=typeof epCatalogFilter==='function'?epCatalogFilter(catalogMakerFilter,catalogSeriesFilter,phase):[];
+ const entries=typeof epProjectCatalogV1==='function'?Object.entries(epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles):[];
+ const items=entries.filter(([id,d])=>['MCB','RCBO'].includes(d.kind)&&(!catalogTierFilter||typeof epBrandTier!=='function'||epBrandTier(d.maker)===catalogTierFilter)&&(!catalogMakerFilter||d.maker===catalogMakerFilter)&&(!catalogSeriesFilter||d.series===catalogSeriesFilter)&&(!phase||catalogBranchPolesCompatible(phase,d)));
  const current=catalogDevice(selected);
  if(current&&!items.some(([id])=>id===selected))items.unshift([selected,current]);
  const unknown=selected&&!current;
@@ -46,42 +86,95 @@ function catalogChoices(selected,phase=''){
   items.map(([id,d])=>'<option value="'+safeText(id)+'" '+(selected===id?'selected':'')+'>'+safeText(d.maker+' / '+d.series+' / '+d.label+' / '+d.sku)+'</option>').join('');
 }
 function catalogFilterControls(){
- const maker=catalogMakerFilter,series=catalogSeriesFilter;
- const makers=typeof epCatalogMakers==='function'?epCatalogMakers():[];
- const seriesList=typeof epCatalogSeries==='function'?epCatalogSeries(maker):[];
- return '<label class="device-preset-label">Производитель<select id="catalogMaker"><option value="">Все производители</option>'+
-  makers.map(m=>'<option value="'+safeText(m)+'" '+(m===maker?'selected':'')+'>'+safeText(m)+'</option>').join('')+
+ const maker=catalogMakerFilter,series=catalogSeriesFilter,tier=catalogTierFilter;
+ const entries=projectCatalogEntries();
+ const known=typeof EP_BRAND_TIERS==='object'&&EP_BRAND_TIERS!==null?
+  Object.values(EP_BRAND_TIERS).flat():[];
+ const makers=[...new Set([...known,...entries.map(([,d])=>d.maker)])].filter(m=>!tier||typeof epBrandTier!=='function'||epBrandTier(m)===tier).sort((a,b)=>a.localeCompare(b,'ru'));
+ const counts=new Map();
+ for(const [,d] of entries)counts.set(d.maker,(counts.get(d.maker)||0)+1);
+ const seriesList=[...new Set(entries.filter(([,d])=>(!maker||d.maker===maker)&&(!tier||typeof epBrandTier!=='function'||epBrandTier(d.maker)===tier)).map(([,d])=>d.series))].sort();
+ return '<label class="device-preset-label">Сегмент<select id="catalogTier"><option value="">Все сегменты</option>'+
+  [['budget','Бюджет'],['comfort','Комфорт'],['premium','Премиум']].map(([id,name])=>
+   '<option value="'+id+'" '+(tier===id?'selected':'')+'>'+name+'</option>').join('')+
+  '</select></label><label class="device-preset-label">Производитель<select id="catalogMaker"><option value="">Все производители</option>'+
+  makers.map(m=>'<option value="'+safeText(m)+'" '+(m===maker?'selected':'')+
+   (counts.has(m)?'':' disabled')+'>'+safeText(m)+(counts.has(m)?' · '+counts.get(m)+' арт.':' · нет артикулов')+'</option>').join('')+
   '</select></label><label class="device-preset-label">Серия<select id="catalogSeries"><option value="">Все серии</option>'+
   seriesList.map(m=>'<option value="'+safeText(m)+'" '+(m===series?'selected':'')+'>'+safeText(m)+'</option>').join('')+
   '</select></label>';
 }
 const REVIEW_FIELDS=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
 function markCalculationReview(line,reason){
+ if(typeof epMarkCalculationReviewV1==='function')return epMarkCalculationReviewV1(line,reason);
  const existing=REVIEW_FIELDS.filter(key=>!!line[key]);
  if(!existing.length&&!line.calculationReview?.required)return;
  const pending=new Set(line.calculationReview?.pending||existing);
  for(const key of existing)pending.add(key);
  line.calculationReview={required:true,reason,pending:[...pending]};
+ return line.calculationReview;
 }
 // Acknowledging one check must never clear an unrelated stale calculation.
 function acknowledgeCalculationReview(line,key){
- if(!line.calculationReview?.required)return;
+ if(typeof epAcknowledgeCalculationReviewV1==='function')return epAcknowledgeCalculationReviewV1(line,key);
+ if(!line.calculationReview?.required)return false;
  const pending=Array.isArray(line.calculationReview.pending)?
   line.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)):
   REVIEW_FIELDS.filter(k=>!!line[k]);
+ if(!pending.includes(key))return false;
  const remaining=pending.filter(k=>k!==key);
  if(remaining.length)line.calculationReview={...line.calculationReview,pending:remaining};
  else delete line.calculationReview;
+ return true;
 }
 // Retained for explicit internal reset/test only. UI uses acknowledge per field.
 function clearCalculationReview(line){delete line.calculationReview;}
 function applyCatalogueSku(project,circuitId,sku){
- const dev=catalogDevice(sku),line=project.lines.find(l=>l.id===circuitId);
+ const dev=projectCatalogEntries(project).find(([id])=>id===sku)?.[1],line=project.lines.find(l=>l.id===circuitId);
  if(!dev||!line)throw Error('Не найдена цепь или артикул');
- if(typeof epCatalogCompatible!=='function'||!epCatalogCompatible(sku,line.phase))throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
- if(line.catalogSku!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
+ if(!['MCB','RCBO'].includes(dev.kind))throw Error('Для защиты отходящей линии требуется автоматический выключатель или дифавтомат');
+ const validPoles=typeof catalogBranchPolesCompatible==='function'?
+  catalogBranchPolesCompatible(line.phase,dev):
+  ['MCB','RCBO'].includes(dev.kind)&&
+  (['L1','L2','L3'].includes(line.phase)?
+   dev.poles===1||dev.poles===2&&
+    (dev.kind==='RCBO'||['1P+N','2P'].includes(dev.poleConfiguration)):
+   line.phase==='3Ф'&&[3,4].includes(dev.poles));
+ if(!validPoles)throw Error('Полюса каталожного аппарата не соответствуют фазности линии');
+ // Reject an invalid article before touching branch or calculation state.
+ if(!Number.isInteger(dev.modules)||dev.modules<1||dev.modules>12||
+    !Number.isFinite(dev.widthMm)||dev.widthMm<=0||dev.widthMm>dev.modules*18+0.001||
+    !Number.isFinite(dev.inA)||dev.inA<=0||
+    typeof dev.label!=='string'||!dev.label.trim()||dev.label.length>25)
+  throw Error('Артикул содержит недопустимые габариты, обозначение или номинальный ток');
+ // Width changes must pass the complete DIN capacity/overlap plan, including
+ // automatically placed boards. Never mutate the source on failure.
+ if(dev.modules!==line.modules){
+  if(typeof epDraftBoardPlanV1!=='function')
+   throw Error('Проверка размещения DIN недоступна; замена отменена');
+  const candidate=structuredCloneCompat(project);
+  const proposedLine=candidate.lines.find(x=>x.id===circuitId);
+  const proposedBranch=(candidate.branchDevices||[]).find(x=>x.circuitId===circuitId);
+  if(!proposedLine||!proposedBranch)
+   throw Error('Отсутствует связанный отходящий аппарат; замена отменена');
+  proposedLine.modules=dev.modules;proposedLine.device=dev.label;proposedLine.catalogSku=sku;
+  proposedBranch.modules=dev.modules;proposedBranch.label=dev.label;
+  const entries=projectCatalogEntries(candidate);
+  const report=epDraftBoardPlanV1(candidate,key=>entries.find(([id])=>id===key)?.[1]||null);
+  if(report.status==='BLOCKED')
+   throw Error('Замена не помещается в текущую DIN-компоновку; скорректируйте размещение');
+ }
+ const current=line.catalogSku;
+ if(current!==sku)markCalculationReview(line,'ARTICLE_CHANGED');
  updateBranchApparatus(project,circuitId,{label:dev.label,modules:dev.modules,templateId:null});
  line.catalogSku=sku;
+ if(current!==sku){
+  const warnings=typeof epCatalogueReplacementImpactV1==='function'?
+   epCatalogueReplacementImpactV1(projectCatalogEntries(project).find(([id])=>id===current)?.[1],dev).warnings:[];
+  // These are review instructions only. Never overwrite declared Ik, Ib or Iz.
+  line.articleReplacementReview={required:true,from:current||null,to:sku,
+   warnings,engineeringApproved:false};
+ }
  return dev;
 }
 function catalogAudit(project){
@@ -89,13 +182,32 @@ function catalogAudit(project){
  for(const l of project.lines){
   if(l.calculationReview?.required)
    issues.push({circuitId:l.id,code:'CALCULATION_REVIEW_REQUIRED',message:'Исходные данные или аппарат изменены; ранее введённые токи требуют повторной проверки'});
+  if(l.articleReplacementReview?.required)
+   issues.push({circuitId:l.id,code:'ARTICLE_REPLACEMENT_REVIEW_REQUIRED',message:'После замены артикула повторно проверить параметры защиты, DIN и схему'});
   if(!l.catalogSku)continue;
-  const dev=catalogDevice(l.catalogSku);
+  const dev=typeof projectCatalogEntries==='function'?projectCatalogEntries(project).find(([id])=>id===l.catalogSku)?.[1]:catalogDevice(l.catalogSku);
   if(!dev){issues.push({circuitId:l.id,code:'CATALOG_UNKNOWN',message:'Неизвестный артикул'});continue;}
-  if(!epCatalogCompatible(l.catalogSku,l.phase)||l.modules!==dev.modules||l.device!==dev.label)
+  if(!(typeof catalogBranchPolesCompatible==='function'?
+   catalogBranchPolesCompatible(l.phase,dev):
+   ['MCB','RCBO'].includes(dev.kind)&&
+   (['L1','L2','L3'].includes(l.phase)?
+    dev.poles===1||dev.poles===2&&
+    (dev.kind==='RCBO'||['1P+N','2P'].includes(dev.poleConfiguration)):
+    l.phase==='3Ф'&&[3,4].includes(dev.poles)))||l.modules!==dev.modules||l.device!==dev.label)
    issues.push({circuitId:l.id,code:'CATALOG_MISMATCH',message:'Фаза, ширина или обозначение не соответствуют выбранному артикулу'});
-  for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput))
+  for(const issue of epCatalogDeclaredCurrentIssues(l.catalogSku,l.overloadInput,dev))
    issues.push({circuitId:l.id,...issue});
+  if(['MCB','RCBO'].includes(dev.kind)&&(!Number.isFinite(dev.icnKa)||dev.icnKa<=0))
+   issues.push({circuitId:l.id,code:'CATALOG_ICN_UNDECLARED',
+    message:Number.isFinite(dev.icuKa)&&dev.icuKa>0?
+     'Указан Icu, но Icn не подтверждён; подмена запрещена':
+     'Icn не указан; проверка отключающей способности не завершена'});
+  if(l.faultInput?.voltageV!==undefined&&l.faultInput?.voltageV!==null&&
+     (!Number.isFinite(Number(l.faultInput.voltageV))||Number(l.faultInput.voltageV)<=0))
+   issues.push({circuitId:l.id,code:'CATALOG_FAULT_VOLTAGE_INVALID',message:'Некорректное заявленное напряжение'});
+  else if(l.faultInput?.voltageV&&Number.isFinite(dev.icnVoltageV)&&
+          dev.icnVoltageV<Number(l.faultInput.voltageV))
+   issues.push({circuitId:l.id,code:'CATALOG_ICN_VOLTAGE_INSUFFICIENT',message:'Паспортное напряжение Icn ниже заявленного напряжения сети'});
   const fault=epBreakingCapacityCheck(dev,l.faultInput?.ikKa);
   if(fault.status==='FAIL'||fault.status==='INVALID')
    issues.push({circuitId:l.id,code:'CATALOG_IK_'+fault.status,message:fault.message});
@@ -113,6 +225,15 @@ function faultLineInfo(line){
 function devicePreviewHtml(line){
  if(!line)return '';
  const visual=deviceAppearance(line);
+ const front=epBoardArticleFaceHtmlV2(line,line.id);
+ if(front){
+  const catalog=catalogDevice(line.catalogSku);
+  const asset=typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(catalog):null;
+  return '<div class="ep-preview-wrap"><div class="ep-preview-article ep-preview-article-front">'+front+'</div>'+
+   '<div class="ep-preview-caption"><b>Фасад выбранного аппарата</b><span>'+
+   (asset?.status==='REVIEWED_IMAGE'?'Сверенное изображение артикула; монтаж не подтверждён.':'Оригинальный стилизованный фасад; не фотография и не CAD производителя.')+
+   '</span></div></div>';
+ }
  return '<div class="ep-preview-wrap"><div class="ep-preview-article ep-real-device ep-'+safeText(visual.type)+'" aria-label="Стилизованный фасад '+safeText(visual.maker)+'">'+
  '<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span>'+
  '<span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span>'+
@@ -120,10 +241,16 @@ function devicePreviewHtml(line){
  '<span class="ep-note">'+safeText(line.id)+'</span></span><span class="ep-terminal ep-terminal-bottom"></span></div>'+
  '<div class="ep-preview-caption"><b>Фасад выбранного аппарата</b><span>Оригинальный стилизованный рендер, не фотография и не CAD изготовителя</span></div></div>';
 }
+function epBoardArticleFaceHtmlV2(line,id){
+ const c=catalogDevice(line?.catalogSku);
+ if(!c||typeof epManufacturerVisualHtmlV1!=='function')return '';
+ return '<span class="ep-board-front" aria-hidden="true">'+epManufacturerVisualHtmlV1(c,id||line.id)+'</span>';
+}
 function deviceAppearance(line){
  const d=catalogDevice(line.catalogSku);
- return d?{type:d.appearance,maker:d.maker,series:d.series,sku:d.sku,mark:d.label}:
- {type:'generic',maker:'DIN',series:'Условный аппарат',sku:'',mark:line.device||'—'};
+ if(typeof epDeviceVisualEvidenceV1!=='function')return d?{type:d.appearance,maker:d.maker,series:d.series,sku:d.sku,mark:d.label}:{type:'generic',maker:'DIN',series:'Условный аппарат',sku:'',mark:line.device||'—'};
+ const evidence=epDeviceVisualEvidenceV1(line,d);
+ return {...evidence,type:evidence.appearance};
 }
 
 // v0.6: A line is a CIRCUIT, NOT a load. Branch devices are circuit declarations.
@@ -152,7 +279,12 @@ function validateEntities(project){
  for(const d of project.sharedDevices){
   if(!d||typeof d.id!=='string'||!/^[A-Za-z0-9_-]{1,40}$/.test(d.id)||ids.has(d.id))throw Error('Некорректный или повторный ID общего аппарата');
   ids.add(d.id);
-  if(!['RCD_2P','RCD_4P'].includes(d.templateId)||!Number.isInteger(d.modules)||d.modules!==DEVICE_TEMPLATES[d.templateId].modules)throw Error('Неизвестный тип или ширина общего аппарата');
+  // The template identifies RCD topology. Its standard DIN width is only the
+  // fallback when a manufacturer article has not been selected.
+  if(!['RCD_2P','RCD_4P'].includes(d.templateId)||!Number.isInteger(d.modules)||
+     d.modules<1||d.modules>24||
+     (!d.catalogSku&&d.modules!==DEVICE_TEMPLATES[d.templateId].modules))
+   throw Error('Неизвестный тип или ширина общего аппарата');
   if(typeof d.label!=='string'||!d.label.trim()||d.label.length>50)throw Error('Не указано обозначение общего аппарата');
   if(!Array.isArray(d.circuitIds)||!d.circuitIds.length||new Set(d.circuitIds).size!==d.circuitIds.length)throw Error('Общий аппарат должен иметь неповторяющийся список цепей');
   for(const id of d.circuitIds)if(!circuitIds.has(id))throw Error('Общий аппарат ссылается на несуществующую цепь');
@@ -184,13 +316,39 @@ function editConsumerIn(project,id,name,powerKw){
  l.name=name.trim();l.powerKw=powerKw;l.source='manual';l.sourceRef='Ручная корректировка ранее введённой записи';
  reconcileCircuitPowers(project);return l;
 }
-function removeConsumerFrom(project,id){const idx=project.loads.findIndex(x=>x.id===id);if(idx<0)return false;project.loads.splice(idx,1);if(Array.isArray(project.terminalLinks))project.terminalLinks=project.terminalLinks.filter(x=>x.loadId!==id);reconcileCircuitPowers(project);return true;}
-function addSharedRCDTo(project,templateId,label,circuitIds){
+function removeConsumerFrom(project,id){const idx=project.loads.findIndex(x=>x.id===id);if(idx<0)return false;if(typeof epFireControlConsumerDeleteV1==='function')epFireControlConsumerDeleteV1(project,id);project.loads.splice(idx,1);if(Array.isArray(project.terminalLinks))project.terminalLinks=project.terminalLinks.filter(x=>x.loadId!==id);reconcileCircuitPowers(project);return true;}
+function sharedCatalogueDevice(project,templateId,sku){
+ if(!sku)return null;
+ if(typeof sku!=='string')throw Error('Некорректный артикул общего УЗО');
+ const dev=projectCatalogEntries(project).find(([id])=>id===sku)?.[1];
+ if(!dev)throw Error('Не найден артикул общего УЗО');
+ if(dev.kind!=='RCD')throw Error('Общий аппарат должен быть УЗО');
+ const poles=templateId==='RCD_2P'?2:templateId==='RCD_4P'?4:0;
+ if(!poles||dev.poles!==poles)throw Error('Полюса каталожного УЗО не соответствуют типу группы');
+ if(!Number.isInteger(dev.modules)||dev.modules<1||dev.modules>24||!Number.isFinite(dev.widthMm)||dev.widthMm<=0||dev.widthMm>dev.modules*18+0.001||!Number.isFinite(dev.inA)||dev.inA<=0)throw Error('Артикул УЗО содержит недопустимые габариты или номинальный ток');
+ return dev;
+}
+function addSharedRCDTo(project,templateId,label,circuitIds,catalogSku=''){
  const template=DEVICE_TEMPLATES[templateId];if(!template||!['RCD_2P','RCD_4P'].includes(templateId))throw Error('Общий аппарат должен быть УЗО 2P или 4P');
  if(templateId==='RCD_2P'&&project.lines.some(l=>circuitIds.includes(l.id)&&!['L1','L2','L3'].includes(l.phase)))throw Error('УЗО 2P требует указанных однофазных цепей');
  if(templateId==='RCD_2P'&&new Set(project.lines.filter(l=>circuitIds.includes(l.id)).map(l=>l.phase)).size!==1)throw Error('УЗО 2P нельзя объединять цепи разных фаз в этой модели');
- const d={id:uniqueEntityId('RCD',project.sharedDevices),templateId,label,modules:template.modules,circuitIds:[...circuitIds]};
+ const dev=sharedCatalogueDevice(project,templateId,catalogSku);
+ const d={id:uniqueEntityId('RCD',project.sharedDevices),templateId,label,modules:dev?.modules||template.modules,circuitIds:[...circuitIds],...(dev?{catalogSku}:{})};
  project.sharedDevices.push(d);try{validateEntities(project);}catch(e){project.sharedDevices.pop();throw e;}return d;
+}
+function applySharedCatalogueSku(project,sharedId,sku=''){
+ const group=project.sharedDevices.find(x=>x.id===sharedId);if(!group)throw Error('Не найден общий аппарат');
+ const dev=sharedCatalogueDevice(project,group.templateId,sku),modules=dev?.modules||DEVICE_TEMPLATES[group.templateId].modules;
+ if(modules!==group.modules){
+  if(typeof epDraftBoardPlanV1!=='function')throw Error('Проверка размещения DIN недоступна; замена отменена');
+  const candidate=structuredCloneCompat(project),proposed=candidate.sharedDevices.find(x=>x.id===sharedId);proposed.modules=modules;
+  if(dev)proposed.catalogSku=sku;else delete proposed.catalogSku;
+  const entries=projectCatalogEntries(candidate),report=epDraftBoardPlanV1(candidate,key=>entries.find(([id])=>id===key)?.[1]||null);
+  if(report.status==='BLOCKED')throw Error('Замена не помещается в текущую DIN-компоновку; скорректируйте размещение');
+ }
+ const current=group.catalogSku||'',next=dev?sku:'';group.modules=modules;if(dev)group.catalogSku=sku;else delete group.catalogSku;
+ if(current!==next)for(const line of project.lines.filter(x=>group.circuitIds.includes(x.id)))markCalculationReview(line,'SHARED_RCD_ARTICLE_CHANGED');
+ return dev;
 }
 function removeSharedDeviceFrom(project,id){const i=project.sharedDevices.findIndex(x=>x.id===id);if(i<0)return false;project.sharedDevices.splice(i,1);if(Array.isArray(project.groupInputLinks))project.groupInputLinks=project.groupInputLinks.filter(x=>x.groupId!==id);return true;}
 // v0.7: branch protective apparatus is a separate stable entity. Legacy line fields
@@ -639,8 +797,8 @@ function feedSvg(project){
  }
  out.push('</svg>');return out.join('');
 }
-function ensureV2(project){if(project.schema!==PROJECT_SCHEMA||!Array.isArray(project.loads)||!Array.isArray(project.sharedDevices))migrateLegacyEntities(project);validateEntities(project);reconcileCircuitPowers(project);if(project.branchModelVersion!==1||!Array.isArray(project.branchDevices))syncBranchDevices(project);validateBranchDevices(project);if(!Array.isArray(project.conductorRoutes)){project.conductorRoutes=[];project.wiringVersion=1;}validateConductorRoutes(project);if(!Array.isArray(project.terminalLinks)){project.terminalLinks=[];project.terminalVersion=1;}validateTerminalLinks(project);if(!Array.isArray(project.feedLinks)){project.feedLinks=[];project.feedVersion=1;}validateFeedLinks(project);if(!Array.isArray(project.groupInputLinks)){project.groupInputLinks=[];project.groupInputVersion=1;}validateGroupInputLinks(project);return project;}
-function equipmentEntries(project){const bs=project.branchDevices;return [...(project.sharedDevices||[]).map(d=>({id:d.id,device:d.label,name:'Групповое УЗО',modules:d.modules,shared:true})),...project.lines.map(l=>{const b=bs?.find(x=>x.circuitId===l.id);return {...l,device:b?.label??l.device,modules:b?.modules??l.modules,apparatusId:b?.id||branchId(l.id),shared:false};})];}
+function ensureV2(project){if(project.schema!==PROJECT_SCHEMA||!Array.isArray(project.loads)||!Array.isArray(project.sharedDevices))migrateLegacyEntities(project);validateEntities(project);reconcileCircuitPowers(project);if(project.branchModelVersion!==1||!Array.isArray(project.branchDevices))syncBranchDevices(project);project.branchModelVersion=1;validateBranchDevices(project);if(!Array.isArray(project.conductorRoutes)){project.conductorRoutes=[];project.wiringVersion=1;}validateConductorRoutes(project);if(!Array.isArray(project.terminalLinks)){project.terminalLinks=[];project.terminalVersion=1;}validateTerminalLinks(project);if(!Array.isArray(project.feedLinks)){project.feedLinks=[];project.feedVersion=1;}validateFeedLinks(project);if(!Array.isArray(project.groupInputLinks)){project.groupInputLinks=[];project.groupInputVersion=1;}validateGroupInputLinks(project);return project;}
+function equipmentEntries(project){const bs=project.branchDevices;return [...(project.sharedDevices||[]).map(d=>({id:d.id,device:d.label,name:'Групповое УЗО',modules:d.modules,catalogSku:d.catalogSku||'',shared:true})),...project.lines.map(l=>{const b=bs?.find(x=>x.circuitId===l.id);return {...l,device:b?.label??l.device,modules:b?.modules??l.modules,catalogSku:b?.catalogSku||l.catalogSku||'',apparatusId:b?.id||branchId(l.id),shared:false};})];}
 function applyDeviceTemplate(lineId,templateId){
  const template=DEVICE_TEMPLATES[templateId], l=state.lines.find(x=>x.id===lineId);
  if(!template||!l)return false;
@@ -799,6 +957,10 @@ function documentReadiness(project=state){
   const route=l.route44Input?ep44BindLine(project,l):null;
   if(route?.status==='BLOCKED')blockers.push(l.id+': TN v4.4 — несовместимая схема, устаревшие данные или расчётное несоответствие');
  }
+ if(typeof epFaultRouteReviewV2==='function')for(const line of project.lines){
+  if(!line.faultRouteInput)continue;const report=epFaultRouteReviewV2(project,line,catalogDevice);
+  if(report.thresholdStatus!=='PASS')blockers.push(line.id+': петля L–PE — исходные данные или условие отключения требуют проверки');
+ }
  for(const l of project.lines){
   const r=l.lv43Input?epLV43BoundLine(project,l):null;
   if(r?.status==='BLOCKED')blockers.push(l.id+': конфликт системы TN, фазности, устаревшая проверка или числовой отказ');
@@ -811,6 +973,21 @@ function numeric(v){if(v===''||v===null||v===undefined)return null;const raw=Str
 function countModules(){return equipmentEntries(ensureV2(state)).reduce((n,l)=>n+(Number(l.modules)||0),0)}
 // Pack each apparatus on one DIN rail; do not split a multi-module device across rails.
 function layoutSlots(project=state){
+ if(typeof epDraftBoardPlanV1==='function'){
+  const catalog=new Map(projectCatalogEntries(project));
+  const plan=epDraftBoardPlanV1(project,id=>catalog.get(id)||null);
+  const rails=Array.from({length:project.railCount},()=>Array(project.railCapacity).fill(null));
+  const entries=equipmentEntries(project),placed=new Set();
+  for(const item of plan.placements){
+   const branch=project.branchDevices?.find(b=>b.id===item.deviceId);
+   const line=entries.find(x=>x.id===(branch?.circuitId||item.deviceId));
+   if(!line||!rails[item.railIndex])continue;
+   placed.add(line.id);
+   for(let i=0;i<item.modules;i++)rails[item.railIndex][item.startModule+i]={line,first:i===0};
+  }
+  return {issues:plan.issues,rails,unplaced:entries.filter(x=>!placed.has(x.id)).map(x=>({id:x.id,reason:'Размещение требует проверки'})),used:rails.reduce((n,r)=>n+r.filter(Boolean).length,0)};
+ }
+
   const rails=Array.from({length:project.railCount},()=>Array(project.railCapacity).fill(null));
   const unplaced=[];let rail=0,position=0;
   for(const line of (project.sharedDevices?.length?equipmentEntries(project):project.lines)){
@@ -834,9 +1011,144 @@ function phaseSummary(){
 function getPhasePercentages(){const r=phaseSummary(),max=Math.max(r.L1,r.L2,r.L3,0.001);return [['L1',r.L1/max*100,r.L1],['L2',r.L2/max*100,r.L2],['L3',r.L3/max*100,r.L3]];}
 
 function issues(){const r=[];if(!state.title.trim())r.push('Не указано название проекта.');if(state.earthing==='UNKNOWN')r.push('Не выбрана система заземления.');if(state.lines.length===0)r.push('Нет отходящих линий.');for(const l of state.lines){if(!l.name.trim())r.push(`У линии ${l.id} не указано назначение.`);if(!(Number(l.power)>0))r.push(`Для «${l.name||l.id}» не задана положительная мощность.`);if(!l.device)r.push(`Для «${l.name||l.id}» не обозначен защитный аппарат.`);if(!l.phase)r.push(`Для «${l.name||l.id}» не указана фаза.`);}const placement=layoutSlots();if(placement.unplaced.length)r.push('Не размещены аппараты: '+placement.unplaced.map(x=>x.id).join(', ')+'.');r.push('Нет проверенных исходных данных для выбора кабелей, проверки КЗ, автоматического отключения и селективности.');r.push('Данные паспортов аппаратов и корпуса не сверены с изготовителями.');if(state.sharedDevices?.length)r.push('Групповые УЗО: требуется проверка схемы нейтралей, паспортов аппаратов и условий защиты.');for(const x of documentReadiness().blockers){if(!r.includes(x))r.push(x);}return r}
-function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderEngineeringDiagnosticsV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
+function render(){ ensureV2(state);$('breadcrumbTitle').textContent=state.title||'Новый проект'; $('stats').innerHTML=`<div class="stat"><strong>${state.lines.length}</strong><span>Отходящих линий</span></div><div class="stat"><strong>${state.lines.reduce((s,l)=>s+(Number(l.power)||0),0).toLocaleString('ru-RU',{maximumFractionDigits:2})} <small style="font-size:13px">кВт</small></strong><span>Установленная мощность</span></div><div class="stat"><strong>${countModules()} / ${state.railCapacity*state.railCount}</strong><span>Заявлено модулей / доступно</span></div>`; $('rowsCount').textContent=state.lines.length+' линий';renderRows();renderAutomationWorkflowV1();$('projectName').value=state.title;$('earthing').value=state.earthing;$('railCapacity').value=state.railCapacity;$('railCount').value=state.railCount;renderBoard();renderIssues();renderPhases();renderPlan();renderReadiness();renderAudit();renderCurrentCheck();renderTTContext();renderWiring18();renderDevice19();renderBoardBindingsV1();renderEndpointBridgeV1();renderEngineeringDiagnosticsV1();renderConsumers();renderSharedDevices();renderCircuitGraph();renderConductorEditor();renderTerminalEditor();renderFeedEditor();}
 
+function renderAutomationWorkflowV1(){
+ const target=$('automationFlowPanel');if(!target)return;
+ if(typeof epWorkflowPreviewV1!=='function'||typeof epWorkflowHtmlV1!=='function'){
+  target.textContent='Единый проектный маршрут недоступен.';return;
+ }
+ const inputs=workflowPreviewInputs||state.workflowDesignInputsV1||null;
+ const catalog=projectCatalogEntries().map(([id,device])=>({id,device}));
+ const report=epWorkflowPreviewV1(state,catalogDevice,catalog,inputs);
+ target.innerHTML=epWorkflowHtmlV1(report,inputs);
+ if(typeof epGroupSplitHtmlV1==='function'){
+  let plan=workflowSplitPlan;
+  if(!plan&&state.consumerGroupSplitRulesV1&&typeof epGroupSplitPlanV1==='function')
+   try{plan=epGroupSplitPlanV1(state,state.consumerGroupSplitRulesV1);}catch(_){}
+  target.insertAdjacentHTML('beforeend',epGroupSplitHtmlV1(plan||{
+   rules:{maxGroupPowerKw:workflowSplitRuleInput??''},proposals:[],issues:[]}));
+ }
+ if(typeof epGroupMergeHtmlV1==='function'){
+  let plan=workflowMergePlan;
+  if(!plan&&state.consumerGroupMergeRulesV1&&typeof epGroupMergePlanV1==='function')
+   try{plan=epGroupMergePlanV1(state,state.consumerGroupMergeRulesV1);}catch(_){}
+  target.insertAdjacentHTML('beforeend',epGroupMergeHtmlV1(plan||{
+   rules:workflowMergeRuleInput||{maxGroupPowerKw:'',categories:[]},
+   proposals:[],issues:[]}));
+ }
+ if(typeof epFireControlHtmlV1==='function')target.insertAdjacentHTML('beforeend',epFireControlHtmlV1(state));
+ if(typeof epProjectDeliveryTraceV1==='function'&&typeof epProjectDeliveryTraceHtmlV1==='function'){
+  const trace=epProjectDeliveryTraceV1(state,catalogDevice);
+  target.insertAdjacentHTML('beforeend',epProjectDeliveryTraceHtmlV1(trace));
+  if(typeof epProjectDeviceIdentityV1==='function'&&typeof epProjectDeviceIdentityHtmlV1==='function')
+   target.insertAdjacentHTML('beforeend',epProjectDeviceIdentityHtmlV1(epProjectDeviceIdentityV1(state,catalogDevice)));
+ }
+}
+// Fire interface lives in the same project workflow as consumer grouping.
+function epFireControlEditorEventV1(event){
+ const apply=event.target.closest('#fireControlApplyBtn');
+ const clear=event.target.closest('#fireControlClearBtn');
+ const exportBtn=event.target.closest('#fireControlExportBtn');
+ const wiringCsv=event.target.closest('#fireControlWiringCsvBtn');
+ const bomCsv=event.target.closest('#fireControlBomCsvBtn');
+ const checklistCsv=event.target.closest('#fireControlChecklistCsvBtn');
+ const svgBtn=event.target.closest('#fireControlSvgBtn');
+ const graphCsv=event.target.closest('#fireControlGraphCsvBtn');
+ const wiringSvg=event.target.closest('#fireControlWiringSvgBtn');
+ const declaredWiresCsv=event.target.closest('#fireControlDeclaredWiresCsvBtn');
+ const continuityCsv=event.target.closest('#fireControlContinuityCsvBtn');
+ if(!apply&&!clear&&!exportBtn&&!wiringCsv&&!bomCsv&&!checklistCsv&&!svgBtn&&!graphCsv&&!wiringSvg&&!declaredWiresCsv&&!continuityCsv)return;
+ try{
+  if(continuityCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlContinuityCsvV1(state);
+   download(baseName()+'-fire-continuity-review.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Ведомость связности цепей управления CSV выгружена');
+  }
+  if(declaredWiresCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlDeclaredWiresCsvV1(state);
+   download(baseName()+'-fire-declared-wires.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Ведомость заданных проводов CSV выгружена');
+  }
+  if(wiringSvg){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlWiringDiagramV1(state);
+   download(baseName()+'-fire-control-wiring-draft.svg',report.svg,'image/svg+xml;charset=utf-8');
+   return notify('Черновая схема соединений SVG выгружена');
+  }
+  if(graphCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlTopologyCsvV1(state);
+   download(baseName()+'-fire-interface-links.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Ведомость логических связей CSV выгружена');
+  }
+  if(svgBtn){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlDiagramV1(state);
+   download(baseName()+'-fire-interface-draft.svg',report.svg,'image/svg+xml;charset=utf-8');
+   return notify('Черновая логическая схема SVG выгружена');
+  }
+  if(checklistCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=epFireControlChecklistCsvV1(state);
+   download(baseName()+'-fire-checklist-50.csv',report.csv,'text/csv;charset=utf-8');
+   return notify('Контрольный лист 50 критериев выгружен');
+  }
+  if(wiringCsv||bomCsv){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report=wiringCsv?epFireControlCsvV1(state):epFireControlBomCsvV1(state);
+   download(baseName()+(wiringCsv?'-fire-wiring-draft.csv':'-fire-bom-draft.csv'),report.csv,'text/csv;charset=utf-8');
+   return notify('Черновая ведомость CSV выгружена');
+  }
+  if(exportBtn){
+   if(!state.fireControlV1)throw Error('FIRE_CONTROL_NOT_CONFIGURED');
+   const report={schema:'electropanel.fire.report.draft.1',projectTitle:state.title,
+    audit:epFireControlAuditV1(state,state.fireControlV1),trace:epFireControlTraceV1(state),
+    design:epFireControlDesignV1(state),schedule:epFireControlScheduleV1(state),
+    catalogue:epFireCatalogReconcileV1(state),din:epFireDinReconcileV1(state),checklist:epFireControlChecklistV1(state),topology:epFireControlTopologyV1(state),diagram:epFireControlDiagramV1(state),wiring:epFireControlWiringV1(state),wiringDiagram:epFireControlWiringDiagramV1(state),continuity:epFireControlContinuityV1(state),gate:epFireControlGateV1(state),
+    engineeringApproved:false,ready_for_installation:false};
+   download(baseName()+'-fire-control-draft.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
+   return notify('Черновой отчёт пожарного управления выгружен');
+  }
+  if(clear){epFireControlClearProjectV1();return notify('Сценарии пожарного управления очищены');}
+  const input=$('fireControlJson')?.value??'';
+  if(input.length>150000)throw Error('FIRE_CONTROL_JSON_TOO_LARGE');
+  const data=JSON.parse(input);
+  const audit=epFireControlSetProjectV1(data);
+  notify('Сценарии сохранены: '+audit.rows.length+' действий, '+audit.issues.length+' замечаний');
+ }catch(error){notify('Пожарное управление: '+error.message,true);}
+}
 function renderEngineeringDiagnosticsV1(){
+ // Reuse one generated engineering bundle for both the saved review matrix
+ // and the existing issues/cross-view panels; never run the full audit twice.
+ const engineeringBundle=typeof epEngineeringBundleV1==='function'?
+  epEngineeringBundleV1(state,catalogDevice):null;
+ const impactHolder=$('designChangeImpactPanel');
+ if(impactHolder){
+  if(typeof epDesignReviewActionMatrixV1==='function'&&
+     typeof epDesignReviewActionMatrixHtmlV1==='function'){
+   // Reuse the existing issue register, not a second independent calculation.
+   const report=engineeringBundle?.sections?.reviewActions||
+    epDesignReviewActionMatrixV1(state,engineeringBundle?.sections?.issueRegister);
+   const current=engineeringBundle?.sections?.resultFreshness;
+   const freshnessHtml=typeof epDesignResultFreshnessHtmlV1==='function'?
+    epDesignResultFreshnessHtmlV1(current):'<p>Матрица актуальности недоступна.</p>';
+   impactHolder.innerHTML=epDesignReviewActionMatrixHtmlV1(report)+
+    (report?.rows?.length?'<button type="button" class="btn" id="exportDesignReviewActionsCsvBtn">Задачи перепроверки CSV</button>':'')+
+    freshnessHtml+
+    (current?.rows?.length?'<button type="button" class="btn" id="exportResultFreshnessCsvBtn">Актуальность расчётов CSV</button>':'');
+  }else impactHolder.textContent='Модуль сохранённых перепроверок недоступен. Инженерная проверка не подтверждена.';
+ }
+ const evidenceHolder=$('designEvidencePanel');
+ if(evidenceHolder)evidenceHolder.innerHTML=typeof assessDesignEvidence==='function'&&typeof epDesignEvidenceHtmlV1==='function'?
+  epDesignEvidenceHtmlV1(assessDesignEvidence(state)):'Проверка доказательной базы недоступна.';
+ const integrated=$('integratedEvidencePanel');
+ if(integrated&&typeof epIntegratedEvidenceReview==='function'&&typeof epIntegratedEvidenceHtmlV1==='function'){
+  const review=epIntegratedEvidenceReview(state);
+  integrated.innerHTML=epIntegratedEvidenceHtmlV1(review);
+ }
  const holder=$('engineeringDiagnostics');
  if(!holder)return;
  if(typeof epEngineeringDiagnosticsPanelV1!=='function'){
@@ -844,6 +1156,44 @@ function renderEngineeringDiagnosticsV1(){
   return;
  }
  holder.innerHTML=epEngineeringDiagnosticsPanelV1(state,catalogDevice);
+ const hierarchy=$('protectionLinksPanel');
+ if(hierarchy)hierarchy.innerHTML=typeof epProtectionLinksHtmlV1==='function'?
+  epProtectionLinksHtmlV1(state)+
+   (typeof epProtectionDeviceChainV1==='function'&&
+    typeof epProtectionDeviceChainHtmlV1==='function'?
+    epProtectionDeviceChainHtmlV1(epProtectionDeviceChainV1(state,catalogDevice)):'')+
+   (typeof epSupplyDeviceGraphV1==='function'&&typeof epSupplyDeviceGraphHtmlV1==='function'?
+    epSupplyDeviceGraphHtmlV1(epSupplyDeviceGraphV1(state)):''):
+  'Модуль иерархии защиты недоступен.';
+ const supplyHolder=$('deviceSupplyPanel');
+ if(supplyHolder)supplyHolder.innerHTML=typeof epDeviceSupplyHtmlV1==='function'?
+  epDeviceSupplyHtmlV1(state)+
+   (typeof epDeviceFaultHtmlV1==='function'?
+    epDeviceFaultHtmlV1(state,catalogDevice):'')+
+   (typeof epCoordHtmlV1==='function'?epCoordHtmlV1(state,catalogDevice):'')+
+   (typeof epCalculatedDeviceFaultHtmlV1==='function'?
+    epCalculatedDeviceFaultHtmlV1(state,catalogDevice):'')+
+   (typeof epIncomingMaximumHtmlV1==='function'?
+    epIncomingMaximumHtmlV1(state,catalogDevice):'')+
+   (typeof epDesignStageScopeV1==='function'&&typeof epDesignStageScopeHtmlV1==='function'?
+    epDesignStageScopeHtmlV1(epDesignStageScopeV1(state)):'')+
+   (typeof epProtectionEvidenceMatrixV1==='function'&&
+    typeof epProtectionEvidenceMatrixHtmlV1==='function'?
+    epProtectionEvidenceMatrixHtmlV1(epProtectionEvidenceMatrixV1(state,catalogDevice)):'')+
+   (typeof epFaultSourceConvergenceV1==='function'&&
+    typeof epFaultSourceConvergenceHtmlV1==='function'?
+    epFaultSourceConvergenceHtmlV1(epFaultSourceConvergenceV1(state,catalogDevice)):'')+
+   (typeof epIncomingTerminalBindingsHtmlV1==='function'?
+    epIncomingTerminalBindingsHtmlV1(state):'')+
+   (typeof epDeviceSupplyCrossEvidenceV1==='function'&&
+    typeof epDeviceSupplyCrossEvidenceHtmlV1==='function'?
+    epDeviceSupplyCrossEvidenceHtmlV1(epDeviceSupplyCrossEvidenceV1(state)):'')+
+   (typeof epDeviceSupplyTerminalReconciliationV1==='function'&&
+    typeof epDeviceSupplyTerminalHtmlV1==='function'?
+    epDeviceSupplyTerminalHtmlV1(epDeviceSupplyTerminalReconciliationV1(state)):''):
+  'Редактор питания аппаратов недоступен.';
+ const chain=$('projectChainPanel');
+ if(chain&&typeof epReconcileProjectV2==='function')chain.innerHTML=epReconcileProjectHtmlV2(epReconcileProjectV2(state,catalogDevice));
  const preview=$('draftBoardPreview');
  if(preview)preview.innerHTML=typeof epDraftBoardPreviewV1==='function' ?
   epDraftBoardPreviewV1(state,catalogDevice,selectedLine):'Предварительная компоновка недоступна.';
@@ -883,17 +1233,47 @@ function renderEngineeringDiagnosticsV1(){
   epNeutralSegregationHtmlV1(epNeutralSegregationV1(state),selectedLine):
   'Проверка разделения нейтралей недоступна.';
  const crossView=$('crossViewAuditPanel'),issueHolder=$('engineeringIssueRegister');
- if(typeof epEngineeringBundleV1==='function'&&(crossView||issueHolder)){
-  const bundle=epEngineeringBundleV1(state,catalogDevice);
+ if(engineeringBundle&&(crossView||issueHolder)){
   if(crossView)crossView.innerHTML=typeof epCrossViewAuditHtmlV1==='function'?
-   epCrossViewAuditHtmlV1(bundle.sections.crossView,selectedLine):'Сквозная проверка недоступна.';
+   epCrossViewAuditHtmlV1(engineeringBundle.sections.crossView,selectedLine):'Сквозная проверка недоступна.';
   if(issueHolder)issueHolder.innerHTML=typeof epEngineeringIssueRegisterHtmlV1==='function'?
-   epEngineeringIssueRegisterHtmlV1(bundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
+   epEngineeringIssueRegisterHtmlV1(engineeringBundle.sections.issueRegister,selectedLine):'Реестр замечаний недоступен.';
  }
+ const faultPanel=$('faultRoutePanel');
+ if(faultPanel)faultPanel.innerHTML=epFaultRouteHtmlV2(state,selectedLine,catalogDevice);
+ const maxFaultPanel=$('maximumFaultPanel');
+ if(maxFaultPanel&&typeof epMaximumFaultHtmlV2==='function')
+  maxFaultPanel.innerHTML=epMaximumFaultHtmlV2(state,selectedLine,catalogDevice);
+ const loadPanel=$('loadCurrentPanel');
+ if(loadPanel)loadPanel.innerHTML=typeof epLoadCurrentHtmlV1==='function'?
+  epLoadCurrentHtmlV1(state,selectedLine):'Калькулятор тока недоступен.';
+ const factsPanel=$('manufacturerFactsPanel');
+ if(factsPanel&&typeof epManufacturerFactsHtmlV1==='function')
+  factsPanel.innerHTML=epManufacturerFactsHtmlV1(state,selectedLine,catalogDevice);
+ const evidencePanel=$('manufacturerEvidencePanel');
+ if(evidencePanel&&typeof epManufacturerEvidenceHtmlV1==='function')
+  evidencePanel.innerHTML=epManufacturerEvidenceHtmlV1(state,selectedLine,catalogDevice);
+ const letThroughPanel=$('breakerLetThroughPanel');
+ if(letThroughPanel&&typeof epBreakerLetThroughHtmlV1==='function')
+  letThroughPanel.innerHTML=epBreakerLetThroughHtmlV1(state,selectedLine,catalogDevice);
+ const thermalPanel=$('cableThermalPanel');
+ if(thermalPanel&&typeof epCableShortCircuitThermalHtmlV1==='function')
+  thermalPanel.innerHTML=epCableShortCircuitThermalHtmlV1(state,selectedLine,catalogDevice);
+ const overloadPanel=$('cableOverloadPanel');
+ if(overloadPanel&&typeof epCableOverloadHtmlV1==='function')
+  overloadPanel.innerHTML=epCableOverloadHtmlV1(state,selectedLine,catalogDevice);
+ const cablePanel=$('cableReferencePanel');
+ if(cablePanel)cablePanel.innerHTML=typeof epCableReferenceHtmlV1==='function'?
+  epCableReferenceHtmlV1(state,selectedLine,catalogDevice):'Справочник кабелей недоступен.';
+ const designReviewHolder=$('circuitDesignReviewPanel');
+ if(designReviewHolder)designReviewHolder.innerHTML=typeof epCircuitDesignReviewHtmlV1==='function'?
+  epCircuitDesignReviewHtmlV1(state,catalogDevice,selectedLine):'Сводная матрица недоступна.';
+ const workQueueHolder=$('designWorkQueuePanel');
+ if(workQueueHolder)workQueueHolder.innerHTML=typeof epDesignWorkQueueV1==='function'?
+  epDesignWorkQueueHtmlV1(epDesignWorkQueueV1(state,catalogDevice),selectedLine):'Очередь задач недоступна.';
  const protection=$('protectionWorkbench');
  if(protection&&typeof epProtectionWorkbenchV1==='function'&&typeof epProtectionWorkbenchHtmlV1==='function'){
-  const catalog=typeof EP_CATALOG==='object'&&EP_CATALOG?
-   Object.entries(EP_CATALOG).map(([id,device])=>({id,device})):[];
+  const catalog=projectCatalogEntries().map(([id,device])=>({id,device}));
   protection.innerHTML=epProtectionWorkbenchHtmlV1(epProtectionWorkbenchV1(state,catalogDevice,catalog,selectedLine));
  }
 }
@@ -1159,6 +1539,9 @@ function saveBoardBindingV1(){
  if(existing.some(x=>x.modelDeviceId!==model&&x.boardDeviceId===board)){
   notify('Аппарат щита уже связан с другим устройством',true);return;
  }
+ if((state.incomingTerminalBindingsV1||[]).some(x=>x.modelDeviceId===model)){
+  notify('Это устройство модели уже назначено вводному аппарату',true);return;
+ }
  checkpoint();
  state.boardBindingsV1=existing.filter(x=>x.modelDeviceId!==model).concat(binding);
  changed();
@@ -1282,11 +1665,28 @@ function renderConsumers(){
  const loads=state.loads.filter(l=>l.circuitId===selectedLine);
  el.innerHTML=`<label>Отходящая цепь<select id="consumerCircuit">${choices}</select></label><div class="consumer-list">${loads.map(l=>`<div class="consumer-row"><div class="consumer-fields"><input aria-label="Название потребителя ${safeText(l.id)}" data-consumer-name="${safeText(l.id)}" maxlength="100" value="${safeText(l.name)}"><input aria-label="Мощность потребителя ${safeText(l.id)}" data-consumer-power="${safeText(l.id)}" inputmode="decimal" value="${l.powerKw??''}"></div><button class="btn tiny" data-save-consumer="${safeText(l.id)}">Сохранить</button><button class="btn tiny" data-remove-consumer="${safeText(l.id)}">Удалить</button></div>`).join('')||'<p class="muted">Нет потребителей</p>'}</div><div class="form-grid"><label>Потребитель<input id="consumerName" placeholder="Например, холодильник" maxlength="100"></label><label>Мощность, кВт<input id="consumerPower" inputmode="decimal" placeholder="1,2"></label></div><button class="btn" id="addConsumerBtn">Добавить потребителя в цепь</button>`;
 }
+function sharedRcdArticleOptions(selected='',templateId=''){
+ const required=templateId==='RCD_2P'?2:templateId==='RCD_4P'?4:0;
+ return '<option value="">Без конкретного артикула</option>'+projectCatalogEntries().filter(([,d])=>d.kind==='RCD').map(([id,d])=>{
+  const disabled=required&&d.poles!==required?' disabled':'';
+  return '<option value="'+safeText(id)+'"'+(id===selected?' selected':'')+disabled+'>'+safeText([d.maker,d.sku,d.poleConfiguration||d.poles+'P',d.inA+' A',d.residualCurrentMa?('IΔn '+d.residualCurrentMa+' мА'):'',d.residualType?('тип '+d.residualType):''].filter(Boolean).join(' · '))+'</option>';
+ }).join('');
+}
+function syncSharedRcdArticleOptions(){
+ const select=$('sharedRcdSku');if(!select)return;const selected=select.value;select.innerHTML=sharedRcdArticleOptions(selected,$('sharedRcdType').value);if(select.value!==selected)select.value='';
+}
 function renderSharedDevices(){
  const el=$('sharedDeviceEditor');if(!el)return;ensureV2(state);
- const rows=state.sharedDevices.map(d=>`<div class="consumer-row"><span>${safeText(d.label)} · ${d.modules}M → ${safeText(d.circuitIds.join(', '))}</span><button class="btn tiny" data-remove-rcd="${safeText(d.id)}">Удалить</button></div>`).join('');
+ const entries=projectCatalogEntries(state);
+ const rows=state.sharedDevices.map(d=>{
+  const article=entries.find(([id])=>id===d.catalogSku)?.[1]||null;
+  const front=article&&typeof epManufacturerVisualHtmlV1==='function'?'<div class="shared-device-front">'+epManufacturerVisualHtmlV1(article,d.id)+'<span>Авторский SVG · не фото/CAD</span></div>':'';
+  const source=article?.source?' · <a href="'+safeText(article.source)+'" target="_blank" rel="noopener noreferrer">источник артикула</a>':'';
+  const detail=article?safeText([article.maker,article.series,article.sku,article.poleConfiguration||article.poles+'P','In '+article.inA+' A',article.residualCurrentMa?'IΔn '+article.residualCurrentMa+' мА':'',article.residualType?'тип '+article.residualType:''].filter(Boolean).join(' · '))+source:'Артикул не выбран · геометрия шаблона';
+  return '<div class="consumer-row shared-device-row"><div class="shared-device-summary"><strong>'+safeText(d.label)+' · '+d.modules+'M → '+safeText(d.circuitIds.join(', '))+'</strong><label>Артикул общего УЗО<select data-shared-rcd-sku="'+safeText(d.id)+'">'+sharedRcdArticleOptions(d.catalogSku||'',d.templateId)+'</select></label><small>'+detail+'</small></div>'+front+'<button class="btn tiny" data-remove-rcd="'+safeText(d.id)+'">Удалить</button></div>';
+ }).join('');
  const checkboxes=state.lines.map(l=>`<label class="check-choice"><input type="checkbox" data-rcd-circuit="${safeText(l.id)}"> ${safeText(l.id)} · ${safeText(l.name)}</label>`).join('');
- el.innerHTML=`${rows||'<p class="muted">Общих УЗО пока нет.</p>'}<div class="form-grid"><label>Тип общего УЗО<select id="sharedRcdType"><option value="RCD_2P">УЗО 2P · 2M</option><option value="RCD_4P">УЗО 4P · 4M</option></select></label><label>Обозначение<input id="sharedRcdLabel" maxlength="50" placeholder="Например, QD1"></label></div><div class="check-choices">${checkboxes}</div><button class="btn" id="addRcdBtn">Добавить общее УЗО</button><p class="muted">Группировка — заявленная логическая принадлежность. Не подтверждает схему N/PE, тип и номинал УЗО, селективность или защиту при повреждении.</p>`;
+ el.innerHTML=`${rows||'<p class="muted">Общих УЗО пока нет.</p>'}<div class="form-grid"><label>Тип общего УЗО<select id="sharedRcdType"><option value="RCD_2P">УЗО 2P · 2M</option><option value="RCD_4P">УЗО 4P · 4M</option></select></label><label>Артикул<select id="sharedRcdSku">${sharedRcdArticleOptions('','RCD_2P')}</select></label><label>Обозначение<input id="sharedRcdLabel" maxlength="50" placeholder="Например, QD1"></label></div><div class="check-choices">${checkboxes}</div><button class="btn" id="addRcdBtn">Добавить общее УЗО</button><p class="muted">Группировка и выбор артикула — заявленные данные. Они не подтверждают схему N/PE, тип и номинал УЗО, селективность или защиту при повреждении.</p>`;
 }
 function renderCircuitGraph(){
  const host=$('circuitGraph');if(!host)return;
@@ -1336,7 +1736,7 @@ function renderRows(){const tb=$('loadRows');tb.innerHTML='';state.lines.forEach
 $('loadRows').addEventListener('change',ev=>{const input=ev.target.closest('[data-key]');if(!input)return;const tr=ev.target.closest('tr'), l=state.lines.find(x=>x.id===tr.dataset.id);if(!l)return;const key=input.dataset.key;if(key==='power'){ensureV2(state);const consumers=state.loads.filter(x=>x.circuitId===l.id);if(consumers.length>1){notify('У линии несколько потребителей: редактируйте их в отдельном списке',true);render();return;}const value=numeric(input.value);if(value!==null&&(value<0||value>100000)){notify('Мощность должна быть числом от 0 до 100000 кВт',true);render();return;}checkpoint();if(consumers.length)consumers[0].powerKw=value;else if(value!==null)state.loads.push({id:'LOAD-'+l.id,circuitId:l.id,name:l.name,powerKw:value,source:l.source||'manual',sourceRef:l.sourceRef||''});if(l.power!==value)markCalculationReview(l,'LOAD_CHANGED');l.power=value;}else if(key==='modules'){const v=Number(input.value);if(!Number.isInteger(v)||v<1||v>12){notify('Допустимая условная ширина — 1–12 модулей',true);render();return;}checkpoint();updateBranchApparatus(state,l.id,{modules:v,templateId:null});delete l.catalogSku;}else{if(key==='phase'){const candidate=JSON.parse(JSON.stringify(ensureV2(state)));candidate.lines.find(x=>x.id===l.id).phase=input.value;try{validateEntities(candidate);}catch(err){notify(err.message,true);render();return;}}checkpoint();if(key==='device'){updateBranchApparatus(state,l.id,{label:input.value,templateId:null});delete l.catalogSku;}else {if(key==='phase'&&l.phase!==input.value)markCalculationReview(l,'PHASE_CHANGED');l[key]=input.value;}if(key==='phase'){state.conductorRoutes=state.conductorRoutes.filter(r=>r.circuitId!==l.id);}}changed();});
 $('loadRows').addEventListener('click',ev=>{const btn=ev.target.closest('[data-delete]');if(!btn)return;removeLine(btn.dataset.delete);});
 function newId(){let i=1;while(state.lines.some(l=>l.id==='L'+i))i++;return 'L'+i}
-function addLine(name='',power=null,extras={}){if(state.lines.length>=MAX_LINES)throw Error('Лимит в 400 линий');ensureV2(state);const id=newId(),source=SOURCES[extras.source]?extras.source:'manual',sourceRef=String(extras.sourceRef||'').slice(0,120);state.lines.push({id,name,power,phase:extras.phase||'',device:extras.device||'',modules:extras.modules||1,source,sourceRef});if(name||power!==null)state.loads.push({id:'LOAD-'+id,circuitId:id,name,powerKw:power,source,sourceRef});}
+function addLine(name='',power=null,extras={}){if(state.lines.length>=MAX_LINES)throw Error('Лимит в 400 линий');ensureV2(state);const id=newId(),source=SOURCES[extras.source]?extras.source:'manual',sourceRef=String(extras.sourceRef||'').slice(0,120);state.lines.push({id,name,power,phase:extras.phase||'',device:extras.device||'',modules:extras.modules||1,source,sourceRef});if(name||power!==null)state.loads.push({id:'LOAD-'+id,circuitId:id,name,powerKw:power,source,sourceRef});syncBranchDevices(state);state.branchModelVersion=1;}
 function parseLines(text){
  const out=[],rejected=[]; let lineno=0;
  for(const raw of String(text).split(/\r?\n/)){
@@ -1365,7 +1765,815 @@ function commitPending(){
  checkpoint();for(const x of pendingRows)addLine(x.name,x.power,{source:'tz',sourceRef:'ТЗ, строка '+x.sourceLine});
  const n=pendingRows.length;pendingRows=[];changed();switchView('loads');notify(`Добавлено ${n} строк. Сверьте с исходным ТЗ.`);return true;
 }
+function renderProjectCatalogWorkbenchV1(){
+ const panel=$('projectCatalogWorkbench');
+ if(panel&&typeof epProjectCatalogHtmlV1==='function')panel.innerHTML=epProjectCatalogHtmlV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{});
+}
+function boardPositionForm(line){
+ if(typeof epDraftBoardPlanV1!=='function')return '';
+ const device=state.branchDevices?.find(x=>x.circuitId===line.id);
+ const item=epDraftBoardPlanV1(state,catalogDevice).placements.find(x=>x.deviceId===(device?.id||line.id));
+ if(!item)return '<p>Аппарат не размещён: проверьте вместимость и каталог.</p>';
+ return '<form data-board-position="'+safeText(item.deviceId)+'" class="ep-position-form"><strong>Позиция на DIN</strong><label>Рейка<input name="rail" type="number" min="1" max="'+state.railCount+'" value="'+(item.railIndex+1)+'" required></label><label>Первый модуль<input name="slot" type="number" min="1" max="'+state.railCapacity+'" value="'+(item.startModule+1)+'" required></label><button class="btn tiny">Переместить</button></form><button type="button" id="resetBoardPositions" class="btn tiny">Автокомпоновка всего щита</button>';
+}
+function renderCabinetGeometryV1(){
+ const target=$('cabinetGeometryPanel');
+ if(target)target.innerHTML=typeof epCabinetGeometryUiV1==='function'?
+  epCabinetGeometryUiV1(state,catalogDevice):'Редактор геометрии недоступен.';
+}
+function cabinetCapacityReportV1(){
+ return typeof epUniversalCabinetOptionsV1==='function'?
+  epUniversalCabinetOptionsV1(state,catalogDevice,{
+   reserveFraction:(state.cabinetSizingPreferencesV1?.reservePercent??20)/100,
+   wiringCorridorMm:state.cabinetSizingPreferencesV1?.wiringCorridorMm??40,
+   terminalReserveMm:state.cabinetSizingPreferencesV1?.terminalReserveMm??0,
+   sideWiringCorridorMm:state.cabinetSizingPreferencesV1?.sideWiringCorridorMm??40
+  }):null;
+}
+let cabinetCapacitySelectedTotalV1=null;
+let cabinetCapacityInputSignatureV1=null;
+let cabinetOptionPreferenceV1='balanced';
+let cabinetOptionShowAllCapacitiesV1=false;
+let cabinetOptionPreviewIdV1=null;
+function renderCabinetCapacityOptionsV1(){
+ const target=$('cabinetCapacityOptions');if(!target)return;
+ const report=cabinetCapacityReportV1();
+ if(!report||!report.options.length){
+  target.textContent='Нет вариантов: проверьте модули и состав оборудования.';
+  const diagram=$('cabinetSpaceDiagram');if(diagram)diagram.replaceChildren();
+  const preview=$('cabinetOptionPreview');if(preview)preview.replaceChildren();
+  const select=$('cabinetCapacityTotal');if(select){select.replaceChildren();select.disabled=true;}
+  return;
+ }
+ const limits=state.cabinetSizingPreferencesV1||{};
+ const signature=JSON.stringify([
+  state.title,state.lines.map(l=>[l.id,l.modules,l.catalogSku]),
+  (state.sharedDevices||[]).map(d=>[d.id,d.modules,d.catalogSku]),
+  limits.reservePercent??20,limits.wiringCorridorMm??40,limits.terminalReserveMm??0,
+  limits.sideWiringCorridorMm??40,limits.maxUsableWidthMm??null,limits.maxUsableHeightMm??null,
+  limits.maxUsableDepthMm??null
+ ]);
+ if(signature!==cabinetCapacityInputSignatureV1){
+  cabinetCapacityInputSignatureV1=signature;
+  cabinetCapacitySelectedTotalV1=null;
+  cabinetOptionPreviewIdV1=null;
+ }
+ for(const [id,field,def] of [['cabinetWiringCorridor','wiringCorridorMm',40],
+  ['cabinetTerminalReserve','terminalReserveMm',0],
+  ['cabinetSideWiring','sideWiringCorridorMm',40]]){
+  const input=$(id);if(input&&document.activeElement!==input)
+   input.value=String(limits[field]??def);
+ }
+ const reserveInput=$('cabinetReservePercent');
+ if(reserveInput&&document.activeElement!==reserveInput)
+  reserveInput.value=String(limits.reservePercent??20);
+for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
+  ['cabinetHeightLimit','maxUsableHeightMm'],['cabinetDepthLimit','maxUsableDepthMm']]){
+  const input=$(id);if(input&&document.activeElement!==input)
+   input.value=limits[field]||'';
+ }
+ const constraintReport=typeof epCabinetOptionConstraintsV1==='function'?
+  epCabinetOptionConstraintsV1(report,{
+   maxUsableWidthMm:limits.maxUsableWidthMm??null,
+   maxUsableHeightMm:limits.maxUsableHeightMm??null,
+   maxUsableDepthMm:limits.maxUsableDepthMm??null}):null;
+ const eligibleIds=new Set(constraintReport?.eligible.map(x=>x.optionId)||[]);
+ const good=report.options.filter(o=>eligibleIds.has(o.id));
+ const capacitySelect=$('cabinetCapacityTotal');
+ const totals=[...new Set(good.map(o=>o.capacityModules))].sort((a,b)=>a-b);
+ if(!totals.includes(cabinetCapacitySelectedTotalV1))
+  cabinetCapacitySelectedTotalV1=totals[0]??null;
+ if(capacitySelect){
+  capacitySelect.replaceChildren();
+  for(const capacity of totals){
+   const option=document.createElement('option');
+   option.value=String(capacity);
+   option.textContent=String(capacity)+' модульных мест';
+   capacitySelect.appendChild(option);
+  }
+  if(cabinetCapacitySelectedTotalV1!==null)
+   capacitySelect.value=String(cabinetCapacitySelectedTotalV1);
+  capacitySelect.disabled=!totals.length;
+ }
+ const impact=typeof epCabinetOptionImpactV1==='function'?
+  epCabinetOptionImpactV1(state,report,catalogDevice,{
+   excludedIds:report.options.filter(o=>!eligibleIds.has(o.id)).map(o=>o.id)}):null;
+ const comparison=typeof epCabinetOptionCompareV1==='function'?
+  epCabinetOptionCompareV1(report,{preference:cabinetOptionPreferenceV1,
+   excludedIds:report.options.filter(o=>!eligibleIds.has(o.id)).map(o=>o.id),
+   impactRows:impact?.rows||[]}):null;
+ const ranking=new Map((comparison?.rows||[]).map((r,i)=>[r.id,{...r,rank:i+1}]));
+ const shown=good.filter(o=>cabinetOptionShowAllCapacitiesV1||o.capacityModules===cabinetCapacitySelectedTotalV1)
+  .sort((a,b)=>(ranking.get(a.id)?.score??0)-(ranking.get(b.id)?.score??0));
+ if(!shown.length){
+  const causes=constraintReport?.excluded.flatMap(x=>x.reasons)||[];
+  const missingDepth=causes.includes('DEPTH_UNKNOWN');
+  target.textContent='Под заданные ограничения вариантов не найдено.'+
+   (missingDepth?' Неизвестная глубина аппаратов требует уточнения паспортных данных.':'')+
+   ' Проверьте полезные размеры или уменьшите резерв.';
+  const diagram=$('cabinetSpaceDiagram');if(diagram)diagram.replaceChildren();
+  return;
+ }
+ const selected=state.railCount+'x'+state.railCapacity;
+ target.innerHTML='<label class="ep-cabinet-option-preference">Приоритет подбора: <select data-cabinet-option-preference>'+[
+  ['balanced','Сбалансированный'],['compact','Минимальная площадь'],
+  ['wide','Широкий корпус'],['tall','Высокий корпус'],
+  ['connections','Группировка связей'],['stability','Минимум перестановок']].map(([key,label])=>'<option value="'+key+'"'+
+   (cabinetOptionPreferenceV1===key?' selected':'')+'>'+label+'</option>').join('')+
+  '</select></label><label class="ep-cabinet-option-all"><input type="checkbox" data-cabinet-show-all'+
+  '"'+(cabinetOptionShowAllCapacitiesV1?' checked':'')+'> Показать все вместимости</label>'+ '<p>Аппаратура: <b>'+report.equipmentModules+
+  ' мод.</b> · Минимальный резерв: '+(limits.reservePercent??20)+'%. Выбрана вместимость '+cabinetCapacitySelectedTotalV1+' мест; доступных типоразмеров: '+totals.length+'.</p>'+
+  '<div class="ep-capacity-options" style="display:flex;gap:8px;flex-wrap:wrap">'+
+  shown.map(o=>'<button type="button" class="btn '+(o.id===selected?'primary':'')+
+   '" data-apply-cabinet-option="'+o.id+'">'+(comparison?.recommendedId===o.id?'★ Рекомендуемый · ':'')+o.capacityModules+
+   ' мод. · '+({TALL:'Высокий',BALANCED:'Сбалансированный',WIDE:'Широкий',ONLY:'Единственный'}[o.orientation]||'Вариант')+' · '+o.railCount+' × '+o.modulesPerRail+
+   ' · перестановок '+(impact?.rows.find(r=>r.id===o.id)?.moved??'н/д')+
+   ' · свободно '+o.reserveModules+
+   ' · площадь ~'+Math.round(o.envelope.preliminaryUsableWidthMm*o.envelope.preliminaryUsableHeightMm/10000)/100+' м²'+
+   (o.connectionProximity?' · связанные: на одной DIN '+o.connectionProximity.sameRail+'/'+
+    (o.connectionProximity.sameRail+o.connectionProximity.crossRail)+
+    ', не размещено '+o.connectionProximity.unresolved:'')+
+   ' · полезное ~'+
+   Math.ceil(o.envelope.preliminaryUsableWidthMm)+'×'+
+   Math.ceil(o.envelope.preliminaryUsableHeightMm)+' мм</button>'+ 
+   '<button type="button" class="btn" data-preview-cabinet-option="'+o.id+'">Просмотр '+o.id+'</button>').join('')+'</div>'+
+  '<p class="muted">Предварительный приоритет: '+
+  (comparison?.recommendedId||(cabinetOptionPreferenceV1==='stability'?'не определён (нет подтверждённых данных о перестановках)':good[0]?.id)||'не определён')+'. Отсеяно вариантов: '+(constraintReport?.summary.excluded??0)+
+  '. Неизвестная глубина не проходит заданный предел глубины.</p>'+
+  '<p class="mini-warning">Показаны условные внутренние размеры и резервные зоны. Это не подтверждение монтажа, прокладки проводников или тепловых условий.</p>';
+ const previewTarget=$('cabinetOptionPreview');
+ if(previewTarget){
+  const previewOption=shown.find(o=>o.id===cabinetOptionPreviewIdV1)||shown.find(o=>o.id===selected)||shown[0];
+  if(!shown.some(o=>o.id===cabinetOptionPreviewIdV1))cabinetOptionPreviewIdV1=previewOption.id;
+  const preview=typeof epCabinetOptionPreviewV1==='function'?
+   epCabinetOptionPreviewV1(state,previewOption,catalogDevice):null;
+  previewTarget.replaceChildren();
+  const heading=document.createElement('h4');heading.textContent='Предварительный просмотр: '+previewOption.id;
+  const summary=document.createElement('p');
+  if(preview?.status==='REVIEW_REQUIRED'){
+   const x=preview.summary;
+   summary.textContent='Аппаратов: '+x.devices+'; изменят позицию: '+x.moved+
+    '; перейдут на другую DIN-рейку: '+x.changedRails+
+    '; изменение вместимости: '+(x.capacityDelta>=0?'+':'')+x.capacityDelta+
+    ' мод.; свободно: '+x.freeModules+
+    (x.geometryResetRequired?'. Заданные монтажные зоны будут сброшены.':'')+
+    '. Предварительная схема, не монтажный чертёж.';
+   const list=document.createElement('details'),title=document.createElement('summary');
+   title.textContent='Показать перемещения аппаратов ('+x.moved+')';list.appendChild(title);
+   const ul=document.createElement('ul');
+   for(const row of preview.rows.filter(r=>r.changed).slice(0,100)){
+    const li=document.createElement('li');
+    li.textContent=row.deviceId+': DIN '+(row.fromRail+1)+' / '+(row.fromSlot+1)+
+     ' → DIN '+(row.toRail+1)+' / '+(row.toSlot+1);
+    ul.appendChild(li);
+   }
+   list.appendChild(ul);previewTarget.append(heading,summary);
+   if(typeof epCabinetOptionDinSvgV1==='function'){
+    const visual=document.createElement('div');visual.className='ep-cabinet-din-visual';
+    visual.innerHTML=epCabinetOptionDinSvgV1(preview);previewTarget.appendChild(visual);
+    const svgButton=document.createElement('button');svgButton.type='button';
+    svgButton.className='btn';svgButton.textContent='Скачать эскиз DIN SVG';
+    svgButton.addEventListener('click',()=>{
+     const latest=cabinetCapacityReportV1()?.options.find(o=>o.id===previewOption.id);
+     if(!latest){notify('Вариант больше не доступен',true);return;}
+     const currentPreview=epCabinetOptionPreviewV1(state,latest,catalogDevice);
+     const svg=epCabinetOptionDinSvgV1(currentPreview);
+     if(!svg){notify('Эскиз DIN недоступен',true);return;}
+     download(baseName()+'_din_preview_'+previewOption.id+'.svg',svg,'image/svg+xml;charset=utf-8');
+    });
+    previewTarget.appendChild(svgButton);
+   }
+   previewTarget.appendChild(list);
+   if(typeof epCabinetOptionPreviewCsvV1==='function'){
+    const exportBtn=document.createElement('button');exportBtn.type='button';
+    exportBtn.className='btn';exportBtn.textContent='Скачать перемещения DIN CSV';
+    exportBtn.addEventListener('click',()=>{
+     const latest=cabinetCapacityReportV1()?.options.find(o=>o.id===previewOption.id);
+     if(!latest){notify('Вариант больше не доступен',true);return;}
+     const data=epCabinetOptionPreviewCsvV1(epCabinetOptionPreviewV1(state,latest,catalogDevice));
+     if(!data.csv){notify('Не удалось экспортировать перемещения',true);return;}
+     download(baseName()+'_din_positions_'+previewOption.id+'.csv',data.csv,'text/csv;charset=utf-8');
+    });
+    previewTarget.appendChild(exportBtn);
+   }
+  }else{
+   summary.textContent='Просмотр недоступен: '+(preview?.code||'движок отсутствует');
+   previewTarget.append(heading,summary);
+  }
+ }
+ const space=$('cabinetSpaceDiagram');
+ if(space){
+  const example=shown.find(o=>o.id===cabinetOptionPreviewIdV1)||shown.find(o=>o.id===selected)||shown[0];
+  if(typeof epCabinetSpaceDiagramV1==='function')
+   space.innerHTML=epCabinetSpaceDiagramV1(example);
+  else space.textContent='';
+ }
+}
+function applyCabinetCapacityOptionV1(id){
+ const report=cabinetCapacityReportV1();
+ const option=report?.options.find(x=>x.id===id&&x.status==='REVIEW_REQUIRED');
+ if(!option){notify('Вариант недоступен: проверьте состав оборудования и размеры',true);return;}
+ const lim=state.cabinetSizingPreferencesV1||{};
+ const constraints=typeof epCabinetOptionConstraintsV1==='function'?
+  epCabinetOptionConstraintsV1(report,{
+   maxUsableWidthMm:lim.maxUsableWidthMm??null,
+   maxUsableHeightMm:lim.maxUsableHeightMm??null,
+   maxUsableDepthMm:lim.maxUsableDepthMm??null}):null;
+ if(!constraints?.eligible.some(x=>x.optionId===id)){
+  notify('Предварительная компоновка превышает указанные полезные размеры',true);return;
+ }
+ if(typeof epCabinetOptionPreviewV1==='function'&&typeof epDraftBoardPlanV1==='function'){
+  const current=epDraftBoardPlanV1(state,catalogDevice);
+  // An overfilled current enclosure must still be allowed to grow into a valid option.
+  if(current.status!=='BLOCKED'){
+   const preview=epCabinetOptionPreviewV1(state,option,catalogDevice);
+   if(preview.status==='BLOCKED'){
+    notify('Нельзя применить вариант: предварительная сверка DIN выявила '+preview.code,true);
+    return;
+   }
+  }
+ }
+ const changedShape=state.railCount!==option.railCount||state.railCapacity!==option.modulesPerRail;
+ if(changedShape&&state.cabinetGeometryV1&&
+  !confirm('Текущие заданные размеры и монтажные зоны корпуса будут сняты с компоновки. Продолжить? Изменение можно отменить.'))
+  return;
+ const proposed=structuredCloneCompat(state);
+ if(changedShape)delete proposed.cabinetGeometryV1;
+ proposed.railCapacity=option.modulesPerRail;proposed.railCount=option.railCount;
+ proposed.manualLayoutV1=option.rails.flatMap(rail=>rail.devices.map(d=>({
+  deviceId:d.deviceId,railIndex:rail.railIndex,startModule:d.startModule
+ })));
+ const catalog=new Map(projectCatalogEntries(proposed));
+ const check=typeof epDraftBoardPlanV1==='function'?
+  epDraftBoardPlanV1(proposed,sku=>catalog.get(sku)||null):null;
+ if(!check||check.status==='BLOCKED'||check.placements.length!==report.equipmentCount){
+  notify('Нельзя применить вариант: контроль размещения выявил несоответствие',true);return;
+ }
+ if(typeof epCabinetDeliveryConvergenceV1==='function'){
+  const convergence=epCabinetDeliveryConvergenceV1(proposed,sku=>catalog.get(sku)||null,
+   typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1:()=>({status:'STYLIZED_ONLY'}));
+  const structural=convergence.issues.filter(x=>[
+   'CONVERGENCE_ENGINE_FAILED','CONVERGENCE_ENGINE_RESULT_INVALID',
+   'CONVERGENCE_PLACEMENT_ID_DUPLICATE','CONVERGENCE_BOM_ID_DUPLICATE',
+   'CONVERGENCE_PLACEMENT_MISSING',
+   'CONVERGENCE_ARTICLE_MISMATCH','CONVERGENCE_MODULES_INVALID',
+   'CONVERGENCE_PLACEMENT_OUT_OF_BOUNDS','CONVERGENCE_BOARD_BLOCKED',
+   'CONVERGENCE_CAPACITY_BLOCKED',
+   'CONVERGENCE_CAPACITY_SUM_MISMATCH','CONVERGENCE_RAIL_CAPACITY_MISMATCH',
+   'CONVERGENCE_CATALOGUE_MODULES_MISMATCH'
+  ].includes(x.code));
+  if(structural.length||convergence.code==='CONVERGENCE_ENGINES_UNAVAILABLE'){
+   notify('Компоновка не применена: размещение, вместимость и спецификация не согласованы.',true);
+   return;
+  }
+ }
+ if(!changedShape&&state.cabinetGeometryV1&&
+    typeof epCabinetPlacementChangeAuditV1==='function'){
+  const audit=epCabinetPlacementChangeAuditV1(state,proposed,sku=>catalog.get(sku)||null);
+  if(audit.status==='BLOCKED'){
+   notify('Компоновка создаёт новые пересечения в заданном корпусе. Изменение отменено.',true);return;
+  }
+ }
+ checkpoint();
+ state.railCapacity=proposed.railCapacity;state.railCount=proposed.railCount;
+ state.manualLayoutV1=proposed.manualLayoutV1;
+ if(changedShape)delete state.cabinetGeometryV1;
+ changed();notify('Компоновка применена. Электрические аппараты не изменены.'+
+  (changedShape?' Проверьте монтажные зоны корпуса заново.':''));
+}
+function renderBoardConnectionAdvisoryV1(){
+ const target=$('cabinetConnectionAdvisory');if(!target)return;
+ if(typeof epDraftBoardPlanV1!=='function'||typeof epCabinetConnectionProximityV1!=='function'){
+  target.textContent='Контроль группировки аппаратов недоступен.';return;
+ }
+ const board=epDraftBoardPlanV1(state,catalogDevice);
+ const report=epCabinetConnectionProximityV1(state,board.placements||[]);
+ if(report.status==='BLOCKED'){
+  target.textContent='Проверка группировки: некорректные данные размещения.';return;
+ }
+ const s=report.summary;
+ target.textContent='Условная близость связанных аппаратов: на одной рейке '+s.sameRail+
+  ', рядом '+s.adjacent+', на разных рейках '+s.crossRail+
+  ', не размещено '+s.unresolved+'. Проводные соединения не проверены.';
+}
+function renderCabinetAccessReviewV1(){
+ const target=$('cabinetAccessReview');if(!target)return;
+ if(typeof epCabinetConnectionSpaceV1!=='function'){target.textContent='Анализ монтажных зон недоступен.';return;}
+ const r=epCabinetConnectionSpaceV1(state,catalogDevice);
+ if(r.status==='NOT_CONFIGURED'){
+  target.textContent='Кабельные каналы и зоны клемм внутри выбранного корпуса пока не заданы. Проверка расположения недоступна.';return;
+ }
+ if(r.status==='BLOCKED'){
+  target.textContent='Указанная геометрия корпуса содержит блокирующие ошибки. Проверьте монтажные зоны.';return;
+ }
+ const duct=r.rows.filter(x=>x.nearestWireDuct).length,
+  term=r.rows.filter(x=>x.nearestTerminalRegion).length;
+ target.replaceChildren();
+ const summary=document.createElement('p');
+ summary.textContent='Расчётные монтажные зоны: аппаратов '+r.rows.length+
+  ', с объявленной ближайшей зоной кабельного канала '+duct+
+  ', с объявленной зоной клемм '+term+
+  '. Только расстояния между зарезервированными прямоугольниками, не длины проводов.';
+ target.appendChild(summary);
+ if(r.rows.length){
+  const details=document.createElement('details'),title=document.createElement('summary');
+  title.textContent='Просмотреть расстояния по аппаратам (не монтажная проверка)';
+  details.appendChild(title);
+  const scroll=document.createElement('div');scroll.className='table-scroll';
+  const table=document.createElement('table'),thead=document.createElement('thead'),
+   headRow=document.createElement('tr'),tbody=document.createElement('tbody');
+  const columns=['Аппарат','Ряд','Кабельный канал','Зазор, мм',
+   'Область клемм','Зазор, мм','Фактический доступ'];
+  for(const value of columns){const th=document.createElement('th');th.textContent=value;headRow.appendChild(th);}
+  thead.appendChild(headRow);table.appendChild(thead);
+  for(const row of r.rows.slice(0,100)){
+   const tr=document.createElement('tr');
+   const values=[row.deviceId,row.railIndex+1,
+    row.nearestWireDuct?.regionId??'Не задан',
+    row.nearestWireDuct?.distanceMm??'Неизвестно',
+    row.nearestTerminalRegion?.regionId??'Не задан',
+    row.nearestTerminalRegion?.distanceMm??'Неизвестно','Не проверен'];
+   for(const value of values){const td=document.createElement('td');td.textContent=String(value);tr.appendChild(td);}
+   tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);scroll.appendChild(table);details.appendChild(scroll);
+  if(r.rows.length>100){
+   const note=document.createElement('p');
+   note.textContent='Показаны первые 100 аппаратов; полный результат доступен в ведомости.';
+   details.appendChild(note);
+  }
+  target.appendChild(details);
+ }
+}
+function renderCabinetArticleEvidenceV1(){
+ const target=$('cabinetArticleEvidence');if(!target)return;
+ if(typeof epCabinetApparatusEvidenceV1!=='function'){
+  target.textContent='Проверка паспортных габаритов недоступна.';return;
+ }
+ const r=epCabinetApparatusEvidenceV1(state,catalogDevice);
+ target.replaceChildren();
+ const intro=document.createElement('p');
+ intro.textContent='Данные аппаратов по выбранным артикулам: '+r.rows.length+
+  '; ширина указана у '+r.knownDimensions.width+
+  ', высота у '+r.knownDimensions.height+
+  ', глубина у '+r.knownDimensions.depth+
+  '. Точки подключения и монтажные смещения не подтверждены.';
+ target.appendChild(intro);
+ if(!r.rows.length)return;
+ const details=document.createElement('details'),summary=document.createElement('summary');
+ summary.textContent='Паспортные габариты и происхождение данных';
+ details.appendChild(summary);
+ const table=document.createElement('table'),head=document.createElement('tr');
+ for(const text of ['Аппарат','Артикул','Ширина','Высота','Глубина','Источник','Дата сверки','Статус']){
+  const th=document.createElement('th');th.textContent=text;head.appendChild(th);
+ }
+ const thead=document.createElement('thead');thead.appendChild(head);table.appendChild(thead);
+ const tbody=document.createElement('tbody');
+ for(const row of r.rows.slice(0,100)){
+  const tr=document.createElement('tr');
+  const columns=[row.deviceId,row.articleId??'Не выбран',row.bodyWidthMm??'Неизвестна',
+   row.bodyHeightMm??'Неизвестна',row.bodyDepthMm??'Неизвестна',
+   row.sourceType,row.sourceReviewedAt??'Не проверено',row.status];
+  for(const value of columns){const td=document.createElement('td');td.textContent=String(value);tr.appendChild(td);}
+  tbody.appendChild(tr);
+ }
+ table.appendChild(tbody);const scroll=document.createElement('div');scroll.className='table-scroll';scroll.appendChild(table);details.appendChild(scroll);target.appendChild(details);
+}
+function renderCabinetArticleReconciliationV1(){
+ const target=$('cabinetArticleReconciliation');if(!target)return;
+ if(typeof epCabinetArticleReconciliationV1!=='function'){
+  target.textContent='Сопоставление артикулов недоступно.';return;
+ }
+ const report=epCabinetArticleReconciliationV1(state,catalogDevice);
+ const count=report.counts;
+ target.replaceChildren();
+ const title=document.createElement('h4');title.textContent='Согласованность каталога, DIN и спецификации';
+ const summary=document.createElement('p');
+ summary.textContent='Сопоставлено: '+count.matched+' из '+(count.expected??Math.max(count.board,count.bom,count.visual))+
+  ' аппаратов. Блокирующих замечаний: '+report.issues.filter(x=>x.level==='BLOCKED').length+
+  '. Подбор корпуса и монтаж не подтверждены.';
+ target.append(title,summary);
+ if(typeof epCabinetArticleReconciliationCsvV1==='function'){
+  const exportButton=document.createElement('button');exportButton.type='button';
+  exportButton.textContent='Скачать сверку артикулов CSV';
+  exportButton.addEventListener('click',()=>{
+   const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+   const result=epCabinetArticleReconciliationCsvV1(fresh);
+   if(!result.csv){notify('Сверка артикулов недоступна',true);return;}
+   download(baseName()+'_articles_audit.csv',result.csv,'text/csv;charset=utf-8');
+  });
+  target.appendChild(exportButton);
+ }
+ if(typeof epManufacturerVisualHtmlV1==='function'){
+  const frontReport=typeof epCabinetFrontGalleryV1==='function'?
+   epCabinetFrontGalleryV1(report,catalogDevice,epManufacturerFrontResolveV1):null;
+  const fronts=frontReport?.rows||[];
+  const gallery=document.createElement('details');
+  const heading=document.createElement('summary');
+  heading.textContent='Фасады аппаратов в проекте ('+fronts.length+' артикулов)';
+  gallery.appendChild(heading);
+  const caption=document.createElement('p');
+  caption.textContent='Каталожные SVG — авторские эскизы, не фотографии изделий. Фотографии отображаются только при зарегистрированных правах и проверенном артикуле.';
+  gallery.appendChild(caption);
+  if(frontReport){
+   const audit=document.createElement('p');audit.className='ep-front-gallery-audit';
+   const totals=frontReport.totals;
+   audit.textContent='Сверка фасадов: '+totals.apparatus+' аппаратов / '+
+    totals.articles+' артикулов; проверенных изображений '+totals.reviewedImages+
+    '; авторских эскизов '+totals.vectorSketches+
+    '; отклонённых изображений '+totals.rejectedImages+
+    '; отсутствуют в каталоге '+totals.missingArticles+
+    '; габариты неизвестны у '+totals.unknownGeometry+' артикулов; '+
+    'превышений ширины DIN-места '+totals.widthConflicts+'.'+
+    (frontReport.status==='BLOCKED'?' Есть блокирующие несоответствия.':'');
+   audit.dataset.frontAuditStatus=frontReport.status;
+   gallery.appendChild(audit);
+   if(typeof epCabinetFrontAuditCsvV1==='function'){
+    const exportAudit=document.createElement('button');exportAudit.type='button';
+    exportAudit.textContent='Скачать проверку фасадов и DIN CSV';
+    exportAudit.addEventListener('click',()=>{
+     const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+     const current=epCabinetFrontGalleryV1(fresh,catalogDevice,epManufacturerFrontResolveV1);
+     const result=epCabinetFrontAuditCsvV1(current);
+     if(!result.csv){notify('Экспорт проверки фасадов недоступен',true);return;}
+     download(baseName()+'_front_din_audit.csv',result.csv,'text/csv;charset=utf-8');
+    });
+    gallery.appendChild(exportAudit);
+   }
+  }
+  const controls=document.createElement('div');controls.className='ep-front-gallery-controls';
+  const search=document.createElement('input');search.type='search';
+  search.maxLength=200;search.placeholder='Поиск: артикул, серия, тип';
+  search.setAttribute('aria-label','Поиск фасадов аппаратов');
+  const makerFilter=document.createElement('select');
+  makerFilter.setAttribute('aria-label','Фильтр по производителю');
+  const allMakers=document.createElement('option');allMakers.value='';
+  allMakers.textContent='Все производители';makerFilter.appendChild(allMakers);
+  const initial=typeof epCabinetFrontGalleryModelV1==='function'?
+   epCabinetFrontGalleryModelV1(report.rows,catalogDevice,{resolve:epManufacturerFrontResolveV1}):null;
+  for(const maker of initial?.makerOptions||[]){
+   const option=document.createElement('option');option.value=maker;option.textContent=maker;
+   makerFilter.appendChild(option);
+  }
+  const evidenceFilter=document.createElement('select');
+  evidenceFilter.setAttribute('aria-label','Фильтр по подтверждению изображения');
+  for(const [value,label] of [['','Все фасады'],['REVIEWED_IMAGE','Проверенные изображения'],
+   ['STYLIZED_ONLY','Авторские эскизы'],['ASSET_REJECTED','Отклонённые изображения'],
+   ['CATALOGUE_MISSING','Артикул не найден']]){
+   const option=document.createElement('option');option.value=value;option.textContent=label;
+   evidenceFilter.appendChild(option);
+  }
+  const geometryFilter=document.createElement('select');
+  geometryFilter.setAttribute('aria-label','Фильтр по габаритам аппарата');
+  for(const [value,label] of [['','Любые габариты'],
+   ['EXCEEDS_DIN_SLOT','Шире DIN-места'],
+   ['UNKNOWN','Габариты неизвестны'],
+   ['DECLARED_WITHIN_SLOT','Ширина в пределах DIN-места']]){
+   const option=document.createElement('option');option.value=value;option.textContent=label;
+   geometryFilter.appendChild(option);
+  }
+  controls.append(search,makerFilter,evidenceFilter,geometryFilter);gallery.appendChild(controls);
+  if(typeof epCabinetFrontInventoryCsvV1==='function'){
+   const exportInventory=document.createElement('button');exportInventory.type='button';
+   exportInventory.textContent='Скачать ведомость фасадов CSV';
+   exportInventory.addEventListener('click',()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const inventory=epCabinetFrontInventoryCsvV1(fresh.rows,catalogDevice,
+     epManufacturerFrontResolveV1);
+    if(!inventory.csv){notify('Ведомость фасадов недоступна',true);return;}
+    download(baseName()+'_front_inventory.csv',inventory.csv,'text/csv;charset=utf-8');
+   });
+   gallery.appendChild(exportInventory);
+  }
+
+  if(typeof epFrontEvidenceLedgerV1==='function'&&typeof epFrontEvidenceLedgerCsvV1==='function'){
+   const exportEvidence=document.createElement('button');exportEvidence.type='button';
+   exportEvidence.textContent='Скачать ведомость подтверждений фасадов CSV';
+   exportEvidence.addEventListener('click',()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const ledger=epFrontEvidenceLedgerV1(fresh.rows,catalogDevice,epManufacturerFrontResolveV1);
+    const result=epFrontEvidenceLedgerCsvV1(ledger);
+    if(!result.csv){notify('Ведомость подтверждений фасадов недоступна',true);return;}
+    download(baseName()+'_front_evidence_ledger.csv',result.csv,'text/csv;charset=utf-8');
+   });
+   gallery.appendChild(exportEvidence);
+  }
+  if(typeof epFrontEvidenceLedgerV1==='function'&&typeof epFrontReviewQueueV1==='function'){
+   const queueBox=document.createElement('section');queueBox.className='ep-front-review-queue';
+   const heading=document.createElement('h4');heading.textContent='Очередь проверки фасадов и габаритов';
+   const summary=document.createElement('p');summary.setAttribute('aria-live','polite');
+   const filter=document.createElement('select');filter.setAttribute('aria-label','Фильтр очереди проверки');
+   for(const [value,label] of [['ACTION_REQUIRED','Требуют действий'],['ALL','Все артикулы'],
+    ['CATALOGUE_MISSING','Нет артикула'],['ASSET_REJECTED','Изображение отклонено'],
+    ['STYLIZED_ONLY','Только эскиз'],['REVIEWED_IMAGE','Изображение проверено'],
+    ['EXCEEDS_DIN_SLOT','Шире DIN-места'],['UNKNOWN','Габариты неизвестны']]){
+    const opt=document.createElement('option');opt.value=value;opt.textContent=label;filter.appendChild(opt);
+   }
+   const list=document.createElement('ol');list.className='ep-front-review-items';
+   const exportQueue=document.createElement('button');exportQueue.type='button';
+   exportQueue.textContent='Скачать очередь проверки CSV';
+   const refreshQueue=()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const ledger=epFrontEvidenceLedgerV1(fresh.rows,catalogDevice,epManufacturerFrontResolveV1);
+    const queue=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100});
+    summary.textContent='Требуют действий: '+epFrontReviewQueueV1(ledger,{filter:'ACTION_REQUIRED',pageSize:1}).total+
+     '; проблемы габаритов: '+queue.counts.geometry+
+     '; проверенных изображений: '+queue.counts.reviewed+'. Это не разрешение на монтаж.';
+    list.replaceChildren();
+    for(const item of queue.items){
+     const li=document.createElement('li');
+     li.textContent=item.maker+' '+item.series+' '+item.sku+' ×'+item.quantity+': '+item.actions.join('; ');
+     list.appendChild(li);
+    }
+    if(queue.hasMore){const li=document.createElement('li');
+     li.textContent='Показаны первые 100 записей. Полный перечень доступен в CSV.';list.appendChild(li);}
+   };
+   filter.addEventListener('change',refreshQueue);
+   exportQueue.addEventListener('click',()=>{
+    const fresh=epCabinetArticleReconciliationV1(state,catalogDevice);
+    const ledger=epFrontEvidenceLedgerV1(fresh.rows,catalogDevice,epManufacturerFrontResolveV1);
+    const queue=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100});
+    const all=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100,page:0});
+    const items=[...all.items];
+    for(let page=1;page<50&&page*100<all.total;page++){
+     const next=epFrontReviewQueueV1(ledger,{filter:filter.value,pageSize:100,page});
+     items.push(...next.items);
+    }
+    const result=epFrontReviewQueueCsvV1({...queue,items});
+    if(!result.csv){notify('Очередь проверки недоступна',true);return;}
+    download(baseName()+'_front_review_queue.csv',result.csv,'text/csv;charset=utf-8');
+   });
+   queueBox.append(heading,filter,summary,list,exportQueue);gallery.appendChild(queueBox);
+   refreshQueue();
+  }
+  if(typeof epCabinetDeliveryConvergenceV1==='function'&&typeof epCabinetDeliveryConvergenceCsvV1==='function'){
+   const section=document.createElement('section');section.className='ep-front-delivery-convergence';
+   const heading=document.createElement('h4');heading.textContent='Сверка щита: DIN · спецификация · фасады';
+   const summary=document.createElement('p');summary.setAttribute('aria-live','polite');
+   const exportButton=document.createElement('button');exportButton.type='button';
+   exportButton.textContent='Скачать сквозную сверку щита CSV';
+   const buildReport=()=>epCabinetDeliveryConvergenceV1(state,catalogDevice,epManufacturerFrontResolveV1);
+   const refresh=()=>{
+    const result=buildReport(),t=result.totals;
+    summary.textContent='Размещено '+t.placed+' аппаратов; занято '+t.occupied+
+     ' DIN-модулей; свободно '+t.free+'; требуют проверки '+t.actionable+
+     ' артикулов; конфликтов габаритов '+t.geometryConflicts+
+     '. Статус: '+(result.status==='BLOCKED'?'есть блокирующие несоответствия':'требуется инженерная проверка')+
+     '. Это не разрешение на монтаж.';
+    section.dataset.convergenceStatus=result.status;
+   };
+   exportButton.addEventListener('click',()=>{
+    const result=epCabinetDeliveryConvergenceCsvV1(buildReport());
+    if(!result.csv){notify('Сквозная сверка щита недоступна',true);return;}
+    download(baseName()+'_cabinet_convergence.csv',result.csv,'text/csv;charset=utf-8');
+   });
+   section.append(heading,summary,exportButton);gallery.appendChild(section);
+   refresh();
+  }
+  const evidenceSummary=document.createElement('p');evidenceSummary.className='ep-front-gallery-evidence';
+  if(initial?.evidenceSummary){
+   const e=initial.evidenceSummary;
+   evidenceSummary.textContent='В компоновке '+initial.installedDevices+' аппаратов: '+
+    'проверенных изображений '+e.REVIEWED_IMAGE+', авторских эскизов '+e.STYLIZED_ONLY+
+    ', отклонённых '+e.ASSET_REJECTED+', отсутствуют в каталоге '+e.CATALOGUE_MISSING+
+    '. Превышений ширины DIN-места: '+initial.widthConflicts+
+    '. Это не подтверждение пригодности щита к монтажу.';
+  }
+  gallery.appendChild(evidenceSummary);
+  const count=document.createElement('p');count.className='ep-front-gallery-count';
+  count.setAttribute('aria-live','polite');gallery.appendChild(count);
+  const grid=document.createElement('div');grid.className='ep-front-gallery';
+  gallery.appendChild(grid);
+  const more=document.createElement('button');more.type='button';
+  more.textContent='Показать ещё 12';gallery.appendChild(more);
+  let page=0;
+  const refresh=()=>{
+   const result=epCabinetFrontGalleryModelV1(report.rows,catalogDevice,{
+    search:search.value,maker:makerFilter.value,evidence:evidenceFilter.value,
+    geometry:geometryFilter.value,
+    resolve:epManufacturerFrontResolveV1,page,pageSize:12
+   });
+   if(page===0)grid.replaceChildren();
+   if(result.status==='BLOCKED'){
+    count.textContent='Не удалось сформировать список фасадов';more.hidden=true;return;
+   }
+   count.textContent='Показано '+(page*12+result.items.length)+' из '+result.total+
+    ' артикулов (всего в проекте '+result.allArticles+')';
+   for(const entry of result.items){
+    const sku=entry.sku,item=entry.device;
+    const card=document.createElement('div');card.className='ep-front-gallery-card';
+    const art=document.createElement('div');art.className='ep-front-gallery-art';
+    if(!item){art.textContent='Артикул отсутствует в каталоге';}
+    else{
+     const asset=typeof epManufacturerFrontResolveV1==='function'?
+      epManufacturerFrontResolveV1(item):null;
+     try{
+      if(asset?.status==='REVIEWED_IMAGE'){
+       const img=document.createElement('img');img.className='ep-manufacturer-front-image';
+       img.src=asset.image.src;img.loading='lazy';img.decoding='async';
+       img.alt='Фасад '+item.maker+' '+item.series+' '+item.sku;
+       art.appendChild(img);
+      }else if(typeof epCatalogFrontSvgV1==='function'){
+       const svg=epCatalogFrontSvgV1(item,'gallery-'+sku);
+       const parsed=new DOMParser().parseFromString(svg,'image/svg+xml');
+       if(parsed.querySelector('parsererror'))throw Error('SVG_INVALID');
+       art.appendChild(document.importNode(parsed.documentElement,true));
+      }else art.textContent='Условный фасад';
+     }catch(_){art.textContent='Фасад недоступен';}
+     const status=document.createElement('small');
+     status.textContent=asset?.status==='REVIEWED_IMAGE'?'Изображение по артикулу':
+      asset?.status==='ASSET_REJECTED'?'Изображение отклонено · эскиз':
+      'Авторский эскиз';
+     card.dataset.frontEvidence=asset?.status||'STYLIZED_ONLY';
+     card.appendChild(art);
+     const title=document.createElement('strong');
+     title.textContent=[item.maker,item.series].filter(Boolean).join(' / ');
+     const code=document.createElement('span');code.textContent=sku;
+     const type=document.createElement('span');type.textContent=item.kind||'Тип не указан';
+     const quantity=document.createElement('span');quantity.textContent='В компоновке: '+entry.quantity+' шт.';
+     const dimensions=document.createElement('small');
+     const modules=Number.isInteger(item.modules)&&item.modules>0?item.modules:null;
+     const width=Number.isFinite(item.widthMm)&&item.widthMm>0?item.widthMm:null;
+     dimensions.textContent='DIN: '+(modules??'неизвестно')+' мод.; корпус: '+
+      (width===null?'размер неизвестен':width+' мм');
+     if(modules!==null&&width!==null&&width>modules*18+0.05){
+      card.dataset.widthConflict='true';
+      dimensions.textContent+=' · ширина больше номинального места';
+     }
+     const locate=document.createElement('button');locate.type='button';
+     locate.textContent='Найти на DIN-рейке';
+     locate.setAttribute('aria-label','Найти на DIN-рейке '+sku);
+     locate.addEventListener('click',()=>{
+      const node=[...document.querySelectorAll('#boardCanvas .din-apparatus')]
+       .find(x=>x.dataset.catalogSku===sku);
+      if(!node){notify('Аппарат не найден в текущем отображении щита',true);return;}
+      node.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+      node.click();
+     });
+     card.append(title,code,type,quantity,dimensions,status,locate);
+    }
+    if(!item){const code=document.createElement('span');code.textContent=sku;card.append(art,code);}
+    grid.appendChild(card);
+   }
+   if(!result.items.length&&page===0)grid.textContent='Нет аппаратов по заданным фильтрам';
+   more.hidden=!result.hasMore;
+  };
+  search.addEventListener('input',()=>{page=0;refresh();});
+  makerFilter.addEventListener('change',()=>{page=0;refresh();});
+  evidenceFilter.addEventListener('change',()=>{page=0;refresh();});
+  geometryFilter.addEventListener('change',()=>{page=0;refresh();});
+  more.addEventListener('click',()=>{page++;refresh();});
+  refresh();
+  target.appendChild(gallery);
+ }
+ const errors=report.rows.filter(x=>x.status==='BLOCKED').slice(0,20);
+ const totalErrors=report.rows.filter(x=>x.status==='BLOCKED').length;
+ if(errors.length){
+  const details=document.createElement('details');
+  const heading=document.createElement('summary');heading.textContent='Несовпадения артикулов ('+totalErrors+')'+
+   (totalErrors>errors.length?' · показаны первые '+errors.length:'');
+  const list=document.createElement('ul');
+  for(const item of errors){
+   const li=document.createElement('li');
+   li.textContent=item.deviceId+': DIN '+(item.boardSku||'—')+', спецификация '+
+    (item.bomSku||'—')+', фасад '+(item.visualSku||'—')+' · '+item.issues.join(', ');
+   list.appendChild(li);
+  }
+  details.append(heading,list);target.appendChild(details);
+ }
+ const editor=document.createElement('details');
+ const editorTitle=document.createElement('summary');
+ editorTitle.textContent='Заменить аппарат с предварительной проверкой';
+ editor.appendChild(editorTitle);
+ const row=document.createElement('div');row.className='form-grid';
+ const idLabel=document.createElement('label');idLabel.textContent='Аппарат';
+ const idSelect=document.createElement('select');
+ for(const item of report.rows){
+  if(!item.deviceId)continue;
+  const option=document.createElement('option');option.value=item.deviceId;
+  option.textContent=item.deviceId+' · '+(item.boardSku||'без артикула');
+  idSelect.appendChild(option);
+ }
+ idLabel.appendChild(idSelect);
+ const skuLabel=document.createElement('label');skuLabel.textContent='Новый артикул';
+ const skuInput=document.createElement('input');skuInput.type='text';
+ skuInput.maxLength=200;skuInput.placeholder='Артикул из каталога проекта';
+ const suggestions=document.createElement('datalist');
+ suggestions.id='cabinetArticleReplacementSuggestions';
+ if(typeof epProjectCatalogV1==='function'){
+  const articles=epProjectCatalogV1(state,typeof EP_CATALOG==='object'?EP_CATALOG:{}).articles;
+  for(const [sku,article] of Object.entries(articles).slice(0,400)){
+   const option=document.createElement('option');option.value=sku;
+   option.label=[article.maker,article.series,article.label].filter(Boolean).join(' / ');
+   suggestions.appendChild(option);
+  }
+ }
+ skuInput.setAttribute('list',suggestions.id);
+ skuLabel.append(skuInput,suggestions);
+ row.append(idLabel,skuLabel);editor.appendChild(row);
+ const previewButton=document.createElement('button');previewButton.type='button';
+ previewButton.textContent='Проверить замену';
+ const applyButton=document.createElement('button');applyButton.type='button';
+ applyButton.textContent='Применить проверенную замену';applyButton.disabled=true;
+ const result=document.createElement('p');result.setAttribute('aria-live','polite');
+ let proposed=null;
+ const invalidate=()=>{proposed=null;applyButton.disabled=true;result.textContent='';};
+ idSelect.addEventListener('change',invalidate);
+ skuInput.addEventListener('input',invalidate);
+ previewButton.addEventListener('click',()=>{
+  proposed=null;applyButton.disabled=true;
+  if(typeof epCabinetArticleReplacementV1!=='function'){
+   result.textContent='Модуль замены недоступен.';return;
+  }
+  const candidate=epCabinetArticleReplacementV1(state,idSelect.value,skuInput.value.trim(),catalogDevice);
+  if(candidate.status!=='REVIEW_REQUIRED'){
+   result.textContent='Замена отклонена: '+candidate.code;return;
+  }
+  proposed={candidate,signature:JSON.stringify(state)};
+  result.textContent='Проверено: '+candidate.preview.previousSku+' → '+candidate.preview.nextSku+
+   '. Изменение ширины: '+candidate.preview.moduleDelta+' мод.; переместятся аппараты: '+
+   candidate.preview.relocationCount+' ('+(candidate.preview.relocatedDeviceIds.join(', ')||'нет')+
+   '); изменения спецификации: '+
+   (candidate.preview.bomChanges.map(x=>x.sku+' '+(x.delta>0?'+':'')+x.delta).join(', ')||'нет')+
+   '. Для сохранения нажмите «Применить».';
+  applyButton.disabled=false;
+ });
+ applyButton.addEventListener('click',()=>{
+  if(!proposed||proposed.signature!==JSON.stringify(state)){
+   invalidate();result.textContent='Проект изменён. Проверьте замену повторно.';return;
+  }
+  const checked=epCabinetArticleReplacementV1(state,idSelect.value,skuInput.value.trim(),catalogDevice);
+  if(checked.status!=='REVIEW_REQUIRED'){
+   invalidate();result.textContent='Замена не прошла повторную проверку.';return;
+  }
+  checkpoint();state=checked.project;changed();
+  notify('Артикул заменён. Компоновка и спецификация пересчитаны.');
+ });
+ editor.append(previewButton,applyButton,result);
+ target.appendChild(editor);
+ if(typeof epCabinetArticleBulkReplacementV1==='function'){
+  const bulkEditor=document.createElement('details');
+  const bulkTitle=document.createElement('summary');
+  bulkTitle.textContent='Массовая замена серии или производителя';
+  bulkEditor.appendChild(bulkTitle);
+  const source=document.createElement('select');
+  const skus=[...new Set(report.rows.map(x=>x.boardSku).filter(Boolean))].sort();
+  for(const sku of skus){
+   const option=document.createElement('option');option.value=sku;option.textContent=sku;
+   source.appendChild(option);
+  }
+  const destination=document.createElement('input');destination.type='text';
+  destination.maxLength=200;destination.placeholder='Новый артикул из каталога';
+  destination.setAttribute('list','cabinetArticleReplacementSuggestions');
+  const sourceLabel=document.createElement('label');sourceLabel.textContent='Заменяемый артикул';
+  sourceLabel.appendChild(source);
+  const destLabel=document.createElement('label');destLabel.textContent='Артикул замены';
+  destLabel.appendChild(destination);
+  const preview=document.createElement('button');preview.type='button';
+  preview.textContent='Проверить массовую замену';
+  const apply=document.createElement('button');apply.type='button';
+  apply.textContent='Применить массовую замену';apply.disabled=true;
+  const message=document.createElement('p');message.setAttribute('aria-live','polite');
+  let pending=null;
+  const reset=()=>{pending=null;apply.disabled=true;message.textContent='';};
+  source.addEventListener('change',reset);destination.addEventListener('input',reset);
+  preview.addEventListener('click',()=>{
+   reset();
+   const candidate=epCabinetArticleBulkReplacementV1(state,source.value,destination.value.trim(),catalogDevice);
+   if(candidate.status!=='REVIEW_REQUIRED'){
+    message.textContent='Массовая замена отклонена: '+candidate.code;return;
+   }
+   pending={signature:JSON.stringify(state)};
+   message.textContent='Проверено: '+candidate.preview.replacedCount+
+    ' аппаратов; изменение ширины: '+candidate.preview.moduleDelta+
+    ' мод.; переместятся '+candidate.preview.relocatedCount+
+    ' ('+(candidate.preview.relocatedDeviceIds.join(', ')||'нет')+'); спецификация: '+
+    (candidate.preview.bomChanges.map(x=>x.sku+' '+(x.delta>0?'+':'')+x.delta).join(', ')||'без изменений')+
+    '. Требуется подтверждение.';
+   apply.disabled=false;
+  });
+  apply.addEventListener('click',()=>{
+   if(!pending||pending.signature!==JSON.stringify(state)){
+    reset();message.textContent='Проект изменился. Повторите проверку.';return;
+   }
+   const checked=epCabinetArticleBulkReplacementV1(state,source.value,destination.value.trim(),catalogDevice);
+   if(checked.status!=='REVIEW_REQUIRED'){
+    reset();message.textContent='Массовая замена не прошла повторную проверку.';return;
+   }
+   checkpoint();state=checked.project;changed();
+   notify('Массовая замена выполнена. Спецификация и DIN-компоновка пересчитаны.');
+  });
+  bulkEditor.append(sourceLabel,destLabel,preview,apply,message);
+  target.appendChild(bulkEditor);
+ }
+}
 function renderBoard(){
+ renderCabinetCapacityOptionsV1();
+ renderCabinetArticleReconciliationV1();
+ renderBoardConnectionAdvisoryV1();
+ renderCabinetAccessReviewV1();
+ renderCabinetArticleEvidenceV1();
+ renderProjectCatalogWorkbenchV1();
  const board=$('boardCanvas');board.innerHTML='';$('boardTitle').textContent=state.title+' / компоновка';
  const layout=layoutSlots();
  layout.rails.forEach((slots,r)=>{
@@ -1374,7 +2582,7 @@ function renderBoard(){
   const rail=holder.querySelector('.din-rail');
   let col=0;
   while(col<slots.length){const slot=slots[col];
-   if(!slot){const empty=document.createElement('span');empty.className='din-slot empty';empty.textContent='·';empty.setAttribute('aria-label','Свободный модуль');rail.appendChild(empty);col++;continue;}
+   if(!slot){const empty=document.createElement('button');empty.type='button';empty.className='din-slot empty';empty.textContent='·';empty.setAttribute('aria-label',`Свободный модуль ${col+1}, DIN ${r+1}`);empty.dataset.railIndex=String(r);empty.dataset.startModule=String(col);empty.title='Выберите аппарат и нажмите сюда или перетащите его; другие позиции останутся неизменными';rail.appendChild(empty);col++;continue;}
    const l=slot.line;let width=0;while(col+width<slots.length&&slots[col+width]?.line.id===l.id)width++;
    const d=document.createElement('button');d.type='button';d.draggable=true;d.dataset.line=l.id;d.style.gridColumn=`span ${width}`;
    const visual=deviceAppearance(l);
@@ -1384,16 +2592,46 @@ function renderBoard(){
    const modelLink=(state.boardBindingsV1||[]).find(x=>x.boardDeviceId===boardId);
    const mapped=modelLink?epBoardBindingsAuditV1(state,catalogDevice):null;
    d.dataset.apparatusId=boardId||'';
+   d.dataset.catalogSku=l.catalogSku||'';
    d.dataset.topologyLink=modelLink?(mapped?.issues.some(x=>x.level==='BLOCKED'&&
     (x.id===boardId||x.boardDeviceId===boardId))?'stale':'declared'):'unbound';
    d.title+=' · Терминальная схема: '+(modelLink?'связана декларативно':'не связана');
 
-   d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span></span><span class="ep-terminal ep-terminal-bottom"></span>';
+   d.dataset.visualEvidence=visual.source;d.dataset.visualIssues=visual.issues.join(',');
+   const cat=l.catalogSku?catalogDevice(l.catalogSku):null;
+   const asset=cat&&typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(cat):null;
+   const bodyWidth=Number.isFinite(cat?.widthMm)&&cat.widthMm>0?cat.widthMm:null;
+   d.dataset.frontAssetStatus=asset?.status||'STYLIZED_ONLY';
+   d.dataset.nominalSlotWidthMm=String(width*18);
+   d.dataset.bodyWidthMm=bodyWidth===null?'unknown':String(bodyWidth);
+   d.dataset.geometryWidthConflict=String(!!cat&&(cat.modules!==width||(bodyWidth!==null&&bodyWidth>width*18+1e-6)));
+   if(d.dataset.geometryWidthConflict==='true')d.title+=' · Габариты расходятся с DIN';
+   else if(bodyWidth!==null)d.title+=' · Корпус '+bodyWidth+' мм / слот '+(width*18)+' мм';
+   const face=epBoardArticleFaceHtmlV2(l,boardId||l.id);
+   d.title+=' · '+(asset?.status==='REVIEWED_IMAGE'?'Изображение сверено по артикулу; монтаж не подтверждён':
+    visual.source==='CATALOG_DECLARED'?'Авторский векторный эскиз по данным каталога, не фото производителя':
+    'Нет подтверждённой модели, внешний вид условный');
+   let renderedFront=null;
+   if(cat&&typeof epManufacturerVisualHtmlV1==='function'){
+    try{renderedFront=epManufacturerVisualHtmlV1(cat,boardId||l.id);}
+    catch(_){renderedFront=null;d.dataset.frontRenderError='true';}
+   }
+   d.dataset.frontPresentation=asset?.status==='REVIEWED_IMAGE'?'REVIEWED_IMAGE':
+    renderedFront?'CATALOG_VECTOR_ILLUSTRATION':'LEGACY_PLACEHOLDER';
+   d.dataset.manufacturerImageVerified=String(asset?.status==='REVIEWED_IMAGE');
+   if(renderedFront){
+    d.classList.add('ep-catalog-front-active');
+    d.innerHTML='<span class="ep-front-viewport">'+renderedFront+'</span>'+
+     '<span class="ep-front-meta">'+epDeviceVisualEvidenceHtmlV1(visual)+'</span>';
+   }else{
+    d.innerHTML='<span class="ep-terminal ep-terminal-top"></span><span class="ep-face"><span class="ep-brand">'+safeText(visual.maker)+'</span><span class="ep-series">'+safeText(visual.series)+'</span><span class="ep-rating">'+safeText(visual.mark)+'</span><span class="ep-rocker"><i></i></span><span class="ep-sku">'+safeText(visual.sku||l.id)+'</span><span class="ep-note">'+safeText(l.id)+'</span>'+face+epDeviceVisualEvidenceHtmlV1(visual)+'</span><span class="ep-terminal ep-terminal-bottom"></span>';
+   }
    rail.appendChild(d);col+=width;
   }
   board.appendChild(holder);
  });
  if(layout.unplaced.length){const warn=document.createElement('div');warn.className='board-unplaced';warn.textContent='Не размещено: '+layout.unplaced.map(x=>x.id).join(', ');board.appendChild(warn);}
+ if(layout.issues?.some(x=>x.level==='BLOCKED')){const warn=document.createElement('div');warn.className='board-unplaced';warn.textContent='Ошибки компоновки: '+layout.issues.filter(x=>x.level==='BLOCKED').map(x=>x.code+(x.id?' · '+x.id:'')).join(', ');board.appendChild(warn);}
  const catalogueIssues=catalogAudit(state).issues;
  const preflight=epEngineeringPreflight(state,catalogDevice,checkOverload);
  const items=[['Все аппараты помещаются на рейках',layout.unplaced.length===0],
@@ -1403,15 +2641,167 @@ function renderBoard(){
   ['Расчётная применимость не подтверждена (нужна инженерная проверка)',false],
   ['Геометрия корпуса и тепловой режим не подтверждены',false]];
  $('boardChecks').innerHTML=items.map(([label,yes])=>`<div class="check-line"><span class="${yes?'good':'bad'}">${yes?'●':'◆'}</span><span>${label}</span></div>`).join('');
+ if(typeof epBoardVisualAuditV1==='function'){
+  const audit=epBoardVisualAuditV1(state,catalogDevice);
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Внешний вид аппаратов: '+audit.verifiedCatalogueFaces+' по каталогу; '+audit.placeholders+' условных; проверенных изображений: '+(audit.reviewedManufacturerImages||0)+'</strong></div>');
+  if(audit.issues.some(x=>x.level==='BLOCKED'))$('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line bad">Несоответствие модели и DIN-компоновки — проверьте артикулы и ширину</div>');
+ }
+ if(typeof epDraftBoardPlanV1==='function'&&typeof epDinPhysicalEnvelopeV1==='function'){
+  const physical=epDinPhysicalEnvelopeV1(epDraftBoardPlanV1(state,catalogDevice),catalogDevice);
+  const blocked=physical.issues.filter(x=>x.level==='BLOCKED');
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Ширина по каталогу: '+physical.checkedWidths+'; неизвестна: '+physical.missingWidths+'; блокирующих замечаний: '+blocked.length+'</strong></div>');
+  if(blocked.length)$('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line bad">Расхождения геометрии: '+blocked.slice(0,8).map(x=>safeText((x.deviceId||'—')+' '+x.code)).join('; ')+'</div>');
+ }
+ if(typeof epCabinetFitAuditV1==='function'){
+  const cabinet=epCabinetFitAuditV1(state,catalogDevice);
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Монтажные зоны корпуса: '+safeText(cabinet.status)+'</strong> · замечаний: '+cabinet.issues.length+'</div>');
+ }
+ renderCabinetGeometryV1();
+ if(typeof epBoardCapacityReviewV1==='function'){
+  const capacity=epBoardCapacityReviewV1(state,catalogDevice);
+  const lines=capacity.rails.map(r=>'DIN '+(r.railIndex+1)+': '+r.occupied+'/'+r.capacity+' мод.; свободно '+r.free+', максимальный непрерывный участок '+r.largestFreeRun);
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><strong>Распределение модулей по рейкам</strong></div>'+lines.map(x=>'<div class="check-line"><span>'+safeText(x)+'</span></div>').join(''));
+  $('boardChecks').insertAdjacentHTML('beforeend','<div class="check-line"><button type="button" id="boardCompactBtn">Уплотнить DIN</button><button type="button" id="boardFillGapsBtn">Заполнить свободные места, сохранив закреплённые аппараты</button><button type="button" id="boardPlacementCsvBtn">Ведомость DIN CSV</button><button type="button" id="boardAddRailBtn">Добавить DIN-рейку</button><button type="button" id="boardRemoveRailBtn">Убрать последнюю DIN-рейку</button></div>');
+ }
  const l=state.lines.find(x=>x.id===selectedLine);const branch=l&&state.branchDevices?.find(b=>b.circuitId===l.id);const cat=l?catalogDevice(l.catalogSku):null;
- $('selectedDevice').innerHTML=l?`<div class="selected-info">${devicePreviewHtml(l)}<b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Пока доступна одна позиция на производителя.'}</div>${faultLineInfo(l)}${l.calculationReview?.required?'<div class="ep-fault-status ep-fault-fail"><strong>ПОВТОРНАЯ ПРОВЕРКА</strong><span>Параметры цепи или аппарат изменены. Сохранённые расчёты требуют перепроверки.</span></div>':''}<div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
+ $('selectedDevice').innerHTML=l?`<div class="selected-info">${devicePreviewHtml(l)}<b>${safeText(l.id)} · ${safeText(l.name)}</b><div class="muted">Аппарат: ${safeText(branch?.id||'ID не назначен')}</div><div>${safeText(l.device||'Аппарат не указан')} / ${l.modules} мод.</div><label class="device-preset-label">Типовой аппарат (условная геометрия)<select id="devicePreset"><option value="">Выбрать шаблон…</option>${Object.entries(DEVICE_TEMPLATES).map(([key,val])=>`<option value="${key}" ${l.templateId===key?'selected':''}>${safeText(val.label)} · ${val.modules}M</option>`).join('')}</select></label>${catalogFilterControls()}<label class="device-preset-label">Конкретный артикул<select id="catalogSku">${catalogChoices(l.catalogSku,l.phase)}</select></label><div class="catalog-spec">${cat?'<strong>'+safeText(cat.maker+' · '+cat.series)+'</strong><small>Артикул '+safeText(cat.sku)+' · '+cat.poles+'P · '+cat.widthMm+' мм · '+cat.inA+' А · '+cat.curve+' · Icn '+cat.icnKa+' кА</small><small><a href="'+safeText(cat.source)+'" target="_blank" rel="noopener noreferrer">Источник характеристик ↗</a></small>':'Выберите конкретный артикул из каталога. Доступны одно- и трёхполюсные модели и пользовательский каталог.'}</div>${boardPositionForm(l)}${faultLineInfo(l)}${l.calculationReview?.required?'<div class="ep-fault-status ep-fault-fail"><strong>ПОВТОРНАЯ ПРОВЕРКА</strong><span>Параметры цепи или аппарат изменены. Сохранённые расчёты требуют перепроверки.</span></div>':''}<div class="mini-actions"><button id="moveUp">← Раньше</button><button id="moveDown">Позже →</button></div><p class="muted">Перетащите аппарат на другой, чтобы поменять порядок. Можно использовать кнопки.</p></div>`:'Выберите аппарат на рейке. Перемещение возможно мышью или кнопками.';
 }
-$('boardCanvas').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();renderCircuitGraph();renderEngineeringDiagnosticsV1();});
+$('selectedDevice').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-board-position]');if(!form)return;e.preventDefault();
+ const result=epMoveBoardDeviceV1(state,form.dataset.boardPosition,Number(form.elements.rail.value)-1,Number(form.elements.slot.value)-1,catalogDevice);
+ if(!result.project)return notify('Перемещение заблокировано: '+result.code,true);
+ checkpoint();state=result.project;changed();notify('Позиция аппарата сохранена');
+});
+$('selectedDevice').addEventListener('click',e=>{
+ if(e.target.id!=='resetBoardPositions')return;
+ checkpoint();delete state.manualLayoutV1;changed();notify('Восстановлена автоматическая компоновка');
+});
+$('cabinetGeometryPanel').addEventListener('submit',e=>{
+ const form=e.target;
+ const number=name=>{
+  const s=String(form.elements[name]?.value??'').trim().replace(',','.');
+  return s===''?NaN:Number(s);
+ };
+ if(form.matches('[data-cabinet-autoplan]')){
+  e.preventDefault();
+  const proposal=epCabinetAutoZonesV1({
+   interiorWidthMm:number('interiorWidthMm'),interiorHeightMm:number('interiorHeightMm'),
+   interiorDepthMm:number('interiorDepthMm'),marginMm:number('marginMm'),
+   firstRowYMm:number('firstRowYMm'),zoneHeightMm:number('zoneHeightMm'),
+   rowGapMm:number('rowGapMm'),obstacles:state.cabinetGeometryV1?.obstacles||[]},state.railCount,state.railCapacity);
+  if(proposal.status==='BLOCKED')return notify('Размеры корпуса: '+proposal.issues.map(x=>x.code).join(', '),true);
+  const saved=epCabinetGeometryApplyV1(state,proposal.geometry);
+  if(!saved.project)return notify('Монтажные зоны: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Монтажные зоны корпуса сохранены как исходные данные проекта');
+  return;
+ }
+ if(form.matches('[data-cabinet-obstacle]')){
+  e.preventDefault();
+  if(!state.cabinetGeometryV1)return notify('Сначала задайте размеры корпуса',true);
+  const id=String(form.elements.id?.value||'').trim(),kind=String(form.elements.kind?.value||'');
+  const data=JSON.parse(JSON.stringify(state.cabinetGeometryV1));
+  if(!Array.isArray(data.obstacles))data.obstacles=[];
+  if(data.obstacles.some(x=>x.id===id))return notify('Такой код зарезервированной области уже существует',true);
+  data.obstacles.push({id,kind,xMm:number('xMm'),yMm:number('yMm'),
+   widthMm:number('widthMm'),heightMm:number('heightMm')});
+  const saved=epCabinetGeometryApplyV1(state,data);
+  if(!saved.project)return notify('Область не добавлена: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Резерв корпуса '+id+' сохранён');
+  return;
+ }
+ if(form.matches('[data-cabinet-zone]')){
+  e.preventDefault();
+  if(!state.cabinetGeometryV1)return;
+  const index=Number(form.dataset.cabinetZone),data=JSON.parse(JSON.stringify(state.cabinetGeometryV1));
+  const zone=data.zones.find(x=>x.railIndex===index);
+  if(!zone)return notify('Монтажная зона отсутствует',true);
+  for(const key of ['xMm','yMm','widthMm','heightMm'])zone[key]=number(key);
+  delete data.planning; // manual edits supersede the automatic spacing recipe
+  const saved=epCabinetGeometryApplyV1(state,data);
+  if(!saved.project)return notify('Ошибка монтажной зоны: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Монтажная зона DIN '+(index+1)+' обновлена');
+ }
+});
+$('cabinetGeometryPanel').addEventListener('click',e=>{
+ const remove=e.target.closest('[data-cabinet-obstacle-remove]');
+ if(remove&&state.cabinetGeometryV1){
+  const id=remove.dataset.cabinetObstacleRemove;
+  const data=JSON.parse(JSON.stringify(state.cabinetGeometryV1));
+  data.obstacles=(data.obstacles||[]).filter(x=>x.id!==id);
+  const saved=epCabinetGeometryApplyV1(state,data);
+  if(!saved.project)return notify('Удаление резерва заблокировано: '+saved.code,true);
+  checkpoint();state=saved.project;changed();notify('Резерв корпуса '+id+' удалён');return;
+ }
+ if(e.target.id==='cabinetExportSvgBtn'){
+  if(!epRequireDraftDocumentExport())return;
+  const drawing=typeof epCabinetDrawingSvgV1==='function'?epCabinetDrawingSvgV1(state,catalogDevice):null;
+  if(!drawing?.svg)return notify('Чертёж корпуса недоступен: проверьте введённые габариты',true);
+  download(baseName()+'-cabinet-plan-DRAFT.svg',drawing.svg,'image/svg+xml;charset=utf-8');
+  notify('Экспортирован предварительный чертёж корпуса (не заводская модель)');
+  return;
+ }
+ if(e.target.id!=='cabinetGeometryClearBtn'||!state.cabinetGeometryV1)return;
+ checkpoint();delete state.cabinetGeometryV1;changed();
+ notify('Геометрия корпуса очищена. Аппараты и расчёты сохранены');
+});
+$('boardChecks').addEventListener('click',e=>{
+ if(!e.target.closest('#boardPlacementCsvBtn'))return;
+ if(!epRequireDraftDocumentExport())return;
+ const result=epBoardPlacementCsvV1(state,catalogDevice);
+ if(result.status==='BLOCKED'){notify('Экспорт DIN содержит ошибки проекта; исправьте компоновку',true);return;}
+ download(baseName()+'-din-placement.csv',result.csv,'text/csv;charset=utf-8');
+ notify('Ведомость размещения DIN выгружена');
+});
+$('boardChecks').addEventListener('click',e=>{
+ const button=e.target.closest('#boardAddRailBtn,#boardRemoveRailBtn');if(!button)return;
+ const nextCount=state.railCount+(button.id==='boardAddRailBtn'?1:-1);
+ const result=epBoardRailCountChangeV1(state,nextCount,catalogDevice,{preserve:true});
+ if(!result.project){notify('Изменение корпуса отклонено: '+result.code,true);return;}
+ checkpoint();state=result.project;changed();notify('Количество DIN-реек: '+state.railCount+(result.cabinetReplanned?'. Монтажные зоны пересчитаны по сохранённым исходным размерам, нужна инженерная проверка.':'. Геометрия корпуса требует проверки.'));
+});
+$('boardChecks').addEventListener('click',e=>{
+ const button=e.target.closest('#boardCompactBtn,#boardFillGapsBtn');if(!button)return;
+ const mode=button.id==='boardCompactBtn'?'compact':'preserve';
+ const result=epBoardReflowV1(state,catalogDevice,{mode});
+ if(!result.project){notify('Перекомпоновка отклонена: '+result.code,true);return;}
+ if(!result.changes.length){notify('Изменения компоновки не требуются');return;}
+ checkpoint();state=result.project;changed();notify('DIN-компоновка обновлена: '+result.changes.length+' аппаратов');
+});
+$('boardCanvas').addEventListener('click',e=>{
+ const free=e.target.closest('.din-slot.empty[data-rail-index]');
+ if(free){
+  if(!selectedLine){notify('Сначала выберите аппарат, затем свободный модуль DIN');return;}
+  const deviceId=state.branchDevices?.find(x=>x.circuitId===selectedLine)?.id||selectedLine;
+  const result=epMoveBoardDeviceV1(state,deviceId,Number(free.dataset.railIndex),Number(free.dataset.startModule),catalogDevice);
+  if(!result.project){notify('Позиция DIN недоступна: '+result.code,true);return;}
+  checkpoint();state=result.project;changed();notify('Аппарат перемещён на выбранный модуль DIN');return;
+ }
+ const b=e.target.closest('[data-line]');if(!b)return;selectedLine=b.dataset.line;renderBoard();renderCircuitGraph();renderEngineeringDiagnosticsV1();
+});
 $('boardCanvas').addEventListener('dragstart',e=>{const b=e.target.closest('[data-line]');if(!b)return;dragLineId=b.dataset.line;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragLineId);});
-$('boardCanvas').addEventListener('dragover',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId||b.dataset.line===dragLineId)return;e.preventDefault();e.dataTransfer.dropEffect='move';});
-$('boardCanvas').addEventListener('drop',e=>{const b=e.target.closest('[data-line]');if(!b||!dragLineId)return;e.preventDefault();const id=dragLineId;dragLineId=null;reorderLine(id,b.dataset.line);});
+$('boardCanvas').addEventListener('dragover',e=>{
+ const target=e.target.closest('[data-line], .din-slot.empty[data-rail-index]');
+ if(!target||!dragLineId||target.dataset.line===dragLineId)return;
+ e.preventDefault();e.dataTransfer.dropEffect='move';
+});
+$('boardCanvas').addEventListener('drop',e=>{
+ const target=e.target.closest('[data-line], .din-slot.empty[data-rail-index]');
+ if(!target||!dragLineId)return;
+ e.preventDefault();const sourceLine=dragLineId;dragLineId=null;
+ const sourceDevice=state.branchDevices?.find(x=>x.circuitId===sourceLine)?.id||sourceLine;
+ let result;
+ if(target.dataset.railIndex!==undefined){
+  result=epMoveBoardDeviceV1(state,sourceDevice,Number(target.dataset.railIndex),Number(target.dataset.startModule),catalogDevice);
+ }else{
+  const targetDevice=state.branchDevices?.find(x=>x.circuitId===target.dataset.line)?.id||target.dataset.line;
+  result=epBoardDragMoveV1(state,sourceDevice,targetDevice,catalogDevice);
+ }
+ if(!result.project){notify('Перемещение DIN отклонено: '+result.code,true);return;}
+ checkpoint();state=result.project;changed();notify('Позиция DIN сохранена; остальные аппараты не перемещены');
+});
 $('boardCanvas').addEventListener('dragend',()=>{dragLineId=null;});
 $('selectedDevice').addEventListener('change',e=>{
+ if(e.target.id==='catalogTier'){catalogTierFilter=e.target.value;catalogMakerFilter='';catalogSeriesFilter='';renderBoard();return;}
  if(e.target.id==='catalogMaker'){catalogMakerFilter=e.target.value;catalogSeriesFilter='';renderBoard();return;}
  if(e.target.id==='catalogSeries'){catalogSeriesFilter=e.target.value;renderBoard();return;}
  if(e.target.id==='devicePreset'&&selectedLine&&e.target.value){applyDeviceTemplate(selectedLine,e.target.value);notify('Шаблон применён. Характеристики не подтверждены.');}
@@ -1423,6 +2813,24 @@ $('selectedDevice').addEventListener('click',e=>{const b=e.target.closest('butto
 function renderIssues(){$('documentIssues').innerHTML=issues().map(x=>`<div class="issue">◆ ${safeText(x)}</div>`).join('');}
 function download(name,content,mime){const blob=new Blob([content],{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 const baseName=()=>state.title.replace(/[^\p{L}\p{N}_-]+/gu,'_').slice(0,45)||'electropanel';
+function epFireControlSetProjectV1(raw){
+ if(typeof epFireControlAuditV1!=='function')throw Error('FIRE_CONTROL_MODULE_MISSING');
+ const next=JSON.parse(JSON.stringify(raw));
+ const audit=epFireControlAuditV1(state,next);
+ if(audit.status==='BLOCKED')throw Error('FIRE_CONTROL_INVALID');
+ if(typeof epFireControlDesignV1!=='function'||epFireControlDesignV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_DESIGN_INVALID');
+ if(typeof epFireDinReconcileV1==='function'&&epFireDinReconcileV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_DIN_CONFLICT');
+ if(typeof epFireControlWiringV1==='function'&&epFireControlWiringV1({...state,fireControlV1:next}).status==='BLOCKED')throw Error('FIRE_CONTROL_WIRING_INVALID');
+ checkpoint();state.fireControlV1=next;changed();return audit;
+}
+function epFireControlClearProjectV1(){
+ if(!state.fireControlV1)return false;
+ checkpoint();delete state.fireControlV1;changed();return true;
+}
+function epFireControlReportV1(){
+ return typeof epFireControlAuditV1==='function'&&state.fireControlV1?
+ epFireControlAuditV1(state,state.fireControlV1):null;
+}
 function saveProject(){download(baseName()+'.json',JSON.stringify(state,null,2),'application/json;charset=utf-8');notify('Проект сохранён в JSON.');}
 function csv(){const header=['ID','Наименование','Мощность кВт','Фаза','Аппарат','Модули'], rows=state.lines.map(l=>[l.id,l.name,l.power??'',l.phase,l.device,l.modules]);const esc=v=>{const raw=String(v??'');const safe=/^\s*[=+@\t\r]/.test(raw)?'\''+raw:raw;return '"'+safe.replaceAll('"','""')+'"';};return '\uFEFF'+[header,...rows].map(r=>r.map(esc).join(';')).join('\r\n');}
 function draftEquipment(){
@@ -1645,15 +3053,35 @@ function normalizeV30Import(value){
  return out;
 }
 function normalizeFaultImport(value){
- if(!value||typeof value!=='object'||typeof value.ikKa!=='string'||epParsePositiveCurrentKa(value.ikKa)===null)
-  throw Error('Некорректное значение ожидаемого тока КЗ в импортируемом проекте');
- if(value.source!==undefined&&typeof value.source!=='string')
-  throw Error('Некорректное происхождение тока КЗ в импортируемом проекте');
- if(typeof value.source==='string'&&value.source.length>200)
-  throw Error('Слишком длинное описание источника тока КЗ');
- return {ikKa:value.ikKa,source:value.source||''};
+ if(!value||typeof value!=='object'||Array.isArray(value))
+  throw Error('Некорректные исходные данные тока КЗ');
+ const textFields=['source','comparisonPoint','faultModel','model','purpose'];
+ if(Object.keys(value).some(k=>!['ikKa','voltageV',...textFields].includes(k)))
+  throw Error('Неизвестные поля исходных данных тока КЗ');
+ for(const key of textFields){
+  if(value[key]!==undefined&&typeof value[key]!=='string')
+   throw Error('Некорректное происхождение тока КЗ');
+  if(typeof value[key]==='string'&&value[key].length>200)
+   throw Error('Слишком длинное описание исходных данных тока КЗ');
+ }
+ const out={source:value.source||''};
+ if(value.ikKa!==undefined){
+  if(epParsePositiveCurrentKa(value.ikKa)===null)
+   throw Error('Некорректное значение ожидаемого тока КЗ в импортируемом проекте');
+  out.ikKa=value.ikKa;
+ }
+ if(value.voltageV!==undefined){
+  const raw=typeof value.voltageV==='string'||typeof value.voltageV==='number'?
+   String(value.voltageV).trim().replace(',','.'):'';
+  const voltage=Number(raw);
+  if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)||!Number.isFinite(voltage)||voltage<=0||voltage>1500)
+   throw Error('Некорректное напряжение сети в импортируемом проекте');
+  out.voltageV=value.voltageV;
+ }
+ for(const key of textFields)if(key!=='source'&&value[key]!==undefined)out[key]=value[key];
+ return out;
 }
-function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=6&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;if(x.ttContext!==undefined)p.ttContext=epNormalizeTTContext(x.ttContext);if(x.wiringModelV18!==undefined)p.wiringModelV18=normalizeWiring18Import(x.wiringModelV18);if(x.deviceModelV19!==undefined)p.deviceModelV19=normalizeDevice19Import(x.deviceModelV19);if(x.boardBindingsV1!==undefined)p.boardBindingsV1=epNormalizeBoardBindingsV1(x.boardBindingsV1);if(x.endpointBindingsV1!==undefined)p.endpointBindingsV1=epNormalizeEndpointBindingsV1(x.endpointBindingsV1);const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.lv43Input!==undefined?{lv43Input:normalizeLV43Import(l.lv43Input)}:{}),...(l.route44Input!==undefined?{route44Input:normalizeRoute44Import(l.route44Input)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
+function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA].includes(x.schema)||!Array.isArray(x.lines)||x.lines.length>400)throw Error('Неподдерживаемый формат проекта');const p=initial();p.title=String(x.title||'Проект').slice(0,80);p.earthing=['UNKNOWN','TN-S','TN-C-S','TT'].includes(x.earthing)?x.earthing:'UNKNOWN';p.railCapacity=Number.isInteger(x.railCapacity)&&x.railCapacity>=4&&x.railCapacity<=72?x.railCapacity:12;p.railCount=Number.isInteger(x.railCount)&&x.railCount>=1&&x.railCount<=8?x.railCount:2;if(x.ttContext!==undefined)p.ttContext=epNormalizeTTContext(x.ttContext);if(x.wiringModelV18!==undefined)p.wiringModelV18=normalizeWiring18Import(x.wiringModelV18);if(x.deviceModelV19!==undefined)p.deviceModelV19=normalizeDevice19Import(x.deviceModelV19);if(x.boardBindingsV1!==undefined)p.boardBindingsV1=epNormalizeBoardBindingsV1(x.boardBindingsV1);if(x.endpointBindingsV1!==undefined)p.endpointBindingsV1=epNormalizeEndpointBindingsV1(x.endpointBindingsV1);const ids=new Set();p.lines=x.lines.map((l,i)=>{const id=String(l.id||'L'+(i+1));if(id.trim()!==id||!/^[\p{L}\p{N}_ -]{1,40}$/u.test(id))throw Error('Некорректный ID линии');if(ids.has(id))throw Error('Повтор ID линии');ids.add(id);const power=numeric(l.power);const modules=Number(l.modules);if(power!==null&&(power<0||power>100000))throw Error('Некорректная мощность');if(!Number.isInteger(modules)||modules<1||modules>12)throw Error('Некорректное число модулей');return{id,name:String(l.name||'').slice(0,100),power,phase:['','L1','L2','L3','3Ф'].includes(l.phase)?l.phase:'',device:String(l.device||'').slice(0,25),modules,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120),...(l.overloadInput&&typeof l.overloadInput==='object'?{overloadInput:Object.fromEntries(['ibA','inA','izA','i2A'].map(k=>[k,String(l.overloadInput[k]??'').slice(0,30)]))}:{}),...(l.faultInput!==undefined?{faultInput:normalizeFaultImport(l.faultInput)}:{}),...(l.overloadV30!==undefined?{overloadV30:normalizeV30Import(l.overloadV30)}:{}),...(l.lv43Input!==undefined?{lv43Input:normalizeLV43Import(l.lv43Input)}:{}),...(l.route44Input!==undefined?{route44Input:normalizeRoute44Import(l.route44Input)}:{}),...(l.calculationReview&&l.calculationReview.required===true?{calculationReview:{required:true,reason:typeof l.calculationReview.reason==='string'&&l.calculationReview.reason.length<=40?l.calculationReview.reason:'IMPORTED_REVIEW_REQUIRED',pending:Array.isArray(l.calculationReview.pending)?[...new Set(l.calculationReview.pending.filter(k=>REVIEW_FIELDS.includes(k)))]:REVIEW_FIELDS.filter(k=>!!l[k])}}:{}),...(typeof l.templateId==='string'&&DEVICE_TEMPLATES[l.templateId]?{templateId:l.templateId}:{}),...(typeof l.catalogSku==='string'&&l.catalogSku.length<=100?{catalogSku:l.catalogSku}:{})};});p.plan=null;
  if(x.plan&&typeof x.plan.name==='string'){
   const mime=String(x.plan.mime||'').slice(0,80);
   p.plan={name:x.plan.name.slice(0,120),mime};
@@ -1663,7 +3091,7 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
   if(!Array.isArray(x.loads)||!Array.isArray(x.sharedDevices))throw Error('Файл новой версии не содержит модель потребителей или аппаратов');
   p.schema=PROJECT_SCHEMA;
   p.loads=x.loads.map(l=>({id:l.id,circuitId:l.circuitId,name:l.name,powerKw:l.powerKw,source:SOURCES[l.source]?l.source:'unknown',sourceRef:String(l.sourceRef||'').slice(0,120)}));
-  p.sharedDevices=x.sharedDevices.map(d=>({id:d.id,templateId:d.templateId,label:d.label,modules:d.modules,circuitIds:d.circuitIds}));
+  p.sharedDevices=x.sharedDevices.map(d=>({id:d.id,templateId:d.templateId,label:d.label,modules:d.modules,circuitIds:d.circuitIds,...(typeof d.catalogSku==='string'&&d.catalogSku.trim()&&d.catalogSku.length<=100?{catalogSku:d.catalogSku}:{})}));
   if(x.groupInputVersion===undefined&&Array.isArray(x.groupInputLinks)&&x.groupInputLinks.length)throw Error('Не указана версия вводов групповых УЗО');
   if(x.groupInputVersion!==undefined){if(x.groupInputVersion!==1||!Array.isArray(x.groupInputLinks))throw Error('Неподдерживаемая версия вводов групповых УЗО');p.groupInputLinks=x.groupInputLinks.map(f=>({id:f.id,groupId:f.groupId,kind:f.kind,from:f.from,to:f.to,origin:f.origin}));p.groupInputVersion=1;}
   if(x.wiringVersion===undefined&&Array.isArray(x.conductorRoutes)&&x.conductorRoutes.length)throw Error('У маршрутов проводников отсутствует номер версии');
@@ -1672,9 +3100,30 @@ function normalizeImport(x){if(!x||!['electropanel.web.preview.1',PROJECT_SCHEMA
   if(x.terminalVersion!==undefined){if(x.terminalVersion!==1||!Array.isArray(x.terminalLinks))throw Error('Неподдерживаемая версия контактных деклараций');p.terminalLinks=x.terminalLinks.map(l=>({id:l.id,loadId:l.loadId,circuitId:l.circuitId,kind:l.kind,from:l.from,to:l.to,origin:l.origin}));p.terminalVersion=1;}
   if(x.feedVersion===undefined&&Array.isArray(x.feedLinks)&&x.feedLinks.length)throw Error('У питающих связей отсутствует версия');
   if(x.feedVersion!==undefined){if(x.feedVersion!==1||!Array.isArray(x.feedLinks))throw Error('Неподдерживаемая версия питающих связей');p.feedLinks=x.feedLinks.map(f=>({id:f.id,circuitId:f.circuitId,kind:f.kind,from:f.from,to:f.to,origin:f.origin}));p.feedVersion=1;}
-  if(x.branchModelVersion===1){if(!Array.isArray(x.branchDevices))throw Error('Повреждён список отходящих аппаратов');p.branchDevices=x.branchDevices.map(d=>({id:d.id,circuitId:d.circuitId,label:d.label,modules:d.modules,templateId:d.templateId??null}));p.branchModelVersion=1;}
+  if(x.branchDevices!==undefined&&!Array.isArray(x.branchDevices))throw Error('Повреждён список отходящих аппаратов');if(x.branchModelVersion===undefined&&Array.isArray(x.branchDevices)&&x.branchDevices.length)throw Error('У отходящих аппаратов отсутствует номер версии');if(x.branchModelVersion!==undefined&&x.branchModelVersion!==1)throw Error('Неподдерживаемая версия отходящих аппаратов');if(x.branchModelVersion===1){if(!Array.isArray(x.branchDevices))throw Error('Повреждён список отходящих аппаратов');p.branchDevices=x.branchDevices.map(d=>({id:d.id,circuitId:d.circuitId,label:d.label,modules:d.modules,templateId:d.templateId??null,...(typeof d.catalogSku==='string'&&d.catalogSku.trim()&&d.catalogSku.length<=100?{catalogSku:d.catalogSku}:{})}));p.branchModelVersion=1;}
  }else migrateLegacyEntities(p);
- ensureV2(p);
+ ensureV2(p);p.branchModelVersion=1;
+ if(typeof epRestoreProjectExtensionsV2==='function')epRestoreProjectExtensionsV2(x,p);
+ if(x.cabinetSizingPreferencesV1!==undefined){
+  const c=x.cabinetSizingPreferencesV1;
+  if(!c||typeof c!=='object'||Array.isArray(c)||
+    Object.keys(c).some(k=>!['maxUsableWidthMm','maxUsableHeightMm','reservePercent',
+     'wiringCorridorMm','terminalReserveMm','sideWiringCorridorMm'].includes(k))||
+    (c.wiringCorridorMm!==undefined&&(!Number.isInteger(c.wiringCorridorMm)||c.wiringCorridorMm<0||c.wiringCorridorMm>120))||
+    (c.terminalReserveMm!==undefined&&(!Number.isInteger(c.terminalReserveMm)||c.terminalReserveMm<0||c.terminalReserveMm>500))||
+    (c.sideWiringCorridorMm!==undefined&&(!Number.isInteger(c.sideWiringCorridorMm)||c.sideWiringCorridorMm<0||c.sideWiringCorridorMm>70))||
+    (c.reservePercent!==undefined&&(!Number.isInteger(c.reservePercent)||c.reservePercent<0||c.reservePercent>50))||
+    ['maxUsableWidthMm','maxUsableHeightMm'].some(k=>
+     c[k]!==null&&c[k]!==undefined&&(!Number.isInteger(c[k])||c[k]<1||c[k]>10000)))
+   throw Error('Некорректные ограничения полезных размеров щита');
+  p.cabinetSizingPreferencesV1={
+   maxUsableWidthMm:c.maxUsableWidthMm??null,
+   maxUsableHeightMm:c.maxUsableHeightMm??null,
+   reservePercent:c.reservePercent??20,
+   wiringCorridorMm:c.wiringCorridorMm??40,
+   terminalReserveMm:c.terminalReserveMm??0,
+   sideWiringCorridorMm:c.sideWiringCorridorMm??40};
+ }
  return p;}
 function parseCSV(text){
  // RFC 4180-style quoted fields, including line breaks in quoted text.
@@ -1707,14 +3156,175 @@ function parseCSV(text){
 $('nav').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)switchView(b.dataset.view);});
 $('circuitGraph').addEventListener('click',e=>{const btn=e.target.closest('[data-open-circuit]');if(!btn)return;selectedLine=btn.dataset.openCircuit;switchView('loads');});
 $('menuToggle').addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('open'));
-$('startManual').onclick=$('manualCard').onclick=()=>switchView('loads');$('loadDemo').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект примером квартиры?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demo();selectedLine=null;changed();switchView('loads');notify('Открыт демонстрационный проект. Данные условные.');};
+$('startManual').onclick=$('manualCard').onclick=()=>switchView('loads');$('loadDemo').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект примером квартиры?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demo();workflowPreviewInputs=null;workflowSplitPlan=null;workflowSplitRuleInput=null;workflowMergePlan=null;workflowMergeRuleInput=null;selectedLine=null;resetDesignBaseline();changed();switchView('loads');notify('Открыт демонстрационный проект. Данные условные.');};
 $('pasteTask').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').focus();showPending($('taskText').value);};$('closeModal').onclick=()=>$('taskModal').classList.add('hidden');$('taskModal').addEventListener('click',e=>{if(e.target===$('taskModal'))$('taskModal').classList.add('hidden');});$('taskText').addEventListener('input',e=>showPending(e.target.value));
 $('confirmParse').onclick=()=>{showPending($('taskText').value);if(commitPending())$('taskModal').classList.add('hidden');};
 $('parseTextBtn').onclick=()=>{$('taskModal').classList.remove('hidden');$('taskText').value=$('quickText').value;showPending($('taskText').value);};
 $('addRowBtn').onclick=()=>{try{checkpoint();addLine();changed();}catch(e){notify(e.message,true);}};
-$('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}checkpoint();state[key]=n;changed();});
+$('automationFlowPanel').addEventListener('click',epFireControlEditorEventV1);
+$('automationFlowPanel').addEventListener('click',e=>{
+ const preview=e.target.closest('#groupMergePreviewBtn');
+ const apply=e.target.closest('#groupMergeApplyBtn');
+ if(!preview&&!apply)return;
+ try{
+  const rawText=String($('groupMergeCategories')?.value??'');
+  if(rawText.length>10000)throw Error('Слишком длинный список категорий');
+  const categories=rawText.split(/\r?\n/).filter(x=>x.trim()).map((line,i)=>{
+   const pos=line.indexOf(';');
+   if(pos<1||pos===line.length-1||line.indexOf(';',pos+1)!==-1)
+    throw Error('Категории: неверная строка '+(i+1));
+   return {circuitId:line.slice(0,pos).trim(),
+    category:line.slice(pos+1).trim()};
+  });
+  const separated=String($('groupMergeSeparateIds')?.value??'').trim();
+  const rules=epGroupMergeRulesV1({maxGroupPowerKw:$('groupMergeMaxKw')?.value,
+   maxConsumersPerCircuit:$('groupMergeMaxConsumers')?.value,categories,
+   ...(separated?{separateCircuitIds:separated.split(',').map(x=>x.trim())}:{})});
+  if(preview){
+   workflowMergeRuleInput=rules;
+   workflowMergePlan=epGroupMergePlanV1(ensureV2(state),rules);
+   renderAutomationWorkflowV1();
+   const details=$('automationFlowPanel').querySelector('.ep-group-merge');
+   if(details)details.open=true;
+   return notify('Предложено объединений: '+workflowMergePlan.proposals.length+
+    '. Исходный проект не изменён.');
+  }
+  if(!workflowMergePlan)throw Error('Сначала выполните предварительный просмотр');
+  if(JSON.stringify(rules)!==JSON.stringify(workflowMergePlan.rules))
+   throw Error('Изменились категории или пределы: пересчитайте предложение');
+  const result=epGroupMergeApplyV1(ensureV2(state),workflowMergePlan);
+  if(!result.project)return notify('Допустимых объединений нет');
+  const candidate=result.project;
+  syncBranchDevices(candidate);candidate.branchModelVersion=1;
+  ensureV2(candidate);
+  if(typeof epDraftBoardPlanV1==='function'){
+   const layout=epDraftBoardPlanV1(candidate,catalogDevice);
+   if((layout.issues||[]).some(x=>x.level==='BLOCKED'&&
+    ['RAIL_CAPACITY_EXCEEDED','MANUAL_LAYOUT_OVERLAP',
+     'MANUAL_LAYOUT_OUT_OF_BOUNDS'].includes(x.code)))
+    throw Error('Нарушена компоновка DIN; объединение отменено');
+  }
+  checkpoint();state=candidate;
+  workflowMergePlan=null;workflowMergeRuleInput=null;changed();
+  notify('Объединено групп: '+result.merged+
+   ', удалено пустых черновых линий: '+result.removedCircuits.length+
+   '. Защиту объединённых цепей необходимо подобрать заново.');
+ }catch(error){notify('Объединение не применено: '+error.message,true);}
+});
+$('automationFlowPanel').addEventListener('click',e=>{
+ const preview=e.target.closest('#groupSplitPreviewBtn');
+ const apply=e.target.closest('#groupSplitApplyBtn');
+ if(!preview&&!apply)return;
+ try{
+  if(preview){
+   const raw={maxGroupPowerKw:$('groupSplitMaxKw')?.value,
+    maxConsumersPerCircuit:$('groupSplitMaxConsumers')?.value};
+   const rules=epGroupSplitRulesV1(raw);
+   const plan=epGroupSplitPlanV1(ensureV2(state),rules);
+   workflowSplitRuleInput=rules.maxGroupPowerKw;
+   workflowSplitPlan=plan;
+   renderAutomationWorkflowV1();
+   const details=$('automationFlowPanel').querySelector('.ep-group-split');
+   if(details)details.open=true;
+   return notify('Разбиение рассчитано: '+plan.proposals.length+
+    ' исходных групп. Проект не изменён.');
+  }
+  if(!workflowSplitPlan)
+   throw Error('Сначала выполните предварительный просмотр');
+  const freshInput=epGroupSplitRulesV1({
+   maxGroupPowerKw:$('groupSplitMaxKw')?.value,
+   maxConsumersPerCircuit:$('groupSplitMaxConsumers')?.value});
+  if(JSON.stringify(freshInput)!==JSON.stringify(workflowSplitPlan.rules))
+   throw Error('Изменены правила. Пересчитайте предварительный просмотр');
+  const result=epGroupSplitApplyV1(ensureV2(state),workflowSplitPlan);
+  if(!result.project)return notify('Нет групп для безопасного разделения');
+  const candidate=result.project;
+  syncBranchDevices(candidate);
+  candidate.branchModelVersion=1;
+  ensureV2(candidate);
+  if(typeof epDraftBoardPlanV1==='function'){
+   const board=epDraftBoardPlanV1(candidate,catalogDevice);
+   if((board.issues||[]).some(x=>x.level==='BLOCKED'&&
+     ['RAIL_CAPACITY_EXCEEDED','MANUAL_LAYOUT_OVERLAP',
+      'MANUAL_LAYOUT_OUT_OF_BOUNDS'].includes(x.code)))
+    throw Error('Новое количество аппаратов не помещается в заданную DIN-компоновку');
+  }
+  checkpoint();state=candidate;
+  state.consumerGroupSplitRulesV1=freshInput;
+  workflowSplitPlan=null;workflowSplitRuleInput=null;changed();
+  notify('Разделено исходных групп: '+result.applied+
+   '. Добавлено цепей: '+result.createdCircuits.length+
+   '. Подбор защиты для новых групп требуется выполнить отдельно.');
+ }catch(error){notify('Группировка не применена: '+error.message,true);}
+});
+$('automationFlowPanel').addEventListener('click',e=>{
+ const preview=e.target.closest('#workflowPreviewBtn');
+ const apply=e.target.closest('#workflowApplyCurrentsBtn');
+ const choose=e.target.closest('[data-workflow-article][data-workflow-line]');
+ const exportCsv=e.target.closest('#workflowExportCsvBtn');
+ const exportConsumerCsv=e.target.closest('#workflowConsumerCsvBtn');
+ if(!preview&&!apply&&!choose&&!exportCsv&&!exportConsumerCsv)return;
+ try{
+  if(exportConsumerCsv){
+   const audit=epWorkflowConsumerAuditV1(state);
+   return download(baseName()+'_consumers_DRAFT.csv',
+    epWorkflowConsumerAuditCsvV1(audit),'text/csv;charset=utf-8');
+  }
+  if(exportCsv){
+  if(!epRequireDraftDocumentExport())return;
+   const inputs=workflowPreviewInputs||state.workflowDesignInputsV1||null;
+   const catalogue=projectCatalogEntries().map(([id,device])=>({id,device}));
+   const report=epWorkflowPreviewV1(state,catalogDevice,catalogue,inputs);
+   return download(baseName()+'_workflow_DRAFT.csv',
+    epWorkflowCsvV1(report),'text/csv;charset=utf-8');
+  }
+  if(choose){
+   const id=choose.dataset.workflowLine,sku=choose.dataset.workflowArticle;
+   const catalog=projectCatalogEntries().map(([key,device])=>({id:key,device}));
+   const decision=epWorkflowArticleChoiceV1(state,id,sku,catalog);
+   const draft=structuredCloneCompat(ensureV2(state));
+   applyCatalogueSku(draft,id,sku);
+   checkpoint();state=draft;selectedLine=id;changed();
+   notify('Черновой артикул '+decision.sku+
+    ' назначен. Неизвестные условия требуют последующей проектной проверки.');
+   return;
+  }
+  const panel=$('automationFlowPanel');
+  const input={};
+  for(const key of ['singleVoltageV','threeVoltageV','powerFactor','efficiency','demandFactor'])
+   input[key]=panel.querySelector('#workflow-'+key)?.value??'';
+  const normalized=epWorkflowInputsV1(input);
+  if(preview){
+   workflowPreviewInputs=normalized;
+   renderAutomationWorkflowV1();
+   return notify('Предварительный маршрут рассчитан по заданным исходным данным.');
+  }
+  const result=epWorkflowApplyCurrentsV1(ensureV2(state),normalized);
+  if(!result.applied.length)
+   return notify('Новых токов для автоматического расчёта нет: ранее заданные Ib сохранены.');
+  checkpoint();
+  state=result.project;workflowPreviewInputs=null;changed();
+  notify('Рассчитано '+result.applied.length+' цепей; '+result.skipped.length+
+   ' пропущено без изменения ручных данных.');
+ }catch(err){notify('Маршрут не изменён: '+err.message,true);}
+});
+
+$('projectName').addEventListener('change',e=>{checkpoint();state.title=e.target.value.slice(0,80);changed();});$('earthing').addEventListener('change',e=>{checkpoint();state.earthing=e.target.value;changed();});for(const key of ['railCapacity','railCount'])$(key).addEventListener('change',e=>{
+ const n=Number(e.target.value),min=key==='railCount'?1:6,max=key==='railCount'?8:72;
+ if(!Number.isInteger(n)||n<min||n>max){notify('Недопустимое значение',true);render();return;}
+ if(state.cabinetGeometryV1){
+  if(key==='railCount'){
+   const changedRail=epBoardRailCountChangeV1(state,n,catalogDevice,{preserve:true});
+   if(!changedRail.project){notify('Корпус не изменён: '+changedRail.code,true);render();return;}
+   checkpoint();state=changedRail.project;changed();notify('DIN-рейки и монтажные зоны согласованы. Проверка корпуса остаётся черновой.');return;
+  }
+  const audit=epCabinetGeometryCheckV1(state.cabinetGeometryV1,state.railCount,n);
+  if(audit.status==='BLOCKED'){notify('Новая вместимость не помещается в объявленные зоны корпуса: '+audit.issues.find(x=>x.level==='BLOCKED').code,true);render();return;}
+ }
+ checkpoint();state[key]=n;changed();
+});
 $('currentLine').addEventListener('change',renderCurrentCheck);$('runCurrentCheck').onclick=saveCurrentCheck;$('saveV30Check').onclick=saveV30Check;$('saveTTContext').onclick=saveTTContext;$('verifyCableSource').onclick=verifyCableSourceFile;$('assessCable31').onclick=assessCable31FromUI;$('ref39Run').onclick=runReference39;$('lv43Run').onclick=runLV43;$('lv43SaveLine').onclick=saveLV43ToLine;$('route44Save').onclick=saveRoute44;$('wiring18Check').onclick=()=>checkWiring18(false);$('wiring18Save').onclick=()=>checkWiring18(true);$('device19Check').onclick=()=>checkDevice19(false);$('device19Save').onclick=()=>checkDevice19(true);$('bindingSave').onclick=saveBoardBindingV1;$('bindingClear').onclick=clearBoardBindingV1;$('endpointSave').onclick=saveEndpointBindingV1;$('endpointClear').onclick=clearEndpointBindingV1;$('endpointSymbolicRef').onchange=renderEndpointBridgeV1;
-$('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();selectedLine=null;changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
+$('loadCommercial').onclick=()=>{if(state.lines.length&&!confirm('Заменить текущий проект коммерческим примером?'))return;checkpoint();if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}state=demoCommercial();workflowPreviewInputs=null;workflowSplitPlan=null;workflowSplitRuleInput=null;workflowMergePlan=null;workflowMergeRuleInput=null;selectedLine=null;resetDesignBaseline();changed();switchView('loads');notify('Открыт учебный коммерческий пример.');};
 $('saveProjectBtn').onclick=$('saveProjectBtn2').onclick=saveProject;$('exportCsvBtn').onclick=()=>download(baseName()+'_loads.csv',csv(),'text/csv;charset=utf-8');$('exportSvgBtn').onclick=$('exportSvgBtn2').onclick=exportSvg;$('exportEquipmentBtn').onclick=()=>download(baseName()+'_equipment_draft.csv',equipmentCsv(),'text/csv;charset=utf-8');
 $('exportAuditBtn').onclick=()=>download(baseName()+'_audit.json',JSON.stringify({project:state.title,audit:projectAudit(),generatedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');
 $('exportIssuesBtn').onclick=()=>download(baseName()+'_issues.txt',[state.title,'ИНЖЕНЕРНЫЕ ЗАМЕЧАНИЯ (ЧЕРНОВИК)',...issues().map((x,i)=>`${i+1}. ${x}`)].join('\n'),'text/plain;charset=utf-8');
@@ -1724,7 +3334,7 @@ $('importProjectBtn').onclick=()=>$('projectFile').click();$('projectFile').addE
   showLegacyImportReport(legacy,oldLayout);
   throw Error('Обнаружен проект прежнего Studio: '+legacy.counts.devices+' аппаратов, '+legacy.counts.rails+' реек, '+legacy.counts.wires+' проводников. DIN занято '+oldLayout.occupied_modules+'/'+oldLayout.total_modules+', коллизий/выходов: '+oldLayout.problems.length+'. Автоперенос заблокирован, чтобы не потерять расчёты и связи. '+(legacy.issues.length?'Ошибки: '+legacy.issues.slice(0,2).join('; '):'Файл распознан для дальнейшего сопоставления.'));
  }
- const loaded=normalizeImport(raw);if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}checkpoint();state=loaded;selectedLine=null;changed();switchView('loads');notify('Проект открыт');}catch(err){notify('Ошибка файла: '+err.message,true);}e.target.value='';});
+ const loaded=normalizeImport(raw);if(planPreviewUrl){URL.revokeObjectURL(planPreviewUrl);planPreviewUrl=null;}checkpoint();state=loaded;workflowPreviewInputs=null;workflowSplitPlan=null;workflowSplitRuleInput=null;selectedLine=null;resetDesignBaseline();changed();switchView('loads');notify('Проект открыт');}catch(err){notify('Ошибка файла: '+err.message,true);}e.target.value='';});
 $('csvImportBtn').onclick=()=>$('csvFile').click();$('csvFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>1_000_000)throw Error('Файл слишком большой');const rows=parseCSV(await f.text());if(!rows.length)throw Error('Не найдены строки с мощностью');if(state.lines.length+rows.length>MAX_LINES)throw Error('Превышен лимит 400 линий');checkpoint();rows.forEach((l,i)=>addLine(l.name,l.power,{...l,sourceRef:f.name+' · запись '+(i+1)}));changed();notify('Импортировано строк: '+rows.length);}catch(err){notify(err.message,true);}e.target.value='';});
 $('uploadPlan').onclick=()=>$('planFile').click();$('planFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;
  try{
@@ -1742,6 +3352,401 @@ $('uploadPlan').onclick=()=>$('planFile').click();$('planFile').addEventListener
  }catch(err){notify(err.message,true);}finally{e.target.value='';}
 });
 
+$('exportCabinetCompareCsvBtn')?.addEventListener('click',()=>{
+ const report=cabinetCapacityReportV1(),limits=state.cabinetSizingPreferencesV1||{};
+ if(!report||typeof epCabinetOptionCompareV1!=='function'||
+    typeof epCabinetOptionCompareCsvV1!=='function'){
+  notify('Сравнение вариантов корпуса недоступно',true);return;
+ }
+ const constrained=typeof epCabinetOptionConstraintsV1==='function'?
+  epCabinetOptionConstraintsV1(report,{
+   maxUsableWidthMm:limits.maxUsableWidthMm??null,
+   maxUsableHeightMm:limits.maxUsableHeightMm??null,
+   maxUsableDepthMm:limits.maxUsableDepthMm??null}):null;
+ if(!constrained){notify('Ограничения корпуса не проверены',true);return;}
+ const eligible=new Set(constrained.eligible.map(x=>x.optionId));
+ const excludedIds=report.options.filter(o=>!eligible.has(o.id)).map(o=>o.id);
+ const impact=typeof epCabinetOptionImpactV1==='function'?
+  epCabinetOptionImpactV1(state,report,catalogDevice,{excludedIds}):null;
+ const comparison=epCabinetOptionCompareV1(report,{preference:cabinetOptionPreferenceV1,
+  excludedIds,impactRows:impact?.rows||[]});
+ if(comparison.code==='OPTION_COMPARE_INPUT_INVALID'||comparison.code==='OPTION_COMPARE_VARIANT_INVALID'){
+  notify('Невозможно сформировать сравнение вариантов',true);return;
+ }
+ download(baseName()+'_cabinet_options_comparison.csv',
+  epCabinetOptionCompareCsvV1(comparison),'text/csv;charset=utf-8');
+});
+$('exportCabinetCapacityCsvBtn')?.addEventListener('click',()=>{
+ const report=cabinetCapacityReportV1();
+ const result=typeof epCabinetCapacityCsvV1==='function'?
+  epCabinetCapacityCsvV1(report,{
+   maxUsableWidthMm:state.cabinetSizingPreferencesV1?.maxUsableWidthMm??null,
+   maxUsableHeightMm:state.cabinetSizingPreferencesV1?.maxUsableHeightMm??null,
+   maxUsableDepthMm:state.cabinetSizingPreferencesV1?.maxUsableDepthMm??null}):null;
+ if(!result||result.status==='BLOCKED'){
+  notify('Не удалось сформировать предварительную ведомость корпусов',true);return;
+ }
+ download(baseName()+'_cabinet_requirements.csv',result.csv,
+  'text/csv;charset=utf-8');
+});
+$('exportCabinetCapacityBtn')?.addEventListener('click',()=>{
+ const report=cabinetCapacityReportV1();
+ if(!report||report.status==='BLOCKED'){notify('Нет допустимых вариантов для выгрузки',true);return;}
+ download(baseName()+'_cabinet_capacity_draft.json',JSON.stringify({
+  schema:'electropanel.cabinet.capacity.export.1',project:state.title,
+  selectedLayout:{rails:state.railCount,modulesPerRail:state.railCapacity},
+  usableSizeLimits:state.cabinetSizingPreferencesV1||null,
+  ...report,
+  constraintReview:typeof epCabinetOptionConstraintsV1==='function'?
+   epCabinetOptionConstraintsV1(report,{
+    maxUsableWidthMm:state.cabinetSizingPreferencesV1?.maxUsableWidthMm??null,
+    maxUsableHeightMm:state.cabinetSizingPreferencesV1?.maxUsableHeightMm??null,
+    maxUsableDepthMm:state.cabinetSizingPreferencesV1?.maxUsableDepthMm??null}):null,
+  reviewRequired:true,manufacturerSelected:false
+ },null,2),'application/json;charset=utf-8');
+});
+ for(const [id,field,min,max] of [['cabinetWiringCorridor','wiringCorridorMm',0,120],
+ ['cabinetTerminalReserve','terminalReserveMm',0,500],
+ ['cabinetSideWiring','sideWiringCorridorMm',0,70]]){
+ $(id)?.addEventListener('change',e=>{
+  const value=e.target.value.trim(),number=Number(value);
+  if(!value||!Number.isInteger(number)||number<min||number>max){
+   notify('Недопустимое значение предварительной монтажной зоны',true);
+   e.target.value=state.cabinetSizingPreferencesV1?.[field]??(field==='terminalReserveMm'?0:40);return;
+  }
+  checkpoint();state.cabinetSizingPreferencesV1={
+   ...(state.cabinetSizingPreferencesV1||{}),[field]:number};changed();
+ });
+}
+$('cabinetReservePercent')?.addEventListener('change',e=>{
+ const val=Number(e.target.value);
+ if(e.target.value.trim()===''||!Number.isInteger(val)||val<0||val>50){
+  notify('Резерв должен быть целым числом от 0 до 50%',true);
+  e.target.value=state.cabinetSizingPreferencesV1?.reservePercent??20;return;
+ }
+ checkpoint();state.cabinetSizingPreferencesV1={
+  ...(state.cabinetSizingPreferencesV1||{}),reservePercent:val};changed();
+});
+for(const [id,field] of [['cabinetWidthLimit','maxUsableWidthMm'],
+ ['cabinetHeightLimit','maxUsableHeightMm'],['cabinetDepthLimit','maxUsableDepthMm']]){
+ $(id)?.addEventListener('change',e=>{
+  const raw=e.target.value.trim();const val=raw===''?null:Number(raw);
+  if(val!==null&&(!Number.isInteger(val)||val<=0||val>10000)){
+   notify('Введите полезный размер от 1 до 10000 мм или оставьте поле пустым',true);
+   e.target.value=state.cabinetSizingPreferencesV1?.[field]||'';return;
+  }
+  checkpoint();
+  state.cabinetSizingPreferencesV1={...(state.cabinetSizingPreferencesV1||{}),[field]:val};
+  changed();
+ });
+}
+$('cabinetCapacityTotal')?.addEventListener('change',e=>{
+ const n=Number(e.target.value);
+ if(Number.isInteger(n)&&n>0){
+  cabinetCapacitySelectedTotalV1=n;renderCabinetCapacityOptionsV1();
+ }
+});
+$('exportCabinetMissingDimensionsBtn')?.addEventListener('click',()=>{
+ if(typeof epCabinetMissingGeometryCsvV1!=='function'){
+  notify('Геометрическая ведомость недоступна',true);return;
+ }
+ const result=epCabinetMissingGeometryCsvV1(state,catalogDevice);
+ if(result.status==='BLOCKED'){
+  notify('Сначала исправьте ошибки размещения и артикулов',true);return;
+ }
+ download(baseName()+'_apparatus_geometry_requests.csv',result.csv,'text/csv;charset=utf-8');
+});
+// Preview and application are intentionally separate. A changed project invalidates the proposal.
+let cabinetCrossRailPreviewSnapshotV1=null;
+const cabinetCrossRailFingerprintV1=()=>JSON.stringify(state);
+// Independent enclosure fit exploration for the CURRENT DIN layout; never moves devices.
+$('cabinetCompareCurrentBtn')?.addEventListener('click',()=>{
+ const panel=$('cabinetCurrentEnclosurePanel');
+ if(!panel)return;
+ panel.replaceChildren();
+ const raw=$('cabinetEnclosureCandidatesInput')?.value.trim()??'';
+ const parsed=typeof epCabinetEnclosureInputV1==='function'?epCabinetEnclosureInputV1(raw):null;
+ if(!parsed||parsed.status==='BLOCKED'||!parsed.items.length){
+  notify('Укажите хотя бы один корректный корпус с полезными размерами',true);return;
+ }
+ const fingerprint=cabinetCrossRailFingerprintV1();
+ const report=typeof epCabinetCurrentEnclosureV1==='function'?
+  epCabinetCurrentEnclosureV1(state,catalogDevice,parsed.items):null;
+ if(!report||report.status==='BLOCKED'){
+  notify('Сравнение текущего щита невозможно: '+(report?.code??'модуль недоступен'),true);return;
+ }
+ const h=document.createElement('h4');h.textContent='Сравнение корпусов с текущим щитом';
+ const summary=document.createElement('p');
+ summary.textContent='DIN-реек: '+report.board.railCount+' · аппаратов: '+report.board.devices+
+  ' · известны полные габариты: '+report.geometry.knownDimensions+
+  ' · нет полных габаритов: '+report.geometry.missingDimensions+
+  '. Перемещения аппаратов не выполнялись.';
+ panel.append(h,summary);
+ const list=document.createElement('ul');
+ const statusText={PRELIMINARY_MATCH:'предварительно подходит',
+  REJECTED:'не подходит',UNVERIFIED:'недостаточно данных'};
+ const axisText={width:'ширина',height:'высота',depth:'глубина',rails:'DIN-рейки'};
+ for(const row of report.review.rows){
+  const li=document.createElement('li');
+  const deficits=row.deficits.map(x=>axisText[x.axis]+': не хватает '+
+   (x.missingMm??x.missingCount)+(x.axis==='rails'?' шт.':' мм'));
+  li.textContent=row.id+' — '+statusText[row.status]+
+   (deficits.length?' · '+deficits.join('; '):'')+
+   (row.requests.length?' · нужны сведения: '+row.requests.join(', '):'');
+  list.appendChild(li);
+ }
+ panel.appendChild(list);
+ const note=document.createElement('p');
+ note.textContent='Только условные полезные размеры. Реальные крепления, проводка, клеммы и тепловые условия не подтверждены.';
+ panel.appendChild(note);
+ const isFresh=()=>cabinetCrossRailFingerprintV1()===fingerprint&&
+  ($('cabinetEnclosureCandidatesInput')?.value.trim()??'')===raw;
+ const exporter=(label,suffix,build,mime)=>{
+  const b=document.createElement('button');b.className='btn';b.type='button';b.textContent=label;
+  b.addEventListener('click',()=>{
+   if(!isFresh()){
+    panel.replaceChildren();
+    notify('Проект или данные корпусов изменились — повторите сравнение',true);return;
+   }
+   const content=build();
+   if(!content){notify('Экспорт сравнения недоступен',true);return;}
+   download(baseName()+suffix,content,mime);
+  });
+  panel.appendChild(b);
+ };
+ exporter('Сравнение корпусов CSV','_current_enclosure_checks.csv',
+  ()=>epCabinetEnclosureMatchCsvV1(report.match)?.csv,'text/csv;charset=utf-8');
+ exporter('Недостающие сведения для поставщика CSV','_current_enclosure_supplier.csv',
+  ()=>epCabinetEnclosureReviewCsvV1(report.review)?.csv,'text/csv;charset=utf-8');
+ exporter('Протокол сравнения JSON','_current_enclosure_review.json',
+  ()=>JSON.stringify(report,null,2),'application/json;charset=utf-8');
+});
+
+$('cabinetCrossRailOptimizeBtn')?.addEventListener('click',()=>{
+ const panel=$('cabinetCrossRailPreview');
+ if(!panel)return;
+ panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
+ if(typeof epCabinetCrossRailOptimizeV1!=='function'||
+  typeof epCabinetReflowPreviewV1!=='function'){
+  notify('Предпросмотр межрядной оптимизации недоступен',true);return;
+ }
+ const enclosureText=$('cabinetEnclosureCandidatesInput')?.value.trim()??'';
+ const parsedEnclosures=typeof epCabinetEnclosureInputV1==='function'?
+  epCabinetEnclosureInputV1(enclosureText):null;
+ if(!parsedEnclosures||parsedEnclosures.status==='BLOCKED'){
+  notify('Некорректные данные корпусов: '+(parsedEnclosures?.code??'недоступно'),true);return;
+ }
+ const enclosureCandidates=parsedEnclosures.items;
+ const alternatives=typeof epCabinetReflowAlternativesV1==='function'?
+  epCabinetReflowAlternativesV1(state,catalogDevice,{enclosures:enclosureCandidates}):null;
+ if(!alternatives||alternatives.status==='BLOCKED'){
+  notify('Сравнение альтернатив недоступно',true);return;
+ }
+ if(!alternatives.alternatives.length){
+  notify('Улучшение межрядных связей не найдено');return;
+ }
+ const select=document.createElement('select');select.className='input';
+ select.setAttribute('aria-label','Вариант компоновки DIN');
+ alternatives.alternatives.forEach((item,i)=>{
+  const opt=document.createElement('option');opt.value=item.id;
+  opt.textContent='Вариант '+(i+1)+' · связей '+item.crossRail+
+   ' · перестановок '+item.moved+' · переходов '+item.changedRails;
+  select.appendChild(opt);
+ });
+ panel.appendChild(select);
+ const variantPanel=document.createElement('div');panel.appendChild(variantPanel);
+ const renderVariant=()=>{variantPanel.replaceChildren();
+ const selected=alternatives.alternatives.find(v=>v.id===select.value);
+ if(!selected)return;
+ const proposal=selected.proposal;
+ if(proposal.status==='BLOCKED'){
+  notify('Межрядная оптимизация отклонена: '+proposal.code,true);return;
+ }
+ if(!proposal.changes.length){
+  notify('Уменьшить количество связей между DIN-рейками не удалось');return;
+ }
+ const preview=epCabinetReflowPreviewV1(state,proposal,catalogDevice);
+ if(preview.status==='BLOCKED'){
+  notify('Предпросмотр отклонён: '+preview.code,true);return;
+ }
+ const fingerprint=cabinetCrossRailFingerprintV1();
+ cabinetCrossRailPreviewSnapshotV1={fingerprint,changes:JSON.stringify(proposal.changes),strategy:selected.strategy};
+ const heading=document.createElement('h4');heading.textContent='Предлагаемая DIN-компоновка';
+ const summary=document.createElement('p');
+ summary.textContent='Межрядные связи: '+proposal.before.cross+' → '+proposal.after.cross+
+  ' · перемещено аппаратов: '+preview.summary.moved+
+  ' · переходов между рейками: '+preview.summary.changedRails+
+  '. Электрические связи не изменяются.';
+ variantPanel.append(heading,summary);
+ if(selected.enclosure){
+  const title=document.createElement('h5');title.textContent='Сравнение с корпусами';
+  const list=document.createElement('ul');
+  selected.enclosure.rows.forEach(item=>{
+   const li=document.createElement('li');
+   const label=item.status==='PRELIMINARY_MATCH'?'предварительно подходит':
+    item.status==='REJECTED'?'не подходит':'недостаточно данных';
+   li.textContent=item.id+' — '+label+
+    ' · ширина '+item.checks[0].result+
+    ' · высота '+item.checks[1].result+
+    ' · глубина '+item.checks[2].result+
+    ' · рейки '+item.railCheck;
+   list.appendChild(li);
+  });
+  const note=document.createElement('p');
+  note.textContent='Проверяются только заявленные полезные размеры. Посадка, проводка и тепловые условия не подтверждены.';
+  variantPanel.append(title,list,note);
+  if(typeof epCabinetEnclosureMatchCsvV1==='function'){
+   const exportEnclosures=document.createElement('button');
+   exportEnclosures.type='button';exportEnclosures.className='btn';
+   exportEnclosures.textContent='Скачать сравнение корпусов CSV';
+   exportEnclosures.addEventListener('click',()=>{
+    if(cabinetCrossRailFingerprintV1()!==fingerprint||
+     ($('cabinetEnclosureCandidatesInput')?.value.trim()??'')!==enclosureText){
+     notify('Исходные данные изменены — повторите предпросмотр',true);return;
+    }
+    const data=epCabinetEnclosureMatchCsvV1(selected.enclosure);
+    if(!data.csv){notify('Ведомость корпусов недоступна',true);return;}
+    download(baseName()+'_enclosure_comparison.csv',data.csv,'text/csv;charset=utf-8');
+   });
+   variantPanel.appendChild(exportEnclosures);
+  }
+ }
+ if(selected.geometry){
+  const geo=document.createElement('p');
+  geo.textContent='Каталожные габариты: '+selected.geometry.summary.knownDimensions+
+   ' из '+selected.geometry.summary.devices+' аппаратов; неизвестно: '+
+   selected.geometry.summary.missingDimensions+
+   '. Габариты корпуса и монтажные зазоры не подтверждены.';
+  variantPanel.appendChild(geo);
+  if(typeof epCabinetApparatusGeometrySvgV1==='function'){
+   const svg=epCabinetApparatusGeometrySvgV1(selected.geometry);
+   if(svg){
+    const diagram=document.createElement('div');diagram.className='ep-cabinet-din-visual';
+    diagram.innerHTML=svg;variantPanel.appendChild(diagram);
+   }
+  }
+  const dimensionExport=document.createElement('button');
+  dimensionExport.type='button';dimensionExport.className='btn';
+  dimensionExport.textContent='Скачать габариты аппаратов CSV';
+  dimensionExport.addEventListener('click',()=>{
+   if(cabinetCrossRailFingerprintV1()!==fingerprint){
+    notify('Проект изменён — повторите предпросмотр',true);return;
+   }
+   const data=epCabinetApparatusGeometryCsvV1(selected.geometry);
+   if(!data.csv){notify('Ведомость габаритов недоступна',true);return;}
+   download(baseName()+'_apparatus_dimensions.csv',data.csv,'text/csv;charset=utf-8');
+  });
+  variantPanel.appendChild(dimensionExport);
+ }
+ if(typeof epCabinetBeforeAfterSvgV1==='function'){
+  const pair=epCabinetBeforeAfterSvgV1(preview);
+  if(pair.status==='REVIEW_REQUIRED'){
+   const grid=document.createElement('div');grid.className='ep-cabinet-before-after';
+   for(const [title,markup] of [['Сейчас',pair.before],['Предлагается',pair.after]]){
+    const section=document.createElement('section');section.className='ep-cabinet-din-visual';
+    const h=document.createElement('h5');h.textContent=title;
+    const diagram=document.createElement('div');diagram.innerHTML=markup;
+    section.append(h,diagram);grid.appendChild(section);
+   }
+   variantPanel.appendChild(grid);
+  }
+ }
+ const list=document.createElement('details'),label=document.createElement('summary');
+ label.textContent='Перечень перестановок ('+preview.summary.moved+')';
+ const ul=document.createElement('ul');
+ for(const row of preview.rows.filter(r=>r.changed)){
+  const li=document.createElement('li');
+  li.textContent=row.deviceId+': DIN '+(row.fromRail+1)+'/'+(row.fromSlot+1)+
+   ' → DIN '+(row.toRail+1)+'/'+(row.toSlot+1);
+  ul.appendChild(li);
+ }
+ list.append(label,ul);variantPanel.appendChild(list);
+ const exportCsv=document.createElement('button');exportCsv.type='button';
+ exportCsv.className='btn';exportCsv.textContent='Скачать перемещения CSV';
+ exportCsv.addEventListener('click',()=>{
+  if(cabinetCrossRailFingerprintV1()!==fingerprint){
+   notify('Проект изменён — повторите предпросмотр',true);return;
+  }
+  const data=epCabinetOptionPreviewCsvV1(preview);
+  if(!data.csv){notify('CSV недоступен',true);return;}
+  download(baseName()+'_cross_rail_preview.csv',data.csv,'text/csv;charset=utf-8');
+ });
+ const exportSvg=document.createElement('button');exportSvg.type='button';
+ exportSvg.className='btn';exportSvg.textContent='Скачать эскиз SVG';
+ exportSvg.addEventListener('click',()=>{
+  if(cabinetCrossRailFingerprintV1()!==fingerprint){
+   notify('Проект изменён — повторите предпросмотр',true);return;
+  }
+  const svg=epCabinetOptionDinSvgV1(preview);
+  if(!svg){notify('SVG недоступен',true);return;}
+  download(baseName()+'_cross_rail_preview.svg',svg,'image/svg+xml;charset=utf-8');
+ });
+ const apply=document.createElement('button');apply.type='button';
+ apply.className='btn';apply.textContent='Применить предложенную компоновку';
+ apply.addEventListener('click',()=>{
+  if(cabinetCrossRailFingerprintV1()!==fingerprint||
+   ($('cabinetEnclosureCandidatesInput')?.value.trim()??'')!==enclosureText){
+   panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
+   notify('Проект изменён — предложение устарело. Постройте новый предпросмотр',true);return;
+  }
+  const fresh=epCabinetCrossRailOptimizeV1(state,catalogDevice,{strategy:selected.strategy});
+  if(fresh.status==='BLOCKED'||JSON.stringify(fresh.changes)!==cabinetCrossRailPreviewSnapshotV1?.changes){
+   notify('Предложение изменилось — повторите предпросмотр',true);return;
+  }
+  const verified=epCabinetReflowPreviewV1(state,fresh,catalogDevice);
+  if(verified.status==='BLOCKED'||verified.summary.moved!==preview.summary.moved){
+   notify('Проверка компоновки не пройдена',true);return;
+  }
+  const geometryFresh=typeof epCabinetApparatusGeometryV1==='function'?
+   epCabinetApparatusGeometryV1(state,verified,catalogDevice):null;
+  if(geometryFresh?.status==='BLOCKED'||
+   JSON.stringify(geometryFresh?.rows??null)!==JSON.stringify(selected.geometry?.rows??null)){
+   notify('Каталожные габариты изменились — повторите предпросмотр',true);return;
+  }
+  if(!confirm('Применить '+verified.summary.moved+' перестановок DIN? Электрические связи не изменятся.'))return;
+  checkpoint();state.manualLayoutV1=fresh.project.manualLayoutV1;changed();
+  panel.replaceChildren();cabinetCrossRailPreviewSnapshotV1=null;
+  notify('Межрядные связи: '+fresh.before.cross+' → '+fresh.after.cross+
+   '. Перемещено аппаратов: '+fresh.changes.length+'.');
+ });
+ variantPanel.append(exportCsv,exportSvg,apply);
+ };
+ select.addEventListener('change',renderVariant);
+ renderVariant();
+});
+$('cabinetGroupReflowBtn')?.addEventListener('click',()=>{
+ if(typeof epCabinetGroupReflowV1!=='function'){
+  notify('Оптимизатор группировки недоступен',true);return;
+ }
+ const proposal=epCabinetGroupReflowV1(state,catalogDevice);
+ if(proposal.status==='BLOCKED'){
+  notify('Компоновку нельзя переставить: '+proposal.code,true);return;
+ }
+ if(!proposal.changes.length){
+  notify('Улучшение близости для имеющихся связей не найдено.');return;
+ }
+ const more=proposal.connectionSpaceDelta?.increases?.length||0;
+ if(more>0&&!confirm('После перестановки '+more+
+  ' расчётных расстояний до зарезервированных кабельных/клеммных зон увеличатся. '+
+  'Это лишь геометрические оценки, а не длины проводов. Применить вариант?'))return;
+ checkpoint();state.manualLayoutV1=proposal.project.manualLayoutV1;changed();
+ notify('Перемещено аппаратов: '+proposal.changes.length+
+  '. Изменены только позиции, подключения не пересчитывались.');
+});
+$('cabinetCapacityOptions')?.addEventListener('change',e=>{
+ if(e.target.matches('[data-cabinet-option-preference]')){
+  cabinetOptionPreferenceV1=e.target.value;renderCabinetCapacityOptionsV1();
+ }
+ if(e.target.matches('[data-cabinet-show-all]')){
+  cabinetOptionShowAllCapacitiesV1=e.target.checked;renderCabinetCapacityOptionsV1();
+ }
+});
+$('cabinetCapacityOptions')?.addEventListener('click',e=>{
+ const preview=e.target.closest('[data-preview-cabinet-option]');
+ if(preview){cabinetOptionPreviewIdV1=preview.dataset.previewCabinetOption;renderCabinetCapacityOptionsV1();return;}
+ const b=e.target.closest('[data-apply-cabinet-option]');
+ if(b)applyCabinetCapacityOptionV1(b.dataset.applyCabinetOption);
+});
 $('undoBtn').onclick=()=>restoreHistory(historyUndo,historyRedo);
 $('redoBtn').onclick=()=>restoreHistory(historyRedo,historyUndo);
 $('taskFileBtn').onclick=()=>$('taskFile').click();
@@ -1761,11 +3766,19 @@ $('consumerEditor').addEventListener('click',e=>{
  const name=$('consumerName').value.trim(),p=numeric($('consumerPower').value);
  try{if(p===null)throw Error('Введите положительную мощность');const draft=structuredCloneCompat(ensureV2(state));addConsumerTo(draft,selectedLine,name,p);checkpoint();state.loads=draft.loads;state.lines=draft.lines;changed();}catch(err){notify(err.message,true);}
 });
+$('sharedDeviceEditor').addEventListener('change',e=>{
+ if(e.target.id==='sharedRcdType'){syncSharedRcdArticleOptions();return;}
+ const select=e.target.closest('[data-shared-rcd-sku]');if(!select)return;
+ try{
+  const draft=structuredCloneCompat(ensureV2(state)),dev=applySharedCatalogueSku(draft,select.dataset.sharedRcdSku,select.value);
+  checkpoint();state=draft;changed();notify(dev?'Артикул общего УЗО выбран; пригодность защиты не подтверждена':'Артикул общего УЗО очищен');
+ }catch(err){notify(err.message,true);renderSharedDevices();}
+});
 $('sharedDeviceEditor').addEventListener('click',e=>{
  const remove=e.target.closest('[data-remove-rcd]');if(remove){checkpoint();removeSharedDeviceFrom(ensureV2(state),remove.dataset.removeRcd);changed();return;}
  if(e.target.id!=='addRcdBtn')return;
  const ids=[...document.querySelectorAll('[data-rcd-circuit]:checked')].map(x=>x.dataset.rcdCircuit);
- try{const draft=JSON.parse(JSON.stringify(ensureV2(state)));addSharedRCDTo(draft,$('sharedRcdType').value,$('sharedRcdLabel').value.trim(),ids);checkpoint();state.sharedDevices=draft.sharedDevices;changed();notify('Общее УЗО добавлено как черновая логическая группа');}catch(err){notify(err.message,true);}
+ try{const draft=JSON.parse(JSON.stringify(ensureV2(state)));addSharedRCDTo(draft,$('sharedRcdType').value,$('sharedRcdLabel').value.trim(),ids,$('sharedRcdSku').value);checkpoint();state.sharedDevices=draft.sharedDevices;changed();notify('Общее УЗО добавлено как черновая логическая группа');}catch(err){notify(err.message,true);}
 });
 $('exportGraphSvgBtn').onclick=()=>download(baseName()+'_logical_graph.svg',graphSvg(state),'image/svg+xml;charset=utf-8');
 $('conductorEditor').addEventListener('click',e=>{
@@ -1804,7 +3817,213 @@ $('feedEditor').addEventListener('click',e=>{
  if(e.target.id==='exportFeedCsvBtn')download(baseName()+'_feed_DRAFT.csv',feedCsv(state),'text/csv;charset=utf-8');
  if(e.target.id==='exportFeedSvgBtn')download(baseName()+'_feed_DRAFT.svg',feedSvg(state),'image/svg+xml;charset=utf-8');
 });
+$('protectionLinksPanel').addEventListener('click',e=>{
+ const remove=e.target.closest('[data-protection-unlink]');
+ const save=e.target.closest('#protectionLinkSave');
+ if(!remove&&!save)return;
+ try{
+  const down=remove?remove.dataset.protectionUnlink:$('protectionDownstream').value;
+  const up=remove?null:($('protectionUpstream').value||null);
+  if(!down)throw Error('Выберите нижестоящую цепь');
+  const candidate=epProtectionLinksUpdateV1(state,down,up);
+  if(JSON.stringify(state.protectionLinks||[])===JSON.stringify(candidate.protectionLinks))return;
+  checkpoint();state.protectionLinks=candidate.protectionLinks;
+  state.protectionLinksVersion=1;changed();
+  notify('Связь защиты обновлена. Селективность требует отдельной проверки.');
+ }catch(error){notify('Связь не сохранена: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const incoming=e.target.closest('#deviceSupplyIncomingSave');
+ const link=e.target.closest('#deviceSupplyLinkSave');
+ const unlink=e.target.closest('[data-device-supply-unlink]');
+ const del=e.target.closest('[data-device-supply-remove-incoming]');
+ if(!incoming&&!link&&!unlink&&!del)return;
+ try{
+  let next;
+  if(incoming)next=epDeviceSupplyIncomingV1(state,{
+   id:$('deviceSupplyIncomingId').value.trim(),label:$('deviceSupplyIncomingLabel').value.trim()});
+  else if(del)next=epDeviceSupplyRemoveIncomingV1(state,del.dataset.deviceSupplyRemoveIncoming);
+  else{
+   const to=unlink?unlink.dataset.deviceSupplyUnlink:$('deviceSupplyTo').value;
+   const from=unlink?null:($('deviceSupplyFrom').value||null);
+   if(!to)throw Error('Выберите получающий аппарат');
+   next=epDeviceSupplyUpdateV1(state,from,to,
+    $('deviceSupplyConductors').value.split(','));
+  }
+  if(JSON.stringify(state.deviceSupplyV1)===JSON.stringify(next))return;
+  checkpoint();
+  state.deviceSupplyV1=next;
+  if(del&&Array.isArray(state.deviceCoordinationEvidenceV1)){
+   const removedNode='INCOMING:'+del.dataset.deviceSupplyRemoveIncoming;
+   state.deviceCoordinationEvidenceV1=state.deviceCoordinationEvidenceV1.filter(x=>
+    x.from!==removedNode&&x.to!==removedNode);
+  }
+  if(del&&Array.isArray(state.incomingMaximumStudiesV1))
+   state.incomingMaximumStudiesV1=state.incomingMaximumStudiesV1.filter(x=>
+    x.deviceNodeId!=='INCOMING:'+del.dataset.deviceSupplyRemoveIncoming);
+  if(del&&Array.isArray(state.deviceFaultScenariosV1))
+   state.deviceFaultScenariosV1=state.deviceFaultScenariosV1.filter(x=>
+    x.deviceNodeId!=='INCOMING:'+del.dataset.deviceSupplyRemoveIncoming);
+  if(del&&Array.isArray(state.incomingTerminalBindingsV1))
+   state.incomingTerminalBindingsV1=state.incomingTerminalBindingsV1.filter(x=>
+    x.incomingId!==del.dataset.deviceSupplyRemoveIncoming);
+  changed();
+  notify('Декларация питания сохранена. Соединения не подтверждены.');
+ }catch(error){notify('Связь питания не сохранена: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const save=e.target.closest('#incomingBindingSave');
+ const clear=e.target.closest('#incomingBindingClear');
+ if(!save&&!clear)return;
+ try{
+  const incoming=$('incomingBindingIncoming').value,
+   model=$('incomingBindingModel').value;
+  if(!incoming||(save&&!model))throw Error('Выберите вводной и устройство модели');
+  const next=save?epIncomingTerminalBindingSetV1(state,incoming,model):
+   epIncomingTerminalBindingClearV1(state,incoming);
+  if(JSON.stringify(state.incomingTerminalBindingsV1||[])===JSON.stringify(next))return;
+  checkpoint();state.incomingTerminalBindingsV1=next;changed();
+  notify('Привязка вводного обновлена. Паспортные контакты не подтверждены.');
+ }catch(error){notify('Привязка вводного не сохранена: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const save=e.target.closest('#deviceFaultSave');
+ const clear=e.target.closest('[data-device-fault-clear]');
+ if(!save&&!clear)return;
+ try{
+  const id=clear?clear.dataset.deviceFaultClear:$('deviceFaultNode').value;
+  if(!id)throw Error('Выберите защитный аппарат');
+  const amount=v=>{
+   const s=String(v||'').trim().replace(',','.');
+   if(!/^(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)$/.test(s))
+    throw Error('Укажите положительное число для Ik и напряжения');
+   return Number(s);
+  };
+  const next=clear?epDeviceFaultClearV1(state,id):
+   epDeviceFaultDeclareV1(state,id,amount($('deviceFaultIk').value),
+    amount($('deviceFaultVoltage').value),
+    $('deviceFaultSource').value.trim(),$('deviceFaultRevision').value.trim());
+  if(JSON.stringify(state.deviceFaultScenariosV1||[])===JSON.stringify(next))return;
+  checkpoint();state.deviceFaultScenariosV1=next;changed();
+  notify('Расчётная точка сохранена. Паспортная применимость требует проверки.');
+ }catch(error){notify('Исследование точки КЗ не сохранено: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const save=e.target.closest('#coordSave');
+ const clear=e.target.closest('[data-coord-clear]');
+ if(!save&&!clear)return;
+ try{
+  const parts=clear?clear.dataset.coordClear.split('|'):$('coordPair').value.split('|');
+  if(parts.length<(clear?3:2)||!parts[0]||!parts[1])
+   throw Error('Выберите пару защитных аппаратов');
+  const number=v=>{
+   const s=String(v||'').trim().replace(',','.');
+   if(!/^(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)$/.test(s))
+    throw Error('Напряжение и заявленный предел должны быть числами');
+   return Number(s);
+  };
+  const next=clear?epCoordClearV1(state,parts[0],parts[1],parts[2]):
+   epCoordDeclareV1(state,parts[0],parts[1],$('coordType').value,
+    number($('coordVoltage').value),number($('coordLimit').value),
+    $('coordMaker').value.trim(),$('coordDocument').value.trim(),
+    $('coordRevision').value.trim(),$('coordPage').value.trim(),
+    $('coordUrl').value.trim());
+  if(JSON.stringify(state.deviceCoordinationEvidenceV1||[])===JSON.stringify(next))return;
+  checkpoint();state.deviceCoordinationEvidenceV1=next;changed();
+  notify('Документированное заявление сохранено. Требуется инженерная проверка.');
+ }catch(error){notify('Данные изготовителя не сохранены: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ if(e.target.closest('#deviceFaultCsv')){
+  if(typeof epDeviceFaultCsvV1!=='function')return notify('Ведомость токов КЗ недоступна',true);
+  const report=epDeviceFaultAuditV1(state,catalogDevice);
+  return download(baseName()+'_fault_locations_DRAFT.csv',epDeviceFaultCsvV1(report),
+   'text/csv;charset=utf-8');
+ }
+ if(e.target.closest('#coordCsv')){
+  if(typeof epCoordCsvV1!=='function')return notify('Ведомость изготовителя недоступна',true);
+  const report=epCoordAuditV1(state,catalogDevice);
+  return download(baseName()+'_coordination_sources_DRAFT.csv',epCoordCsvV1(report),
+   'text/csv;charset=utf-8');
+ }
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const bind=e.target.closest('#calculatedFaultBind');
+ const clear=e.target.closest('[data-calculated-fault-clear]');
+ if(!bind&&!clear)return;
+ try{
+  const node=clear?clear.dataset.calculatedFaultClear:$('calculatedFaultBranch').value;
+  if(!node)throw Error('Выберите аппарат из списка');
+  const candidate=bind?epCalculatedDeviceFaultBindV1(state,node,catalogDevice):
+   epCalculatedDeviceFaultClearV1(state,node);
+  if(JSON.stringify(state.calculatedDeviceFaultBindingsV1||[])===JSON.stringify(candidate))return;
+  checkpoint();state.calculatedDeviceFaultBindingsV1=candidate;changed();
+  notify('Расчёт привязан к точке аппарата. Паспортная применимость не подтверждена.');
+ }catch(error){notify('Привязка расчётного КЗ не сохранена: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ const save=e.target.closest('#incomingMaxSave');
+ const clear=e.target.closest('[data-incoming-max-clear]');
+ if(!save&&!clear)return;
+ try{
+  const id=clear?clear.dataset.incomingMaxClear:$('incomingMaxNode').value;
+  if(!id)throw Error('Выберите вводной аппарат');
+  const number=(name,zero=false)=>{
+   const raw=String($(name).value||'').trim().replace(',','.');
+   if(!/^(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)$/.test(raw))
+    throw Error('Некорректное число в '+name);
+   const n=Number(raw);
+   if(!Number.isFinite(n)||(zero?n<0:n<=0))throw Error('Недопустимое значение '+name);
+   return n;
+  };
+  let next;
+  if(clear)next=epIncomingMaximumClearV1(state,id);
+  else{
+   const sourceModel=$('incomingMaxSourceModel').value;
+   const input={sourceModel,uLLV:number('incomingMaxU'),cmax:number('incomingMaxC')};
+   if(sourceModel==='DECLARED_RX')Object.assign(input,{
+    sourceROhm:number('incomingMaxR',true),sourceXOhm:number('incomingMaxX',true),
+    networkSource:$('incomingMaxNet').value.trim()});
+   else input.transformer={
+    ratedPowerKva:number('incomingMaxPower'),ratedVoltageV:input.uLLV,
+    ukPercent:number('incomingMaxUk'),loadLossW:number('incomingMaxLoss',true),
+    upstreamROhm:number('incomingMaxUpR',true),
+    upstreamXOhm:number('incomingMaxUpX',true),
+    source:$('incomingMaxTransformerSource').value.trim(),
+    upstreamSource:$('incomingMaxUpstreamSource').value.trim(),
+    lossBasisConfirmed:$('incomingMaxBasis').checked};
+   next=epIncomingMaximumDeclareV1(state,id,input,catalogDevice);
+  }
+  if(JSON.stringify(state.incomingMaximumStudiesV1||[])===JSON.stringify(next))return;
+  checkpoint();state.incomingMaximumStudiesV1=next;changed();
+  notify('Расчётный эквивалент источника на вводном сохранён. Требуется инженерная проверка.');
+ }catch(error){notify('Исследование вводного не сохранено: '+error.message,true);}
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ if(!e.target.closest('#protectionEvidenceMatrixCsv'))return;
+ if(typeof epProtectionEvidenceMatrixV1!=='function'||
+    typeof epProtectionEvidenceMatrixCsvV1!=='function')
+  return notify('Экспорт инженерных замечаний недоступен',true);
+ const report=epProtectionEvidenceMatrixV1(state,catalogDevice);
+ return download(baseName()+'_apparatus_evidence_DRAFT.csv',
+  epProtectionEvidenceMatrixCsvV1(report),'text/csv;charset=utf-8');
+});
+$('deviceSupplyPanel').addEventListener('click',e=>{
+ if(!e.target.closest('#designStageSave'))return;
+ const stage=$('designStageSelect')?.value;
+ if(!['PRELIMINARY','BOARD_DESIGN','DETAILED'].includes(stage))
+  return notify('Некорректная стадия проектирования',true);
+ const designRequirementsV1={selectivity:$('designSelectivityRequested').checked,
+  externalNetwork:$('designExternalNetworkRequested').checked};
+ if((state.designStageV1||'PRELIMINARY')===stage&&
+  JSON.stringify(state.designRequirementsV1||{selectivity:false,externalNetwork:false})===
+   JSON.stringify(designRequirementsV1))return;
+ checkpoint();state.designStageV1=stage;
+ state.designRequirementsV1=designRequirementsV1;changed();
+ notify('Стадия проектирования обновлена; необязательные проверки не блокируют щит.');
+});
 $('exportProtectionCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epProtectionWorkbenchV1!=='function'||typeof epProtectionWorkbenchCsvV1!=='function')
   return notify('Ведомость защиты недоступна',true);
  const catalog=Object.entries(EP_CATALOG).map(([id,device])=>({id,device}));
@@ -1830,6 +4049,7 @@ $('exportIssueRegisterCsvBtn').addEventListener('click',()=>{
  download(baseName()+'_issues_DRAFT.csv',epEngineeringIssueRegisterCsvV1(report),'text/csv;charset=utf-8');
 });
 $('exportCircuitTraceSvgBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitWiringTraceV1!=='function'||typeof epConductorTraceSvgV1!=='function')
   return notify('Схема проводников недоступна',true);
  if(!selectedLine)return notify('Сначала выберите отходящую цепь',true);
@@ -1838,7 +4058,24 @@ $('exportCircuitTraceSvgBtn').addEventListener('click',()=>{
  if(!svg)return notify('Не удалось сформировать SVG проводников',true);
  download(baseName()+'_'+selectedLine+'_conductors_DRAFT.svg',svg,'image/svg+xml;charset=utf-8');
 });
+// Release gate for drawing and specification exports only. Raw project
+// JSON and diagnostic/issue registers remain downloadable for correction.
+function epDraftDocumentExportGate(){
+ if(typeof epEngineeringBundleV1!=='function')
+  return {allowed:false,reason:'Сквозная проверка недоступна'};
+ const bundle=epEngineeringBundleV1(state,catalogDevice);
+ const cross=bundle?.sections?.crossView;
+ if(!cross||cross.status==='BLOCKED')
+  return {allowed:false,reason:'Несогласованные схема, аппараты и спецификация'};
+ return {allowed:true,bundle};
+}
+function epRequireDraftDocumentExport(){
+ const gate=epDraftDocumentExportGate();
+ if(!gate.allowed)notify('Экспорт остановлен: '+gate.reason+'. Проверьте сквозной аудит.',true);
+ return gate.allowed;
+}
 $('exportSingleLineSvgBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epSingleLineDraftV1!=='function'||typeof epSingleLineSvgV1!=='function')
   return notify('Однолинейная схема недоступна',true);
  const report=epSingleLineDraftV1(state,catalogDevice);
@@ -1860,6 +4097,7 @@ $('singleLineDraftPanel').addEventListener('keydown',e=>{
  if(!state.lines.some(line=>line.id===id))return;
  selectedLine=id;render();
 });
+$('projectChainPanel')?.addEventListener('click',e=>{const b=e.target.closest('[data-project-focus]');if(b){selectedLine=b.dataset.projectFocus;render();}});
 $('draftBoardPreview').addEventListener('click',e=>{
  const button=e.target.closest('[data-din-focus]');if(!button||button.disabled)return;
  const id=button.dataset.dinFocus;
@@ -1873,6 +4111,7 @@ $('crossViewAuditPanel').addEventListener('click',e=>{
  selectedLine=id;render();
 });
 $('exportWiringTraceCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitWiringTraceV1!=='function'||typeof epCircuitWiringTraceCsvV1!=='function')
   return notify('Прослеживаемость проводников недоступна',true);
  const report=epCircuitWiringTraceV1(state);
@@ -1889,12 +4128,80 @@ $('exportCrossViewJsonBtn').addEventListener('click',()=>{
  const report=epEngineeringBundleV1(state,catalogDevice).sections.crossView;
  download(baseName()+'_crossview_DRAFT.json',JSON.stringify(report,null,2),'application/json;charset=utf-8');
 });
+$('circuitDesignReviewPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-drop-form]');if(!form)return;
+ e.preventDefault();
+ const read=name=>form.elements.namedItem(name)?.value;
+ const yes=name=>form.elements.namedItem(name)?.checked===true;
+ const result=epApplyVoltageDropInputV1(state,form.getAttribute('data-drop-form'),{
+  lengthM:read('lengthM'),voltageV:read('voltageV'),rOhmKm:read('rOhmKm'),
+  xOhmKm:read('xOhmKm'),powerFactor:read('powerFactor'),
+  maxDropPercent:read('maxDropPercent'),conductorBasisDocumented:yes('conductorBasisDocumented'),
+  routeLengthDocumented:yes('routeLengthDocumented'),neutralEquivalent:yes('neutralEquivalent')
+ });
+ if(!result.project)return notify('Падение напряжения: '+result.code,true);
+ checkpoint();state=result.project;changed();
+ notify('Расчёт падения напряжения записан: '+result.calculation.dropPercent.toFixed(2)+'%');
+});
+$('designWorkQueuePanel').addEventListener('click',e=>{
+ const focus=e.target.closest('[data-design-focus]');
+ if(focus){selectedLine=focus.getAttribute('data-design-focus');render();}
+});
+$('circuitDesignReviewPanel').addEventListener('click',e=>{
+ const focus=e.target.closest('[data-design-focus]');
+ if(focus){selectedLine=focus.getAttribute('data-design-focus');render();return;}
+ if(e.target.closest('#exportDesignReviewCsvBtn')){
+  if(!epRequireDraftDocumentExport())return;
+  const report=epCircuitDesignReviewV1(state,catalogDevice);
+  download(baseName()+'_design_review.csv',epCircuitDesignReviewCsvV1(report),'text/csv;charset=utf-8');
+ }
+});
+$('cableReferencePanel').addEventListener('submit',e=>{
+ const sectionForm=e.target.closest('[data-cable-section-form]');
+ if(sectionForm){
+  e.preventDefault();
+  const lineId=sectionForm.getAttribute('data-cable-section-form');
+  const section=sectionForm.elements.namedItem('sectionMm2')?.value;
+  const result=epApplyCableSectionV1(state,lineId,section);
+  if(!result.project)return notify('Сечение не записано: '+result.code,true);
+  checkpoint();state=result.project;selectedLine=lineId;changed();
+  notify('Проектное сечение записано. Проверьте расчёты.');
+  return;
+ }
+ const form=e.target.closest('[data-cable-reference-form]');if(!form)return;
+ e.preventDefault();
+ const lineId=form.getAttribute('data-cable-reference-form');
+ if(typeof epApplyCableReferenceInputV1!=='function')return notify('Справочник кабелей недоступен',true);
+ const result=epApplyCableReferenceInputV1(state,lineId,{
+  installationMethod:form.elements.namedItem('installationMethod')?.value,
+  confirmContext:form.elements.namedItem('confirmContext')?.checked===true
+ });
+ if(!result.project)return notify('Условия не записаны: '+result.code,true);
+ checkpoint();state=result.project;selectedLine=lineId;changed();
+ notify('Условия справочной таблицы записаны. Проверьте расчёт и ограничения.');
+});
+$('loadCurrentPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-load-current-form]');if(!form)return;
+ e.preventDefault();
+ const lineId=form.getAttribute('data-load-current-form');
+ const read=name=>form.elements.namedItem(name)?.value;
+ if(typeof epApplyLoadCurrentV1!=='function')return notify('Расчёт тока недоступен',true);
+ const result=epApplyLoadCurrentV1(state,lineId,{
+  mode:read('mode'),powerKw:read('powerKw'),voltageV:read('voltageV'),
+  powerSource:form.elements.namedItem('linkCircuitPower')?.checked?'circuit':'manual',
+  powerFactor:read('powerFactor'),efficiency:read('efficiency'),demandFactor:read('demandFactor')
+ });
+ if(!result.project)return notify('Ток не рассчитан: '+result.code,true);
+ checkpoint();state=result.project;selectedLine=lineId;changed();
+ notify('Ib рассчитан. Проверьте исходные данные и подбор защиты.');
+});
 $('protectionWorkbench').addEventListener('submit',e=>{
  const form=e.target.closest('[data-protection-input-form]');if(!form)return;
  e.preventDefault();
  const id=form.dataset.protectionInputForm;
  const inputs={ibA:form.elements.namedItem('ibA')?.value,
-  izA:form.elements.namedItem('izA')?.value,ikKa:form.elements.namedItem('ikKa')?.value};
+  izA:form.elements.namedItem('izA')?.value,ikKa:form.elements.namedItem('ikKa')?.value,
+  voltageV:form.elements.namedItem('voltageV')?.value??''};
  if(typeof epProtectionInputsV1!=='function')return notify('Модуль исходных токов недоступен',true);
  const result=epProtectionInputsV1(state,id,inputs);
  if(!result.project)return notify('Исходные токи не записаны: '+result.code,true);
@@ -1906,7 +4213,7 @@ $('protectionWorkbench').addEventListener('click',e=>{
  const id=btn.dataset.protectionLine,sku=btn.dataset.protectionSku;
  const line=state.lines.find(x=>x.id===id);
  if(!line||!catalogDevice(sku))return notify('Цепь или артикул не найдены',true);
- const catalog=Object.entries(EP_CATALOG).map(([key,device])=>({id:key,device}));
+ const catalog=projectCatalogEntries().map(([id,device])=>({id,device}));
  const check=epProtectionWorkbenchV1(state,catalogDevice,catalog,id);
  if(check.selected?.lineId!==id||!check.selected.candidates.some(x=>x.sku===sku&&x.status!=='REJECTED'))
   return notify('Аппарат не проходит предварительную проверку',true);
@@ -1942,24 +4249,396 @@ $('exportEngineeringBundleBtn').addEventListener('click',()=>{
   JSON.stringify(epEngineeringBundleV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
 });
 $('exportDraftBomCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epDraftBomV1!=='function'||typeof epDraftBomCsvV1!=='function')return notify('Спецификация недоступна',true);
  download(baseName()+'_equipment_BOM_DRAFT.csv',epDraftBomCsvV1(epDraftBomV1(state,catalogDevice)),'text/csv;charset=utf-8');
 });
 $('exportDraftBomJsonBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epDraftBomV1!=='function')return notify('Спецификация недоступна',true);
  download(baseName()+'_equipment_BOM_DRAFT.json',JSON.stringify(epDraftBomV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
 });
+$('designEvidencePanel').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-save-evidence]');if(!btn)return;
+ const area=btn.getAttribute('data-save-evidence');
+ if(!['load','network','cable','device','topology','enclosure'].includes(area))return;
+ const row=btn.closest('[data-evidence-row]');if(!row)return;
+ const value=key=>row.querySelector('[data-evidence-field="'+key+'"]')?.value?.trim()||'';
+ const source=value('source'),method=value('method'),status=value('status');
+ if(!['verified','failed','unknown'].includes(status))return notify('Некорректный статус',true);
+ if(source.length>500||method.length>500)return notify('Слишком длинное основание',true);
+ if(status==='verified'&&(!source||!method))
+  return notify('Для документирования укажите источник и метод',true);
+ checkpoint();
+ state.evidence={...(state.evidence&&typeof state.evidence==='object'?state.evidence:{})};
+ state.evidence[area]={status,source,method,stale:false};
+ changed();notify('Основание проектного решения сохранено');
+});
 $('exportEngineeringGateBtn').addEventListener('click',exportEngineeringGateV1);
 $('exportCircuitDossierJsonBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitDossierV1!=='function'){notify('Модуль ведомости не загружен',true);return;}
  download(baseName()+'_circuit_dossier_DRAFT.json',
   JSON.stringify(epCircuitDossierV1(state,catalogDevice),null,2),'application/json;charset=utf-8');
 });
 $('exportCircuitDossierCsvBtn').addEventListener('click',()=>{
+ if(!epRequireDraftDocumentExport())return;
  if(typeof epCircuitDossierV1!=='function'||typeof epCircuitDossierCsvV1!=='function'){
   notify('Модуль ведомости не загружен',true);return;
  }
  download(baseName()+'_circuit_dossier_DRAFT.csv',
   epCircuitDossierCsvV1(epCircuitDossierV1(state,catalogDevice)),'text/csv;charset=utf-8');
 });
-try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}render();
+$('manufacturerEvidencePanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-evidence-record]');if(!form)return;
+ e.preventDefault();
+ const l=state.lines.find(x=>x.id===form.dataset.evidenceRecord);
+ if(!l?.letThroughInput)return notify('Сначала сохраните исходный расчёт I²t',true);
+ const input=l.letThroughInput,a=catalogDevice(l.catalogSku);
+ if(!a)return notify('Аппарат не найден в каталоге',true);
+ const get=k=>form.elements.namedItem(k)?.value;
+ const numeric=k=>Number(String(input[k]??'').replace(',','.'));
+ const scope={deviceStandard:input.deviceStandard,nominalCurrentA:numeric('articleInA'),
+  poles:input.protectionPoles,testVoltageV:numeric('testVoltageV'),
+  testFrequencyHz:numeric('testFrequencyHz'),faultModel:input.faultModel};
+ const record={id:get('evidenceId').trim(),kind:'LET_THROUGH_I2T',
+  catalogKey:l.catalogSku,manufacturerSku:a.sku,manufacturerName:get('evidenceManufacturer'),
+  series:get('evidenceSeries'),documentTitle:get('evidenceTitle'),
+  documentUrl:get('evidenceUrl'),documentRevision:get('evidenceRevision'),
+  documentLocation:get('evidenceLocation'),reviewedAt:get('evidenceDate'),
+  reviewedBy:get('evidenceReviewer'),sourceType:get('evidenceSourceType'),
+  documentChecked:form.elements.namedItem('evidenceChecked').checked,
+  scope,bands:input.bands.map(b=>({minProspectiveA:Number(String(b.minProspectiveA).replace(',','.')),
+   maxProspectiveA:Number(String(b.maxProspectiveA).replace(',','.')),
+   maxLetThroughA2s:Number(String(b.maxLetThroughA2s).replace(',','.'))}))};
+ const created=epAddManufacturerEvidenceRecordV1(state,record);
+ if(!created.project)return notify('Паспортная запись не добавлена: '+created.code,true);
+ const draft=created.project;
+ const target=draft.lines.find(x=>x.id===l.id);
+ target.letThroughInput.evidenceRecordId=record.id;
+ const report=epBreakerLetThroughV1(draft,target,catalogDevice(target.catalogSku));
+ if(report.evidenceBinding?.issues?.some(i=>i.level==='BLOCKED'))
+  return notify('Документ не соответствует расчету: '+report.evidenceBinding.issues[0].code,true);
+ target.calculationReview={...target.calculationReview,required:true,
+  reason:'MANUFACTURER_EVIDENCE_LINKED'};
+ checkpoint();state=draft;changed();
+ notify('Паспортный источник добавлен; нормативное подтверждение требует инженерной проверки');
+});
+$('breakerLetThroughPanel').addEventListener('click',e=>{
+ const add=e.target.closest('[data-add-let-through-band]');
+ const remove=e.target.closest('[data-remove-let-through-band]');
+ if(add){
+  const holder=add.closest('[data-let-through-editor]').querySelector('[data-let-through-bands]');
+  if(holder.children.length>=30)return notify('Максимум 30 диапазонов энергии',true);
+  holder.insertAdjacentHTML('beforeend',epBreakerLetThroughBandHtmlV1({},holder.children.length));
+ }
+ if(remove)remove.closest('[data-let-through-band]').remove();
+});
+$('breakerLetThroughPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-let-through]');if(!form)return;
+ e.preventDefault();
+ const line=state.lines.find(x=>x.id===form.dataset.letThrough);
+ if(!line)return notify('Цепь не выбрана',true);
+ const get=k=>form.elements.namedItem(k)?.value;
+ const currentBasis=get('letCurrentBasis');
+ const input={catalogKey:get('letCatalogKey'),articleSku:get('letArticleSku'),articleInA:get('letArticleInA'),
+  deviceStandard:get('letStandard'),testVoltageV:get('letVoltage'),
+  testFrequencyHz:get('letFrequency'),applicationVoltageV:get('letApplicationVoltage'),
+  applicationFrequencyHz:get('letApplicationFrequency'),protectionPoles:Number(get('letPoles')),
+  faultModel:get('letModel'),comparisonPoint:get('letPoint'),
+  currentBasis,conductorRole:get('letRole'),conductorMaterial:get('letMaterial'),
+  sectionMm2:get('letSection'),kA_SqrtS_PerMm2:get('letK'),
+  evidenceRecordId:get('letEvidenceId'),
+  manufacturerSource:get('letManufacturerSource'),testConditionSource:get('letConditionSource'),
+  cableSource:get('letCableSource'),kSource:get('letKSource'),
+  manufacturerEnvelopeConfirmed:form.elements.namedItem('letEnvelopeConfirmed').checked,
+  conductorApplicationReviewed:form.elements.namedItem('letCableReviewed').checked,
+  temperatureBasisConfirmed:form.elements.namedItem('letTemperatureConfirmed').checked,
+  bands:[...form.querySelectorAll('[data-let-through-band]')].map(group=>
+   Object.fromEntries([...group.querySelectorAll('[data-let-through-band-field]')].map(el=>
+    [el.dataset.letThroughBandField,el.value])))};
+ if(currentBasis==='DECLARED_SCENARIO'){
+  input.prospectiveCurrentA=get('letCurrent');
+  input.prospectiveSource=get('letProspectiveSource');
+ }
+ const candidate=JSON.parse(JSON.stringify(state));
+ const target=candidate.lines.find(x=>x.id===line.id);target.letThroughInput=input;
+ const report=epBreakerLetThroughV1(candidate,target,catalogDevice(target.catalogSku));
+ const malformed=report.issues.find(x=>x.level==='BLOCKED'&&[
+  'LET_THROUGH_INPUT_INVALID','LET_THROUGH_CATALOG_KEY_MISMATCH','LET_THROUGH_ARTICLE_MISMATCH',
+  'LET_THROUGH_ARTICLE_RATING_MISMATCH','LET_THROUGH_DEVICE_STANDARD_MISMATCH',
+  'LET_THROUGH_TEST_CONDITIONS_MISMATCH','LET_THROUGH_ARTICLE_VOLTAGE_UNCONFIRMED',
+  'LET_THROUGH_POLE_CONFIGURATION_MISMATCH','LET_THROUGH_FAULT_MODEL_UNSUPPORTED',
+  'LET_THROUGH_FAULT_POINT_MISSING','LET_THROUGH_SOURCE_TOO_LONG',
+  'LET_THROUGH_CURRENT_INVALID','LET_THROUGH_CURRENT_BASIS_UNSUPPORTED',
+  'LET_THROUGH_CONDUCTOR_INVALID','LET_THROUGH_CONDUCTOR_ROLE_UNSUPPORTED',
+  'LET_THROUGH_MATERIAL_UNSUPPORTED','LET_THROUGH_MATERIAL_MISMATCH',
+  'LET_THROUGH_CONDUCTOR_SECTION_MISMATCH','LET_THROUGH_BANDS_INVALID',
+  'LET_THROUGH_BAND_INVALID','LET_THROUGH_BAND_SOURCE_TOO_LONG',
+  'LET_THROUGH_FAULT_SCENARIO_MISMATCH','LET_THROUGH_FAULT_VOLTAGE_MISMATCH'
+ ].includes(x.code));
+ if(malformed)return notify('Входные данные не сохранены: '+malformed.code,true);
+ target.calculationReview={...target.calculationReview,required:true,
+  reason:'BREAKER_LET_THROUGH_UPDATED'};
+ checkpoint();state=candidate;changed();
+ notify('Энергия пропускания I²t: '+report.numericalStatus+
+  ' · обязательная инженерная перепроверка');
+});
+$('cableThermalPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-cable-thermal]');if(!form)return;
+ e.preventDefault();
+ const id=form.dataset.cableThermal,line=state.lines.find(x=>x.id===id);
+ if(!line)return notify('Выбранная цепь недоступна',true);
+ const value=k=>form.elements.namedItem(k)?.value;
+ const currentBasis=value('thermalCurrentBasis');
+ const input={method:'ADIABATIC_K2S2',currentBasis,
+  conductorRole:value('thermalRole'),conductorMaterial:value('thermalMaterial'),
+  insulationType:value('thermalInsulation'),sectionMm2:value('thermalSection'),
+  kA_SqrtS_PerMm2:value('thermalK'),faultModel:value('thermalFaultModel'),
+  comparisonPoint:value('thermalPoint'),clearingTimeS:value('thermalClearingTime'),
+  timeModel:'DECLARED_MAX_CLEARING_TIME',
+  kSource:value('thermalKSource'),timeSource:value('thermalTimeSource'),
+  conductorSource:value('thermalConductorSource'),methodSource:value('thermalMethodSource'),
+  temperatureBasisConfirmed:form.elements.namedItem('thermalTemperatureConfirmed').checked,
+  adiabaticApplicabilityConfirmed:form.elements.namedItem('thermalMethodConfirmed').checked,
+  clearingTimeGuaranteeConfirmed:form.elements.namedItem('thermalGuaranteeConfirmed').checked};
+ if(currentBasis==='DECLARED_SCENARIO'){
+  input.faultCurrentA=value('thermalFaultCurrent');
+  input.faultCurrentSource=value('thermalCurrentSource');
+ }
+ const candidate=JSON.parse(JSON.stringify(state));
+ const next=candidate.lines.find(x=>x.id===id);
+ next.shortCircuitThermalInput=input;
+ const report=epCableShortCircuitThermalV1(candidate,next,catalogDevice(next.catalogSku));
+ const malformed=new Set(['THERMAL_INPUT_INVALID','THERMAL_VALUES_INVALID',
+  'THERMAL_METHOD_UNSUPPORTED','THERMAL_CONDUCTOR_ROLE_UNSUPPORTED',
+  'THERMAL_CONDUCTOR_MATERIAL_UNSUPPORTED','THERMAL_SOURCE_TOO_LONG',
+  'THERMAL_PHASE_SECTION_MISMATCH','THERMAL_MATERIAL_MISMATCH',
+  'THERMAL_FAULT_CURRENT_INVALID','THERMAL_FAULT_MODEL_UNSUPPORTED',
+  'THERMAL_CURRENT_BASIS_UNSUPPORTED','THERMAL_FAULT_MODEL_MISMATCH',
+  'THERMAL_COMPARISON_POINT_MISMATCH','THERMAL_PE_REQUIRES_L_PE_SCENARIO',
+  'THERMAL_LINKED_MAXIMUM_PE_SCOPE_UNSUPPORTED',
+  'THERMAL_NEUTRAL_NOT_IN_THREE_PHASE_SYMMETRIC_PATH',
+  'THERMAL_LINKED_SCOPE_INVALID','THERMAL_CLEARING_TIME_MODEL_UNSUPPORTED']);
+ if(report.issues.some(x=>x.level==='BLOCKED'&&malformed.has(x.code)))
+  return notify('Исходные данные стойкости КЗ не сохранены: '+report.issues.find(x=>x.level==='BLOCKED').code,true);
+ next.calculationReview={...next.calculationReview,required:true,
+  reason:'SHORT_CIRCUIT_THERMAL_UPDATED'};
+ checkpoint();state=candidate;changed();
+ notify('Термическая стойкость КЗ: '+report.numericalStatus+
+  ' · Требуется инженерная перепроверка');
+});
+$('cableOverloadPanel').addEventListener('click',e=>{
+ const add=e.target.closest('[data-add-overload-factor]');
+ const remove=e.target.closest('[data-remove-overload-factor]');
+ if(add){
+  const holder=add.closest('[data-cable-overload-input]').querySelector('[data-overload-factor-rows]');
+  if(holder.children.length>=12)return notify('Максимум 12 поправочных коэффициентов',true);
+  holder.insertAdjacentHTML('beforeend',epCableOverloadFactorHtmlV1({},holder.children.length));
+ }
+ if(remove)remove.closest('[data-overload-factor]').remove();
+});
+$('cableOverloadPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-cable-overload]');if(!form)return;
+ e.preventDefault();
+ if(!form.elements.namedItem('overloadEnable').checked)
+  return notify('Включите сохранение параметров кабеля',true);
+ const id=form.dataset.cableOverload,line=state.lines.find(x=>x.id===id);
+ if(!line)return notify('Выбранная цепь недоступна',true);
+ const article=catalogDevice(line.catalogSku);
+ const keys=['overloadBaseIz','overloadBaseSource','overloadI2','overloadI2Source',
+  'overloadI2Standard','overloadApplicability','overloadSku'];
+ const values=Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value]));
+ const input={model:'CABLE_DECLARED_BASE_WITH_CORRECTIONS',
+  baseIzA:values.overloadBaseIz,baseIzSource:values.overloadBaseSource,
+  i2A:values.overloadI2,i2Source:values.overloadI2Source,
+  i2Standard:values.overloadI2Standard,applicabilitySource:values.overloadApplicability,
+  articleSku:values.overloadSku,articleInA:article?.inA,
+  applicationReviewed:form.elements.namedItem('overloadApplicable').checked,
+  factors:[...form.querySelectorAll('[data-overload-factor]')].map(node=>
+   Object.fromEntries([...node.querySelectorAll('[data-overload-key]')].map(el=>[el.dataset.overloadKey,el.value])))};
+ const candidate=JSON.parse(JSON.stringify(state));
+ candidate.lines.find(x=>x.id===id).overloadCoordinationInput=input;
+ const report=epCableOverloadCoordinationV1(candidate,candidate.lines.find(x=>x.id===id),article);
+ const invalid=report.issues.find(x=>x.level==='BLOCKED'&&[
+  'CABLE_OVERLOAD_INPUT_INVALID','CABLE_OVERLOAD_MODEL_UNSUPPORTED',
+  'CABLE_OVERLOAD_BASE_IZ_INVALID','CABLE_OVERLOAD_I2_INVALID',
+  'CABLE_OVERLOAD_FACTORS_INVALID','CABLE_OVERLOAD_FACTOR_INVALID',
+  'CABLE_OVERLOAD_FACTOR_SOURCE_TOO_LONG','CABLE_OVERLOAD_SOURCE_TOO_LONG',
+  'CABLE_OVERLOAD_CORRECTED_IZ_INVALID','CABLE_OVERLOAD_ARTICLE_MISMATCH',
+  'CABLE_OVERLOAD_RATING_CHANGED','CABLE_OVERLOAD_DEVICE_KIND_UNSUPPORTED'
+ ].includes(x.code));
+ if(invalid)return notify('Исходные данные не сохранены: '+invalid.code,true);
+ candidate.lines.find(x=>x.id===id).calculationReview={
+  ...candidate.lines.find(x=>x.id===id).calculationReview,
+  required:true,reason:'OVERLOAD_COORDINATION_UPDATED'};
+ checkpoint();state=candidate;changed();
+ notify('Проверка I2: '+report.i2IzStatus+' · Изменения требуют инженерной проверки');
+});
+$('maximumFaultPanel').addEventListener('click',e=>{
+ const add=e.target.closest('[data-add-max-segment]');
+ const remove=e.target.closest('[data-remove-max-segment]');
+ if(add){
+  const form=add.closest('form'),holder=form.querySelector('[data-max-segments]');
+  if(holder.children.length>=50)return notify('Максимум 50 участков',true);
+  holder.insertAdjacentHTML('beforeend',
+   epMaximumFaultSegmentHtmlV2({},form.dataset.maxFaultModel==='THREE_PHASE_POSITIVE_SEQUENCE',holder.children.length));
+ }
+ if(remove)remove.closest('[data-max-segment]').remove();
+});
+$('maximumFaultPanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-max-fault]');if(!form)return;
+ e.preventDefault();
+ const model=form.dataset.maxFaultModel;
+ const sourceModel=form.dataset.maxFaultSourceModel||'DECLARED_RX';
+ const keys=[model==='THREE_PHASE_POSITIVE_SEQUENCE'?'uLLV':'u0V','cmax'];
+ if(sourceModel==='DECLARED_RX')keys.push('sourceROhm','sourceXOhm','networkSource');
+ const input={model,sourceModel,
+  ...Object.fromEntries(keys.map(k=>[k,form.elements.namedItem(k).value])),
+  comparisonPoint:form.elements.namedItem('comparisonPoint').value};
+ if(sourceModel==='TRANSFORMER_WITH_UPSTREAM'){
+  const transformerKeys=['ratedPowerKva','ratedVoltageV','ukPercent','loadLossW',
+   'upstreamROhm','upstreamXOhm','source','upstreamSource'];
+  input.transformer={...Object.fromEntries(transformerKeys.map(k=>[k,form.elements.namedItem(k).value])),
+   lossBasisConfirmed:form.elements.namedItem('lossBasisConfirmed').checked};
+ }
+ input.segments=[...form.querySelectorAll('[data-max-segment]')].map(row=>({
+  ...Object.fromEntries([...row.querySelectorAll('[data-max-segment-field]')].map(el=>[
+   el.dataset.maxSegmentField,el.value])),
+  temperatureBasisConfirmed:row.querySelector('[data-max-segment-temperature]').checked
+ }));
+ const result=epApplyMaximumFaultV2(state,form.dataset.maxFault,input,catalogDevice);
+ if(!result.project)return notify('Расчёт Ik,max не сохранён: '+result.code,true);
+ checkpoint();state=result.project;changed();
+ notify('Исходные данные Ik,max сохранены. Сравнение Icn: '+result.report.thresholdStatus);
+});
+$('faultRoutePanel').addEventListener('click',e=>{
+ const addPoint=e.target.closest('[data-add-trip-point]');
+ const removePoint=e.target.closest('[data-remove-trip-point]');
+ if(addPoint){
+  const holder=addPoint.closest('[data-trip-envelope-panel]').querySelector('[data-trip-envelope-points]');
+  if(holder.children.length>=40)return notify('Максимум 40 паспортных точек',true);
+  holder.insertAdjacentHTML('beforeend',epTripEnvelopePointHtmlV1({},holder.children.length));
+  return;
+ }
+ if(removePoint){removePoint.closest('[data-trip-envelope-point]').remove();return;}
+ const add=e.target.closest('[data-add-route-segment]'),remove=e.target.closest('[data-remove-route-segment]');
+ if(add){const holder=add.closest('form').querySelector('[data-route-segments]');if(holder.children.length>=50)return notify('Максимум 50 участков',true);holder.insertAdjacentHTML('beforeend',epFaultSegmentHtmlV2({},holder.children.length));}
+ if(remove)remove.closest('[data-route-segment]').remove();
+});
+$('faultRoutePanel').addEventListener('submit',e=>{
+ const form=e.target.closest('[data-fault-route]');if(!form)return;e.preventDefault();
+ const input=Object.fromEntries(['u0V','cmin','sourceROhm','sourceXOhm','networkSource','iaA','requiredTimeS','tripSource','timeSource'].map(key=>[key,form.elements.namedItem(key).value]));
+ input.segments=[...form.querySelectorAll('[data-route-segment]')].map(row=>({...Object.fromEntries([...row.querySelectorAll('[data-segment-field]')].map(el=>[el.dataset.segmentField,el.value])),temperatureBasisConfirmed:row.querySelector('[data-segment-temperature]').checked}));
+ if(form.elements.namedItem('adsContextEnabled')?.checked){
+  const selected=state.lines.find(x=>x.id===form.dataset.faultRoute);
+  input.disconnectionContext={
+   circuitClass:form.elements.namedItem('adsCircuitClass').value,
+   protectiveMeasure:'ADS_OVERCURRENT',
+   maxAllowedTimeS:form.elements.namedItem('adsMaxAllowedTimeS').value,
+   u0V:form.elements.namedItem('adsU0V').value,
+   phase:selected?.phase??null,
+   earthing:state.earthing,
+   standardReference:form.elements.namedItem('adsStandardReference').value,
+   timeBasisSource:form.elements.namedItem('adsTimeBasisSource').value,
+   circuitClassSource:form.elements.namedItem('adsCircuitClassSource').value,
+   applicabilityReviewed:form.elements.namedItem('adsApplicabilityReviewed').checked
+  };
+ }
+ if(form.elements.namedItem('tripEnvelopeEnabled')?.checked){
+  const names=['tripArticleSku','tripArticleRatingA','tripCurve','tripSourceEvidence'];
+  const values=Object.fromEntries(names.map(name=>[name,form.elements.namedItem(name)?.value||'']));
+  const envelope={articleSku:values.tripArticleSku,source:values.tripSourceEvidence,
+   faultType:'L_PE',guaranteeBasisConfirmed:form.elements.namedItem('tripGuaranteeBasis').checked,
+   points:[...form.querySelectorAll('[data-trip-envelope-point]')].map(point=>
+    Object.fromEntries([...point.querySelectorAll('[data-trip-point-field]')].map(el=>[el.dataset.tripPointField,el.value])))};
+  if(values.tripArticleRatingA.trim())envelope.articleRatingA=values.tripArticleRatingA;
+  if(values.tripCurve.trim())envelope.curve=values.tripCurve;
+  input.tripEnvelope=envelope;
+ }
+ const result=epApplyFaultRouteV2(state,form.dataset.faultRoute,input,catalogDevice);
+ if(!result.project)return notify('Расчёт не сохранён: '+result.code,true);
+ checkpoint();state=result.project;changed();notify('Трасса сохранена. Сравнение с Ia: '+result.report.thresholdStatus);
+});
+function filterProjectCatalogue(){
+ const panel=$('projectCatalogWorkbench');
+ const query=(panel.querySelector('#catalogSearchInput')?.value||'').trim().toLocaleLowerCase('ru');
+ const tier=panel.querySelector('#catalogTierFilter')?.value||'';
+ for(const row of panel.querySelectorAll('[data-catalog-row]'))
+  row.hidden=!!((tier&&row.dataset.catalogTier!==tier)||
+   (query&&!row.textContent.toLocaleLowerCase('ru').includes(query)));
+}
+$('projectCatalogWorkbench').addEventListener('input',e=>{
+ if(e.target.id==='catalogSearchInput')filterProjectCatalogue();
+});
+$('projectCatalogWorkbench').addEventListener('change',e=>{
+ if(e.target.id==='catalogTierFilter')filterProjectCatalogue();
+});
+document.addEventListener('submit',e=>{
+ if(e.target.getAttribute('id')!=='catalogArticleForm')return;e.preventDefault();
+ const form=e.target,record={};
+ for(const key of ['id','maker','series','sku','label','modules','widthMm','heightMm','depthMm','poles','inA','curve','icnKa','icnVoltageV','icnStandard','poleConfiguration','residualCurrentMa','residualType','source','productSource','sourceReviewedAt','kind']){
+  const value=form.elements.namedItem(key).value.trim();
+  record[key]=['modules','widthMm','heightMm','depthMm','poles','inA','icnKa','residualCurrentMa','icnVoltageV'].includes(key)?(value===''?null:Number(value.replace(',','.'))):value;
+ }
+ const result=epUpsertProjectArticleV2(state,record,EP_CATALOG,form.elements.originalId.value);
+ if(!result.project)return notify('Аппарат не сохранён: '+result.code,true);
+ checkpoint();state=result.project;changed();notify('Аппарат сохранён. Затронуто цепей: '+result.affectedCircuits.length+', общих аппаратов: '+result.affectedShared.length+'. Зависимые расчёты требуют проверки.');
+});
+$('projectCatalogWorkbench').addEventListener('click',e=>{
+ const edit=e.target.closest('[data-edit-article]'),del=e.target.closest('[data-delete-article]');
+ if(edit){
+  const article=state.catalogArticles?.find(x=>x.id===edit.dataset.editArticle);if(!article)return;
+  const form=$('catalogArticleForm');form.reset();
+  for(const [key,value] of Object.entries(article)){const field=form.elements.namedItem(key);if(field)field.value=value??'';}
+  form.elements.originalId.value=article.id;$('catalogEditor').open=true;form.scrollIntoView({block:'center'});
+ }
+ if(del){const result=epDeleteProjectArticleV2(state,del.dataset.deleteArticle);if(!result.project)return notify('Удаление заблокировано: '+result.code,true);checkpoint();state=result.project;changed();notify('Пользовательский аппарат удалён');}
+});
+$('projectCatalogWorkbench')?.addEventListener('click',e=>{
+ if(e.target.id==='catalogExportRecordsBtn'){
+  download(baseName()+'_project_catalog_DRAFT.json',JSON.stringify(state.catalogArticles||[],null,2),'application/json;charset=utf-8');return;
+ }
+ if(e.target.id!=='catalogImportRecordsBtn')return;
+ try{
+  const text=$('catalogJsonInput').value;
+  if(text.length>250000)throw Error('Превышен размер импорта');
+  const records=JSON.parse(text);
+  if(!Array.isArray(records)||records.length>500||records.length===0)throw Error('Ожидается массив от 1 до 500 артикулов');
+  const result=epImportProjectArticlesV2(state,records,typeof EP_CATALOG==='object'?EP_CATALOG:{});
+  if(!result.project)throw Error('Импорт отклонён: '+result.code+(Number.isInteger(result.index)?' (запись '+(result.index+1)+')':''));
+  checkpoint();state=result.project;changed();notify('Добавлено артикулов: '+result.imported+'. Затронуто цепей: '+result.affectedCircuits.length+', общих аппаратов: '+result.affectedShared.length+'. Данные требуют проверки по документации');
+ }catch(error){notify(error.message,true);}
+});
+try{const s=localStorage.getItem('electropanel_web_preview');if(s)state=normalizeImport(JSON.parse(s));}catch(e){console.warn('Stored project ignored',e);}lastDesignSnapshot=structuredCloneCompat(state);render();
+// Project delivery trace export: no mutation of source project.
+document.addEventListener('click',event=>{
+ if(!event.target.closest('#projectDeliveryTraceCsvBtn'))return;
+ try{
+  const report=epProjectDeliveryTraceV1(state,catalogDevice);
+  const csv=epProjectDeliveryTraceCsvV1(report);
+  download(baseName()+'-project-delivery-trace.csv',csv.csv,'text/csv;charset=utf-8');
+  notify('Сквозная трассировка проекта CSV выгружена');
+ }catch(e){notify('Ошибка трассировки: '+e.message);}
+});
+
+document.addEventListener('click',event=>{
+ if(!event.target.closest('#exportDesignReviewActionsCsvBtn'))return;
+ try{
+  const bundle=epEngineeringBundleV1(state,catalogDevice);
+  const report=bundle.sections.reviewActions;
+  download(baseName()+'-design-rechecks_DRAFT.csv',epDesignReviewActionMatrixCsvV1(report),
+   'text/csv;charset=utf-8');
+  notify('Задачи инженерной перепроверки выгружены');
+ }catch(error){notify('Экспорт перепроверок: '+error.message,true);}
+});
+
+document.addEventListener('click',event=>{
+ if(!event.target.closest('#exportResultFreshnessCsvBtn'))return;
+ try{
+  const report=epEngineeringBundleV1(state,catalogDevice).sections.resultFreshness;
+  download(baseName()+'-result-freshness_DRAFT.csv',
+   epDesignResultFreshnessCsvV1(report),'text/csv;charset=utf-8');
+  notify('Сведения об актуальности расчётных разделов выгружены');
+ }catch(error){notify('Экспорт актуальности: '+error.message,true);}
+});

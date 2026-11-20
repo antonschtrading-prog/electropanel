@@ -1,0 +1,12 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {coverage}=require('../catalog-intake/catalog-seed-coverage-v1.js');
+test('seed coverage reports records',()=>assert.ok(coverage().total>0));
+test('seed coverage never implies approval',()=>assert.equal(coverage().engineeringApproved,false));
+test('seed coverage counts known geometry',()=>{const r=coverage();assert.equal(r.completeDimensions,r.records.filter(x=>x.dimensionsKnown).length)});
+test('seed coverage tracks each kind',()=>assert.ok(coverage().byKind.MCB.curated>0));
+test('seed coverage includes staged counts',()=>assert.ok(coverage().byKind.RCD.staged>0));
+test('seed coverage detects missing dimensions',()=>{const r=coverage({A:{sku:'X',maker:'A',series:'S',kind:'MCB',poles:1,modules:1,widthMm:18,inA:16,source:'https://example.com'}},[]);assert.ok(r.records[0].missing.includes('heightMm'))});
+test('seed coverage checks breaking context',()=>{const r=coverage({A:{sku:'X',maker:'A',series:'S',kind:'MCB',poles:1,modules:1,widthMm:18,inA:16,source:'https://example.com'}},[]);assert.ok(r.records[0].warnings.includes('BREAKING_CONTEXT_ICNKA'))});
+test('seed coverage does not infer missing data',()=>{const r=coverage({A:{sku:'X',maker:'A',series:'S',kind:'MCB'}},[]);assert.equal(r.records[0].dimensionsKnown,false)});
+test('seed coverage counts kinds independently',()=>{const r=coverage({A:{sku:'X',maker:'A',series:'S',kind:'MCB'}},[{record:{kind:'RCBO'}}]);assert.equal(r.byKind.MCB.curated,1);assert.equal(r.byKind.RCBO.staged,1)});

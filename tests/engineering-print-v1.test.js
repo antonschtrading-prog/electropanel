@@ -13,6 +13,10 @@ test('print report includes all five engineering sections',()=>{
  'Спецификация оборудования','Расхождения между представлениями'])assert.ok(h.includes(title),title);
  assert.match(h,/BR_L1/);assert.match(h,/ABB-1/);
 });
+test('print report retains the declared manual fault-current source',()=>{
+ const b=bundle();b.sections.protection.rows[0].ikSource='Расчёт ЭЛ-02';
+ const h=print(b);assert.match(h,/Источник ручного Ik/);assert.match(h,/Расчёт ЭЛ-02/);
+});
 test('print report is self-contained and clearly not for installation',()=>{
  const h=print(bundle());
  assert.match(h,/<!doctype html>/);assert.match(h,/НЕ ДЛЯ МОНТАЖА/);
@@ -53,4 +57,58 @@ test('print embeds vector one-line diagram when renderer is loaded',()=>{
   const h=print(b);assert.match(h,/<svg/);assert.match(h,/data-single-line-focus="L1"/);
   assert.match(h,/НЕ ДЛЯ МОНТАЖА/);
  }finally{delete global.epSingleLineSvgV1;}
+});
+
+test('print report includes declared equipment W H D dimensions and marks unknowns',()=>{
+ const b=bundle();
+ b.sections.bom.items[0]={...b.sections.bom.items[0],widthMm:18,heightMm:85,depthMm:78.5};
+ b.sections.catalogEvidence={items:[{role:'circuit',ownerId:'L1',articleId:'ABB-1',
+  sku:'ABB-1',manufacturer:'ABB',series:'S200',widthMm:18,heightMm:85,depthMm:null,
+  source:'https://example.org/abb',verificationStatus:'UNVERIFIED'}]};
+ const h=print(b);
+ assert.match(h,/Глубина, мм/);assert.match(h,/>78.5<\/td>/);
+ assert.match(h,/>85<\/td>/);assert.match(h,/>—<\/td>/);
+ assert.match(h,/НЕ ДЛЯ МОНТАЖА/);
+});
+
+test('print cabinet capacity rows are transparently preliminary',()=>{
+ const b=bundle();
+ b.sections.cabinetCapacity={options:[{
+  status:'REVIEW_REQUIRED',capacityModules:36,railCount:3,modulesPerRail:12,reserveModules:4,
+  envelope:{preliminaryUsableWidthMm:356,preliminaryUsableHeightMm:650,
+   preliminaryUsableDepthMm:null},withinDeclaredLimits:false
+ }]};
+ const html=print(b);
+ assert.match(html,/Варианты вместимости и предварительной компоновки/);
+ assert.match(html,/Превышены/);
+ assert.match(html,/НЕИЗВЕСТНА/);
+ assert.match(html,/не паспортные размеры/);
+});
+
+test('print distinguishes nominal region distances from manufacturer connection proof',()=>{
+ const b=bundle();
+ b.sections.cabinetConnectionSpace={status:'REVIEW_REQUIRED',rows:[{
+  deviceId:'BR_L1',railIndex:0,
+  nearestWireDuct:{regionId:'ductA',distanceMm:12},
+  nearestTerminalRegion:{regionId:'termA',distanceMm:44}
+ }]};
+ const h=print(b);
+ assert.match(h,/Зоны подключения и кабельные каналы/);
+ assert.match(h,/ductA/);assert.match(h,/termA/);
+ assert.match(h,/НЕ ВЫПОЛНЕНА/);
+ assert.match(h,/не отражают путь проводника/);
+});
+
+test('print marks unknown body dimensions instead of fabricating catalogue sizes',()=>{
+ const b=bundle();
+ b.sections.cabinetApparatusEvidence={status:'REVIEW_REQUIRED',rows:[{
+  deviceId:'L1',articleId:'CUSTOM-1',bodyWidthMm:18,bodyHeightMm:null,bodyDepthMm:null,
+  sourceType:'PROJECT_DECLARATION',sourceReviewedAt:null,status:'REVIEW_REQUIRED'
+ }]};
+ const h=print(b);
+ assert.match(h,/Габариты выбранных аппаратов и источники/);
+ assert.match(h,/CUSTOM-1/);
+ assert.match(h,/PROJECT_DECLARATION/);
+ assert.match(h,/НЕИЗВЕСТНО/);
+ assert.match(h,/DIN-защёлки/);
 });

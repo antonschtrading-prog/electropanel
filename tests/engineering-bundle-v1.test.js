@@ -17,6 +17,14 @@ test('missing engineering gate fails closed',()=>{
 test('bundle cannot declare installation approval',()=>{
  const r=bundle(p(),lookup);assert.equal(r.engineeringApproved,false);assert.equal(r.ready_for_installation,false);
 });
+test('bundle includes the unified protection decision as a separate non-approval section',()=>{
+ const r=bundle(p(),lookup);
+ assert.ok(r.sections.protectionDecision);
+ assert.notEqual(r.sections.protectionDecision.engineeringApproved,true);
+ assert.notEqual(r.sections.protectionDecision.ready_for_installation,true);
+ assert.equal(r.statuses.protectionDecision,'BLOCKED',
+  'missing protection calculation module should fail closed in isolated bundle test');
+});
 test('bundle does not mutate original project',()=>{
  const x=p(),before=JSON.stringify(x);bundle(x,lookup);assert.equal(JSON.stringify(x),before);
 });
@@ -30,4 +38,52 @@ test('bundle includes explicit protection and alternate DIN sections',()=>{
  assert.ok(r.sections.layoutAlternatives);
  assert.equal(r.statuses.protection,'BLOCKED');
  assert.equal(r.statuses.layoutAlternatives,'BLOCKED');
+});
+
+test('preliminary cabinet sizing is a separate traceable bundle section',()=>{
+ global.epUniversalCabinetOptionsV1=require('../universal-cabinet-options-v1.js').epUniversalCabinetOptionsV1;
+ try {
+  const project=p();project.cabinetSizingPreferencesV1={maxUsableWidthMm:200,maxUsableHeightMm:500};
+  const out=bundle(project,lookup),c=out.sections.cabinetCapacity;
+  assert.equal(c.status,'REVIEW_REQUIRED');
+  assert.equal(c.engineeringApproved,false);
+  assert.equal(c.confirmedCabinetFit,false);
+  assert.equal(c.selectedLayout.modulesPerRail,4);
+  assert.equal(c.usableSizeLimits.maxUsableWidthMm,200);
+  assert.ok(c.options.some(o=>o.withinDeclaredLimits===false));
+  assert.equal(out.statuses.cabinetCapacity,'REVIEW_REQUIRED');
+ } finally {delete global.epUniversalCabinetOptionsV1;}
+});
+
+test('connection space remains separately not configured when cabinet geometry absent',()=>{
+ global.epCabinetConnectionSpaceV1=require('../cabinet-connection-space-v1.js').epCabinetConnectionSpaceV1;
+ global.epCabinetGeometryCheckV1=require('../cabinet-geometry-v1.js').epCabinetGeometryCheckV1;
+ global.epDraftBoardPlanV1=require('../draft-board-plan-v1.js').epDraftBoardPlanV1;
+ try{
+  const r=bundle(p(),lookup);
+  assert.equal(r.sections.cabinetConnectionSpace.status,'NOT_CONFIGURED');
+  assert.equal(r.sections.cabinetConnectionSpace.terminalConnectionsVerified,false);
+  assert.notEqual(r.overallStatus,'APPROVED');
+ }finally{
+  delete global.epCabinetConnectionSpaceV1;
+  delete global.epCabinetGeometryCheckV1;
+  delete global.epDraftBoardPlanV1;
+ }
+});
+
+test('apparatus dimension evidence does not imply DIN mount or terminal approval',()=>{
+ global.epCabinetApparatusEvidenceV1=
+  require('../cabinet-apparatus-evidence-v1.js').epCabinetApparatusEvidenceV1;
+ global.epDraftBoardPlanV1=require('../draft-board-plan-v1.js').epDraftBoardPlanV1;
+ try{
+  const r=bundle(p(),lookup).sections.cabinetApparatusEvidence;
+  assert.equal(r.status,'REVIEW_REQUIRED');
+  assert.equal(r.actualTerminalCoordinatesVerified,false);
+  assert.equal(r.actualMountingPositionVerified,false);
+  assert.equal(r.rows.length,1);
+  assert.equal(r.rows[0].bodyHeightMm,null);
+ }finally{
+  delete global.epCabinetApparatusEvidenceV1;
+  delete global.epDraftBoardPlanV1;
+ }
 });

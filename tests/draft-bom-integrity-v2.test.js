@@ -1,0 +1,12 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {epDraftBomV1,epDraftBomCsvV1}=require('../draft-bom-v1.js');
+const article={sku:'A16',maker:'Maker',series:'S',label:'C16',kind:'MCB',modules:1,widthMm:18,source:'https://example.org/passport',verificationStatus:'UNVERIFIED'};
+const base=()=>({lines:[{id:'L1',catalogSku:'A',modules:1}],branchDevices:[{id:'Q1',circuitId:'L1',modules:1}],sharedDevices:[]});
+const run=(p,lookup=()=>article)=>epDraftBomV1(p,lookup);
+test('BOM groups one linked branch and flags unverified provenance',()=>{const r=run(base());assert.equal(r.totalCataloguedDevices,1);assert.equal(r.items[0].quantity,1);assert.ok(r.issues.some(x=>x.code==='ARTICLE_EVIDENCE_NOT_VERIFIED'));assert.equal(r.engineeringApproved,false);});
+test('duplicate branch linkage cannot inflate material quantities',()=>{const p=base();p.branchDevices.push({id:'Q2',circuitId:'L1',modules:1});const r=run(p);assert.equal(r.status,'BLOCKED');assert.equal(r.totalCataloguedDevices,0);assert.ok(r.issues.some(x=>x.code==='BRANCH_DUPLICATE'));});
+test('duplicate circuit IDs and device IDs are blocked',()=>{const p=base();p.lines.push({...p.lines[0]});p.branchDevices.push({...p.branchDevices[0]});const codes=run(p).issues.map(x=>x.code);assert.ok(codes.includes('CIRCUIT_ID_DUPLICATE'));assert.ok(codes.includes('BRANCH_ID_DUPLICATE'));});
+test('bad catalogue dimensions cannot silently become verified geometry',()=>{const r=run(base(),()=>({...article,widthMm:30}));assert.equal(r.status,'BLOCKED');assert.ok(r.issues.some(x=>x.code==='ARTICLE_GEOMETRY_UNCONFIRMED'));});
+test('invalid branch collection is blocked',()=>{const p=base();p.branchDevices={};assert.ok(run(p).issues.some(x=>x.code==='BRANCH_DEVICES_INVALID'));});
+test('BOM CSV neutralizes spreadsheet formulas',()=>{const r=run(base(),()=>({...article,maker:'=HYPERLINK(1)'}));assert.match(epDraftBomCsvV1(r),/'=HYPERLINK/);});

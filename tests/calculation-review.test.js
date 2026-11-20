@@ -16,7 +16,7 @@ const helpers=slice('const REVIEW_FIELDS=','function faultLineInfo(line){');
 const update=slice('function updateBranchApparatus(project,circuitId,patch){','function circuitGraph(project=state){');
 const context=catalog+'\n'+protection+'\nconst DEVICE_TEMPLATES={};\n'+
  'function ensureV2(p){if(!p.branchDevices)p.branchDevices=p.lines.map(l=>({circuitId:l.id,label:l.device,modules:l.modules,templateId:null}));return p;}\n'+
- 'function catalogDevice(sku){return epCatalogSku(sku)}\n'+helpers+update+
+ 'function catalogDevice(sku){return epCatalogSku(sku)}\n'+slice('function projectCatalogEntries(', 'function catalogDevice(')+helpers+update+
  '\n({markCalculationReview,clearCalculationReview,applyCatalogueSku,catalogAudit,updateBranchApparatus})';
 const api=vm.runInNewContext(context);
 const line=()=>({id:'L1',phase:'L1',device:'iC60N C16',modules:1,

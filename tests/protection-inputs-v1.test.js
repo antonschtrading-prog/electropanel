@@ -17,9 +17,29 @@ test('existing unrelated input fields are preserved',()=>{
  assert.equal(r.project.lines[0].faultInput.source,'estimate');
 });
 test('invalid or zero values cannot be stored',()=>{
- for(const bad of ['',0,-1,'1e309','Infinity','-5','0,0','abc',true,{},null]){
+ for(const bad of [0,-1,'1e309','Infinity','-5','0,0','abc',true,{},null,undefined]){
   const d=data();d.ikKa=bad;assert.equal(apply(p(),'L1',d).status,'BLOCKED');
  }
+});
+test('blank Ik is optional for manual Ib and Iz in a panel-only draft',()=>{
+ const x=p(),r=apply(x,'L1',{ibA:'12,5',izA:'20',ikKa:'  '});
+ assert.equal(r.status,'UNKNOWN');
+ assert.equal(r.project.lines[0].overloadInput.ibA,12.5);
+ assert.equal(r.project.lines[0].overloadInput.izA,20);
+ assert.equal(r.project.lines[0].faultInput.ikKa,undefined);
+ assert.equal(r.project.lines[0].faultInput.source,'estimate');
+ assert.equal(r.values.ikKa,null);
+ assert.equal(r.engineeringApproved,false);
+});
+test('only explicitly blank Ik clears an earlier declaration and reopens review',()=>{
+ const x=p();x.lines[0].faultInput.ikKa=4.5;
+ const before=JSON.stringify(x),r=apply(x,'L1',{ibA:12.5,izA:20,ikKa:''});
+ assert.equal(r.status,'UNKNOWN');
+ assert.equal(r.project.lines[0].faultInput.ikKa,undefined);
+ assert.equal(r.project.lines[0].faultInput.source,'estimate');
+ assert.equal(r.project.lines[0].calculationReview.required,true);
+ assert.ok(r.project.lines[0].calculationReview.pending.includes('faultInput'));
+ assert.equal(JSON.stringify(x),before);
 });
 test('current greater than cable capacity is blocked',()=>{
  assert.equal(apply(p(),'L1',{ibA:25,izA:16,ikKa:5}).code,'IB_EXCEEDS_IZ');

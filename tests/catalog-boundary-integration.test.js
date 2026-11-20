@@ -1,0 +1,151 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {epProjectCatalogV1,epUpsertProjectArticleV2,epImportProjectArticlesV2}=require('../project-catalog-workbench-v1.js');
+const base={id:'USER-A',sku:'A16',maker:'Project maker',series:'Series A',kind:'MCB',modules:1,widthMm:18,poles:1,inA:16,source:'https://example.org/datasheet'};
+test("catalog rejects empty ID",()=>{const article={...base,...{"id":""}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects reserved prototype ID",()=>{const article={...base,...{"id":"__proto__"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects reserved constructor ID",()=>{const article={...base,...{"id":"constructor"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects reserved prototype literal",()=>{const article={...base,...{"id":"prototype"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects trimmed ID",()=>{const article={...base,...{"id":" A"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects overlong ID",()=>{const article={...base,...{"id":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects missing SKU",()=>{const article={...base,...{"sku":""}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects SKU leading space",()=>{const article={...base,...{"sku":" SKU"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects overlong SKU",()=>{const article={...base,...{"sku":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects empty maker",()=>{const article={...base,...{"maker":""}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects maker control",()=>{const article={...base,...{"maker":"A\nB"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects maker leading space",()=>{const article={...base,...{"maker":" A"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects empty series",()=>{const article={...base,...{"series":""}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects overlong series",()=>{const article={...base,...{"series":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"IDENTITY_INCOMPLETE");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects zero modules",()=>{const article={...base,...{"modules":0}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects too many modules",()=>{const article={...base,...{"modules":25}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects fractional modules",()=>{const article={...base,...{"modules":1.5}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects zero width",()=>{const article={...base,...{"widthMm":0}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects excess width",()=>{const article={...base,...{"widthMm":36}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"ARTICLE_WIDTH_EXCEEDS_MODULES");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects zero poles",()=>{const article={...base,...{"poles":0}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects nine poles",()=>{const article={...base,...{"poles":9}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects fractional poles",()=>{const article={...base,...{"poles":1.5}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects zero current",()=>{const article={...base,...{"inA":0}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_DIMENSIONS_OR_RATING_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects HTTP source",()=>{const article={...base,...{"source":"http://example.org/doc"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_SOURCE_MISSING");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects credentials source",()=>{const article={...base,...{"source":"https://user:pass@example.org/doc"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_SOURCE_MISSING");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects overlong source",()=>{const article={...base,...{"source":"https://example.org/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_SOURCE_MISSING");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects unknown kind",()=>{const article={...base,...{"kind":"UNKNOWN"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_KIND_UNKNOWN");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects invalid label",()=>{const article={...base,...{"label":" A"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_LABEL_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects control label",()=>{const article={...base,...{"label":"A\nB"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_LABEL_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects overlong curve",()=>{const article={...base,...{"curve":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_CURVE_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects invalid curve control",()=>{const article={...base,...{"curve":"B\nC"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_CURVE_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects negative Icn",()=>{const article={...base,...{"icnKa":-1}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_ICN_INVALID");assert.equal(result.lookup(article.id),null);});
+test("catalog rejects invalid Icn text",()=>{const article={...base,...{"icnKa":"six"}};const result=epProjectCatalogV1({catalogArticles:[article]});assert.equal(result.issues[0]?.code,"CATALOG_ICN_INVALID");assert.equal(result.lookup(article.id),null);});
+test('valid user article remains unverified',()=>{const result=epProjectCatalogV1({catalogArticles:[base]});assert.equal(result.issues.length,0);assert.equal(result.lookup(base.id).verificationStatus,'UNVERIFIED');});
+test('transactional import never mutates original project after invalid record',()=>{const project={lines:[],catalogArticles:[]};const result=epImportProjectArticlesV2(project,[base,{...base,id:'USER-B',sku:'B16',widthMm:36}]);assert.equal(result.project,null);assert.equal(result.index,1);assert.equal(project.catalogArticles.length,0);});
+test('catalog edit preserves pending review fields and updates linked DIN device',()=>{const project={catalogArticles:[base],lines:[{id:'L1',phase:'L1',catalogSku:'USER-A',modules:1,device:'A16',overloadInput:{ibA:'10'},faultInput:{ikKa:'3'},calculationReview:{required:true,pending:['route44Input']}}],branchDevices:[{circuitId:'L1',modules:1,label:'A16',templateId:'OLD'}]};const result=epUpsertProjectArticleV2(project,{...base,label:'New A16'}, {},'USER-A');assert.ok(result.project);assert.deepEqual(new Set(result.project.lines[0].calculationReview.pending),new Set(['route44Input','overloadInput','faultInput']));assert.equal(result.project.branchDevices[0].label,'New A16');assert.equal(result.project.branchDevices[0].templateId,null);assert.equal(project.lines[0].device,'A16');});
+
+test('restored catalogue over 500 records is blocked',()=>{const records=Array.from({length:501},(_,i)=>({...base,id:'R-'+i,sku:'S-'+i}));assert.ok(epProjectCatalogV1({catalogArticles:records}).issues.some(x=>x.code==='CATALOG_TOO_LARGE'));});
+test('control characters in catalogue ID are blocked',()=>{assert.equal(epProjectCatalogV1({catalogArticles:[{...base,id:'BAD'+String.fromCharCode(10)+'ID'}]}).issues[0].code,'IDENTITY_INCOMPLETE');});
+
+test('editing shared RCD propagates catalogue width and label',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={lines:[],catalogArticles:[record],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,label:'Old RCD',circuitIds:[]}]};
+ const result=epUpsertProjectArticleV2(project,{...record,modules:3,widthMm:54,label:'Updated RCD'}, {},'RCD-A');
+ assert.ok(result.project);assert.equal(result.project.sharedDevices[0].modules,3);
+ assert.equal(result.project.sharedDevices[0].label,'Updated RCD');
+ assert.deepEqual(result.affected,['G1']);
+ assert.equal(project.sharedDevices[0].modules,2);
+});
+test('shared RCD cannot be silently converted to MCB',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={lines:[],catalogArticles:[record],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,label:'Old RCD',circuitIds:[]}]};
+ assert.equal(epUpsertProjectArticleV2(project,{...record,kind:'MCB'}, {},'RCD-A').code,'SHARED_ARTICLE_KIND_CONFLICT');
+ assert.equal(project.catalogArticles[0].kind,'RCD');
+});
+test('shared RCD pole mismatch is blocked transactionally',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={lines:[],catalogArticles:[record],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,label:'Old RCD',circuitIds:[]}]};
+ assert.equal(epUpsertProjectArticleV2(project,{...record,poles:4}, {},'RCD-A').code,'SHARED_ARTICLE_TEMPLATE_CONFLICT');
+ assert.equal(project.sharedDevices[0].modules,2);
+});
+
+
+test('shared RCD article edit reopens assigned circuit fault checks without invalidating load current',()=>{
+ const rcd={...base,id:'RCD-G',sku:'RCD-G',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const project={catalogArticles:[rcd],lines:[{
+  id:'L1',phase:'L1',catalogSku:'OTHER',modules:1,device:'B16',
+  faultInput:{ikKa:6},route44Input:{route:'A'},calculationReview:{pending:['overloadInput'],required:true},
+  loadCurrentCalculation:{stale:false},faultRouteInput:{reviewRequired:false}
+ }],sharedDevices:[{id:'G1',catalogSku:'RCD-G',templateId:'RCD_2P',modules:2,label:'Old',circuitIds:['L1']}]};
+ const result=epUpsertProjectArticleV2(project,{...rcd,label:'New RCD'}, {},'RCD-G');
+ assert.ok(result.project);
+ const line=result.project.lines[0],pending=new Set(line.calculationReview.pending);
+ assert.deepEqual(pending,new Set(['overloadInput','faultInput','route44Input']));
+ assert.equal(line.calculationReview.reason,'SHARED_ARTICLE_UPDATED');
+ assert.equal(line.calculationReview.required,true);
+ assert.equal(line.faultRouteInput.reviewRequired,true);
+ assert.equal(line.loadCurrentCalculation.stale,false);
+ assert.deepEqual(result.affectedCircuits,['L1']);
+ assert.deepEqual(result.affectedShared,['G1']);
+ assert.deepEqual(result.affectedViews,['catalogue','board','singleLine','bom','engineeringReview']);
+ assert.equal(project.lines[0].faultRouteInput.reviewRequired,false);
+});
+test('shared RCD cannot silently change into an RCBO',()=>{
+ const record={...base,id:'RCD-A',sku:'R40',kind:'RCD',poles:2,modules:2,widthMm:36};
+ const p={catalogArticles:[record],lines:[],sharedDevices:[{id:'G1',catalogSku:'RCD-A',templateId:'RCD_2P',modules:2,circuitIds:[]}]};
+ const result=epUpsertProjectArticleV2(p,{...record,kind:'RCBO'}, {},'RCD-A');
+ assert.equal(result.project,null);assert.equal(result.code,'SHARED_ARTICLE_KIND_CONFLICT');
+});
+test('import reports affected circuits linked to previously unresolved catalogue articles',()=>{
+ const record={...base,id:'NEW-A',sku:'NEW-16',label:'New breaker'};
+ const p={catalogArticles:[],lines:[{id:'L1',phase:'L1',catalogSku:'NEW-A',modules:1,device:'Old'}],sharedDevices:[]};
+ const result=epImportProjectArticlesV2(p,[record]);
+ assert.ok(result.project);assert.deepEqual(result.affectedCircuits,['L1']);
+ assert.deepEqual(result.affectedShared,[]);
+ assert.equal(result.project.lines[0].device,'New breaker');
+ assert.equal(result.project.lines[0].calculationReview.required,true);
+ assert.equal(p.catalogArticles.length,0);
+});
+test('import of unused articles does not invent affected circuits',()=>{
+ const p={catalogArticles:[],lines:[],sharedDevices:[]};
+ const result=epImportProjectArticlesV2(p,[base,{...base,id:'USER-B',sku:'B16'}]);
+ assert.ok(result.project);assert.deepEqual(result.affectedCircuits,[]);
+ assert.deepEqual(result.affectedShared,[]);assert.deepEqual(result.affectedViews,['catalogue']);
+});
+
+
+test('editing a selected catalogue apparatus clears its obsolete line template',()=>{
+ const record={...base,label:'B16 new'};
+ const p={catalogArticles:[record],lines:[{id:'L1',phase:'L1',catalogSku:record.id,templateId:'LEGACY',device:'B16',modules:1}],
+  branchDevices:[{id:'BD1',circuitId:'L1',label:'B16',modules:1,templateId:'LEGACY'}]};
+ const result=epUpsertProjectArticleV2(p,record,{},record.id);
+ assert.ok(result.project);
+ assert.equal(Object.hasOwn(result.project.lines[0],'templateId'),false);
+ assert.equal(result.project.branchDevices[0].templateId,null);
+ assert.equal(p.lines[0].templateId,'LEGACY');
+});
+test('used branch apparatus cannot exceed model supported DIN modules',()=>{
+ const record={...base,modules:13,widthMm:234};
+ const p={catalogArticles:[],lines:[{id:'L1',phase:'L1',catalogSku:record.id,modules:1}]};
+ assert.equal(epUpsertProjectArticleV2(p,record).code,'USED_ARTICLE_MODULES_UNSUPPORTED');
+});
+test('used branch label must fit the apparatus editor',()=>{
+ const record={...base,label:'x'.repeat(26)};
+ const p={catalogArticles:[],lines:[{id:'L1',phase:'L1',catalogSku:record.id,modules:1}]};
+ assert.equal(epUpsertProjectArticleV2(p,record).code,'USED_ARTICLE_LABEL_TOO_LONG');
+});
+test('shared RCD label must fit the shared apparatus entity model',()=>{
+ const record={...base,id:'RCD-L',kind:'RCD',poles:2,modules:2,widthMm:36,label:'x'.repeat(51)};
+ const p={catalogArticles:[],lines:[],sharedDevices:[{id:'R1',catalogSku:'RCD-L',templateId:'RCD_2P',modules:2,circuitIds:[]}]};
+ assert.equal(epUpsertProjectArticleV2(p,record).code,'SHARED_ARTICLE_LABEL_TOO_LONG');
+});
+
+test('used circuit cannot change its selected breaker to an RCD',()=>{
+ const rcd={...base,id:'BR-1',sku:'BR-1',kind:'RCD',poles:1};
+ const project={catalogArticles:[{...rcd,kind:'MCB'}],lines:[{id:'L1',phase:'L1',catalogSku:'BR-1',modules:1,device:'A16'}]};
+ const result=epUpsertProjectArticleV2(project,rcd,{},'BR-1');
+ assert.equal(result.project,null);
+ assert.equal(result.code,'USED_ARTICLE_KIND_CONFLICT');
+ assert.equal(project.catalogArticles[0].kind,'MCB');
+});
+test('used circuit cannot change its breaker to a DIN power supply',()=>{
+ const psu={...base,id:'BR-1',sku:'BR-1',kind:'DIN_PSU',poles:1};
+ const project={catalogArticles:[{...psu,kind:'MCB'}],lines:[{id:'L1',phase:'L1',catalogSku:'BR-1',modules:1,device:'A16'}]};
+ assert.equal(epUpsertProjectArticleV2(project,psu,{},'BR-1').code,'USED_ARTICLE_KIND_CONFLICT');
+});

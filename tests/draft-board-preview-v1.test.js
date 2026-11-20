@@ -78,3 +78,47 @@ test('unknown article does not invent manufacturer facade',()=>{
  assert.doesNotMatch(h,/ep-din-brand">ABB/);
  assert.match(h,/ARTICLE_UNKNOWN|Не выбран|Артикул/);
 });
+
+test('preview shows illustrated apparatus faceplate without claiming manufacturer photography',()=>{
+ const {epDraftBoardPreviewV1}=require('../draft-board-preview-v1');
+ const project={railCount:1,railCapacity:12,lines:[{id:'L1',modules:1,catalogSku:'ABB'}],
+  branchDevices:[{id:'BR1',circuitId:'L1',modules:1}],sharedDevices:[]};
+ const h=epDraftBoardPreviewV1(project,sku=>sku==='ABB'?{
+  maker:'ABB',series:'S200',appearance:'abb',modules:1,inA:16,icnKa:6}:null,'L1');
+ assert.match(h,/ep-din-device-face/);assert.match(h,/ep-din-face-abb/);
+ assert.match(h,/ep-din-device-toggle/);
+});
+
+test('DIN preview carries declared body dimensions into accessible labels and visible face',()=>{
+ const project={railCount:1,railCapacity:4,
+  lines:[{id:'L1',modules:1,catalogSku:'CUSTOM'}],
+  branchDevices:[{id:'BR1',circuitId:'L1',modules:1}],sharedDevices:[]};
+ const device={sku:'CUSTOM',maker:'ABB',series:'Example',kind:'MCB',modules:1,widthMm:18,
+  heightMm:85,depthMm:78.5,inA:16,source:'https://example.org/data'};
+ const before=JSON.stringify(project);
+ const h=epDraftBoardPreviewV1(project,()=>device,'L1');
+ assert.match(h,/Корпус Ш×В×Г: 18 × 85 × 78.5 мм/);
+ assert.match(h,/class="ep-din-block-body-size"/);
+ assert.match(h,/18 × 85 × 78.5 мм<\/span>/);
+ assert.equal(JSON.stringify(project),before);
+});
+test('DIN preview never fabricates missing cabinet body dimensions',()=>{
+ const project={railCount:1,railCapacity:4,lines:[{id:'L1',modules:1,catalogSku:'CUSTOM'}],
+  branchDevices:[{id:'BR1',circuitId:'L1',modules:1}]};
+ const h=epDraftBoardPreviewV1(project,()=>({modules:1,widthMm:18,kind:'MCB'}));
+ assert.match(h,/18 × — × — мм/);
+ assert.doesNotMatch(h,/18 × 85 × 78.5/);
+});
+
+test('new official-source manufacturer series have distinct styled DIN facades',()=>{
+ const {epCatalogSku}=require('../catalog.js');
+ for(const [id,appearance] of [['HA-MBN116','hager'],['LE-406775','legrand'],['SI-5SL6116-7','siemens']]){
+  const device=epCatalogSku(id),project={railCount:1,railCapacity:6,
+   lines:[{id:'L1',modules:1,catalogSku:id}],branchDevices:[{id:'BR1',circuitId:'L1',modules:1}]};
+  const h=epDraftBoardPreviewV1(project,epCatalogSku,'L1');
+  assert.match(h,new RegExp('ep-din-face-'+appearance));
+  assert.match(h,new RegExp('ep-din-block-body-size'));
+  assert.ok(h.includes(String(device.widthMm)));
+  assert.equal(device.verificationStatus,undefined);
+ }
+});

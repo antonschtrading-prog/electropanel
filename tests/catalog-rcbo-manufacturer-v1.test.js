@@ -1,0 +1,15 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {candidates,evidence,SOURCES}=require('../catalog-intake/rcbo-manufacturer-batch-v1.js');
+const {validateCandidate}=require('../catalog-intake/candidate-schema-v1.js');
+test('five distinct RCBO SKUs with manufacturer source',()=>{assert.equal(new Set(candidates.map(c=>c.sku)).size,5);assert.ok(candidates.every(c=>c.kind==='RCBO'&&c.source.startsWith('https://')))});
+test('every RCBO has per-field exact-SKU evidence',()=>{for(const c of candidates)assert.equal(evidence[c.sku].sku.exactSku,c.sku)});
+test('AC and A types remain distinct',()=>{assert.equal(candidates.find(c=>c.sku==='A9D34616').residualType,'AC');assert.equal(candidates.find(c=>c.sku==='A9D32616').residualType,'A')});
+test('1P+N is two poles but one protected pole',()=>{const c=candidates[0];assert.equal(c.poles,2);assert.equal(c.protectedPoles,1)});
+test('3P+Ns product does not get fictitious 4-module body',()=>{const c=candidates.find(c=>c.sku==='A9DC1916');assert.equal(c.modules,3);assert.equal(c.widthMm,null)});
+test('RCBO breaking capacity cannot silently lose its standard and voltage',()=>{const c=candidates.find(c=>c.sku==='A9D32616');assert.ok(validateCandidate(c).some(x=>x.code==='ICN_CONTEXT_REQUIRED'))});
+test('exact dimensions are available for A9D34616 only where documented',()=>{const c=candidates[0];assert.deepEqual([c.widthMm,c.heightMm,c.depthMm],[36,85,73])});
+test('regional replacement flag retained',()=>{assert.equal(candidates.find(c=>c.sku==='A9D32616').lifecycle,'REPLACED_UK')});
+test('manufacturer environment profile does not authorize product imagery',()=>{assert.equal(candidates.some(c=>c.imageUrl),false)});
+test('R9DX01616 width is exactly 18 mm',()=>{assert.equal(candidates.find(c=>c.sku==='R9DX01616').widthMm,18)});
+test('no candidate is automatically approved',()=>{assert.ok(candidates.every(c=>!c.engineeringApproved&&!c.autoImportAllowed))});

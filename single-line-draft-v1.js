@@ -14,8 +14,32 @@ function epSingleLineDraftV1(project,lookupSku){
   if(!group||typeof group.id!=='string'||!group.id||seen.has('RCD:'+group.id)||
    !Array.isArray(group.circuitIds)){add('SINGLE_LINE_RCD_INVALID','BLOCKED');continue;}
   const id='RCD:'+group.id;seen.add(id);
+  let groupArticle=null;
+  if(group.catalogSku&&typeof lookupSku==='function')
+   try{groupArticle=lookupSku(group.catalogSku);}catch(_){add('SINGLE_LINE_SHARED_LOOKUP_FAILED','BLOCKED',group.id);}
+  if(group.catalogSku&&!groupArticle)add('SINGLE_LINE_SHARED_ARTICLE_UNKNOWN','BLOCKED',group.id);
+  if(!group.catalogSku)add('SINGLE_LINE_SHARED_ARTICLE_MISSING','UNKNOWN',group.id);
+  if(groupArticle){
+   if(!Number.isFinite(groupArticle.residualCurrentMa)||groupArticle.residualCurrentMa<=0)
+    add('SINGLE_LINE_SHARED_RESIDUAL_CURRENT_UNDECLARED','UNKNOWN',group.id);
+   if(!['AC','A','F','B','B+'].includes(groupArticle.residualType))
+    add('SINGLE_LINE_SHARED_RESIDUAL_TYPE_UNDECLARED','UNKNOWN',group.id);
+   if(groupArticle.modules!==group.modules)add('SINGLE_LINE_SHARED_WIDTH_MISMATCH','BLOCKED',group.id);
+   if(groupArticle.kind!=='RCD')add('SINGLE_LINE_SHARED_KIND_MISMATCH','BLOCKED',group.id);
+   if(group.templateId==='RCD_2P'&&groupArticle.poles!==2||
+      group.templateId==='RCD_4P'&&groupArticle.poles!==4)
+    add('SINGLE_LINE_SHARED_POLE_MISMATCH','BLOCKED',group.id);
+  }
   nodes.push({id,type:'rcd',name:group.label||group.id,phase:null,sku:group.catalogSku||null,
-   article:null,templateId:group.templateId||null});
+   article:groupArticle?{maker:groupArticle.maker||null,series:groupArticle.series||null,
+    label:groupArticle.label||null,sku:groupArticle.sku||null,kind:groupArticle.kind||null,inA:groupArticle.inA??null,icnKa:groupArticle.icnKa??null,
+    icuKa:groupArticle.icuKa??null,icuVoltageV:groupArticle.icuVoltageV??null,
+    poles:groupArticle.poles??null,modules:groupArticle.modules??null,
+    poleConfiguration:groupArticle.poleConfiguration??null,
+    icnVoltageV:groupArticle.icnVoltageV??null,icnStandard:groupArticle.icnStandard??null,
+    residualCurrentMa:groupArticle.residualCurrentMa??null,
+    residualType:groupArticle.residualType??null}:null,
+   templateId:group.templateId||null});
   edges.push({from:'SOURCE:MAIN',to:id,kind:'declared_group_association'});
   for(const lineId of group.circuitIds){
    if(groupFor.has(lineId))add('SINGLE_LINE_MULTIPLE_RCD','BLOCKED',lineId);
@@ -42,10 +66,26 @@ function epSingleLineDraftV1(project,lookupSku){
   if(!line.catalogSku)add('SINGLE_LINE_ARTICLE_MISSING','UNKNOWN',line.id);
   if(!branch)add('SINGLE_LINE_BRANCH_UNBOUND','UNKNOWN',line.id);
   if(!['L1','L2','L3','3Ф'].includes(line.phase))add('SINGLE_LINE_PHASE_UNKNOWN','UNKNOWN',line.id);
+  // Draft scheme carries declared design inputs and review provenance alongside
+  // the apparatus. None of these values is inferred from panel geometry.
+  const design={
+   ibA:line.overloadInput?.ibA??null,izA:line.overloadInput?.izA??null,
+   ikKa:line.faultInput?.ikKa??null,
+   voltageV:line.faultInput?.voltageV??null,
+   calculationReviewRequired:line.calculationReview?.required===true,
+   loadCurrentStale:line.loadCurrentCalculation?.stale===true,
+   inputSource:line.protectionInputSource||null
+  };
   nodes.push({id,type:'circuit',lineId:line.id,name:line.name||line.id,phase:line.phase||null,
    sku:line.catalogSku||null,article:article?{maker:article.maker||null,series:article.series||null,
-    label:article.label||null,inA:article.inA??null,icnKa:article.icnKa??null,
-    poles:article.poles??null}:null,branchId:branch?.id||null});
+    label:article.label||null,sku:article.sku||null,kind:article.kind||null,inA:article.inA??null,icnKa:article.icnKa??null,
+    icuKa:article.icuKa??null,icuVoltageV:article.icuVoltageV??null,
+    poles:article.poles??null,modules:article.modules??null,
+    poleConfiguration:article.poleConfiguration??null,
+    icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
+    residualCurrentMa:article.residualCurrentMa??null,
+    residualType:article.residualType??null}:null,
+   branchId:branch?.id||null,design});
   edges.push({from:groupId||'SOURCE:MAIN',to:id,kind:'declared_group_association'});
  }
  for(const [lineId] of groupFor)if(!project.lines.some(x=>x?.id===lineId))

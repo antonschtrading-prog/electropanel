@@ -1,0 +1,11 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {buildReleaseBundle}=require('../catalog-intake/review-bundle-v1.js');
+test('release bundle includes all 46 records',()=>assert.equal(buildReleaseBundle().articles.length,46));
+test('release bundle refuses auto-integration',()=>assert.equal(buildReleaseBundle().coreIntegrationAllowed,false));
+test('every record has explicit no-live-selection flag',()=>assert.ok(buildReleaseBundle().articles.every(x=>x.liveSelectionAllowed===false)));
+test('release bundle carries source per article',()=>assert.ok(buildReleaseBundle().articles.every(x=>x.source?.startsWith('https://'))));
+test('release bundle carries per-article tasks',()=>assert.ok(buildReleaseBundle().articles.every(x=>Array.isArray(x.tasks))));
+test('release bundle version is stable',()=>assert.equal(buildReleaseBundle().version,1));
+test('missing category gaps are explicit',()=>assert.deepEqual(buildReleaseBundle().portfolio.missingKinds,['METER','RELAY']));
+test('release bundle includes verification summary',()=>assert.equal(buildReleaseBundle().verification.articles,46));

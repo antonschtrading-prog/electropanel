@@ -1,0 +1,15 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {previewProjectTransfer:p}=require('../catalog-intake/project-transfer-preview-v1.js');
+test('transfer preview covers all 46 articles',()=>assert.equal(p().total,46));
+test('transfer preview does not authorize transfer',()=>assert.equal(p().transferAllowed,false));
+test('transfer preview has no approved articles',()=>assert.ok(p().results.every(x=>!x.engineeringApproved)));
+test('transfer preview includes existing ABB overlap',()=>assert.ok(p().results.find(x=>x.sku==='2CDS251001R0164').duplicate));
+test('transfer preview includes existing Schneider overlap',()=>assert.ok(p().results.find(x=>x.sku==='A9F74116').duplicate));
+test('transfer preview preserves source URL',()=>assert.ok(p().results.every(x=>x.source?.startsWith('https://'))));
+test('transfer preview preserves exact SKU',()=>assert.ok(p().results.every(x=>x.preview.sku===x.sku)));
+test('transfer preview rejects missing geometry without guessing',()=>assert.ok(p().results.some(x=>x.blockers.includes('MISSING_WIDTHMM'))));
+test('transfer preview marks missing current',()=>assert.ok(p().results.some(x=>x.blockers.includes('MISSING_INA'))));
+test('transfer preview retains manufacturer and series',()=>assert.ok(p().results.every(x=>x.preview.maker&&x.preview.series)));
+test('transfer preview never modifies input project',()=>{const q={lines:[],catalogArticles:[]};p(q);assert.deepEqual(q,{lines:[],catalogArticles:[]})});
+test('transfer preview is deterministic',()=>assert.deepEqual(p(),p()));

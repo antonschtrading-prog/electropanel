@@ -6,9 +6,13 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
  const p=epDraftBoardPlanV1(project,lookupSku);
  if(!Number.isInteger(p.rails)||!Number.isInteger(p.capacityPerRail))
   return '<p>Параметры щита некорректны. Размещение заблокировано.</p>';
+ const physical=typeof epDinPhysicalEnvelopeV1==='function'?epDinPhysicalEnvelopeV1(p,lookupSku):null;
+ const physicalById=new Map((physical?.rows||[]).map(x=>[x.deviceId,x]));
+ const cabinet=typeof epCabinetFitAuditV1==='function'?epCabinetFitAuditV1(project,lookupSku):null;
+ const cabinetZones=new Map((cabinet?.geometry?.zones||[]).map(z=>[z.railIndex,z]));
  const byRail=Array.from({length:p.rails},()=>[]);
- for(const d of p.placements)if(byRail[d.railIndex])byRail[d.railIndex].push(d);
- const branchMap=new Map((Array.isArray(project?.branchDevices)?project.branchDevices:[]).map(x=>[x.id,x.circuitId]));
+ for(const d of (Array.isArray(p.placements)?p.placements:[]))if(d&&byRail[d.railIndex])byRail[d.railIndex].push(d);
+ const branchMap=new Map((Array.isArray(project?.branchDevices)?project.branchDevices:[]).filter(x=>x&&typeof x==='object').map(x=>[x.id,x.circuitId]));
  const railRows=byRail.map((items,index)=>{
   const used=items.reduce((n,x)=>n+x.modules,0);
   const sorted=[...items].sort((a,b)=>a.startModule-b.startModule);
@@ -23,9 +27,20 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
    let catalog=null;
    try{catalog=d.article&&typeof lookupSku==='function'?lookupSku(d.article):null;}catch(_){}
    const maker=catalog?.maker||null,series=catalog?.series||null;
+   const bodySize=catalog?[catalog.widthMm,catalog.heightMm,catalog.depthMm]
+    .map(v=>Number.isFinite(v)&&v>0?String(v):'—').join(' × ')+' мм':null;
+   // Measured body-size declarations are distinct from nominal DIN slots and a stylized facade.
+   const fullLabel=label+(bodySize?' · Корпус Ш×В×Г: '+safe(bodySize):'');
+   const widthKnown=Number.isFinite(catalog?.widthMm)&&catalog.widthMm>0;
+   const moduleMatch=Number.isInteger(catalog?.modules)&&catalog.modules===d.modules;
+   const envelopeMatch=widthKnown&&catalog.widthMm<=d.modules*18+0.001;
+   const physicalRow=physicalById.get(d.deviceId);
+   const geometryIssue=!!catalog&&(!widthKnown||!moduleMatch||!envelopeMatch||physicalRow?.status==='BLOCKED');
+   const evidenceNote=!catalog?'Артикул не выбран':geometryIssue?'Геометрия каталога не согласована с DIN':catalog.verificationStatus!=='VERIFIED'?'Паспортные данные не подтверждены':'Геометрия по заявленному каталогу';
    const rating=catalog&&Number.isFinite(catalog.inA)?
     (safe(catalog.curve||'')+safe(catalog.inA)+' A'):'';
    const breaking=catalog&&Number.isFinite(catalog.icnKa)?safe(catalog.icnKa)+' kA':'';
+   const faceStyle=['abb','schneider','iek','hager','legrand','siemens'].includes(catalog?.appearance)?catalog.appearance:'generic';
    const facade=catalog?
     '<span class="ep-din-brand">'+safe(maker||'Изготовитель не указан')+'</span>'+
     '<span class="ep-din-series">'+safe(series||'Серия не указана')+'</span>'+
@@ -34,26 +49,34 @@ function epDraftBoardPreviewV1(project,lookupSku,selectedId=null){
     '<span class="ep-din-brand">Нет каталожной записи</span>';
    const circuitId=branchMap.get(d.deviceId)||((project?.lines||[]).some(l=>l?.id===d.deviceId)?d.deviceId:null);
    blocks+='<button type="button" class="ep-din-block'+(active?' ep-circuit-active':'')+(d.article?'':' ep-din-unverified')+
-    '" style="grid-column:span '+d.modules+'" title="'+label+'" aria-label="'+label+'"'+
+    '" style="grid-column:span '+d.modules+'" title="'+fullLabel+'" aria-label="'+fullLabel+'"'+
     (circuitId?' data-din-focus="'+safe(circuitId)+'"':' disabled')+'>'+
     '<span class="ep-din-block-id">'+safe(d.deviceId)+'</span>'+
     facade+
+    '<span class="ep-din-device-face ep-din-face-'+faceStyle+'" aria-hidden="true">'+
+    (catalog&&typeof epCatalogFrontSvgV1==='function'?(typeof epManufacturerVisualHtmlV1==='function'?epManufacturerVisualHtmlV1(catalog,d.deviceId):epCatalogFrontSvgV1(catalog,d.deviceId))+'<span class="ep-din-device-toggle" hidden></span>':'<span class="ep-din-device-toggle"></span><span class="ep-din-device-indicator"></span>')+'</span>'+ 
     '<span class="ep-din-block-article">'+safe(d.article||'Артикул не выбран')+'</span>'+
+    (bodySize?'<span class="ep-din-block-body-size" title="Заявленный корпус, Ш×В×Г">'+safe(bodySize)+'</span>':'')+ 
+    '<span class="ep-din-block-evidence" title="'+safe(evidenceNote)+'">'+safe(evidenceNote)+'</span>'+
     '<span class="ep-din-block-width">'+d.modules+'M</span></button>';
    cursor=d.startModule+d.modules;
   }
   if(cursor<p.capacityPerRail)blocks+='<div class="ep-din-empty" style="grid-column:span '+(p.capacityPerRail-cursor)+'" aria-label="Свободные модули '+(p.capacityPerRail-cursor)+'"></div>';
+  const zone=cabinetZones.get(index);
   return '<section class="ep-din-rail-section"><h4>DIN '+(index+1)+' · '+used+'/'+p.capacityPerRail+
-   ' мод. · свободно '+(p.capacityPerRail-used)+'</h4>'+
+   ' мод. · свободно '+(p.capacityPerRail-used)+(zone?' · монтажная зона '+safe(zone.widthMm)+' × '+safe(zone.heightMm)+' мм':'')+'</h4>'+
    '<div class="ep-din-module-grid" style="--ep-din-columns:'+p.capacityPerRail+'" role="img" aria-label="Предварительная рейка DIN '+(index+1)+'">'+blocks+'</div>'+
    '<details><summary>Позиции аппаратов</summary><ol>'+entries+'</ol></details></section>';
  }).join('');
- const errors=p.issues.filter(x=>x.level==='BLOCKED');
- const warnings=p.issues.filter(x=>x.level!=='BLOCKED');
+ const errors=(Array.isArray(p.issues)?p.issues:[]).filter(x=>x.level==='BLOCKED');
+ const warnings=(Array.isArray(p.issues)?p.issues:[]).filter(x=>x.level!=='BLOCKED');
  return '<div class="ep-draft-board-preview" role="region" aria-label="Предварительная компоновка">'+
   '<p><strong>Предварительный план: '+safe(p.status)+'</strong>. Только геометрическое размещение; монтаж не подтверждён.</p>'+
   railRows+'<p>Блокирующих ошибок: '+errors.length+'; неопределённостей: '+warnings.length+'.</p>'+
   (errors.length?'<ul>'+errors.slice(0,30).map(x=>'<li>'+safe(x.code)+(x.id?' · '+safe(x.id):'')+'</li>').join('')+'</ul>':'')+
+  (cabinet?'<p class="ep-cabinet-preview-summary">Корпус: '+safe(cabinet.status)+'; заявленные полезные размеры: '+(cabinet.geometry?cabinet.geometry.interior.widthMm+' × '+cabinet.geometry.interior.heightMm+' × '+cabinet.geometry.interior.depthMm+' мм':'не заданы')+'; блокирующих замечаний: '+cabinet.issues.filter(x=>x.level==='BLOCKED').length+'.</p>':'')+
+  (physical?'<p class="ep-din-physical-summary">Габаритная ширина по каталогу: '+physical.checkedWidths+' аппаратов; неизвестная ширина: '+physical.missingWidths+'; блокирующих замечаний: '+physical.issues.filter(x=>x.level==='BLOCKED').length+'.</p>':'')+
+  (physical&&physical.issues.some(x=>x.level==='BLOCKED')?'<details class="ep-din-physical-issues"><summary>Противоречия физических габаритов</summary><ul>'+physical.issues.filter(x=>x.level==='BLOCKED').slice(0,30).map(x=>'<li>'+safe(x.code)+' · '+safe(x.deviceId||'—')+'</li>').join('')+'</ul></details>':'')+
   '<p>Проверка нагрева, зазоров, проводников и совместимости корпуса не выполнена.</p></div>';
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={epDraftBoardPreviewV1};
