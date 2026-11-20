@@ -13,6 +13,10 @@ test('print report includes all five engineering sections',()=>{
  'Спецификация оборудования','Расхождения между представлениями'])assert.ok(h.includes(title),title);
  assert.match(h,/BR_L1/);assert.match(h,/ABB-1/);
 });
+test('print report retains the declared manual fault-current source',()=>{
+ const b=bundle();b.sections.protection.rows[0].ikSource='Расчёт ЭЛ-02';
+ const h=print(b);assert.match(h,/Источник ручного Ik/);assert.match(h,/Расчёт ЭЛ-02/);
+});
 test('print report is self-contained and clearly not for installation',()=>{
  const h=print(bundle());
  assert.match(h,/<!doctype html>/);assert.match(h,/НЕ ДЛЯ МОНТАЖА/);

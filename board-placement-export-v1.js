@@ -1,7 +1,7 @@
 'use strict';
 // Human-readable DIN placement schedule; every value is sourced from the draft board.
 function epBoardPlacementCsvV1(project,lookup){
- const cols=['device_id','kind','catalog_sku','rail_number','start_module_number','width_modules','end_module_number','layout_status',
+ const cols=['device_id','kind','owner_id','owner_name','catalog_sku','rail_number','start_module_number','width_modules','end_module_number','layout_status',
   'nominal_slot_width_mm','body_width_mm','body_height_mm','body_depth_mm','nominal_remaining_mm','physical_width_status','visual_asset_status',
   'cabinet_fit_status','cabinet_zone_x_mm','cabinet_zone_y_mm','cabinet_zone_height_mm','cabinet_usable_depth_mm',
   'declared_related_on_same_rail','declared_related_across_rails','connection_proximity_status',
@@ -48,7 +48,12 @@ function epBoardPlacementCsvV1(project,lookup){
   const asset=device&&typeof epManufacturerFrontResolveV1==='function'?epManufacturerFrontResolveV1(device):null;
   const widthStatus=!row?'NOT_CHECKED':row.status==='BLOCKED'?'BLOCKED':
    row.bodyWidthMm===null?'UNKNOWN':'DECLARED_WITHIN_SLOT';
-  lines.push([p.deviceId,p.kind,p.article,p.railIndex+1,p.startModule+1,p.modules,p.startModule+p.modules,
+  const branch=p.kind==='branch'&&(Array.isArray(project.branchDevices)?project.branchDevices:[]).find(x=>x?.id===p.deviceId);
+  const owner=p.kind==='branch'
+   ?(Array.isArray(project.lines)?project.lines:[]).find(x=>x?.id===(branch?.circuitId||p.deviceId))
+   :(Array.isArray(project.sharedDevices)?project.sharedDevices:[]).find(x=>x?.id===p.deviceId);
+  const ownerId=p.kind==='branch'?(branch?.circuitId||owner?.id||''):(owner?.id||'');
+  lines.push([p.deviceId,p.kind,ownerId,owner?.name||owner?.label||'',p.article,p.railIndex+1,p.startModule+1,p.modules,p.startModule+p.modules,
    board.status,p.modules*18,row?.bodyWidthMm??null,row?.bodyHeightMm??null,row?.bodyDepthMm??null,
    row?.nominalFreeWidthMm??null,widthStatus,asset?.status||'STYLIZED_ONLY',
    cabinet?.status||'NOT_CHECKED',cabinetById.get(p.deviceId)?.xMm??null,

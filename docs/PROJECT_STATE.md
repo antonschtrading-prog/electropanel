@@ -60,3 +60,11 @@ Baseline: published P0 head `3993d1f34bce56df3722f955e9fb68d9feb2626b` in PR #12
 - Responsive containment and permanent real-Chromium touch regression cover 375/390/768/1024 px, a 44 px selector target, select/clear/reselect and reload without horizontal page overflow. This is Chromium emulation, not a physical Mac/iPhone or Safari/WebKit test.
 
 Repeated local verification on the restored source state: **5266/5266 Node tests passed**, changed JS/CJS syntax and `git diff --check` passed, Pages package passed (**183 scripts / 188 assets**), and the complete real-Chromium suite passed. Commercial exports were parsed for `CDA440D`; final commercial, general and touch scenarios had no page errors, console warnings/errors or HTTP 4xx/5xx. `engineeringApproved`, `ready_for_installation` and `confirmedCabinetFit` remain false. These results are software-regression evidence, not normative design or installation approval.
+
+
+## 20 November 2026 — local browser compatibility and mobile containment
+
+- The current working copy retains the earlier local fixes for calculation-source traceability, DIN owner identity, circuit deletion and project-switch baselines. It also contains mobile containment for the board grid, wide DIN/candidate/cabinet tables, wrapping panel headings and long diagnostic text.
+- Mobile regression now checks loads, board and documents at 375/390/768/1024 px, including shared-RCD selection, clearing, reselection and reload. The previous board-only overflow is covered rather than inferred from the loads view.
+- The complete Node suite and `git diff --check` passed after the code changes. Pages packaging passed with 183 scripts / 188 assets. The full existing browser integration workflow passed locally in both WebKit and Chromium; Chromium required the new headless mode because the legacy headless shell did not deliver its initial click on this Mac.
+- A real-Safari WebDriver session did not start and is not counted as a pass. Physical Mac/iPhone and real-Safari checks remain open. Nothing from this local block has been committed, pushed, published or sent to GitHub CI; `engineeringApproved`, `ready_for_installation` and `confirmedCabinetFit` remain false.

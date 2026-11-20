@@ -113,7 +113,7 @@ function epProtectionWorkbenchV1(project,lookupSku,catalogInput,selectedId){
   const status=reasons.some(x=>blocking.has(x))?'BLOCKED':'UNKNOWN';
   for(const code of reasons)issues.push({code,lineId:line.id,level:blocking.has(code)?'BLOCKED':'UNKNOWN'});
   rows.push({lineId:line.id,name:line.name||line.device||'',phase:line.phase||null,
-   ibA:ib,izA:iz,ikKa:displayIk,manualIkKa:ik,
+   ibA:ib,izA:iz,ikKa:displayIk,manualIkKa:ik,ikSource:line.faultInput?.source??null,
    voltageV:displayVoltage,manualVoltageV:voltageV,loadCurrentCalculation:line.loadCurrentCalculation||null,selectedSku:sku,selectedArticle:article?
    {maker:article.maker||null,series:article.series||null,sku:article.sku||sku,
     kind:article.kind||null,label:article.label||null,
@@ -141,13 +141,13 @@ function epProtectionWorkbenchHtmlV1(report){
  const article=x.selectedArticle;
  const ranked=x.ranking?.rows||[];
  const rankingHtml='<h4>Порядок инженерной проверки кандидатов (не допуск)</h4>'+
-  '<table><thead><tr><th>Артикул</th><th>Оценка</th><th>Запас In−Ib, А</th>'+
+  '<div class="table-scroll"><table><thead><tr><th>Артикул</th><th>Оценка</th><th>Запас In−Ib, А</th>'+
   '<th>Запас Iz−In, А</th><th>Запас Icn−Ik, кА</th><th>Запас Uном−Uсети, В</th>'+
   '<th>Неподтверждённые данные</th></tr></thead><tbody>'+
   ranked.map(c=>'<tr><td>'+esc(c.catalogKey)+'</td><td>'+esc(c.classification)+
    '</td><td>'+fmt(c.currentHeadroomA)+'</td><td>'+fmt(c.cableHeadroomA)+
    '</td><td>'+fmt(c.breakingHeadroomKa)+'</td><td>'+fmt(c.voltageHeadroomV)+
-   '</td><td>'+esc(c.openEvidence.join('; '))+'</td></tr>').join('')+'</tbody></table>'+
+   '</td><td>'+esc(c.openEvidence.join('; '))+'</td></tr>').join('')+'</tbody></table></div>'+
   '<p>Ранжирование — порядок просмотра, не автоматическое разрешение на установку.</p>';
  const rows=x.candidates.map(c=>{
   const reasons=(c.reasons.length?c.reasons.join(', '):'Арифметических противоречий не выявлено')+
@@ -194,9 +194,9 @@ function epProtectionWorkbenchCsvV1(report){
   if(/^[\s\u0000-\u001f]*[=+@-]/.test(s))s="'"+s;
   return '"'+s.replace(/"/g,'""')+'"';
  };
- const head=['Цепь','Назначение','Фаза','Ib А','Iz А','Ik кА','Выбранный артикул',
+ const head=['Цепь','Назначение','Фаза','Ib А','Iz А','Ik кА','Источник ручного Ik','Выбранный артикул',
   'Производитель','Серия','In А','Icn кА','Статус','Замечания','Кандидаты POTENTIAL'];
- const rows=(report?.rows||[]).map(x=>[x.lineId,x.name,x.phase,x.ibA,x.izA,x.ikKa,
+ const rows=(report?.rows||[]).map(x=>[x.lineId,x.name,x.phase,x.ibA,x.izA,x.ikKa,x.ikSource||'Не указан',
   x.selectedSku,x.selectedArticle?.maker,x.selectedArticle?.series,x.selectedArticle?.inA,
   x.selectedArticle?.icnKa,x.status,x.reasons.join('; '),
   x.candidates.filter(c=>c.status==='POTENTIAL').map(c=>c.sku).join(', ')]);

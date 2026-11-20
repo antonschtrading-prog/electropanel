@@ -52,3 +52,9 @@ All coordinated draft-document entry points use the shared cross-view export gat
 **Mobile evidence is named precisely.** Real Chromium with mobile/touch context and 375/390/768/1024 viewport regression is the committed automated baseline. It is not represented as a physical Mac/iPhone test or Safari/WebKit compatibility result. Selectors retain at least 44 px touch height and page overflow is tested at the document/body level.
 
 Publication target remains PR #12/GitHub Pages. `main` requires a separate user decision. Blocking coordinated documents does not block diagnostics or raw project JSON, and none of these software outcomes grants engineering or installation approval.
+
+## 2026-11-20 — mobile containment and browser-engine evidence
+
+Wide DIN rails and engineering tables must scroll inside their own containers; they must not expand the document or body beyond the viewport. Single-column grids use `minmax(0,1fr)`, panel headings and diagnostic rows wrap, and long evidence text remains breakable. Mobile regression covers loads, board and documents at 375/390/768/1024 px rather than only the input table.
+
+A local Playwright WebKit run is engine-level compatibility evidence. It is not a physical Mac/iPhone test or a successful real-Safari WebDriver session. Those checks remain separate, and no engineering or installation approval follows from a browser-layout pass.

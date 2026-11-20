@@ -2278,10 +2278,14 @@ const server=http.createServer((req,res)=>{
  assert.equal(await touchPage.evaluate(()=>state.sharedDevices[0].catalogSku),'HA-CDA440D');
  for(const width of [375,390,768,1024]){
   await touchPage.setViewportSize({width,height:844});
-  const dimensions=await touchPage.evaluate(()=>({inner:innerWidth,document:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
-  assert.deepEqual(dimensions,{inner:width,document:width,body:width},'no page overflow at '+width);
+  for(const view of ['loads','board','documents']){
+   await touchPage.evaluate(view=>switchView(view),view);
+   const dimensions=await touchPage.evaluate(()=>({inner:innerWidth,document:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
+   assert.deepEqual(dimensions,{inner:width,document:width,body:width},'no page overflow at '+width+' in '+view);
+  }
  }
  await touchPage.setViewportSize({width:390,height:844});
+ await touchPage.evaluate(()=>switchView('loads'));
  const touchSelect=touchPage.locator('[data-shared-rcd-sku="RCD1"]');
  assert.ok((await touchSelect.boundingBox()).height>=44,'touch selector target must be at least 44 px');
  assert.ok((await touchPage.locator('.shared-device-front svg').boundingBox()).width>=90);

@@ -213,8 +213,8 @@ function epEngineeringPrintV1(bundle){
   dossier.map(x=>[x.circuitId,x.name,x.phase,x.sku||'Не выбран',
    x.placement?'DIN '+x.placement.rail+' · '+x.placement.from+'–'+x.placement.to:'Не размещено',
    x.calculationReviewRequired?'Требуется перепроверка':'Не подтверждено']));
- const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Напряжение сети, В','Артикул','Тип','Изготовитель','In, A','Icn, кА','Напряжение Icn, В','Стандарт Icn','Icu, кА','Напряжение Icu, В','Конфигурация полюсов','IΔn, мА','Тип дифзащиты','Источник','Статус','Причины'],
-  protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.voltageV??'Не указано',x.selectedSku,x.selectedArticle?.kind,
+ const protectionTable=rows(['Цепь','Ib, A','Iz, A','Ik, кА','Источник ручного Ik','Напряжение сети, В','Артикул','Тип','Изготовитель','In, A','Icn, кА','Напряжение Icn, В','Стандарт Icn','Icu, кА','Напряжение Icu, В','Конфигурация полюсов','IΔn, мА','Тип дифзащиты','Источник','Статус','Причины'],
+  protection.map(x=>[x.lineId,x.ibA,x.izA,x.ikKa,x.ikSource||'Не указан',x.voltageV??'Не указано',x.selectedSku,x.selectedArticle?.kind,
    x.selectedArticle?.maker,x.selectedArticle?.inA,x.selectedArticle?.icnKa,
    x.selectedArticle?.icnVoltageV??'—',x.selectedArticle?.icnStandard||'—',
    x.selectedArticle?.icuKa??'—',x.selectedArticle?.icuVoltageV??'—',

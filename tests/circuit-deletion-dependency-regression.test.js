@@ -98,3 +98,33 @@ test('manual placements remove deleted branch and retain survivor',()=>{const x=
 test('unassigned manual placement survives missing branch identity',()=>{const x=run({branchDevices:[{id:'Q2',circuitId:'L2'}],manualLayoutV1:[{slot:1},{deviceId:'Q2'}]});x.remove('L1');assert.equal(x.state.manualLayoutV1.length,2)});
 
 test('protection links clear both ends of deleted circuit',()=>{const x=run({protectionLinks:[{upstreamLineId:'L1',downstreamLineId:'L2'},{upstreamLineId:'L2',downstreamLineId:'L1'},{upstreamLineId:'L2',downstreamLineId:'L3'}]});x.remove('L1');assert.equal(x.state.protectionLinks.length,1);assert.equal(x.state.protectionLinks[0].downstreamLineId,'L3')});
+
+test('deletion clears board and terminal bindings only for removed circuit',()=>{
+ const x=run({
+  loads:[{id:'LD1',circuitId:'L1'},{id:'LD2',circuitId:'L2'}],
+  terminalLinks:[{id:'T:LD1:L1',circuitId:'L1',from:'BRANCH:Q1/L1',to:'LOAD:LD1/L1'},
+   {id:'T:LD2:L1',circuitId:'L2',from:'BRANCH:Q2/L1',to:'LOAD:LD2/L1'}],
+  boardBindingsV1:[{boardDeviceId:'Q1'},{boardDeviceId:'Q2'}],
+  endpointBindingsV1:[{symbolicRef:'BRANCH:Q1/L1'},{symbolicRef:'LOAD:LD1/L1'},
+   {symbolicRef:'BRANCH:Q2/L1'},{symbolicRef:'LOAD:LD2/L1'}]
+ });
+ x.remove('L1');
+ assert.deepEqual(Array.from(x.state.boardBindingsV1,x=>x.boardDeviceId),['Q2']);
+ assert.deepEqual(Array.from(x.state.endpointBindingsV1,x=>x.symbolicRef),['BRANCH:Q2/L1','LOAD:LD2/L1']);
+ const old=JSON.parse(x.checkpoints[0]);
+ assert.equal(old.boardBindingsV1.length,2);assert.equal(old.endpointBindingsV1.length,4);
+});
+
+test('removing last group member clears its board and input terminal bindings',()=>{
+ const x=run({
+  sharedDevices:[{id:'R1',circuitIds:['L1']},{id:'R2',circuitIds:['L2']}],
+  groupInputLinks:[{groupId:'R1',from:'SOURCE:MAIN/L1',to:'GROUP:R1/IN-L1'},
+   {groupId:'R2',from:'SOURCE:MAIN/L1',to:'GROUP:R2/IN-L1'}],
+  boardBindingsV1:[{boardDeviceId:'R1'},{boardDeviceId:'R2'}],
+  endpointBindingsV1:[{symbolicRef:'GROUP:R1/IN-L1'},{symbolicRef:'GROUP:R2/IN-L1'},
+   {symbolicRef:'SOURCE:MAIN/L1'}]
+ });
+ x.remove('L1');
+ assert.deepEqual(Array.from(x.state.boardBindingsV1,x=>x.boardDeviceId),['R2']);
+ assert.deepEqual(Array.from(x.state.endpointBindingsV1,x=>x.symbolicRef),['GROUP:R2/IN-L1','SOURCE:MAIN/L1']);
+});

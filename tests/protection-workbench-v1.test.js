@@ -71,9 +71,11 @@ test('empty project produces helpful placeholder',()=>{
 
 test('CSV exports every circuit regardless of selected focus',()=>{
  const {epProtectionWorkbenchCsvV1:csv}=require('../protection-workbench-v1.js');
- const output=csv(work(project(),lookup,catalog,'L1'));
+ const x=project();x.lines[0].faultInput.source='Расчёт ЭЛ-02';
+ const output=csv(work(x,lookup,catalog,'L1'));
  assert.match(output,/L1/);assert.match(output,/L2/);
- assert.match(output,/Кухня/);
+ assert.match(output,/Кухня/);assert.match(output,/Источник ручного Ik/);
+ assert.match(output,/Расчёт ЭЛ-02/);
 });
 test('CSV formula-like user names are escaped',()=>{
  const {epProtectionWorkbenchCsvV1:csv}=require('../protection-workbench-v1.js');

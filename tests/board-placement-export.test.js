@@ -30,7 +30,7 @@ test('project not mutated',()=>{const q=p(),before=JSON.stringify(q);csv(q);asse
 test('deterministic',()=>assert.equal(csv(p()).csv,csv(p()).csv));
 test('exports manual position',()=>{
  const q=p();q.manualLayoutV1=[{deviceId:'L1',railIndex:1,startModule:3}];
- assert.match(csv(q).csv,/"L1";"branch";"";"2";"4"/);
+ assert.match(csv(q).csv,/"L1";"branch";"L1";"";"";"2";"4"/);
 });
 test('exports catalogue article',()=>{
  const q=p();q.lines[0].catalogSku='SKU';assert.match(csv(q,()=>({modules:1})).csv,/SKU/);
@@ -46,4 +46,13 @@ test('DIN schedule includes provenance columns without claiming verified termina
  assert.match(out.csv,/body_dimension_source_reviewed_at/);
  assert.match(out.csv,/actual_terminal_coordinates_verified/);
  assert.equal(out.ready_for_installation,false);
+});
+
+test('DIN schedule maps stable apparatus IDs to circuit and shared device labels',()=>{
+ const q=p();q.lines[0].name='Освещение';q.sharedDevices[0].label='QD1';
+ q.branchDevices=[{id:'BD-L1',circuitId:'L1',modules:1},{id:'BD-L2',circuitId:'L2',modules:2}];
+ const out=csv(q);
+ assert.match(out.csv,/owner_id/);assert.match(out.csv,/owner_name/);
+ assert.match(out.csv,/"BD-L1";"branch";"L1";"Освещение"/);
+ assert.match(out.csv,/"R1";"shared";"R1";"QD1"/);
 });

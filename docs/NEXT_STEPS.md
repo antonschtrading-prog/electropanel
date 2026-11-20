@@ -261,3 +261,10 @@ This section supersedes older unchecked queues where they conflict. P0 is publis
 6. **Later separate scope.** Fire interfaces and optional room-plan contour B remain subsequent work; they were not started in this slice.
 
 Required closure for every block: full Node tests, engineering validation, Pages build, real Chromium, documentation update and exact-head CI. No second architecture, duplicate repository or silent migration of these changes into `main`.
+
+## 2026-11-20 — local mobile/WebKit compatibility block
+
+- Wide DIN/candidate/cabinet evidence is contained in local horizontal scrollers; board grid, wrapping panel headers and long diagnostic text no longer expand the mobile page. The browser regression now checks loads, board and documents at all four established widths.
+- The full Node suite, Pages package and the complete existing browser workflow passed locally in both WebKit and Chromium. Chromium used the new headless mode because the legacy headless shell did not deliver the initial click on this Mac. These are engine-level results, not a physical Safari/Mac/iPhone result.
+- The combined local result is recorded in `PROJECT_STATE.md`. Publish only after explicit user permission, then require exact-head CI.
+- Physical Apple-device checks and real-Safari automation remain open; the attempted WebDriver session did not start and must not be recorded as a pass.
