@@ -1,0 +1,108 @@
+'use strict';
+// Draft bill of materials: exact SKU grouping only, no pricing or substitute guesses.
+function epDraftBomV1(project,lookupSku){
+ const issues=[],items=new Map(),devices=[];
+ const expectedCount=(Array.isArray(project?.lines)?project.lines.length:0)+
+  (Array.isArray(project?.sharedDevices)?project.sharedDevices.length:0);
+ if(!project||!Array.isArray(project.lines)||project.lines.length>400)
+  return {schema:'electropanel.bom.draft.1',status:'BLOCKED',items:[],issues:[{code:'PROJECT_INVALID',level:'BLOCKED'}],engineeringApproved:false,ready_for_installation:false};
+ const branches=Array.isArray(project.branchDevices)?project.branchDevices:[];
+ if(project.branchDevices!==undefined&&!Array.isArray(project.branchDevices))issues.push({code:'BRANCH_DEVICES_INVALID',level:'BLOCKED'});
+ const circuitIds=new Set(),branchIds=new Set();
+ for(const line of project.lines){
+  if(!line||typeof line.id!=='string'||!line.id.trim())continue;
+  if(circuitIds.has(line.id))issues.push({code:'CIRCUIT_ID_DUPLICATE',level:'BLOCKED',owner:line.id});
+  circuitIds.add(line.id);
+ }
+ for(const branch of branches){
+  if(!branch||typeof branch.id!=='string'||!branch.id.trim())issues.push({code:'BRANCH_ID_INVALID',level:'BLOCKED'});
+  else if(branchIds.has(branch.id))issues.push({code:'BRANCH_ID_DUPLICATE',level:'BLOCKED',deviceId:branch.id});
+  else branchIds.add(branch.id);
+ }
+ const push=(kind,id,sku,modules,owner)=>{
+  if(!sku){issues.push({code:'SKU_MISSING',level:'UNKNOWN',deviceId:id,owner});return;}
+  let article=null;
+  try{article=typeof lookupSku==='function'?lookupSku(sku):null;}catch(_){}
+  if(!article){issues.push({code:'SKU_UNKNOWN',level:'BLOCKED',deviceId:id,owner,sku});return;}
+  if(article.sku&&typeof article.sku!=='string'){issues.push({code:'SKU_INVALID',level:'BLOCKED',deviceId:id});return;}
+  if(!Number.isInteger(article.modules)||article.modules<1||article.modules>200){
+   issues.push({code:'ARTICLE_WIDTH_INVALID',level:'BLOCKED',deviceId:id});return;
+  }
+  if(modules!==article.modules)issues.push({code:'WIDTH_MISMATCH',level:'BLOCKED',deviceId:id,owner,sku});
+  if(!article.source)issues.push({code:'SOURCE_NOT_DECLARED',level:'UNKNOWN',deviceId:id,owner,sku});
+  if(article.verificationStatus!=='VERIFIED')issues.push({code:'ARTICLE_EVIDENCE_NOT_VERIFIED',level:'UNKNOWN',deviceId:id,owner,sku});
+  if(!Number.isFinite(article.widthMm)||article.widthMm<=0||article.widthMm>article.modules*18+0.001)
+   issues.push({code:'ARTICLE_GEOMETRY_UNCONFIRMED',level:'BLOCKED',deviceId:id,owner,sku});
+  const key=String(sku);
+  if(!items.has(key))items.set(key,{key,sku:article.sku||sku,maker:article.maker||null,
+   series:article.series||null,label:article.label||null,kind:article.kind||null,
+   modules:article.modules,widthMm:article.widthMm??null,
+   heightMm:article.heightMm??null,depthMm:article.depthMm??null,
+   source:article.source||null,
+   poleConfiguration:article.poleConfiguration??null,
+   icnKa:article.icnKa??null,icnVoltageV:article.icnVoltageV??null,icnStandard:article.icnStandard??null,
+   icuKa:article.icuKa??null,icuVoltageV:article.icuVoltageV??null,
+   productSource:article.productSource??null,
+   sourceType:article.sourceType??null,sourceReviewedAt:article.sourceReviewedAt??null,
+   residualCurrentMa:article.residualCurrentMa??null,residualType:article.residualType??null,
+   quantity:0,owners:[],draft:true});
+  const item=items.get(key);item.quantity++;item.owners.push(owner);
+  devices.push({kind,id,sku:key,owner});
+ };
+ const ids=new Set();
+ for(const d of Array.isArray(project.sharedDevices)?project.sharedDevices:[]){
+  if(!d||typeof d.id!=='string'||!d.id||ids.has(d.id)){issues.push({code:'DEVICE_ID_INVALID',level:'BLOCKED'});continue;}
+  ids.add(d.id);push('shared',d.id,d.catalogSku,d.modules,d.id);
+ }
+ const processedCircuits=new Set();
+ for(const l of project.lines){
+  if(!l||typeof l.id!=='string'||!l.id){issues.push({code:'CIRCUIT_INVALID',level:'BLOCKED'});continue;}
+  if(processedCircuits.has(l.id))continue;
+  processedCircuits.add(l.id);
+  const matches=branches.filter(b=>b?.circuitId===l.id);
+  if(matches.length>1){issues.push({code:'BRANCH_DUPLICATE',level:'BLOCKED',owner:l.id});continue;}
+  if(Array.isArray(project.branchDevices)&&!matches.length)issues.push({code:'BRANCH_MISSING',level:'BLOCKED',owner:l.id});
+  const b=matches[0],id=b?.id??l.id;
+  if(ids.has(id)){issues.push({code:'DEVICE_ID_DUPLICATE',level:'BLOCKED',owner:l.id});continue;}
+  ids.add(id);
+  if(b&&b.modules!==l.modules)issues.push({code:'BRANCH_WIDTH_CONFLICT',level:'BLOCKED',owner:l.id});
+  if(b?.catalogSku&&l.catalogSku&&b.catalogSku!==l.catalogSku)
+   issues.push({code:'BRANCH_SKU_OVERRIDES_LINE_FALLBACK',level:'UNKNOWN',owner:l.id,deviceId:id});
+  push('branch',id,b?.catalogSku||l.catalogSku,b?.modules??l.modules,l.id);
+ }
+ for(const b of branches)if(!project.lines.some(l=>l?.id===b?.circuitId))
+  issues.push({code:'BRANCH_ORPHAN',level:'BLOCKED',deviceId:b?.id});
+ const result=[...items.values()].sort((a,b)=>a.key.localeCompare(b.key));
+ if(!result.length)issues.push({code:'NO_CATALOGUE_ARTICLES',level:'UNKNOWN'});
+ return {schema:'electropanel.bom.draft.1',status:issues.some(i=>i.level==='BLOCKED')?'BLOCKED':'UNKNOWN',
+  items:result,devices,issues,expectedDevices:expectedCount,
+  distinctArticles:result.length,totalCataloguedDevices:result.reduce((n,x)=>n+x.quantity,0),
+  missingDevices:Math.max(0,expectedCount-devices.length),
+  engineeringApproved:false,ready_for_installation:false};
+}
+function epDraftBomCsvV1(report){
+ const columns=['Артикул (ключ)','Артикул производителя','Производитель','Серия','Название','Тип',
+  'Количество','Модули на аппарат','Ширина мм','Высота мм','Глубина мм','Icn кА','Icn В','Стандарт Icn','Icu кА','Icu В','Источник','Привязки'];
+ const safe=x=>{let v=String(x??'');if(/^[\s\u0000-\u001f]*[=+@-]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';};
+ const rows=[columns,...(report?.items||[]).map(x=>[x.key,x.sku,x.maker,x.series,x.label,x.kind,
+  x.quantity,x.modules,x.widthMm,x.heightMm,x.depthMm,x.icnKa,x.icnVoltageV,x.icnStandard,
+  x.icuKa,x.icuVoltageV,x.source,x.owners.join(', ')])];
+ return '\uFEFF'+rows.map(row=>row.map(safe).join(';')).join('\r\n')+'\r\n';
+}
+function epDraftBomHtmlV1(report){
+ const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const rows=report.items.map(x=>'<tr><td>'+esc(x.maker)+'</td><td>'+esc(x.series)+'</td><td>'+
+ esc(x.sku)+'</td><td>'+esc(x.quantity)+'</td><td>'+esc(x.modules)+'</td><td>'+
+ [x.widthMm,x.heightMm,x.depthMm].map(v=>esc(v??'—')).join(' × ')+'</td><td>'+esc(x.owners.join(', '))+
+ '</td><td>'+esc(x.icnKa??'—')+'</td><td>'+esc(x.icuKa??'—')+'</td><td>'+esc(x.source||'Не указан')+'</td></tr>').join('');
+ return '<section aria-label="Предварительная спецификация"><h3>Спецификация оборудования · черновик</h3>'+
+ '<p>Артикулов: '+report.distinctArticles+'; аппаратов с артикулами: '+report.totalCataloguedDevices+
+ '; без подтверждённого артикула: '+report.missingDevices+'; замечаний: '+report.issues.length+'. Цены, совместимость и полнота спецификации не подтверждены.</p>'+
+ '<div style="overflow-x:auto"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th>'+
+ '<th>Шт.</th><th>Мод.</th><th>Ш×В×Г, мм</th><th>Цепи</th><th>Icn, кА</th><th>Icu, кА</th><th>Источник</th></tr></thead><tbody>'+
+ (rows||'<tr><td colspan="10">Нет подтверждённых записей каталога</td></tr>')+
+ '</tbody></table></div><details><summary>Замечания спецификации ('+report.issues.length+')</summary><ul>'+
+ report.issues.slice(0,100).map(i=>'<li>'+esc(i.level)+' · '+esc(i.code)+' · '+esc(i.owner||i.deviceId||i.sku||'проект')+'</li>').join('')+
+ '</ul></details></section>';
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epDraftBomV1,epDraftBomCsvV1,epDraftBomHtmlV1};

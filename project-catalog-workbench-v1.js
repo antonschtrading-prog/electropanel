@@ -1,0 +1,239 @@
+'use strict';
+// Project-specific catalogue extension; never alters the curated seed data.
+function epProjectCatalogV1(project,seed={},options={}){
+ const records=Array.isArray(project?.catalogArticles)?project.catalogArticles:[];
+ const issues=[],articles=Object.create(null),seen=new Set();
+ if(records.length>500)issues.push({index:500,code:'CATALOG_TOO_LARGE',status:'BLOCKED'});
+ const validString=x=>typeof x==='string'&&x.trim().length>0;
+ const num=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
+ const bounded=x=>validString(x)&&x.length<=200&&x.trim()===x&&!/[\u0000-\u001f\u007f]/.test(x);
+ const httpsSource=x=>{if(!validString(x))return false;try{const u=new URL(x);return u.protocol==='https:'&&!!u.hostname&&!u.username&&!u.password;}catch(_){return false;}};
+ for(const [index,r] of records.entries()){
+  const key=r?.id;
+  if(!validString(key)||['__proto__','constructor','prototype'].includes(key)||key.trim()!==key||key.length>100||/[\u0000-\u001f\u007f]/.test(key)||!bounded(r?.sku)||!bounded(r?.maker)||!bounded(r?.series)){
+   issues.push({index,code:'IDENTITY_INCOMPLETE',status:'BLOCKED'});continue;
+  }
+  if(seen.has(key)||Object.prototype.hasOwnProperty.call(seed,key)){
+   issues.push({index,code:'CATALOG_ID_COLLISION',status:'BLOCKED'});continue;
+  }
+  seen.add(key);
+  if(!Number.isInteger(r.modules)||r.modules<1||r.modules>24||!num(r.widthMm)||
+    !Number.isInteger(r.poles)||r.poles<1||r.poles>8||!num(r.inA)){
+   issues.push({index,code:'CATALOG_DIMENSIONS_OR_RATING_INVALID',status:'BLOCKED'});continue;
+  }
+  if(r.widthMm>r.modules*18){
+   issues.push({index,code:'ARTICLE_WIDTH_EXCEEDS_MODULES',status:'BLOCKED'});continue;
+  }
+  // Do not infer body dimensions from the module count or a drawn preview.
+  if(['heightMm','depthMm'].some(key=>r[key]!==undefined&&r[key]!==null&&r[key]!==''&&
+     (!num(r[key])||r[key]>2000))){
+   issues.push({index,code:'CATALOG_BODY_DIMENSIONS_INVALID',status:'BLOCKED'});continue;
+  }
+  if(typeof r.source!=='string'||r.source.length>2000||!httpsSource(r.source)){
+   issues.push({index,code:'CATALOG_SOURCE_MISSING',status:'UNKNOWN'});continue;
+  }
+  if(!['MCB','RCD','RCBO','SWITCH','METER','CONTACTOR','RELAY','DIN_PSU','OTHER'].includes(r.kind)){
+   issues.push({index,code:'CATALOG_KIND_UNKNOWN',status:'BLOCKED'});continue;
+  }
+  if(Object.values(articles).some(a=>a.maker===r.maker&&a.sku===r.sku)||Object.values(seed).some(a=>a?.maker===r.maker&&a?.sku===r.sku)){
+   issues.push({index,code:'DUPLICATE_MANUFACTURER_SKU',status:'BLOCKED'});continue;
+  }
+  if(r.label!=null&&r.label!==''&&!bounded(r.label)){issues.push({index,code:'CATALOG_LABEL_INVALID',status:'BLOCKED'});continue;}
+  if(r.curve!=null&&r.curve!==''&&(typeof r.curve!=='string'||r.curve.length>50||/[\u0000-\u001f\u007f]/.test(r.curve))){issues.push({index,code:'CATALOG_CURVE_INVALID',status:'BLOCKED'});continue;}
+  if(r.icnKa!=null&&r.icnKa!==''&&!num(r.icnKa)){issues.push({index,code:'CATALOG_ICN_INVALID',status:'BLOCKED'});continue;}
+  if(r.icnVoltageV!=null&&r.icnVoltageV!==''&&(!num(r.icnVoltageV)||r.icnVoltageV>1500)){
+   issues.push({index,code:'CATALOG_BREAKING_VOLTAGE_INVALID',status:'BLOCKED'});continue;
+  }
+  if(r.icnStandard!=null&&r.icnStandard!==''&&!bounded(r.icnStandard)){
+   issues.push({index,code:'CATALOG_BREAKING_STANDARD_INVALID',status:'BLOCKED'});continue;
+  }
+  if(r.productSource!=null&&r.productSource!==''&&
+    (typeof r.productSource!=='string'||r.productSource.length>2000||!httpsSource(r.productSource))){
+   issues.push({index,code:'CATALOG_PRODUCT_SOURCE_INVALID',status:'BLOCKED'});continue;
+  }
+  if(r.sourceReviewedAt!=null&&r.sourceReviewedAt!==''){
+   const str=r.sourceReviewedAt;
+   const parsed=typeof str==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(str)?new Date(str+'T00:00:00Z'):null;
+   if(!parsed||!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==str){
+    issues.push({index,code:'CATALOG_REVIEW_DATE_INVALID',status:'BLOCKED'});continue;
+   }
+  }
+  const configs={'1P':1,'1P+N':2,'2P':2,'3P':3,'3P+N':4,'4P':4};
+  if(r.poleConfiguration!=null&&r.poleConfiguration!==''&&
+    (!Object.prototype.hasOwnProperty.call(configs,r.poleConfiguration)||
+      configs[r.poleConfiguration]!==r.poles||
+      !['MCB','RCD','RCBO','SWITCH'].includes(r.kind))){
+   issues.push({index,code:'CATALOG_POLE_CONFIGURATION_INVALID',status:'BLOCKED'});continue;
+  }
+  const hasResidualCurrent=r.residualCurrentMa!==undefined&&r.residualCurrentMa!==null&&r.residualCurrentMa!=='';
+  const hasResidualType=r.residualType!==undefined&&r.residualType!==null&&r.residualType!=='';
+  if(hasResidualCurrent&&(!num(r.residualCurrentMa)||r.residualCurrentMa>3000)){
+   issues.push({index,code:'CATALOG_RESIDUAL_CURRENT_INVALID',status:'BLOCKED'});continue;
+  }
+  if(hasResidualType&&!['AC','A','F','B','B+'].includes(r.residualType)){
+   issues.push({index,code:'CATALOG_RESIDUAL_TYPE_INVALID',status:'BLOCKED'});continue;
+  }
+  if((hasResidualCurrent||hasResidualType)&&!['RCD','RCBO'].includes(r.kind)){
+   issues.push({index,code:'CATALOG_RESIDUAL_KIND_CONFLICT',status:'BLOCKED'});continue;
+  }
+  const article={id:key,sku:r.sku,maker:r.maker,series:r.series,kind:r.kind,label:r.label||r.sku,
+   modules:r.modules,widthMm:r.widthMm,
+   heightMm:num(r.heightMm)?r.heightMm:null,depthMm:num(r.depthMm)?r.depthMm:null,
+   poles:r.poles,inA:r.inA,
+   curve:typeof r.curve==='string'?r.curve:null,
+   icnKa:num(r.icnKa)?r.icnKa:null,
+   icnVoltageV:num(r.icnVoltageV)?r.icnVoltageV:null,
+   icnStandard:typeof r.icnStandard==='string'&&r.icnStandard.trim()?r.icnStandard:null,
+   poleConfiguration:typeof r.poleConfiguration==='string'&&r.poleConfiguration?r.poleConfiguration:null,
+   sourceReviewedAt:typeof r.sourceReviewedAt==='string'&&r.sourceReviewedAt?r.sourceReviewedAt:null,
+   productSource:typeof r.productSource==='string'&&r.productSource?r.productSource:null,
+   residualCurrentMa:hasResidualCurrent?r.residualCurrentMa:null,
+   residualType:hasResidualType?r.residualType:null,
+   appearance:'generic',source:r.source,verificationStatus:'UNVERIFIED',sourceType:'PROJECT_DECLARATION'};
+  articles[key]=article;
+ }
+ const all={...seed,...articles};
+ return {articles:all,customArticles:articles,issues,lookup:id=>Object.prototype.hasOwnProperty.call(all,id)?all[id]:null,
+  status:issues.some(i=>i.status==='BLOCKED')?'BLOCKED':'UNKNOWN',engineeringApproved:false};
+}
+function epProjectCatalogHtmlV1(project,seed={}){
+ const c=epProjectCatalogV1(project,seed),esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ const items=Object.entries(c.articles).map(([id,a])=>{
+  const custom=Object.hasOwn(c.customArticles,id);
+  const source=typeof a.source==='string'&&/^https:\/\/[^\s]+$/i.test(a.source)?'<a href="'+esc(a.source)+'" target="_blank" rel="noopener noreferrer">Источник</a>':'Нет ссылки';
+  const provenance=custom?'Декларация пользователя · не проверено':esc(a.sourceType||'Встроенный каталог');
+  const residual=['RCD','RCBO'].includes(a.kind)?
+   (a.residualCurrentMa??'—')+' мА / '+(a.residualType||'—'):'—';
+  return '<tr data-catalog-row data-catalog-tier="'+esc(typeof epBrandTier==='function'?(epBrandTier(a.maker)||'other'):'other')+'"><td>'+esc(a.maker)+'</td><td>'+esc(a.series)+'</td><td>'+esc(a.sku)+'</td><td>'+esc(a.inA)+' A</td><td>'+esc(residual)+'</td><td>'+esc(a.modules)+' M / '+[a.widthMm,a.heightMm,a.depthMm].map(x=>typeof x==='number'?esc(x):'—').join(' × ')+' мм (Ш×В×Г)</td><td>'+source+'</td><td>'+provenance+'</td><td>'+(custom?'<button type="button" class="btn tiny" data-edit-article="'+esc(id)+'">Изменить</button> <button type="button" class="btn tiny" data-delete-article="'+esc(id)+'">Удалить</button>':'Встроенный')+'</td></tr>';
+ }).join('');
+ const issues=c.issues.length?'<details><summary>Ошибки каталога ('+c.issues.length+')</summary><ul>'+c.issues.map(i=>'<li>Запись '+(i.index+1)+': '+esc(i.code)+' · '+esc(i.status)+'</li>').join('')+'</ul></details>':'';
+ return '<section class="panel compact ep-catalog-workbench"><h3>Каталог оборудования · проект</h3>'+
+ '<p>Записей: '+Object.keys(c.articles).length+' (пользовательских: '+Object.keys(c.customArticles).length+'). Пользовательские данные не подтверждены производителем автоматически. Замечаний: '+c.issues.length+'.</p>'+
+ '<p>14 производителей для выбора: бюджет / комфорт / премиум. Категории ориентировочные; отсутствие артикула означает, что подтверждённая запись ещё не внесена.</p>'+
+ '<label>Сегмент каталога<select id="catalogTierFilter"><option value="">Все сегменты</option><option value="budget">Бюджет</option><option value="comfort">Комфорт</option><option value="premium">Премиум</option><option value="other">Другие производители</option></select></label>'+
+ '<div class="ep-brand-coverage">'+(typeof epBrandCoverage==='function'?epBrandCoverage(c.articles).map(group=>'<details><summary>'+({budget:'Бюджет',comfort:'Комфорт',premium:'Премиум'}[group.tier])+' · '+group.makers.filter(m=>m.articles>0).length+'/'+group.makers.length+' с артикулами</summary><p>'+group.makers.map(m=>esc(m.maker)+' ('+m.articles+'): '+(m.articles?'есть записи':'нет подтверждённых записей')).join(' · ')+'</p></details>').join(''):'')+'</div>'+
+  '<label>Поиск по производителю, серии и артикулу<input id="catalogSearchInput" type="search" placeholder="Например: ABB или C16"></label>'+
+ issues+'<div class="table-scroll"><table><thead><tr><th>Производитель</th><th>Серия</th><th>Артикул</th><th>In</th><th>IΔn / тип</th><th>Ширина</th><th>Документ</th><th>Статус</th><th>Действия</th></tr></thead><tbody>'+items+'</tbody></table></div>'+
+ epCatalogEditorHtmlV2()+
+ '<details><summary>Импорт и экспорт JSON</summary><p>Добавление: JSON-массив записей с id, sku, maker, series, kind, modules, widthMm, poles, inA, source. '+
+ 'Сначала проверяется формат, затем данные сохраняются вместе с проектом.</p>'+
+ '<textarea id="catalogJsonInput" rows="5" placeholder="JSON-массив артикулов"></textarea>'+
+ '<button type="button" class="btn tiny" id="catalogImportRecordsBtn">Добавить артикулы в проект</button>'+
+ '<button type="button" class="btn tiny" id="catalogExportRecordsBtn">Экспорт каталога JSON</button>'+
+ '</details></section>';
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={epProjectCatalogV1,epProjectCatalogHtmlV1};
+
+function epCatalogEditorHtmlV2(){
+ const fields=[['id','ID записи'],['maker','Производитель'],['series','Серия'],['sku','Артикул'],['label','Обозначение'],['modules','Модули DIN'],['widthMm','Ширина, мм'],['heightMm','Высота корпуса, мм'],['depthMm','Глубина корпуса, мм'],['poles','Полюса'],['inA','Номинальный ток, А'],['curve','Характеристика'],['icnKa','Icn, кА'],['icnVoltageV','Напряжение для Icn, В'],['icnStandard','Стандарт Icn'],['residualCurrentMa','IΔn, мА (только УЗО/RCBO)'],['residualType','Тип дифзащиты: AC, A, F, B, B+'],['source','Ссылка на источник HTTPS'],['productSource','Страница изготовителя HTTPS'],['sourceReviewedAt','Дата сверки с источником, ГГГГ-ММ-ДД']];
+ return '<details id="catalogEditor"><summary>Добавить или изменить пользовательский аппарат</summary><p>Характеристики вводятся по источнику. Они сохраняются как пользовательская декларация. Изменение используемого артикула обновляет связанные цепи и требует повторной проверки.</p><form id="catalogArticleForm"><input type="hidden" name="originalId"><div class="ep-engineering-fields">'+fields.map(([name,title])=>'<label>'+title+'<input name="'+name+'" '+(['curve','icnKa','label','heightMm','depthMm','residualCurrentMa','residualType','icnVoltageV','icnStandard','productSource','sourceReviewedAt'].includes(name)?'':'required')+' '+(['source','productSource'].includes(name)?'type="url" pattern="https://.*"':(['modules','widthMm','heightMm','depthMm','poles','inA','icnKa','residualCurrentMa','icnVoltageV'].includes(name)?'type="number" min="'+(['modules','poles'].includes(name)?'1':'0.001')+'" step="'+(['modules','poles'].includes(name)?'1':'any')+'"':'type="text"'))+' maxlength="'+(name==='source'?2000:200)+'"></label>').join('')+'<label>Категория<select name="kind">'+['MCB','RCBO','RCD','SWITCH','CONTACTOR','RELAY','METER','DIN_PSU','OTHER'].map(x=>'<option>'+x+'</option>').join('')+'</select></label><label>Полюса: паспортная конфигурация<select name="poleConfiguration"><option value="">Не указана</option>'+['1P','1P+N','2P','3P','3P+N','4P'].map(x=>'<option>'+x+'</option>').join('')+'</select></label></div><button class="btn primary" type="submit">Сохранить аппарат</button> <button type="reset" class="btn">Новая запись</button></form></details>';
+}
+function epUpsertProjectArticleV2(project,record,seed={},originalId=''){
+ if(!project||!Array.isArray(project.lines)||!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'PROJECT_OR_RECORD_INVALID'};
+ if(project.lines.some(x=>!x||typeof x!=='object'||Array.isArray(x))||
+    ['catalogArticles','branchDevices','sharedDevices'].some(key=>project[key]!==undefined&&
+     (!Array.isArray(project[key])||project[key].some(x=>!x||typeof x!=='object'||Array.isArray(x)))))
+  return {project:null,code:'PROJECT_COLLECTION_INVALID'};
+ if(originalId&&originalId!==record.id)return {project:null,code:'ARTICLE_ID_IMMUTABLE'};
+ if(!Object.prototype.hasOwnProperty.call(record,'id')||typeof record.id!=='string')return {project:null,code:'ARTICLE_ID_INVALID'};
+ const existing=project.catalogArticles||[];
+ if(!Array.isArray(existing))return {project:null,code:'CATALOG_INVALID'};
+ if(originalId&&!existing.some(x=>x.id===originalId))return {project:null,code:'ARTICLE_NOT_FOUND'};
+ if(!originalId&&existing.some(x=>x.id===record.id))return {project:null,code:'CATALOG_ID_COLLISION'};
+ const draft=JSON.parse(JSON.stringify(project));
+ draft.catalogArticles=originalId?existing.map(x=>x.id===originalId?{...record}:x):[...existing,{...record}];
+ if(draft.catalogArticles.length>500)return {project:null,code:'CATALOG_TOO_LARGE'};
+ const audit=epProjectCatalogV1(draft,seed);
+ if(audit.issues.length)return {project:null,code:audit.issues[0].code};
+ const article=audit.lookup(record.id),affected=[],affectedCircuits=[],affectedShared=[];
+ if(article.widthMm>article.modules*18)return {project:null,code:'ARTICLE_WIDTH_EXCEEDS_MODULES'};
+ for(const line of draft.lines){
+  if(line.catalogSku!==record.id)continue;
+  if(!['MCB','RCBO'].includes(article.kind))return {project:null,code:'USED_ARTICLE_KIND_CONFLICT'};
+  const phaseOK=['L1','L2','L3'].includes(line.phase)?(article.poles===1||article.poles===2&&
+   (article.kind==='RCBO'||['1P+N','2P'].includes(article.poleConfiguration))):line.phase==='3Ф'&&[3,4].includes(article.poles);
+  if(!phaseOK)return {project:null,code:'USED_ARTICLE_POLE_CONFLICT'};
+  if(article.modules>12)return {project:null,code:'USED_ARTICLE_MODULES_UNSUPPORTED'};
+  if(article.label.length>25)return {project:null,code:'USED_ARTICLE_LABEL_TOO_LONG'};
+  line.modules=article.modules;line.device=article.label;
+  // A manufacturer article is not a generic apparatus template.
+  delete line.templateId;
+  // Preserve every pending review field; editing a device must never silently
+  // acknowledge an unrelated overload, short-circuit or routing check.
+  const reviewFields=['overloadInput','faultInput','overloadV30','lv43Input','route44Input'];
+  const pending=new Set(Array.isArray(line.calculationReview?.pending)?line.calculationReview.pending:[]);
+  for(const field of reviewFields)if(line[field])pending.add(field);
+  line.calculationReview={required:true,reason:'PROJECT_ARTICLE_UPDATED',pending:[...pending]};
+  // Changing a protective apparatus does not alter previously calculated load Ib.
+  // Protection checks are still marked for review above.
+  if(line.faultRouteInput)line.faultRouteInput.reviewRequired=true;
+  const branch=draft.branchDevices?.find(x=>x.circuitId===line.id);
+  if(branch){branch.modules=article.modules;branch.label=article.label;branch.templateId=null;}
+  affected.push(line.id);affectedCircuits.push(line.id);
+ }
+ // Shared protective apparatus is a separate entity. Updating its catalogue
+ // article must also update the board width and trigger a layout recheck.
+ for(const shared of Array.isArray(draft.sharedDevices)?draft.sharedDevices:[]){
+  if(shared?.catalogSku!==record.id)continue;
+  if(article.kind!=='RCD')return {project:null,code:'SHARED_ARTICLE_KIND_CONFLICT'};
+  if(![2,4].includes(article.poles))return {project:null,code:'SHARED_ARTICLE_POLE_CONFLICT'};
+  if(article.label.length>50)return {project:null,code:'SHARED_ARTICLE_LABEL_TOO_LONG'};
+  if(shared.templateId==='RCD_2P'&&article.poles!==2||
+     shared.templateId==='RCD_4P'&&article.poles!==4)
+   return {project:null,code:'SHARED_ARTICLE_TEMPLATE_CONFLICT'};
+  shared.modules=article.modules;
+  shared.label=article.label;
+  affected.push(shared.id);affectedShared.push(shared.id);
+  // Shared RCD selection is part of each assigned circuit's protection evidence.
+  // Preserve other pending checks and never silently approve existing fault data.
+  for(const line of draft.lines){
+   if(!Array.isArray(shared.circuitIds)||!shared.circuitIds.includes(line.id))continue;
+   const pending=new Set(Array.isArray(line.calculationReview?.pending)?line.calculationReview.pending:[]);
+   for(const field of ['faultInput','lv43Input','route44Input'])if(line[field])pending.add(field);
+   line.calculationReview={required:true,reason:'SHARED_ARTICLE_UPDATED',pending:[...pending]};
+   if(line.faultRouteInput)line.faultRouteInput.reviewRequired=true;
+   if(!affectedCircuits.includes(line.id))affectedCircuits.push(line.id);
+  }
+ }
+ if(affected.length&&typeof epDraftBoardPlanV1==='function'){
+  const layout=epDraftBoardPlanV1(draft,audit.lookup);
+  const invalid=layout.issues.find(x=>x.level==='BLOCKED');
+  if(invalid)return {project:null,code:invalid.code};
+ }
+ return {project:draft,affected,affectedCircuits,affectedShared,
+  affectedViews:affected.length?['catalogue','board','singleLine','bom','engineeringReview']:['catalogue'],
+  status:'REVIEW_REQUIRED'};
+}
+// Transactional import: apply the same engineering constraints as the manual editor.
+function epImportProjectArticlesV2(project,records,seed={}){
+ if(!Array.isArray(records)||!records.length||records.length>500)return {project:null,code:'IMPORT_RECORD_COUNT_INVALID'};
+ if(!project||!Array.isArray(project.catalogArticles)||!Array.isArray(project.lines))return {project:null,code:'PROJECT_CATALOG_INVALID'};
+ if(project.catalogArticles.length+records.length>500)return {project:null,code:'CATALOG_TOO_LARGE'};
+ let draft=project;
+ const circuitIds=new Set(),sharedIds=new Set();
+ for(const [index,record] of records.entries()){
+  if(!record||typeof record!=='object'||Array.isArray(record))return {project:null,code:'IMPORT_RECORD_INVALID',index};
+  const result=epUpsertProjectArticleV2(draft,record,seed);
+  if(!result.project)return {project:null,code:result.code,index};
+  for(const id of result.affectedCircuits||[])circuitIds.add(id);
+  for(const id of result.affectedShared||[])sharedIds.add(id);
+  draft=result.project;
+ }
+ return {project:draft,imported:records.length,
+  affectedCircuits:[...circuitIds],affectedShared:[...sharedIds],
+  affectedViews:circuitIds.size||sharedIds.size?['catalogue','board','singleLine','bom','engineeringReview']:['catalogue'],
+  status:'REVIEW_REQUIRED'};
+}
+function epDeleteProjectArticleV2(project,id){
+ if(!project||!Array.isArray(project.lines)||!Array.isArray(project.catalogArticles)||
+    project.lines.some(x=>!x||typeof x!=='object')||
+    project.catalogArticles.some(x=>!x||typeof x!=='object')||
+    (project.sharedDevices!==undefined&&(!Array.isArray(project.sharedDevices)||
+     project.sharedDevices.some(x=>!x||typeof x!=='object'))))
+  return {project:null,code:'PROJECT_COLLECTION_INVALID'};
+ if((project.lines||[]).some(x=>x.catalogSku===id)||(project.sharedDevices||[]).some(x=>x.catalogSku===id))return {project:null,code:'ARTICLE_IN_USE'};
+ if(!(project.catalogArticles||[]).some(x=>x.id===id))return {project:null,code:'ARTICLE_NOT_CUSTOM'};
+ const draft=JSON.parse(JSON.stringify(project));draft.catalogArticles=draft.catalogArticles.filter(x=>x.id!==id);
+ return {project:draft,status:'REVIEW_REQUIRED'};
+}
+if(typeof module!=='undefined'&&module.exports)Object.assign(module.exports,{epCatalogEditorHtmlV2,epUpsertProjectArticleV2,epImportProjectArticlesV2,epDeleteProjectArticleV2});

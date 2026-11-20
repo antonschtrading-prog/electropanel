@@ -1,0 +1,16 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {dashboard,verificationQueue}=require('../catalog-intake/catalog-quality-dashboard-v1.js');
+test('dashboard enumerates all staged equipment',()=>{const r=dashboard();assert.ok(r.totals.records>=40);assert.equal(r.records.length,r.totals.records)});
+test('dashboard remains read only',()=>{const r=dashboard();assert.equal(r.engineeringApproved,false);assert.equal(r.autoImportAllowed,false);assert.ok(r.records.every(x=>!x.selectable&&!x.engineeringApproved))});
+test('dashboard totals partition ready and blocked',()=>{const t=dashboard().totals;assert.equal(t.readyForHumanReview+t.blocked,t.records)});
+test('dashboard kinds sum to total',()=>{const r=dashboard();assert.equal(Object.values(r.byKind).reduce((n,x)=>n+x.total,0),r.totals.records)});
+test('dashboard counts geometry deficits',()=>{const r=dashboard();assert.equal(r.totals.missingGeometry,r.records.filter(x=>x.missingGeometry.length).length)});
+test('dashboard counts identity evidence gaps',()=>{const r=dashboard();assert.equal(r.totals.missingIdentityEvidence,r.records.filter(x=>x.identityMissing).length)});
+test('dashboard sorts deterministically',()=>{const a=dashboard().records.map(x=>x.sku),b=dashboard().records.map(x=>x.sku);assert.deepEqual(a,b)});
+test('queue only contains incomplete records',()=>{const q=verificationQueue();assert.ok(q.queue.every(x=>x.reasons.length||x.missingGeometry.length||x.missingSpecifications.length))});
+test('queue sorted by priority',()=>{const q=verificationQueue().queue;assert.deepEqual(q.map(x=>x.priority),q.map(x=>x.priority).sort((a,b)=>a-b))});
+test('queue never authorizes import',()=>assert.equal(verificationQueue().engineeringApproved,false));
+test('duplicate SKUs across batches are flagged',()=>{const item={batch:'a',record:{sku:'X',kind:'MCB'},evidence:{}};const r=dashboard([item,{...item,batch:'b'}],[]);assert.equal(r.totals.duplicateSkus,1);assert.equal(r.records.filter(x=>x.duplicate).length,1)});
+test('missing geometry is counted per record',()=>{const r=dashboard([{batch:'a',record:{sku:'X',kind:'MCB'},evidence:{}}],[]);assert.equal(r.totals.missingGeometry,1);assert.deepEqual(r.records[0].missingGeometry,['widthMm','heightMm','depthMm'])});
+test('overlap is based on normalized SKU',()=>{const r=dashboard([{batch:'a',record:{sku:' x ',kind:'MCB'},evidence:{}}],[{sku:'X'}]);assert.equal(r.totals.coreOverlap,1)});

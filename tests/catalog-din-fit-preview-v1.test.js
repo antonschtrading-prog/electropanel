@@ -1,0 +1,15 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {assessDinPlacement}=require('../catalog-intake/din-fit-preview-v1.js');
+test('DIN preview rejects zero modules',()=>assert.throws(()=>assessDinPlacement({},0),RangeError));
+test('DIN preview rejects fractional modules',()=>assert.throws(()=>assessDinPlacement({},1.5),RangeError));
+test('DIN preview rejects negative modules',()=>assert.throws(()=>assessDinPlacement({},-3),RangeError));
+test('DIN preview has no approved placements',()=>assert.equal(assessDinPlacement({},12).approvedPlacements,0));
+test('DIN preview does not claim engineering approval',()=>assert.equal(assessDinPlacement({},12).engineeringApproved,false));
+test('DIN preview retains unknown geometry',()=>assert.ok(assessDinPlacement({kind:'RCD'},12).candidates.some(x=>x.fitStatus==='UNKNOWN_GEOMETRY')));
+test('DIN preview handles 1 module MCB',()=>assert.ok(assessDinPlacement({kind:'MCB'},1).candidates.some(x=>x.fitStatus==='GEOMETRICALLY_FITS')));
+test('DIN preview rejects four-module RCD in three slots',()=>assert.ok(assessDinPlacement({kind:'RCD',poles:4},3).candidates.some(x=>x.fitStatus==='EXCEEDS_AVAILABLE_MODULES')));
+test('DIN preview preserves no-live-placement warning',()=>assert.ok(assessDinPlacement({},24).candidates.every(x=>x.integrationStatus==='NOT_APPROVED_FOR_PLACEMENT')));
+test('DIN preview never fabricates free space for unknown modules',()=>assert.ok(assessDinPlacement({kind:'CONTACTOR'},12).candidates.every(x=>x.estimatedRemainingModules===null)));
+test('DIN preview retains review task counts',()=>assert.ok(assessDinPlacement({},24).candidates.every(x=>Number.isInteger(x.outstandingTasks))));
+test('DIN preview is deterministic',()=>assert.deepEqual(assessDinPlacement({kind:'MCB'},12),assessDinPlacement({kind:'MCB'},12)));

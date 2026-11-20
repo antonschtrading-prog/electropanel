@@ -1,0 +1,36 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {epCabinetOptionDinSvgV1:svg}=require('../cabinet-option-din-svg-v1');
+const preview=()=>({status:'REVIEW_REQUIRED',rails:[{railIndex:0,capacity:6},{railIndex:1,capacity:6}],
+ rows:[{deviceId:'A',toRail:0,toSlot:0,modules:2,changed:false},
+ {deviceId:'B',toRail:1,toSlot:1,modules:1,changed:true}]});
+test('returns SVG markup',()=>assert.ok(svg(preview()).startsWith('<svg')));
+test('has SVG namespace',()=>assert.match(svg(preview()),/xmlns="http:\/\/www.w3.org\/2000\/svg"/));
+test('has accessible image role',()=>assert.match(svg(preview()),/role="img"/));
+test('has accessible image label',()=>assert.match(svg(preview()),/aria-label=/));
+test('shows first rail',()=>assert.match(svg(preview()),/DIN 1/));
+test('shows second rail',()=>assert.match(svg(preview()),/DIN 2/));
+test('shows device A',()=>assert.match(svg(preview()),/A — без изменений/));
+test('shows device B',()=>assert.match(svg(preview()),/B — изменено/));
+test('shows moved-device color',()=>assert.match(svg(preview()),/#fef3c7/));
+test('shows unchanged-device color',()=>assert.match(svg(preview()),/#d1fae5/));
+test('shows module boundaries',()=>assert.match(svg(preview()),/<line /));
+test('shows placement rectangles',()=>assert.match(svg(preview()),/<rect /));
+test('does not fabricate manufacturer image',()=>assert.doesNotMatch(svg(preview()),/<image /));
+test('does not contain event handlers',()=>assert.doesNotMatch(svg(preview()),/onload=|onclick=/));
+test('rejects null input',()=>assert.equal(svg(null),''));
+test('rejects blocked preview',()=>assert.equal(svg({...preview(),status:'BLOCKED'}),''));
+test('rejects missing rows',()=>assert.equal(svg({...preview(),rows:null}),''));
+test('rejects missing rails',()=>assert.equal(svg({...preview(),rails:null}),''));
+test('rejects empty rails',()=>assert.equal(svg({...preview(),rails:[]}),'')); 
+test('rejects zero capacity',()=>assert.equal(svg({...preview(),rails:[{railIndex:0,capacity:0}]}),''));
+test('rejects huge capacity',()=>assert.equal(svg({...preview(),rails:[{railIndex:0,capacity:201}]}),''));
+test('escapes HTML angle brackets',()=>assert.ok(svg({...preview(),rows:[{...preview().rows[0],deviceId:'<script>'}]}).includes('&lt;script&gt;')));
+test('escapes ampersands',()=>assert.ok(svg({...preview(),rows:[{...preview().rows[0],deviceId:'A&B'}]}).includes('A&amp;B')));
+test('escapes quotes',()=>assert.ok(svg({...preview(),rows:[{...preview().rows[0],deviceId:'A"B'}]}).includes('A&quot;B')));
+test('escapes apostrophes',()=>assert.ok(svg({...preview(),rows:[{...preview().rows[0],deviceId:"A'B"}]}).includes('A&#39;B')));
+test('deterministic output',()=>assert.equal(svg(preview()),svg(preview())));
+test('does not mutate preview',()=>{const p=preview(),before=JSON.stringify(p);svg(p);assert.equal(JSON.stringify(p),before)});
+test('renders only declared rails',()=>assert.doesNotMatch(svg(preview()),/DIN 3/));
+test('has viewBox',()=>assert.match(svg(preview()),/viewBox="0 0 /));
+test('has legend',()=>assert.match(svg(preview()),/Жёлтый — перемещение/));

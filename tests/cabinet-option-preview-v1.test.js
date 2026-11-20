@@ -1,0 +1,81 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+global.epDraftBoardPlanV1=require('../draft-board-plan-v1').epDraftBoardPlanV1;
+const {epCabinetOptionPreviewV1:run}=require('../cabinet-option-preview-v1');
+const project=()=>({railCount:1,railCapacity:6,lines:[{id:'A',modules:2},{id:'B',modules:1},{id:'C',modules:2}],sharedDevices:[]});
+const option=()=>({railCount:2,modulesPerRail:6,rails:[
+ {railIndex:0,devices:[{deviceId:'A',startModule:0,modules:2},{deviceId:'C',startModule:2,modules:2}]},
+ {railIndex:1,devices:[{deviceId:'B',startModule:0,modules:1}]}]});
+const runDefault=()=>run(project(),option(),()=>null);
+test("returns preview status",()=>assert.ok(runDefault().status==='REVIEW_REQUIRED'));
+test("schema stable",()=>assert.ok(runDefault().schema==='electropanel.cabinet.option.preview.1'));
+test("code ready",()=>assert.ok(runDefault().code==='OPTION_PREVIEW_READY'));
+test("never approves engineering",()=>assert.ok(runDefault().engineeringApproved===false));
+test("never marks installation ready",()=>assert.ok(runDefault().ready_for_installation===false));
+test("three devices",()=>assert.ok(runDefault().summary.devices===3));
+test("three output rows",()=>assert.ok(runDefault().rows.length===3));
+test("two rails",()=>assert.ok(runDefault().rails.length===2));
+test("old rail count one",()=>assert.ok(runDefault().summary.oldRailCount===1));
+test("new rail count two",()=>assert.ok(runDefault().summary.newRailCount===2));
+test("old capacity six",()=>assert.ok(runDefault().summary.oldCapacity===6));
+test("new capacity twelve",()=>assert.ok(runDefault().summary.newCapacity===12));
+test("capacity increases six",()=>assert.ok(runDefault().summary.capacityDelta===6));
+test("used modules five",()=>assert.ok(runDefault().summary.usedModules===5));
+test("free modules seven",()=>assert.ok(runDefault().summary.freeModules===7));
+test("two moved devices",()=>assert.ok(runDefault().summary.moved===2));
+test("one unchanged device",()=>assert.ok(runDefault().summary.unchanged===1));
+test("one device changes rails",()=>assert.ok(runDefault().summary.changedRails===1));
+test("one device changes slots only",()=>assert.ok(runDefault().summary.changedSlots===1));
+test("device A remains at origin",()=>assert.ok(runDefault().rows.find(r=>r.deviceId==='A').changed===false));
+test("device B changes rail",()=>assert.ok(runDefault().rows.find(r=>r.deviceId==='B').railChanged===true));
+test("device C changes slot",()=>assert.ok(runDefault().rows.find(r=>r.deviceId==='C').slotChanged===true));
+test("device B destination rail one",()=>assert.ok(runDefault().rows.find(r=>r.deviceId==='B').toRail===1));
+test("device C destination slot two",()=>assert.ok(runDefault().rows.find(r=>r.deviceId==='C').toSlot===2));
+test("device A width two",()=>assert.ok(runDefault().rows.find(r=>r.deviceId==='A').modules===2));
+test("first rail occupancy four",()=>assert.ok(runDefault().rails[0].occupied===4));
+test("second rail occupancy one",()=>assert.ok(runDefault().rails[1].occupied===1));
+test("first rail free two",()=>assert.ok(runDefault().rails[0].free===2));
+test("second rail free five",()=>assert.ok(runDefault().rails[1].free===5));
+test("rows ordered by rail",()=>assert.ok(runDefault().rows[0].toRail===0));
+test("no geometry reset when none configured",()=>assert.ok(runDefault().summary.geometryResetRequired===false));
+test("geometry reset when shape changes",()=>assert.ok(run({...project(),cabinetGeometryV1:{}},option(),()=>null).summary.geometryResetRequired===true));
+test("null project blocks",()=>assert.ok(run(null,option(),()=>null).status==='BLOCKED'));
+test("null option blocks",()=>assert.ok(run(project(),null,()=>null).status==='BLOCKED'));
+test("missing rails blocks",()=>assert.ok(run(project(),{railCount:2,modulesPerRail:6},()=>null).status==='BLOCKED'));
+test("zero rail count blocks",()=>assert.ok(run(project(),{...option(),railCount:0},()=>null).status==='BLOCKED'));
+test("zero rail capacity blocks",()=>assert.ok(run(project(),{...option(),modulesPerRail:0},()=>null).status==='BLOCKED'));
+test("duplicate rail blocks",()=>assert.ok(run(project(),{...option(),rails:[option().rails[0],option().rails[0]]},()=>null).status==='BLOCKED'));
+test("missing rail blocks",()=>assert.ok(run(project(),{...option(),rails:[option().rails[0]]},()=>null).status==='BLOCKED'));
+test("negative rail index blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],railIndex:-1},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("out of range rail blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],railIndex:2},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("duplicate device blocks",()=>assert.ok(run(project(),{...option(),rails:[option().rails[0],{...option().rails[1],devices:[{deviceId:'A',startModule:0,modules:2}]}]},()=>null).status==='BLOCKED'));
+test("empty device ID blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],devices:[{...option().rails[0].devices[0],deviceId:''},option().rails[0].devices[1]]},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("negative start blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],devices:[{...option().rails[0].devices[0],startModule:-1},option().rails[0].devices[1]]},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("zero modules blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],devices:[{...option().rails[0].devices[0],modules:0},option().rails[0].devices[1]]},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("overrun blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],devices:[{...option().rails[0].devices[0],startModule:5},option().rails[0].devices[1]]},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("overlap blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],devices:[option().rails[0].devices[0],{...option().rails[0].devices[1],startModule:1}]},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("missing device blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],devices:[option().rails[0].devices[0]]},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("unknown device blocks",()=>assert.ok(run(project(),{...option(),rails:[option().rails[0],{...option().rails[1],devices:[{deviceId:'Z',startModule:0,modules:1}]}]},()=>null).status==='BLOCKED'));
+test("mismatched width blocks",()=>assert.ok(run(project(),{...option(),rails:[{...option().rails[0],devices:[{...option().rails[0].devices[0],modules:1},option().rails[0].devices[1]]},option().rails[1]]},()=>null).status==='BLOCKED'));
+test("no mutation of project",()=>assert.ok((()=>{const p=project(),before=JSON.stringify(p);run(p,option(),()=>null);return JSON.stringify(p)===before})()));
+test("no mutation of option",()=>assert.ok((()=>{const o=option(),before=JSON.stringify(o);run(project(),o,()=>null);return JSON.stringify(o)===before})()));
+test("deterministic result",()=>assert.ok(JSON.stringify(runDefault())===JSON.stringify(runDefault())));
+test("no changes for identical placement",()=>assert.ok(run(project(),{railCount:1,modulesPerRail:6,rails:[{railIndex:0,devices:[{deviceId:'A',startModule:0,modules:2},{deviceId:'B',startModule:2,modules:1},{deviceId:'C',startModule:3,modules:2}]}]},()=>null).summary.moved===0));
+test("same shape no geometry reset",()=>assert.ok(run({...project(),cabinetGeometryV1:{}},{railCount:1,modulesPerRail:6,rails:[{railIndex:0,devices:[{deviceId:'A',startModule:0,modules:2},{deviceId:'B',startModule:2,modules:1},{deviceId:'C',startModule:3,modules:2}]}]},()=>null).summary.geometryResetRequired===false));
+
+test('duplicate empty DIN rail is rejected even with complete unique indices',()=>{
+ const o=option();o.rails.push({railIndex:1,devices:[]});
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});
+test('extra rail beyond declared rail count rejected',()=>{
+ const o=option();o.rails.push({railIndex:0,devices:[]});
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});
+test('more than 100 DIN rails rejected',()=>{
+ const o=option();o.railCount=101;
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});
+test('more than 200 modules per rail rejected',()=>{
+ const o=option();o.modulesPerRail=201;
+ assert.equal(run(project(),o,()=>null).status,'BLOCKED');
+});

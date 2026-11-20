@@ -1,0 +1,13 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {epReconcileDesign}=require('../design-reconciliation-v1.js');
+const good=()=>({lines:[{id:'L1',modules:1,catalogManufacturer:'ABB',catalogArticle:'X1'}],catalogArticles:[{manufacturer:'ABB',article:'X1',modules:1,widthMm:18,verified:true}],dinEvidence:{railWidthMm:100,devices:[{lineId:'L1',xMm:0,widthMm:18}]}});
+test('consistent cross-domain data never implies engineering approval',()=>{const r=epReconcileDesign(good());assert.equal(r.status,'CONSISTENT_UNVERIFIED');assert.equal(r.engineeringApproved,false)});
+test('missing article is blocked',()=>{const p=good();p.lines[0].catalogArticle='missing';assert.ok(epReconcileDesign(p).issues.some(i=>i.code==='ARTICLE_NOT_FOUND'))});
+test('unverified article is blocked',()=>{const p=good();p.catalogArticles[0].verified=false;assert.ok(epReconcileDesign(p).issues.some(i=>i.code==='ARTICLE_UNVERIFIED'))});
+test('duplicate line IDs are blocked',()=>{const p=good();p.lines.push({...p.lines[0]});assert.ok(epReconcileDesign(p).issues.some(i=>i.code==='LINE_DUPLICATE'))});
+test('width mismatch is blocked',()=>{const p=good();p.dinEvidence.devices[0].widthMm=17;assert.ok(epReconcileDesign(p).issues.some(i=>i.code==='PLACEMENT_WIDTH_MISMATCH'))});
+test('out of rail is blocked',()=>{const p=good();p.dinEvidence.railWidthMm=17;assert.ok(epReconcileDesign(p).issues.some(i=>i.code==='PLACEMENT_OUT_OF_RAIL'))});
+test('orphan placement is blocked',()=>{const p=good();p.dinEvidence.devices[0].lineId='orphan';assert.ok(epReconcileDesign(p).issues.some(i=>i.code==='ORPHAN_PLACEMENT'))});
+test('invalid project is blocked',()=>assert.equal(epReconcileDesign(null).status,'BLOCKED'));
+test('overlap is blocked',()=>{const p=good();p.lines.push({id:'L2',modules:1,catalogManufacturer:'ABB',catalogArticle:'X1'});p.dinEvidence.devices.push({lineId:'L2',xMm:10,widthMm:18});assert.ok(epReconcileDesign(p).issues.some(i=>i.code==='PLACEMENT_OVERLAP'))});

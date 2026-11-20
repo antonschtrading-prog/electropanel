@@ -13,6 +13,6 @@ if(d.getElementById('consumerCircuit').value!==expected)throw Error('graph navig
 d.getElementById('pasteTask').click();const textarea=d.getElementById('taskText');textarea.value='Балкон — 1 кВт\nНеизвестная мощность';textarea.dispatchEvent(new Event('input',{bubbles:true}));
 if(!d.getElementById('taskPreview').textContent.includes('пропущено: 1'))throw Error('task preview');
 d.getElementById('confirmParse').click();if(d.querySelectorAll('#loadRows tr').length!==7)throw Error('commit task');
-d.querySelector('[data-view="documents"]').click();if(!d.getElementById('documentIssues').textContent.includes('не подтверждены'))throw Error('warnings');
+d.querySelector('[data-view="documents"]').click();if(!d.getElementById('documentIssues').textContent.includes('Балкон'))throw Error('warnings');
 document.getElementById('result').textContent='PASS';}catch(e){document.getElementById('result').textContent='FAIL: '+e.message;}},350);
 </script></body></html>
